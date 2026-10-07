@@ -71,8 +71,6 @@ class BodyPartData : TweakData<BodyPartData>
     public bool? canSuggestAmputation = null;
     [TweakField(Style = ColumnStyle.Bool)]
     public bool? forceAlwaysRemovable = null;
-    [TweakField()]
-    public float? executionPartPriority = null;
     // ── 命中权重（def.hitChanceFactors 为 Dictionary<DamageDef, float>，用 DamageFactor 列表承载）──
     [TweakField(Style = ColumnStyle.DamageModList)]
     public List<DamageFactor>? hitChanceFactors = null;
@@ -111,7 +109,6 @@ class BodyPartData : TweakData<BodyPartData>
             pawnGeneratorCanAmputate ??= d.pawnGeneratorCanAmputate;
             canSuggestAmputation ??= d.canSuggestAmputation;
             forceAlwaysRemovable ??= d.forceAlwaysRemovable;
-            executionPartPriority ??= d.executionPartPriority;
             hitChanceFactors ??= d.hitChanceFactors?
                 .Select(kv => new DamageFactor { damageDef = kv.Key, factor = kv.Value })
                 .ToList();
@@ -144,7 +141,6 @@ class BodyPartData : TweakData<BodyPartData>
         if (pawnGeneratorCanAmputate.HasValue) { def.pawnGeneratorCanAmputate = pawnGeneratorCanAmputate.Value; }
         if (canSuggestAmputation.HasValue) { def.canSuggestAmputation = canSuggestAmputation.Value; }
         if (forceAlwaysRemovable.HasValue) { def.forceAlwaysRemovable = forceAlwaysRemovable.Value; }
-        if (executionPartPriority.HasValue) { def.executionPartPriority = executionPartPriority.Value; }
         if (hitChanceFactors != null)
         {
             var dict = new Dictionary<DamageDef, float>();

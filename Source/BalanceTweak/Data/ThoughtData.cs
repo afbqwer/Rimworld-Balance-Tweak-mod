@@ -56,7 +56,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
             var fs = d.stages?.FirstOrDefault();
             label = d.label ?? fs?.LabelAbstractCap ?? d.defName;
             defLabel ??= def?.label;
-            desc = d.description ?? fs?.description ?? "";
+            desc = d.description ?? $"{d.defName}{fs?.description}" ?? "";
             if (d.Icon != null && d.Icon != BaseContent.BadTex)
             {
                 uiIcon = d.Icon;

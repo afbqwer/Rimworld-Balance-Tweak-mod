@@ -15,7 +15,8 @@
     <MST.baseOpinionOffset>看法影响</MST.baseOpinionOffset>
     <MST.visible>可见性</MST.visible>
     <MST.stackLimit>数量限制</MST.stackLimit>
-    <MST.stackLimitComment>此想法的数量限制。</MST.stackLimitComment>
+    <MST.subdefLabel>名称</MST.subdefLabel>
+    <MST.stackLimitComment>数量限制。</MST.stackLimitComment>
     <MST.stackedEffectMultiplierComment>此想法的数量叠加乘算倍率。</MST.stackedEffectMultiplierComment>
     <MST.durationDaysComment>此想法的持续天数。</MST.durationDaysComment>
     <MST.stackLimitForSameOtherPawnComment>此想法类型对同一个"目标"想法的数量不能超过此值。-1为无限制。</MST.stackLimitForSameOtherPawnComment>

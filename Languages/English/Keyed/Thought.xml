@@ -15,7 +15,8 @@
     <MST.baseOpinionOffset>OpnOff</MST.baseOpinionOffset>
     <MST.visible>Visibility</MST.visible>
     <MST.stackLimit>stackLimit</MST.stackLimit>
-    <MST.stackLimitComment>The stack limit for this thought.</MST.stackLimitComment>
+    <MST.subdefLabel>Label</MST.subdefLabel>
+    <MST.stackLimitComment>The stack limit for this item.</MST.stackLimitComment>
     <MST.stackedEffectMultiplierComment>The multiplicative multiplier for stacked effects of this thought.</MST.stackedEffectMultiplierComment>
     <MST.durationDaysComment>The duration of this thought in days.</MST.durationDaysComment>
     <MST.stackLimitForSameOtherPawnComment>The maximum number of this thought type allowed for the same "target" thought. -1 means unlimited.</MST.stackLimitForSameOtherPawnComment>
