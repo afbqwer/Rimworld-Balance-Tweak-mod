@@ -277,6 +277,15 @@ if (makeImmuneTo != null) { stage.makeImmuneTo = makeImmuneTo; }
 
 新增列表类型时，需在 `StatColumnConfig.IsListStyle()` 静态方法中添加对应枚举值，以便 `GetString()` 等方法统一处理。
 
+> **新增列表/复合字段类型（ColumnStyle）的接线清单**（参考 `TraitReqList` / `SkillReqList`）：
+>
+> 1. **`StatColumnConfig.cs`**：`ColumnStyle` 枚举加成员；加入 `ValidStyleMap`（FieldType.List 数组）与 `IsListStyle()`；在 `GetCopyData()` 的序列化 switch、`TryPasteData()` 的剪贴板解析、`GetString()` 的单元格摘要 case 中各加一个分支。
+> 2. **`SerializationHelper.cs`**：新增 `{Type}ToItemString` / `Parse{Type}` / `Serialize{Type}List` / `Deserialize{Type}List`（管道 `|` 分隔格式；Def 解析不到时用 `LogMissingDef` 并返回 null）。
+> 3. **`TweakData.Serialization.cs`**：`ExposeField()` 加类型分发分支 + `ExposeXxxList()`（存档读写）。
+> 4. **`TweakData.Resolution.cs`**：加类型分发分支 + `ResolveXxxList()`（任一条解析失败返回 `(null, false)`，整条数据放弃）。
+> 5. **编辑器窗口**：新建 `GUI/Editor/{Style}EditorWindow`（继承 `ListEditorWindow<T>`），并在 `BalanceTweakGUI.cs` 的窗口工厂表注册。
+> 6. **本地化**：`MST.{Style}`（枚举标签，放 `Core.xml`）；字段标题 `MST.{字段名}(+Comment)`；窗口内按钮键（如 `MST.AddXxx`，可复用已有的 `MST.SelectXxx`）。
+
 ### 7.5 添加本地化
 
 任何字段需添加列标题翻译。对于含义不直观的字段，建议同时添加 `{FieldName}Comment` tooltip（StatDef由游戏提供Comment，因此无需说明）：
