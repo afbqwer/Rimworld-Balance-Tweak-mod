@@ -4,7 +4,7 @@ namespace CheckLoc;
 
 /// <summary>
 /// BalanceTweak 本地化辅助工具。
-/// 检测翻译键的缺失、重复、多余和列标题宽度问题。
+/// 检测翻译 XML 语法问题以及翻译键的缺失、重复、多余和列标题宽度问题。
 /// </summary>
 public static class Program
 {
@@ -50,9 +50,9 @@ public static class Program
             }
         }
 
-        if (check is not ("all" or "missing" or "duplicate" or "orphaned" or "width"))
+        if (check is not ("all" or "xml" or "missing" or "duplicate" or "orphaned" or "width"))
         {
-            Console.Error.WriteLine($"无效的 --check 值: '{check}'，可选: all, missing, duplicate, orphaned, width");
+            Console.Error.WriteLine($"无效的 --check 值: '{check}'，可选: all, xml, missing, duplicate, orphaned, width");
             return 1;
         }
 
@@ -110,6 +110,18 @@ public static class Program
 
         var totalIssues = 0;
         var totalFixed = 0;
+
+        // 运行 XML 语法检查（其余检查是行级扫描，XML 损坏时结果不可信，故放最前）
+        if (check is "all" or "xml")
+        {
+            Console.WriteLine($"{ColorBold}--- XML 语法 ---{ColorReset}");
+            var lines = XmlSyntaxDetector.Run(projectRoot, targetLanguages, out var xmlCount);
+            foreach (var line in lines)
+            {
+                PrintColored(line);
+            }
+            totalIssues += xmlCount;
+        }
 
         // 运行缺失键检测
         if (check is "all" or "missing")
@@ -256,7 +268,8 @@ public static class Program
 用法: dotnet run --project Source/CheckLoc [--check <type>] [--lang <lang>] [--show-comments] [--fix <type>]
 
 选项:
-  --check <all|missing|duplicate|orphaned|width>  检查类型 (默认: all)
+  --check <all|xml|missing|duplicate|orphaned|width>  检查类型 (默认: all)
+                                                  xml: 翻译 XML 语法与根元素检查
                                                   width: 字段列标题显示宽度（上限 ≈5 中文 / 10 英文）
   --fix <all|duplicate|orphaned>            自动修复模式（默认不修复）
                                     duplicate: 移除同文件/跨文件(Core.xml)重复键
@@ -267,6 +280,7 @@ public static class Program
 
 示例:
   dotnet run --project Source/CheckLoc
+  dotnet run --project Source/CheckLoc -- --check xml
   dotnet run --project Source/CheckLoc -- --check missing
   dotnet run --project Source/CheckLoc -- --check orphaned
   dotnet run --project Source/CheckLoc -- --check width

@@ -1,6 +1,6 @@
 # CheckLoc - 本地化辅助工具
 
-BalanceTweak 模组的本地化翻译键检查工具，检测翻译键的**缺失**、**重复**、**多余**和**列标题宽度**问题。
+BalanceTweak 模组的本地化翻译键检查工具，检测翻译 **XML 语法**问题以及翻译键的**缺失**、**重复**、**多余**和**列标题宽度**问题。
 
 ## 运行方式
 
@@ -9,6 +9,9 @@ BalanceTweak 模组的本地化翻译键检查工具，检测翻译键的**缺�
 ```powershell
 # 全部检查
 dotnet run --project Source/CheckLoc
+
+# 仅检测 XML 语法
+dotnet run --project Source/CheckLoc -- --check xml
 
 # 仅检测缺失翻译键
 dotnet run --project Source/CheckLoc -- --check missing
@@ -51,12 +54,21 @@ dotnet run --project Source/CheckLoc -- --fix duplicate --lang ChineseSimplified
 
 | 参数 | 可选值 | 默认值 | 说明 |
 |------|--------|--------|------|
-| `--check` | `all`, `missing`, `duplicate`, `orphaned`, `width` | `all` | 检查类型 |
+| `--check` | `all`, `xml`, `missing`, `duplicate`, `orphaned`, `width` | `all` | 检查类型 |
 | `--fix` | `all`, `duplicate`, `orphaned` | — | 自动修复模式（先检测后修复） |
 | `--lang` | `all`, `English`, `ChineseSimplified` | `all` | 目标语言 |
 | `--show-comments` | — | 关闭 | 显示 Comment 后缀键详情（默认仅一行摘要） |
 
 ## 检测逻辑
+
+### XML 语法检测 (`--check xml`)
+
+使用 `System.Xml.Linq` 真正解析 `Languages/{语言}/Keyed/*.xml`（其它检查均为行级正则扫描，XML 本身损坏时其结果不可信，因此默认 `all` 模式下本检查最先执行）：
+
+| 级别 | 说明 |
+|------|------|
+| `[ERROR]` | XML 无法解析（标签未闭合、非法字符、编码错误等），报告出错的文件与行列号 |
+| `[WARN]` | 文件可解析但根元素不是 `LanguageData`（RimWorld 语言文件的规范根元素） |
 
 ### 缺失翻译键检测 (`--check missing`)
 
@@ -137,6 +149,9 @@ dotnet run --project Source/CheckLoc -- --fix duplicate --lang ChineseSimplified
 语言: ChineseSimplified
 项目根目录: D:\...\Balance Tweak
 
+--- XML 语法 ---
+  (全部 52 个翻译 XML 语法合法)
+
 --- 缺失翻译键 ---
 [WARN] ChineseSimplified 缺少以下翻译键 (11 个):
   MST.lifespanYears           <- TweakField 字段 (Data\RaceData.cs)
@@ -190,7 +205,8 @@ Source/CheckLoc/
 ├── DuplicateFixer.cs        # 重复翻译键自动修复
 ├── OrphanedKeyDetector.cs   # 多余翻译键检测
 ├── OrphanedKeyFixer.cs      # 多余翻译键自动修复
-└── ColumnWidthDetector.cs   # 字段列标题宽度检测
+├── ColumnWidthDetector.cs   # 字段列标题宽度检测
+└── XmlSyntaxDetector.cs     # 翻译 XML 语法检测
 ```
 
 ## 已知限制
