@@ -128,6 +128,32 @@ public static partial class CodeKeyExtractor
     }
 
     /// <summary>
+    /// 提取所有 [TweakField] 字段名。
+    /// 字段列标题键 MST.{字段名} 的唯一来源；Comment 后缀键与按钮等其它键不在此列。
+    /// </summary>
+    public static HashSet<string> ExtractTweakFieldNames(string sourceDir)
+    {
+        var names = new HashSet<string>();
+
+        if (!Directory.Exists(sourceDir))
+        {
+            Console.Error.WriteLine($"[WARN] 源码目录不存在: {sourceDir}");
+            return names;
+        }
+
+        foreach (var csFile in Directory.GetFiles(sourceDir, "*.cs", SearchOption.AllDirectories))
+        {
+            var content = File.ReadAllText(csFile);
+            foreach (Match match in TweakFieldRegex().Matches(content))
+            {
+                names.Add(match.Groups[2].Value);
+            }
+        }
+
+        return names;
+    }
+
+    /// <summary>
     /// 添加 ColumnDataType 和 ColumnStyle 枚举的翻译键。
     /// 这些枚举定义在 StatColumnConfig.cs 中，StatColumnConfig 构造函数中会
     /// 调用 ("MST." + value.ToString()).Translate() 来获取列标题。

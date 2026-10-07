@@ -1,6 +1,6 @@
 # CheckLoc - 本地化辅助工具
 
-BalanceTweak 模组的本地化翻译键检查工具，检测翻译键的**缺失**、**重复**和**多余**问题。
+BalanceTweak 模组的本地化翻译键检查工具，检测翻译键的**缺失**、**重复**、**多余**和**列标题宽度**问题。
 
 ## 运行方式
 
@@ -18,6 +18,9 @@ dotnet run --project Source/CheckLoc -- --check duplicate
 
 # 仅检测多余翻译键
 dotnet run --project Source/CheckLoc -- --check orphaned
+
+# 仅检测列标题宽度
+dotnet run --project Source/CheckLoc -- --check width
 
 # 仅检查指定语言
 dotnet run --project Source/CheckLoc -- --lang ChineseSimplified
@@ -48,7 +51,7 @@ dotnet run --project Source/CheckLoc -- --fix duplicate --lang ChineseSimplified
 
 | 参数 | 可选值 | 默认值 | 说明 |
 |------|--------|--------|------|
-| `--check` | `all`, `missing`, `duplicate`, `orphaned` | `all` | 检查类型 |
+| `--check` | `all`, `missing`, `duplicate`, `orphaned`, `width` | `all` | 检查类型 |
 | `--fix` | `all`, `duplicate`, `orphaned` | — | 自动修复模式（先检测后修复） |
 | `--lang` | `all`, `English`, `ChineseSimplified` | `all` | 目标语言 |
 | `--show-comments` | — | 关闭 | 显示 Comment 后缀键详情（默认仅一行摘要） |
@@ -94,6 +97,18 @@ dotnet run --project Source/CheckLoc -- --fix duplicate --lang ChineseSimplified
 
 > **注意**：多余键检测受代码扫描精度影响。如果无法识别所有动态键生成方式，可能出现少量误报。建议人工确认后清理。
 
+### 列标题宽度检测 (`--check width`)
+
+表格列头空间有限，**字段列标题**（`MST.{TweakField 字段名}`，即 `("MST." + field.Name).Translate()` 生成的键）需要缩写到可容纳的宽度内：
+
+| 规则 | 说明 |
+|------|------|
+| 宽度上限 | 显示宽度 10：全角字符（中文、全角标点）计 2，半角字符计 1，即 ≈5 个中文字符或 10 个英文字符 |
+| 检查范围 | 仅 `[TweakField]` 字段对应的列标题键（键名与代码中字段名精确匹配） |
+| 豁免 | `Comment` 后缀键（tooltip）与弹窗按钮、枚举/页签等其它键不显示在列头，不受限、需保持完整 |
+
+超宽的列标题在游戏中会被截断，需要人工缩写翻译（该检查不支持 `--fix` 自动修复）。
+
 ## 自动修复功能 (`--fix`)
 
 新增 `--fix` 参数可自动清除检测出的问题。修复前会先运行对应的检测并输出报告。
@@ -138,6 +153,10 @@ dotnet run --project Source/CheckLoc -- --fix duplicate --lang ChineseSimplified
   MST.activityResearchFactorCurve          <- Race.xml
   ...
 
+--- 字段列标题宽度 ---
+[WARN] ChineseSimplified/Race.xml: MST.lifespanYears (第12行) "寿命年限加成" 显示宽度 12 > 10（≈5 中文 / 10 英文）
+  ...
+
 --- 重复键修复 ---
 [FIX] ChineseSimplified/Core.xml: 移除同文件重复键 MST.Save (第54行, 第75行)
 [FIX] ChineseSimplified/Race.xml: 移除跨文件重复键 MST.SomeKey (第30行)
@@ -170,7 +189,8 @@ Source/CheckLoc/
 ├── DuplicateDetector.cs     # 重复翻译键检测
 ├── DuplicateFixer.cs        # 重复翻译键自动修复
 ├── OrphanedKeyDetector.cs   # 多余翻译键检测
-└── OrphanedKeyFixer.cs      # 多余翻译键自动修复
+├── OrphanedKeyFixer.cs      # 多余翻译键自动修复
+└── ColumnWidthDetector.cs   # 字段列标题宽度检测
 ```
 
 ## 已知限制

@@ -4,7 +4,7 @@ namespace CheckLoc;
 
 /// <summary>
 /// BalanceTweak 本地化辅助工具。
-/// 检测翻译键的缺失和重复问题。
+/// 检测翻译键的缺失、重复、多余和列标题宽度问题。
 /// </summary>
 public static class Program
 {
@@ -50,9 +50,9 @@ public static class Program
             }
         }
 
-        if (check is not ("all" or "missing" or "duplicate" or "orphaned"))
+        if (check is not ("all" or "missing" or "duplicate" or "orphaned" or "width"))
         {
-            Console.Error.WriteLine($"无效的 --check 值: '{check}'，可选: all, missing, duplicate, orphaned");
+            Console.Error.WriteLine($"无效的 --check 值: '{check}'，可选: all, missing, duplicate, orphaned, width");
             return 1;
         }
 
@@ -145,6 +145,18 @@ public static class Program
                 PrintColored(line);
             }
             totalIssues += orphanedCount;
+        }
+
+        // 运行列标题宽度检查
+        if (check is "all" or "width")
+        {
+            Console.WriteLine($"{ColorBold}--- 字段列标题宽度 ---{ColorReset}");
+            var lines = ColumnWidthDetector.Run(projectRoot, targetLanguages, out var widthCount);
+            foreach (var line in lines)
+            {
+                PrintColored(line);
+            }
+            totalIssues += widthCount;
         }
 
         // 运行修复
@@ -244,7 +256,8 @@ public static class Program
 用法: dotnet run --project Source/CheckLoc [--check <type>] [--lang <lang>] [--show-comments] [--fix <type>]
 
 选项:
-  --check <all|missing|duplicate|orphaned>  检查类型 (默认: all)
+  --check <all|missing|duplicate|orphaned|width>  检查类型 (默认: all)
+                                                  width: 字段列标题显示宽度（上限 ≈5 中文 / 10 英文）
   --fix <all|duplicate|orphaned>            自动修复模式（默认不修复）
                                     duplicate: 移除同文件/跨文件(Core.xml)重复键
                                     orphaned: 移除代码未引用的多余键
@@ -256,6 +269,7 @@ public static class Program
   dotnet run --project Source/CheckLoc
   dotnet run --project Source/CheckLoc -- --check missing
   dotnet run --project Source/CheckLoc -- --check orphaned
+  dotnet run --project Source/CheckLoc -- --check width
   dotnet run --project Source/CheckLoc -- --check missing --show-comments
   dotnet run --project Source/CheckLoc -- --check duplicate --lang ChineseSimplified
   dotnet run --project Source/CheckLoc -- --fix duplicate

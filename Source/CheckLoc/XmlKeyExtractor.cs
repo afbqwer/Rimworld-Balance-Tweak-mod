@@ -16,6 +16,13 @@ public static partial class XmlKeyExtractor
     private static partial Regex KeyRegex();
 
     /// <summary>
+    /// 匹配单行键值对 &lt;MST.KeyName&gt;value&lt;/MST.KeyName&gt;，同时提取键与值。
+    /// 项目中的翻译条目均为单行，跨行值不做支持。
+    /// </summary>
+    [GeneratedRegex(@"<MST\.([^>]+)>(.*?)</MST\.\1>")]
+    private static partial Regex KeyValueRegex();
+
+    /// <summary>
     /// 提取指定语言目录下的所有翻译键。
     /// </summary>
     /// <param name="languagesRoot">Languages/ 目录的绝对路径</param>
@@ -63,6 +70,67 @@ public static partial class XmlKeyExtractor
 
         return keys;
     }
+
+    /// <summary>
+    /// 提取指定语言目录下的所有翻译键值条目（含值），
+    /// 供列标题宽度等基于翻译内容的检查使用。
+    /// </summary>
+    /// <param name="languagesRoot">Languages/ 目录的绝对路径</param>
+    /// <param name="targetLanguages">要扫描的语言列表。为空则扫描所有。</param>
+    /// <returns>所有翻译键值条目及其位置信息</returns>
+    public static List<XmlEntryInfo> ExtractEntries(string languagesRoot, string[]? targetLanguages = null)
+    {
+        var entries = new List<XmlEntryInfo>();
+        var regex = KeyValueRegex();
+
+        if (!Directory.Exists(languagesRoot))
+        {
+            Console.Error.WriteLine($"[WARN] 语言目录不存在: {languagesRoot}");
+            return entries;
+        }
+
+        foreach (var langDir in Directory.GetDirectories(languagesRoot))
+        {
+            var langName = Path.GetFileName(langDir);
+
+            if (targetLanguages is { Length: > 0 } &&
+                !targetLanguages.Contains(langName, StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            var keyedDir = Path.Combine(langDir, "Keyed");
+            if (!Directory.Exists(keyedDir)) continue;
+
+            foreach (var xmlFile in Directory.GetFiles(keyedDir, "*.xml"))
+            {
+                var fileName = Path.GetFileName(xmlFile);
+                var lineNumber = 0;
+
+                foreach (var line in File.ReadLines(xmlFile))
+                {
+                    lineNumber++;
+                    var match = regex.Match(line);
+                    if (match.Success)
+                    {
+                        var key = "MST." + match.Groups[1].Value;
+                        var value = UnescapeXml(match.Groups[2].Value.Trim());
+                        entries.Add(new XmlEntryInfo(key, value, fileName, langName, lineNumber));
+                    }
+                }
+            }
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// 还原值中的 XML 实体。&amp;amp; 必须放在最后，避免二次还原。
+    /// </summary>
+    private static string UnescapeXml(string value) => value
+        .Replace("&lt;", "<")
+        .Replace("&gt;", ">")
+        .Replace("&quot;", "\"")
+        .Replace("&apos;", "'")
+        .Replace("&amp;", "&");
 
     /// <summary>
     /// 检测同文件内的重复键。
