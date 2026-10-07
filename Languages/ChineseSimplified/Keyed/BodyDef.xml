@@ -7,6 +7,7 @@
     <MST.def>部位定义</MST.def>
     <MST.customLabel>自定义名称</MST.customLabel>
     <MST.coverage>覆盖率</MST.coverage>
+    <MST.coverageAbs>实际覆盖率</MST.coverageAbs>
     <MST.height>高度</MST.height>
     <MST.depth>深度</MST.depth>
     <MST.groups>部位组</MST.groups>
@@ -14,6 +15,7 @@
     <MST.defComment>该节点引用的 BodyPartDef。点击“->”可跳转到 BodyPart 页签中对应的数据。</MST.defComment>
     <MST.customLabelComment>可选的、针对该身体的名称，覆盖部位定义自身的名称。留空则使用部位定义的名称。</MST.customLabelComment>
     <MST.coverageComment>该部位占父级剩余覆盖率（0-1）的比例。</MST.coverageComment>
+    <MST.coverageAbsComment>该部位自身（不含子级）实际占全身的比例，由游戏公式实时计算，只读。数值 = 祖先覆盖率连乘 × (1 - 子级覆盖率之和)。</MST.coverageAbsComment>
     <MST.heightComment>命中该部位时使用的高度分类（上/中/下）。</MST.heightComment>
     <MST.depthComment>命中该部位时使用的深度分类（外/内）。</MST.depthComment>
     <MST.groupsComment>该节点所属的部位组（用于衣物/护甲的覆盖判定）。</MST.groupsComment>

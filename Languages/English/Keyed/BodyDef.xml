@@ -7,6 +7,7 @@
     <MST.def>BodyPart</MST.def>
     <MST.customLabel>Label</MST.customLabel>
     <MST.coverage>Coverage</MST.coverage>
+    <MST.coverageAbs>Actual coverage</MST.coverageAbs>
     <MST.height>Height</MST.height>
     <MST.depth>Depth</MST.depth>
     <MST.groups>Groups</MST.groups>
@@ -14,6 +15,7 @@
     <MST.defComment>The BodyPartDef this node references. Click "->" to jump to its data on the BodyPart tab.</MST.defComment>
     <MST.customLabelComment>Optional per-body label overriding the BodyPartDef label. Leave empty to use the def label.</MST.customLabelComment>
     <MST.coverageComment>Fraction (0-1) of the parent's remaining coverage this part occupies.</MST.coverageComment>
+    <MST.coverageAbsComment>The part's own share of the whole body (coverageAbs), excluding its children. Computed by the game's formula, read-only. Value = product of ancestor coverages x (1 - sum of children's coverage).</MST.coverageAbsComment>
     <MST.heightComment>Height category used when selecting this part to hit (Top/Middle/Bottom).</MST.heightComment>
     <MST.depthComment>Depth category used when selecting this part to hit (Outside/Inside).</MST.depthComment>
     <MST.groupsComment>Body part groups this node belongs to (used by apparel/armor coverage).</MST.groupsComment>

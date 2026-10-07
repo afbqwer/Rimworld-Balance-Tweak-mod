@@ -39,7 +39,7 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
     private BodyPartNode? selected;
     private Vector2 treeScroll;
 
-    private readonly List<(BodyPartNode node, int depth)> visible = new();
+    private readonly List<(BodyPartNode node, int depth, float coverageAbs)> visible = new();
 
     // 内联重命名
     private BodyPartNode? renaming;
@@ -121,7 +121,7 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
     private void DrawTree(Rect rect)
     {
         visible.Clear();
-        CollectVisible(root, 0);
+        CollectVisible(root, 0, 1f);
 
         float totalHeight = Mathf.Max(visible.Count * RowHeight, 1f);
         Rect viewRect = new(0, 0, rect.width - 16f, totalHeight);
@@ -139,8 +139,8 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
 
         for (int i = 0; i < visible.Count; i++)
         {
-            var (node, depth) = visible[i];
-            DrawRow(viewRect, i, node, depth, mouse, mouseInTree);
+            var (node, depth, coverageAbs) = visible[i];
+            DrawRow(viewRect, i, node, depth, coverageAbs, mouse, mouseInTree);
         }
 
         DrawDropIndicator(viewRect);
@@ -149,7 +149,7 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
         Text.Anchor = TextAnchor.UpperLeft;
     }
 
-    private void DrawRow(Rect viewRect, int index, BodyPartNode node, int depth, Vector2 mouse, bool mouseInTree)
+    private void DrawRow(Rect viewRect, int index, BodyPartNode node, int depth, float coverageAbs, Vector2 mouse, bool mouseInTree)
     {
         Rect row = new(0, index * RowHeight, viewRect.width, RowHeight);
 
@@ -179,7 +179,7 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
         }
 
         Text.Anchor = TextAnchor.MiddleLeft;
-        Widgets.Label(labelRect, BuildNodeLabel(node));
+        Widgets.Label(labelRect, BuildNodeLabel(node, coverageAbs));
         Text.Anchor = TextAnchor.UpperLeft;
     }
 
@@ -194,13 +194,47 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
         Widgets.DrawBoxSolid(line, DropLineColor);
     }
 
-    private void CollectVisible(BodyPartNode? node, int depth)
+    /// <summary>
+    /// 前序遍历可见节点，并顺带计算实际覆盖率 coverageAbs（公式与 <c>BodyDef.CacheDataRecursive</c> 一致）：
+    /// 根的 coverageAbsWithChildren 恒为 1，其余节点 = 父的 coverageAbsWithChildren × 自身 coverage；
+    /// coverageAbs = coverageAbsWithChildren × max(0, 1 - 子级 coverage 之和)。
+    /// </summary>
+    private void CollectVisible(BodyPartNode? node, int depth, float absWithChildren)
     {
         if (node == null) return;
-        visible.Add((node, depth));
-        if (!node.expanded) return;
+        float uncovered = 1f;
         foreach (var child in node.children)
-            CollectVisible(child, depth + 1);
+            uncovered -= child.coverage;
+        if (uncovered < 0f) uncovered = 0f;
+        visible.Add((node, depth, absWithChildren * uncovered));
+        if (!node.expanded) return;
+        float childBase = node == root ? 1f : absWithChildren;
+        foreach (var child in node.children)
+            CollectVisible(child, depth + 1, childBase * child.coverage);
+    }
+
+    /// <summary>
+    /// 计算任意节点的实际覆盖率（coverageAbs），公式同 <see cref="CollectVisible"/>。
+    /// selected 的父级可能处于折叠状态（不在 visible 列表中），故沿父链独立计算。
+    /// </summary>
+    private float ComputeCoverageAbs(BodyPartNode node)
+    {
+        float absWithChildren = 1f;
+        if (node != root)
+        {
+            var cur = node;
+            while (FindParent(root!, cur) is { } parent)
+            {
+                if (parent != root) absWithChildren *= parent.coverage;
+                if (parent == root) break;
+                cur = parent;
+            }
+            absWithChildren *= node.coverage;
+        }
+        float uncovered = 1f;
+        foreach (var child in node.children)
+            uncovered -= child.coverage;
+        return absWithChildren * Mathf.Max(uncovered, 0f);
     }
 
     private static string GetNodeLabel(BodyPartNode node)
@@ -214,11 +248,14 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
         return "?";
     }
 
-    /// <summary>节点行文本：名称 + （覆盖率 / 部位定义的生命值）。</summary>
-    private string BuildNodeLabel(BodyPartNode node)
+    /// <summary>
+    /// 节点行文本：名称 + （覆盖率 / 实际覆盖率 / 部位定义的生命值）。
+    /// C 为相对覆盖率（占父级剩余的比例），A 为实际覆盖率 coverageAbs（占全身的比例，公式同 <see cref="CollectVisible"/>）。
+    /// </summary>
+    private string BuildNodeLabel(BodyPartNode node, float coverageAbs)
     {
         if (node.def == null) return $"";
-        return $"{GetNodeLabel(node)}  [C:{node.coverage:0.###}|H:{node.def.hitPoints}]";
+        return $"{GetNodeLabel(node)}  [C:{node.coverage:0.###}|A:{coverageAbs:0.###}|H:{node.def.hitPoints}]";
     }
 
     #endregion
@@ -325,7 +362,7 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
         int idx = GetRowIndexAt(mouse, viewRect);
         if (idx < 0) return null;
 
-        var (node, depth) = visible[idx];
+        var (node, depth, _) = visible[idx];
         float localY = mouse.y - idx * RowHeight;
         DropZone zone = localY < RowHeight * 0.25f ? DropZone.Above
                       : localY > RowHeight * 0.75f ? DropZone.Below
@@ -590,6 +627,13 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
         {
             string text = Widgets.TextField(fieldRect, selected!.coverage.ToString());
             if (float.TryParse(text, out float v)) selected.coverage = v;
+        });
+        DrawLabeledField(rect, ref y, "MST.coverageAbs", fieldRect =>
+        {
+            // 实际覆盖率只读：由游戏公式（见 ComputeCoverageAbs）实时计算
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(fieldRect, ComputeCoverageAbs(selected!).ToString("0.##%"));
+            Text.Anchor = TextAnchor.UpperLeft;
         });
         DrawLabeledField(rect, ref y, "MST.height", fieldRect =>
         {
