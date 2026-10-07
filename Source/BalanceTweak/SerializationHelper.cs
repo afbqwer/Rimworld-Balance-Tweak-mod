@@ -482,6 +482,76 @@ public static class SerializationHelper
 
     #endregion
 
+    #region BiomePlantRecord
+
+    public static string BiomePlantRecordToItemString(BiomePlantRecord r)
+        => $"{r.plant?.defName ?? "NULL"}|{r.commonality}";
+
+    public static BiomePlantRecord? ParseBiomePlantRecord(string str)
+    {
+        var parts = str.Split('|');
+        if (parts.Length != 2)
+        {
+            WarnSyntaxError("BiomePlantRecord", str, "plantDefName|commonality");
+            return null;
+        }
+        var plant = DefDatabase<ThingDef>.GetNamedSilentFail(parts[0]);
+        if (plant == null)
+        {
+            LogMissingDef("BiomePlantRecord.plant", parts[0]);
+            return null;
+        }
+        if (!float.TryParse(parts[1], out var commonality))
+        {
+            WarnSyntaxError("BiomePlantRecord", str, "plantDefName|commonality（commonality 应为浮点数）");
+            return null;
+        }
+        return new BiomePlantRecord { plant = plant, commonality = commonality };
+    }
+
+    public static string? SerializeBiomePlantList(List<BiomePlantRecord>? list)
+        => SerializeList(list, BiomePlantRecordToItemString);
+
+    public static List<BiomePlantRecord>? DeserializeBiomePlantList(string? data)
+        => DeserializeList(data, ParseBiomePlantRecord, "DeserializeBiomePlantList");
+
+    #endregion
+
+    #region BiomeAnimalRecord
+
+    public static string BiomeAnimalRecordToItemString(BiomeAnimalRecord r)
+        => $"{r.animal?.defName ?? "NULL"}|{r.commonality}";
+
+    public static BiomeAnimalRecord? ParseBiomeAnimalRecord(string str)
+    {
+        var parts = str.Split('|');
+        if (parts.Length != 2)
+        {
+            WarnSyntaxError("BiomeAnimalRecord", str, "animalKindDefName|commonality");
+            return null;
+        }
+        var animal = DefDatabase<PawnKindDef>.GetNamedSilentFail(parts[0]);
+        if (animal == null)
+        {
+            LogMissingDef("BiomeAnimalRecord.animal", parts[0]);
+            return null;
+        }
+        if (!float.TryParse(parts[1], out var commonality))
+        {
+            WarnSyntaxError("BiomeAnimalRecord", str, "animalKindDefName|commonality（commonality 应为浮点数）");
+            return null;
+        }
+        return new BiomeAnimalRecord { animal = animal, commonality = commonality };
+    }
+
+    public static string? SerializeBiomeAnimalList(List<BiomeAnimalRecord>? list)
+        => SerializeList(list, BiomeAnimalRecordToItemString);
+
+    public static List<BiomeAnimalRecord>? DeserializeBiomeAnimalList(string? data)
+        => DeserializeList(data, ParseBiomeAnimalRecord, "DeserializeBiomeAnimalList");
+
+    #endregion
+
     #region ProcessIngredientItem
 
     public static string ProcessIngredientItemToItemString(ProcessIngredientItem i)

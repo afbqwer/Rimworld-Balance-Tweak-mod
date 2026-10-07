@@ -68,6 +68,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         if (fieldType == typeof(List<TraitRequirement>)) return ResolveTraitReqList(meta);
         if (fieldType == typeof(List<ProcessIngredientItem>)) return ResolveProcessIngredientList(meta);
         if (fieldType == typeof(List<ProcessResultItem>)) return ResolveProcessResultList(meta);
+        if (fieldType == typeof(List<BiomePlantRecord>)) return ResolveBiomePlantList(meta);
+        if (fieldType == typeof(List<BiomeAnimalRecord>)) return ResolveBiomeAnimalList(meta);
         if (fieldType == typeof(ThingFilter)) return ResolveIngredientFilter(meta);
         if (fieldType == typeof(List<string>)) return ResolveStringList(meta);
         if (fieldType == typeof(List<int>)) return ResolveIntList(meta);
@@ -297,6 +299,36 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             foreach (var str in strList)
             {
                 var item = SerializationHelper.ParseProcessResultItem(str);
+                if (item == null) return (null, false);
+                result.Add(item);
+            }
+            return (result.Count > 0 ? result : null, true);
+        });
+    }
+
+    private bool ResolveBiomePlantList(StatFieldMeta meta)
+    {
+        return ResolveList(meta, strList =>
+        {
+            var result = new List<BiomePlantRecord>(strList.Count);
+            foreach (var str in strList)
+            {
+                var item = SerializationHelper.ParseBiomePlantRecord(str);
+                if (item == null) return (null, false);
+                result.Add(item);
+            }
+            return (result.Count > 0 ? result : null, true);
+        });
+    }
+
+    private bool ResolveBiomeAnimalList(StatFieldMeta meta)
+    {
+        return ResolveList(meta, strList =>
+        {
+            var result = new List<BiomeAnimalRecord>(strList.Count);
+            foreach (var str in strList)
+            {
+                var item = SerializationHelper.ParseBiomeAnimalRecord(str);
                 if (item == null) return (null, false);
                 result.Add(item);
             }

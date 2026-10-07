@@ -34,6 +34,8 @@
     <MST.Range>Range</MST.Range>
     <MST.SkillReqList>SkillReqList</MST.SkillReqList>
     <MST.TraitReqList>TraitReqList</MST.TraitReqList>
+    <MST.BiomePlantList>WildPlantList</MST.BiomePlantList>
+    <MST.BiomeAnimalList>WildAnimalList</MST.BiomeAnimalList>
     <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>

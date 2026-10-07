@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Biome>生物群系</MST.Biome>
+    <MST.Extreme>极端</MST.Extreme>
+    <MST.Space>真空</MST.Space>
+    <MST.animalDensity>动物密度</MST.animalDensity>
+    <MST.plantDensity>植物密度</MST.plantDensity>
+    <MST.wildPlantRegrowDays>植物再生天数</MST.wildPlantRegrowDays>
+    <MST.diseaseMtbDays>疾病间隔</MST.diseaseMtbDays>
+    <MST.diseaseMtbDaysComment>此群系疾病事件平均发生间隔（天数），越小越频繁。</MST.diseaseMtbDaysComment>
+    <MST.movementDifficulty>通行难度</MST.movementDifficulty>
+    <MST.movementDifficultyComment>商队在大世界地图上经过此群系格子的路径成本。</MST.movementDifficultyComment>
+    <MST.forageability>觅食效率</MST.forageability>
+    <MST.forageabilityComment>商队/远行队在此群系觅食获得食物的效率。</MST.forageabilityComment>
+    <MST.settlementSelectionWeight>据点选址权重</MST.settlementSelectionWeight>
+    <MST.settlementSelectionWeightComment>派系据点选址时选中此群系的相对权重。</MST.settlementSelectionWeightComment>
+    <MST.campSelectionWeight>营地选址权重</MST.campSelectionWeight>
+    <MST.campSelectionWeightComment>农场营地选址时选中此群系的相对权重。</MST.campSelectionWeightComment>
+    <MST.pollutionOffset>污染偏移</MST.pollutionOffset>
+    <MST.pollutionOffsetComment>世界生成时此群系地块的初始污染偏移量（Biotech 污染机制）。</MST.pollutionOffsetComment>
+    <MST.wildAnimalScariaChance>野兽狂暴几率</MST.wildAnimalScariaChance>
+    <MST.wildAnimalScariaChanceComment>此群系生成的野生动物携带狂暴症（Scaria）的几率。</MST.wildAnimalScariaChanceComment>
+    <MST.geyserCountFactor>间歇泉系数</MST.geyserCountFactor>
+    <MST.geyserCountFactorComment>地图生成时蒸汽间歇泉数量的倍率。</MST.geyserCountFactorComment>
+    <MST.maxFishPopulation>最大鱼群</MST.maxFishPopulation>
+    <MST.maxFishPopulationComment>此群系水域可维持的最大鱼类数量。</MST.maxFishPopulationComment>
+    <MST.canBuildBase>可建家</MST.canBuildBase>
+    <MST.canBuildBaseComment>是否允许在此群系建立基地。</MST.canBuildBaseComment>
+    <MST.canAutoChoose>可随机选择</MST.canAutoChoose>
+    <MST.canAutoChooseComment>开局选点与事件随机选点时是否可自动选中此群系。</MST.canAutoChooseComment>
+    <MST.allowRoads>允许道路</MST.allowRoads>
+    <MST.allowRoadsComment>世界生成时是否允许在此群系生成道路。</MST.allowRoadsComment>
+    <MST.allowRivers>允许河流</MST.allowRivers>
+    <MST.allowRiversComment>世界生成时是否允许在此群系生成河流。</MST.allowRiversComment>
+    <MST.allowPollution>允许污染</MST.allowPollution>
+    <MST.allowPollutionComment>此群系是否允许被污染。</MST.allowPollutionComment>
+    <MST.allowFarmingCamps>允许农场营地</MST.allowFarmingCamps>
+    <MST.allowFarmingCampsComment>是否允许在此群系建立农场营地。</MST.allowFarmingCampsComment>
+    <MST.wildAnimalsCanWanderInto>野兽可游荡进入</MST.wildAnimalsCanWanderInto>
+    <MST.wildAnimalsCanWanderIntoComment>其他群系的野生动物是否可游荡进入此群系的地图。</MST.wildAnimalsCanWanderIntoComment>
+    <MST.wildPlantsCareAboutLocalFertility>植物受肥沃度影响</MST.wildPlantsCareAboutLocalFertility>
+    <MST.wildPlantsCareAboutLocalFertilityComment>野生植物出现率是否受地块局部肥沃度影响。</MST.wildPlantsCareAboutLocalFertilityComment>
+    <MST.impassable>不可通行</MST.impassable>
+    <MST.impassableComment>商队是否完全无法穿过此群系（如大洋）。</MST.impassableComment>
+    <MST.foragedFood>觅食所得</MST.foragedFood>
+    <MST.foragedFoodComment>在此群系觅食时获得的食物。</MST.foragedFoodComment>
+    <MST.wildPlants>野生植物</MST.wildPlants>
+    <MST.wildPlantsComment>此群系可自然生成的野生植物及其出现权重（commonality），修改后部分效果需重启游戏生效。</MST.wildPlantsComment>
+    <MST.wildAnimals>野生动物</MST.wildAnimals>
+    <MST.wildAnimalsComment>此群系可自然生成的野生动物及其出现权重（commonality），修改后部分效果需重启游戏生效。</MST.wildAnimalsComment>
+    <MST.AddWildPlant>添加野生植物</MST.AddWildPlant>
+    <MST.AddWildAnimal>添加野生动物</MST.AddWildAnimal>
+    <MST.SelectPlant>(选择植物)</MST.SelectPlant>
+    <MST.SelectAnimal>(选择动物)</MST.SelectAnimal>
+</LanguageData>

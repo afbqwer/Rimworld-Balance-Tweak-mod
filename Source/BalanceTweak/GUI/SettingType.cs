@@ -2,6 +2,7 @@ namespace BalanceTweak;
 
 public partial class BalanceTweakSettings
 {
+    /// <summary>新增成员必须追加在末尾；不可改名/删除/变更已有成员的顺序。</summary>
     public enum SettingType
     {
         None = 0,
@@ -30,18 +31,9 @@ public partial class BalanceTweakSettings
         Terrain = 23,
         Recipe = 24,
         Damage = 25,
-
-        /// <summary>
-        /// ThingDef 兜底类型（MiscThingData）。只能追加在枚举末尾：
-        /// 存档里存的是成员**名**（Scribe_Values 写 ToString()），改名/删除会让旧数据失效，
-        /// 且 curSettingTypeStr[(int)curType] 要求序号从 0 起连续。
-        /// </summary>
         Misc = 26,
-
-        /// <summary>身体部位（BodyPartDef）。新增成员必须追加在末尾，不可改名/删除。</summary>
         BodyPart = 27,
-
-        /// <summary>整套身体（BodyDef）。新增成员必须追加在末尾，不可改名/删除。</summary>
         BodyDef = 28,
+        Biome = 29,
     }
 }

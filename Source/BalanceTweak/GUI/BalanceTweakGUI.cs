@@ -156,6 +156,8 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.TraitReqList, (c, d) => new TraitReqListEditorWindow(c, d) },
         { ColumnStyle.ProcessIngredientList, (c, d) => new ProcessIngredientListEditorWindow(c, d) },
         { ColumnStyle.ProcessResultList, (c, d) => new ProcessResultListEditorWindow(c, d) },
+        { ColumnStyle.BiomePlantList, (c, d) => new BiomePlantListEditorWindow(c, d) },
+        { ColumnStyle.BiomeAnimalList, (c, d) => new BiomeAnimalListEditorWindow(c, d) },
         { ColumnStyle.BodyPartTree, (c, d) => new BodyPartTreeEditorWindow(c, d) },
     };
     #endregion

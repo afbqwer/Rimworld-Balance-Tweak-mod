@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Biome>Biomes</MST.Biome>
+    <MST.Extreme>Extreme</MST.Extreme>
+    <MST.Space>Vacuum</MST.Space>
+    <MST.animalDensity>anmDen</MST.animalDensity>
+    <MST.plantDensity>pltDen</MST.plantDensity>
+    <MST.wildPlantRegrowDays>regrw</MST.wildPlantRegrowDays>
+    <MST.diseaseMtbDays>dis</MST.diseaseMtbDays>
+    <MST.diseaseMtbDaysComment>Average interval in days between disease incidents in this biome. Lower = more frequent.</MST.diseaseMtbDaysComment>
+    <MST.movementDifficulty>moveDiff</MST.movementDifficulty>
+    <MST.movementDifficultyComment>Pathfinding cost for caravans crossing tiles of this biome on the world map.</MST.movementDifficultyComment>
+    <MST.forageability>frg</MST.forageability>
+    <MST.forageabilityComment>Efficiency of foraging food while travelling through this biome.</MST.forageabilityComment>
+    <MST.settlementSelectionWeight>stlWgt</MST.settlementSelectionWeight>
+    <MST.settlementSelectionWeightComment>Relative weight of this biome being picked for faction settlement sites.</MST.settlementSelectionWeightComment>
+    <MST.campSelectionWeight>campWgt</MST.campSelectionWeight>
+    <MST.campSelectionWeightComment>Relative weight of this biome being picked for farming camp sites.</MST.campSelectionWeightComment>
+    <MST.pollutionOffset>polOff</MST.pollutionOffset>
+    <MST.pollutionOffsetComment>Initial world-tile pollution offset of this biome at world generation (Biotech pollution).</MST.pollutionOffsetComment>
+    <MST.wildAnimalScariaChance>scaria</MST.wildAnimalScariaChance>
+    <MST.wildAnimalScariaChanceComment>Chance for wild animals spawned in this biome to have scaria.</MST.wildAnimalScariaChanceComment>
+    <MST.geyserCountFactor>geyser</MST.geyserCountFactor>
+    <MST.geyserCountFactorComment>Multiplier for the number of steam geysers generated on maps of this biome.</MST.geyserCountFactorComment>
+    <MST.maxFishPopulation>fish</MST.maxFishPopulation>
+    <MST.maxFishPopulationComment>Maximum fish population sustainable in this biome's waters.</MST.maxFishPopulationComment>
+    <MST.canBuildBase>base</MST.canBuildBase>
+    <MST.canBuildBaseComment>Whether a player base may be founded in this biome.</MST.canBuildBaseComment>
+    <MST.canAutoChoose>auto</MST.canAutoChoose>
+    <MST.canAutoChooseComment>Whether this biome can be auto-picked when choosing a starting site or event sites.</MST.canAutoChooseComment>
+    <MST.allowRoads>roads</MST.allowRoads>
+    <MST.allowRoadsComment>Whether roads may generate in this biome at world generation.</MST.allowRoadsComment>
+    <MST.allowRivers>rivers</MST.allowRivers>
+    <MST.allowRiversComment>Whether rivers may generate in this biome at world generation.</MST.allowRiversComment>
+    <MST.allowPollution>polut</MST.allowPollution>
+    <MST.allowPollutionComment>Whether this biome can be polluted.</MST.allowPollutionComment>
+    <MST.allowFarmingCamps>camps</MST.allowFarmingCamps>
+    <MST.allowFarmingCampsComment>Whether farming camps may be established in this biome.</MST.allowFarmingCampsComment>
+    <MST.wildAnimalsCanWanderInto>wander</MST.wildAnimalsCanWanderInto>
+    <MST.wildAnimalsCanWanderIntoComment>Whether wild animals from other biomes may wander into maps of this biome.</MST.wildAnimalsCanWanderIntoComment>
+    <MST.wildPlantsCareAboutLocalFertility>fertr</MST.wildPlantsCareAboutLocalFertility>
+    <MST.wildPlantsCareAboutLocalFertilityComment>Whether wild plant occurrence is affected by local tile fertility.</MST.wildPlantsCareAboutLocalFertilityComment>
+    <MST.impassable>impas</MST.impassable>
+    <MST.impassableComment>Whether caravans are completely unable to cross this biome (e.g. oceans).</MST.impassableComment>
+    <MST.foragedFood>frgFood</MST.foragedFood>
+    <MST.foragedFoodComment>The food obtained by foraging in this biome.</MST.foragedFoodComment>
+    <MST.wildPlants>wildPlants</MST.wildPlants>
+    <MST.wildPlantsComment>Wild plants that spawn naturally in this biome and their commonality weights. Some effects require a game restart to apply.</MST.wildPlantsComment>
+    <MST.wildAnimals>wildAnmls</MST.wildAnimals>
+    <MST.wildAnimalsComment>Wild animals that spawn naturally in this biome and their commonality weights. Some effects require a game restart to apply.</MST.wildAnimalsComment>
+    <MST.AddWildPlant>Add wild plant</MST.AddWildPlant>
+    <MST.AddWildAnimal>Add wild animal</MST.AddWildAnimal>
+    <MST.SelectPlant>(Select plant)</MST.SelectPlant>
+    <MST.SelectAnimal>(Select animal)</MST.SelectAnimal>
+</LanguageData>

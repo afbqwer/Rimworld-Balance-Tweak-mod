@@ -100,6 +100,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         else if (fieldType == typeof(List<TraitRequirement>)) ExposeTraitReqList(meta);
         else if (fieldType == typeof(List<ProcessIngredientItem>)) ExposeProcessIngredientList(meta);
         else if (fieldType == typeof(List<ProcessResultItem>)) ExposeProcessResultList(meta);
+        else if (fieldType == typeof(List<BiomePlantRecord>)) ExposeBiomePlantList(meta);
+        else if (fieldType == typeof(List<BiomeAnimalRecord>)) ExposeBiomeAnimalList(meta);
         else if (fieldType == typeof(ThingFilter)) ExposeIngredientFilter(meta);
         else if (fieldType == typeof(List<string>)) ExposeStringList(meta);
         else if (fieldType == typeof(List<int>)) ExposeIntList(meta);
@@ -323,6 +325,26 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             var list = (List<ProcessResultItem>?)v;
             if (list == null || list.Count == 0) return null;
             return list.Select(SerializationHelper.ProcessResultItemToItemString).ToList();
+        });
+    }
+
+    private void ExposeBiomePlantList(StatFieldMeta meta)
+    {
+        ExposeList(meta, v =>
+        {
+            var list = (List<BiomePlantRecord>?)v;
+            if (list == null || list.Count == 0) return null;
+            return list.Select(SerializationHelper.BiomePlantRecordToItemString).ToList();
+        });
+    }
+
+    private void ExposeBiomeAnimalList(StatFieldMeta meta)
+    {
+        ExposeList(meta, v =>
+        {
+            var list = (List<BiomeAnimalRecord>?)v;
+            if (list == null || list.Count == 0) return null;
+            return list.Select(SerializationHelper.BiomeAnimalRecordToItemString).ToList();
         });
     }
 

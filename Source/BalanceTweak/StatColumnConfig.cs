@@ -55,7 +55,7 @@ public class StatColumnConfig
         { FieldType.IntRange, new[] { ColumnStyle.Range } },
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
-        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree } },
+        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList } },
         { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks } },
     };
 
@@ -120,7 +120,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -130,7 +130,8 @@ public class StatColumnConfig
             or ColumnStyle.StringList or ColumnStyle.IntList or ColumnStyle.SkillGainList or ColumnStyle.AptitudeList or ColumnStyle.GeneticTraitList
             or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.SkillReqList or ColumnStyle.TraitReqList
             or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList
-            or ColumnStyle.BodyPartTree;
+            or ColumnStyle.BodyPartTree
+            or ColumnStyle.BiomePlantList or ColumnStyle.BiomeAnimalList;
     }
 
     private void ValidateFieldTypeStyle()
@@ -456,7 +457,7 @@ public class StatColumnConfig
         }
 
         // 列表类型 (通过 SerializationHelper 序列化)
-        if (columnType is ColumnStyle.StatModList or ColumnStyle.CapModList or ColumnStyle.DamageModList or ColumnStyle.SkillGainList or ColumnStyle.SkillReqList or ColumnStyle.TraitReqList or ColumnStyle.AptitudeList or ColumnStyle.GeneticTraitList or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList)
+        if (columnType is ColumnStyle.StatModList or ColumnStyle.CapModList or ColumnStyle.DamageModList or ColumnStyle.SkillGainList or ColumnStyle.SkillReqList or ColumnStyle.TraitReqList or ColumnStyle.AptitudeList or ColumnStyle.GeneticTraitList or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList or ColumnStyle.BiomePlantList or ColumnStyle.BiomeAnimalList)
         {
             var list = (IList?)GetRawValue(data);
             if (list == null) return null;
@@ -474,6 +475,8 @@ public class StatColumnConfig
                 ColumnStyle.IngredientList => SerializationHelper.SerializeIngredientCountList(list.Cast<IngredientCount>().ToList()),
                 ColumnStyle.ProcessIngredientList => SerializationHelper.SerializeProcessIngredientItemList(list.Cast<ProcessIngredientItem>().ToList()),
                 ColumnStyle.ProcessResultList => SerializationHelper.SerializeProcessResultItemList(list.Cast<ProcessResultItem>().ToList()),
+                ColumnStyle.BiomePlantList => SerializationHelper.SerializeBiomePlantList(list.Cast<BiomePlantRecord>().ToList()),
+                ColumnStyle.BiomeAnimalList => SerializationHelper.SerializeBiomeAnimalList(list.Cast<BiomeAnimalRecord>().ToList()),
                 _ => null
             };
         }
@@ -622,6 +625,18 @@ public class StatColumnConfig
             if (columnType == ColumnStyle.ProcessResultList)
             {
                 var list = SerializationHelper.DeserializeProcessResultItemList(clipboardData);
+                if (list != null) { ApplyValue(data, list); return true; }
+                return false;
+            }
+            if (columnType == ColumnStyle.BiomePlantList)
+            {
+                var list = SerializationHelper.DeserializeBiomePlantList(clipboardData);
+                if (list != null) { ApplyValue(data, list); return true; }
+                return false;
+            }
+            if (columnType == ColumnStyle.BiomeAnimalList)
+            {
+                var list = SerializationHelper.DeserializeBiomeAnimalList(clipboardData);
                 if (list != null) { ApplyValue(data, list); return true; }
                 return false;
             }
@@ -920,6 +935,22 @@ public class StatColumnConfig
                                 return label!.Length > 5
                                     ? $"[{label[..LabelTruncateLength]}..*{pri.count}]"
                                     : $"[{label}*{pri.count}]";
+                        }
+                        break;
+                    case ColumnStyle.BiomePlantList:
+                        if (element is BiomePlantRecord bpr)
+                        {
+                            var label = bpr.plant?.label;
+                            if (!label.NullOrEmpty())
+                                return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
+                        }
+                        break;
+                    case ColumnStyle.BiomeAnimalList:
+                        if (element is BiomeAnimalRecord bar)
+                        {
+                            var label = bar.animal?.label;
+                            if (!label.NullOrEmpty())
+                                return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
                         }
                         break;
                 }
