@@ -13,6 +13,8 @@
 Thumbs.db
 obj
 Docs
+# 源代码过大，转移到github
+Source
 
 *.bak
 *.cache
