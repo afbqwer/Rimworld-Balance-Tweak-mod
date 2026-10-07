@@ -12,24 +12,22 @@
     <MST.workSkill>Skill</MST.workSkill>
     <MST.workSkillLearnFactor>LearnFac</MST.workSkillLearnFactor>
     <MST.products>Products</MST.products>
-    <MST.ingredients>Ingredients</MST.ingredients>
+    <MST.ingredients>Ingredient</MST.ingredients>
     <MST.fixedIngredientFilter>FixFilter</MST.fixedIngredientFilter>
     <MST.fixedIngredientFilterComment>Global ingredient filter that restricts which materials can be used; all ingredient slots are subject to this filter.</MST.fixedIngredientFilterComment>
     <MST.defaultIngredientFilter>DefFilter</MST.defaultIngredientFilter>
     <MST.defaultIngredientFilterComment>Default ingredient filter used when creating a new bill; typically copied from the fixed ingredient filter.</MST.defaultIngredientFilterComment>
-    <MST.recipeUsers>Workbenches</MST.recipeUsers>
+    <MST.recipeUsers>Benches</MST.recipeUsers>
     <MST.researchPrerequisite>Research</MST.researchPrerequisite>
-    <MST.researchPrerequisites>Researches</MST.researchPrerequisites>
     <MST.mechanitorOnlyRecipe>MechOnly</MST.mechanitorOnlyRecipe>
     <MST.mechanitorOnlyRecipeComment>Only mechanitor pawns can craft this recipe.</MST.mechanitorOnlyRecipeComment>
     <MST.isViolation>Violation</MST.isViolation>
     <MST.isViolationComment>If enabled, performing this surgery on a non-ally pawn will harm faction relations.</MST.isViolationComment>
-    <MST.anesthetize>Anesthetize</MST.anesthetize>
+    <MST.anesthetize>Sedate</MST.anesthetize>
     <MST.surgerySuccessChanceFactor>SurgChance</MST.surgerySuccessChanceFactor>
-    <MST.deathOnFailedSurgeryChance>DeathChance</MST.deathOnFailedSurgeryChance>
+    <MST.deathOnFailedSurgeryChance>DeathChc</MST.deathOnFailedSurgeryChance>
     <MST.addsHediff>AddsHediff</MST.addsHediff>
     <MST.appliedOnFixedBodyParts>BodyParts</MST.appliedOnFixedBodyParts>
-    <MST.developmentalStageFilter>DevStage</MST.developmentalStageFilter>
     <MST.skillRequirements>SkillReqs</MST.skillRequirements>
     <MST.AddSkillReq>Add Skill Req</MST.AddSkillReq>
     <MST.AddIngredient>Add Ingredient</MST.AddIngredient>
@@ -43,11 +41,10 @@
     <MST.CostList>CostList</MST.CostList>
     <MST.Crafting>Crafting</MST.Crafting>
     <MST.Surgery>Surgery</MST.Surgery>
-    <MST.Mechanoid>Mechanoid</MST.Mechanoid>
 
-    <MST.processIngredients>Ingredients</MST.processIngredients>
+    <MST.processIngredients>Materials</MST.processIngredients>
     <MST.ticks>Ticks</MST.ticks>
-    <MST.ticksQuality>TicksByQuality</MST.ticksQuality>
+    <MST.ticksQuality>QualTicks</MST.ticksQuality>
     <MST.ticksQualityComment>Processing ticks per quality level, ordered from lowest to highest quality.</MST.ticksQualityComment>
     <MST.processResults>Results</MST.processResults>
     <MST.isLightDependingProcess>LightDep</MST.isLightDependingProcess>

@@ -19,7 +19,6 @@
     <MST.minThreatPointsComment>此事件的最小威胁点数。</MST.minThreatPointsComment>
     <MST.maxThreatPointsComment>此事件的最大威胁点数。</MST.maxThreatPointsComment>
     <MST.baseChanceWithRoyaltyComment>如果有皇权DLC，触发此事件的概率。</MST.baseChanceWithRoyaltyComment>
-    <MST.Disease>疾病</MST.Disease>
     <MST.diseaseVictimFractionRange>感染比例</MST.diseaseVictimFractionRange>
     <MST.diseaseVictimFractionRangeComment>此疾病可能感染的殖民者比例范围（最小-最大）。</MST.diseaseVictimFractionRangeComment>
     <MST.actualChance>实际概率</MST.actualChance>

@@ -5,7 +5,6 @@
     <MST.Injury>伤口</MST.Injury>
     <MST.AddedPart>添加部件</MST.AddedPart>
     <MST.Addiction>成瘾</MST.Addiction>
-    <MST.Disease>疾病</MST.Disease>
     <MST.Pregnancy>怀孕</MST.Pregnancy>
     <MST.Psyche>心灵</MST.Psyche>
     <MST.initialSeverity>初始严重度</MST.initialSeverity>
@@ -41,9 +40,7 @@
     <MST.becomeVisibleComment>此阶段是否在健康状态界面中可见。</MST.becomeVisibleComment>
     <MST.lifeThreatening>致命</MST.lifeThreatening>
     <MST.lifeThreateningComment>此阶段是否致命（严重度足够高时会导致死亡）。</MST.lifeThreateningComment>
-    <MST.painFactor>疼痛倍率</MST.painFactor>
     <MST.painFactorComment>所受疼痛的倍率（1.0为正常）。</MST.painFactorComment>
-    <MST.painOffset>疼痛偏移</MST.painOffset>
     <MST.painOffsetComment>所受疼痛的固定偏移值。</MST.painOffsetComment>
     <MST.totalBleedFactor>出血倍率</MST.totalBleedFactor>
     <MST.totalBleedFactorComment>所有出血源的总出血率倍率。</MST.totalBleedFactorComment>
@@ -53,7 +50,6 @@
     <MST.vomitMtbDaysComment>角色呕吐的平均间隔天数（MTB），-1表示禁用。</MST.vomitMtbDaysComment>
     <MST.deathMtbDays>死亡间隔</MST.deathMtbDays>
     <MST.deathMtbDaysComment>角色因此阶段死亡的平均间隔天数（MTB），-1表示禁用。</MST.deathMtbDaysComment>
-    <MST.hungerRateFactor>饥饿倍率</MST.hungerRateFactor>
     <MST.hungerRateFactorOffset>饥饿偏移</MST.hungerRateFactorOffset>
     <MST.hungerRateFactorOffsetComment>饥饿速度的固定偏移值（与倍率叠加）。</MST.hungerRateFactorOffsetComment>
     <MST.restFallFactor>休息倍率</MST.restFallFactor>
@@ -65,7 +61,6 @@
     <MST.severityGainFactorComment>严重度自然增长速度的倍率。</MST.severityGainFactorComment>
     <MST.partEfficiencyOffset>部件效率</MST.partEfficiencyOffset>
     <MST.partEfficiencyOffsetComment>身体部件效率的固定偏移值，影响部件功能表现。</MST.partEfficiencyOffsetComment>
-    <MST.socialFightChanceFactor>斗殴几率</MST.socialFightChanceFactor>
     <MST.mentalBreakMtbDays>崩溃间隔</MST.mentalBreakMtbDays>
     <MST.mentalBreakMtbDaysComment>角色精神崩溃的平均间隔天数（MTB），-1表示禁用。</MST.mentalBreakMtbDaysComment>
     <MST.blocksMentalBreaks>阻止崩溃</MST.blocksMentalBreaks>
@@ -92,18 +87,11 @@
     <MST.statOffsetEffectMultiplierComment>用于倍乘此阶段属性偏移(statOffset)值的属性。</MST.statOffsetEffectMultiplierComment>
     <MST.statFactorEffectMultiplierComment>用于倍乘此阶段属性倍率(statFactor)值的属性。</MST.statFactorEffectMultiplierComment>
     <MST.capacityFactorEffectMultiplierComment>用于倍乘此阶段机能修正(capMods)值的属性。</MST.capacityFactorEffectMultiplierComment>
-    <MST.capMods>机能修正</MST.capMods>
-    <MST.damageFactors>伤害倍率</MST.damageFactors>
-    <MST.enablesNeeds>启用需求</MST.enablesNeeds>
-    <MST.disablesNeeds>禁用需求</MST.disablesNeeds>
-    <MST.enablesNeedsComment>此阶段为角色启用的需求。警告：若该需求并非角色天生可用，可能会引发意外行为。</MST.enablesNeedsComment>
-    <MST.disablesNeedsComment>此阶段为角色禁用的需求。</MST.disablesNeedsComment>
-    <MST.makeImmuneTo>免疫</MST.makeImmuneTo>
-    <MST.makeImmuneToComment>此阶段使角色免疫的疾病/健康状态列表。</MST.makeImmuneToComment>
     <MST.hediffGivers>健康给予者</MST.hediffGivers>
     <MST.hediffGiversComment>此阶段给予的健康状态。仅可移除。</MST.hediffGiversComment>
     <MST.mentalStateGivers>精神给予者</MST.mentalStateGivers>
     <MST.mentalStateGiversComment>此阶段可能触发的精神状态给予者。仅可移除。</MST.mentalStateGiversComment>
+    <MST.subdefOverrideLabel>覆盖标签</MST.subdefOverrideLabel>
     <MST.MtbDays>平均间隔</MST.MtbDays>
     <MST.injuryProps>伤害属性</MST.injuryProps>
     <MST.addedPartProps>部件属性</MST.addedPartProps>
@@ -139,15 +127,13 @@
     <MST.severityPerDayImmuneComment>免疫期间每日严重度变化量。</MST.severityPerDayImmuneComment>
     <MST.infectionChance>感染几率</MST.infectionChance>
     <MST.infectionChanceComment>发生感染的几率。</MST.infectionChanceComment>
-    <MST.abilities>能力列表</MST.abilities>
-    <MST.abilitiesComment>此健康状态赋予角色的能力列表。</MST.abilitiesComment>
     <MST.removeOnRedressChanceByDaysCurve>移除曲线</MST.removeOnRedressChanceByDaysCurve>
     <MST.removeOnRedressChanceByDaysCurveComment>根据天数决定移除该健康状态几率的曲线。</MST.removeOnRedressChanceByDaysCurveComment>
     <MST.disappearsAtTotalTendQuality>治疗消失</MST.disappearsAtTotalTendQuality>
     <MST.disappearsAtTotalTendQualityComment>达到该总治疗质量时健康状态消失。-1 = 禁用。</MST.disappearsAtTotalTendQualityComment>
     <MST.severityPerDayRange>每日严重度</MST.severityPerDayRange>
     <MST.severityPerDayRangeComment>每日严重度随机变化范围（最小值~最大值）。叠加到基础每日严重度上。</MST.severityPerDayRangeComment>
-    <MST.severityPerDayNotImmune>未免疫严重度</MST.severityPerDayNotImmune>
+    <MST.severityPerDayNotImmune>未免疫日增</MST.severityPerDayNotImmune>
     <MST.severityPerDayNotImmuneComment>未免疫时每日严重度变化量。</MST.severityPerDayNotImmuneComment>
     <MST.hasGetsPermanent>可永久化</MST.hasGetsPermanent>
     <MST.hasGetsPermanentComment>开关GetsPermanent组件。启用后此伤口可能变为永久。</MST.hasGetsPermanentComment>

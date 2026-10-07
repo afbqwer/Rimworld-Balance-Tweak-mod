@@ -15,13 +15,11 @@
     <MST.workToMake>工作量</MST.workToMake>
     <MST.workToBuild>工作量</MST.workToBuild>
     <MST.costStuffCount>消耗材料</MST.costStuffCount>
-    <MST.costList>制造成本</MST.costList>
     <MST.energyShieldEnergyMax>护盾上限</MST.energyShieldEnergyMax>
     <MST.energyShieldRechargeRate>护盾恢复</MST.energyShieldRechargeRate>
     <MST.stuffEffectMultiplierArmor>材料装甲%</MST.stuffEffectMultiplierArmor>
     <MST.stuffEffectMultiplierInsulationCold>材料高温%</MST.stuffEffectMultiplierInsulationCold>
     <MST.stuffEffectMultiplierInsulationHeat>材料低温%</MST.stuffEffectMultiplierInsulationHeat>
-    <MST.pathCost>路径成本</MST.pathCost>
     <MST.normalSharpArmor>参考锐甲</MST.normalSharpArmor>
     <MST.normalBluntArmor>参考钝甲</MST.normalBluntArmor>
     <MST.normalHeatArmor>参考热甲</MST.normalHeatArmor>
@@ -39,29 +37,11 @@
     <MST.careIfWornByCorpse>在乎尸体</MST.careIfWornByCorpse>
     <MST.careIfDamaged>在乎破损</MST.careIfDamaged>
     <MST.gender>性别限制</MST.gender>
-    <MST.developmentalStageFilter>发育阶段</MST.developmentalStageFilter>
     <MST.careIfWornByCorpseComment>
         角色是否在乎穿着由尸体身上获得的衣物。影响穿着尸衣时的心情惩罚。</MST.careIfWornByCorpseComment>
     <MST.careIfDamagedComment>
         角色是否在乎衣物的损坏状态。影响穿着破损衣物时的心情惩罚。</MST.careIfDamagedComment>
     <MST.developmentalStageFilterComment>
         可以穿着该装备的发育阶段。Newborn/Baby/Child/Adult。</MST.developmentalStageFilterComment>
-    <MST.stuffCategories>材料类别</MST.stuffCategories>
-    <MST.stuffCategoriesComment>可以用于制作该物品的材料类别。影响工单选择时的可选材料。</MST.stuffCategoriesComment>
-    <MST.researchPrerequisites>研究需求</MST.researchPrerequisites>
-    <MST.researchPrerequisitesComment>解锁该物品建造所需的研究项目。</MST.researchPrerequisitesComment>
     <MST.blocksRangedWeapons>阻止远程</MST.blocksRangedWeapons>
-    <MST.removeReloadableComp>移除装填</MST.removeReloadableComp>
-    <MST.removeReloadableCompComment>启用以移除此装填组件。本编辑器不支持添加此组件。</MST.removeReloadableCompComment>
-    <MST.reloadableAmmoDef>弹药</MST.reloadableAmmoDef>
-    <MST.reloadableAmmoCountToRefill>装填弹量</MST.reloadableAmmoCountToRefill>
-    <MST.reloadableAmmoCountToRefillComment>完全充满所有充能所需消耗的固定弹药数量。与 ammoCountPerCharge 二选一设置，不可同时使用。</MST.reloadableAmmoCountToRefillComment>
-    <MST.reloadableAmmoCountPerCharge>每次装弹</MST.reloadableAmmoCountPerCharge>
-    <MST.reloadableAmmoCountPerChargeComment>每次恢复充能需要消耗的弹药数量。与 ammoCountToRefill 二选一设置，不可同时使用。</MST.reloadableAmmoCountPerChargeComment>
-    <MST.reloadableBaseReloadTicks>装填时间</MST.reloadableBaseReloadTicks>
-    <MST.reloadableBaseReloadTicksComment>基础装填时间（单位：刻，1/60 秒）。当启用「冷却补弹」时，同时用作冷却时长。</MST.reloadableBaseReloadTicksComment>
-    <MST.reloadableReplenishAfterCooldown>冷却补弹</MST.reloadableReplenishAfterCooldown>
-    <MST.reloadableReplenishAfterCooldownComment>启用后，充能耗尽时将自动进入冷却，冷却结束后自动补满充能，无需手动装填。</MST.reloadableReplenishAfterCooldownComment>
-    <MST.reloadableMaxCharges>最大充能</MST.reloadableMaxCharges>
-    <MST.reloadableMaxChargesComment>该装备的最大充能次数。</MST.reloadableMaxChargesComment>
 </LanguageData>

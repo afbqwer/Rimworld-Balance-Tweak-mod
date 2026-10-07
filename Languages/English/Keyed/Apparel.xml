@@ -10,18 +10,16 @@
     <MST.maxHitPoints>MaxDur</MST.maxHitPoints>
     <MST.insulationCold>MinTemp</MST.insulationCold>
     <MST.insulationHeat>MaxTemp</MST.insulationHeat>
-    <MST.flammability>Flammability</MST.flammability>
+    <MST.flammability>Flammable</MST.flammability>
     <MST.beauty>Beauty</MST.beauty>
     <MST.workToMake>WrkToMk</MST.workToMake>
     <MST.workToBuild>Wrk2Bld</MST.workToBuild>
     <MST.costStuffCount>StfCst</MST.costStuffCount>
-    <MST.costList>Cost</MST.costList>
     <MST.energyShieldEnergyMax>ShldCap</MST.energyShieldEnergyMax>
     <MST.energyShieldRechargeRate>ShldRch</MST.energyShieldRechargeRate>
     <MST.stuffEffectMultiplierArmor>StfArm%</MST.stuffEffectMultiplierArmor>
     <MST.stuffEffectMultiplierInsulationCold>StfHt%</MST.stuffEffectMultiplierInsulationCold>
     <MST.stuffEffectMultiplierInsulationHeat>StfCld%</MST.stuffEffectMultiplierInsulationHeat>
-    <MST.pathCost>PathCst</MST.pathCost>
     <MST.normalSharpArmor>RefShpA</MST.normalSharpArmor>
     <MST.normalBluntArmor>RefBltA</MST.normalBluntArmor>
     <MST.normalHeatArmor>RefHtA</MST.normalHeatArmor>
@@ -39,29 +37,11 @@
     <MST.careIfWornByCorpse>DrssCrp</MST.careIfWornByCorpse>
     <MST.careIfDamaged>CareDmg</MST.careIfDamaged>
     <MST.gender>Gender</MST.gender>
-    <MST.developmentalStageFilter>DevStg</MST.developmentalStageFilter>
     <MST.careIfWornByCorpseComment>
         Whether pawns care if this apparel was worn by a corpse. Affects mood penalty from wearing dead people's clothes.</MST.careIfWornByCorpseComment>
     <MST.careIfDamagedComment>
         Whether pawns care about the condition of this apparel. Affects mood penalty from wearing tattered apparel.</MST.careIfDamagedComment>
     <MST.developmentalStageFilterComment>
         Which developmental stages can wear this apparel. Newborn/Baby/Child/Adult.</MST.developmentalStageFilterComment>
-    <MST.stuffCategories>MatCat</MST.stuffCategories>
-    <MST.stuffCategoriesComment>Which categories of materials can be used to craft this item. Affects available materials when selecting Bills.</MST.stuffCategoriesComment>
-    <MST.researchPrerequisites>Reqs</MST.researchPrerequisites>
-    <MST.researchPrerequisitesComment>Research projects required to unlock this item's construction.</MST.researchPrerequisitesComment>
     <MST.blocksRangedWeapons>BlkRng</MST.blocksRangedWeapons>
-    <MST.removeReloadableComp>RmvRld</MST.removeReloadableComp>
-    <MST.removeReloadableCompComment>Enable to remove the reloadable component. This component cannot be added via this editor.</MST.removeReloadableCompComment>
-    <MST.reloadableAmmoDef>Ammo</MST.reloadableAmmoDef>
-    <MST.reloadableAmmoCountToRefill>AmmoRfl</MST.reloadableAmmoCountToRefill>
-    <MST.reloadableAmmoCountToRefillComment>Fixed amount of ammo consumed to fully refill all charges. Set this OR ammoCountPerCharge, not both.</MST.reloadableAmmoCountToRefillComment>
-    <MST.reloadableAmmoCountPerCharge>AmmoChg</MST.reloadableAmmoCountPerCharge>
-    <MST.reloadableAmmoCountPerChargeComment>Ammo consumed per charge restored. Set this OR ammoCountToRefill, not both.</MST.reloadableAmmoCountPerChargeComment>
-    <MST.reloadableBaseReloadTicks>RldTks</MST.reloadableBaseReloadTicks>
-    <MST.reloadableBaseReloadTicksComment>Base reload time in ticks (1/60 sec). Also used as the cooldown duration when replenishAfterCooldown is enabled.</MST.reloadableBaseReloadTicksComment>
-    <MST.reloadableReplenishAfterCooldown>Rplnsh</MST.reloadableReplenishAfterCooldown>
-    <MST.reloadableReplenishAfterCooldownComment>If enabled, charges automatically replenish after a cooldown instead of requiring manual reload.</MST.reloadableReplenishAfterCooldownComment>
-    <MST.reloadableMaxCharges>MaxChg</MST.reloadableMaxCharges>
-    <MST.reloadableMaxChargesComment>Maximum number of charges this apparel can hold.</MST.reloadableMaxChargesComment>
 </LanguageData>

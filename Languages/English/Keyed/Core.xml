@@ -95,8 +95,8 @@
     <MST.SelectDamageDef>(Select Damage)</MST.SelectDamageDef>
     <MST.Factor>Factor</MST.Factor>
     <MST.StatModList>StatList</MST.StatModList>
-    <MST.statOffsets>StatOffsets</MST.statOffsets>
-    <MST.statFactors>StatFactors</MST.statFactors>
+    <MST.statOffsets>Offsets</MST.statOffsets>
+    <MST.statFactors>Factors</MST.statFactors>
     <MST.Clear>Clear</MST.Clear>
     <MST.CurrentDef>Current:</MST.CurrentDef>
     <MST.DefSelector>DefSel</MST.DefSelector>
@@ -182,4 +182,64 @@
     <MST.MainWindowSize>Main Window Size</MST.MainWindowSize>
     <MST.MainWindowWidth>Window Width</MST.MainWindowWidth>
     <MST.MainWindowHeight>Window Height</MST.MainWindowHeight>
+    <MST.abilities>Abilities</MST.abilities>
+    <MST.abilitiesComment>Abilities granted by this def.</MST.abilitiesComment>
+    <MST.activityStartingRangeMax>ActRngMax</MST.activityStartingRangeMax>
+    <MST.activityStartingRangeMin>ActRngMin</MST.activityStartingRangeMin>
+    <MST.anomalyKnowledge>AnomKnow</MST.anomalyKnowledge>
+    <MST.aptitudes>Aptitude</MST.aptitudes>
+    <MST.aptitudesComment>Skill aptitudes (skill level bonuses) granted by this def. Format: skill + level bonus.</MST.aptitudesComment>
+    <MST.baseMoodEffect>MoodEff</MST.baseMoodEffect>
+    <MST.baseOpinionOffset>OpnOff</MST.baseOpinionOffset>
+    <MST.canOpenAnyDoor>Open Doors</MST.canOpenAnyDoor>
+    <MST.capMods>CapMods</MST.capMods>
+    <MST.changePerDamage>Chg/Dmg</MST.changePerDamage>
+    <MST.changePerDayBase>Chg/Day</MST.changePerDayBase>
+    <MST.combatPower>CbtPower</MST.combatPower>
+    <MST.costList>Cost</MST.costList>
+    <MST.damageFactors>DmgFac</MST.damageFactors>
+    <MST.developmentalStageFilter>DevStage</MST.developmentalStageFilter>
+    <MST.disabledWorkTags>DisWork</MST.disabledWorkTags>
+    <MST.disablesNeeds>DisNeeds</MST.disablesNeeds>
+    <MST.disablesNeedsComment>Needs disabled by this def.</MST.disablesNeedsComment>
+    <MST.Disease>Disease</MST.Disease>
+    <MST.enablesNeeds>EnNeeds</MST.enablesNeeds>
+    <MST.enablesNeedsComment>Needs enabled by this def. Warning: May cause unexpected behavior if the need is not normally available.</MST.enablesNeedsComment>
+    <MST.fertility>Fertility</MST.fertility>
+    <MST.fuelCapacity>FuelCap</MST.fuelCapacity>
+    <MST.fuelConsumptionRate>FuelRate</MST.fuelConsumptionRate>
+    <MST.fuelMultiplier>FuelMult</MST.fuelMultiplier>
+    <MST.fuelName>Fuel</MST.fuelName>
+    <MST.hungerRateFactor>HungF</MST.hungerRateFactor>
+    <MST.knowledgeCategory>KnowCat</MST.knowledgeCategory>
+    <MST.makeImmuneTo>Immune</MST.makeImmuneTo>
+    <MST.makeImmuneToComment>Hediffs this def makes the pawn immune to.</MST.makeImmuneToComment>
+    <MST.Mechanoid>Mechanoid</MST.Mechanoid>
+    <MST.painFactor>PainF</MST.painFactor>
+    <MST.painOffset>PainO</MST.painOffset>
+    <MST.pathCost>PathCost</MST.pathCost>
+    <MST.reloadableAmmoCountPerCharge>AmmoChg</MST.reloadableAmmoCountPerCharge>
+    <MST.reloadableAmmoCountPerChargeComment>Ammo consumed per charge restored. Set this OR ammoCountToRefill, not both.</MST.reloadableAmmoCountPerChargeComment>
+    <MST.reloadableAmmoCountToRefill>AmmoRfl</MST.reloadableAmmoCountToRefill>
+    <MST.reloadableAmmoCountToRefillComment>Fixed amount of ammo consumed to fully refill all charges. Set this OR ammoCountPerCharge, not both.</MST.reloadableAmmoCountToRefillComment>
+    <MST.reloadableAmmoDef>Ammo</MST.reloadableAmmoDef>
+    <MST.reloadableBaseReloadTicks>RldTks</MST.reloadableBaseReloadTicks>
+    <MST.reloadableBaseReloadTicksComment>Base reload time in ticks (1/60 sec). Also used as the cooldown duration when replenishAfterCooldown is enabled.</MST.reloadableBaseReloadTicksComment>
+    <MST.reloadableMaxCharges>MaxChg</MST.reloadableMaxCharges>
+    <MST.reloadableMaxChargesComment>Maximum number of charges this item can hold.</MST.reloadableMaxChargesComment>
+    <MST.reloadableReplenishAfterCooldown>Rplnsh</MST.reloadableReplenishAfterCooldown>
+    <MST.reloadableReplenishAfterCooldownComment>If enabled, charges automatically replenish after a cooldown instead of requiring manual reload.</MST.reloadableReplenishAfterCooldownComment>
+    <MST.removeReloadableComp>RmvRld</MST.removeReloadableComp>
+    <MST.removeReloadableCompComment>Enable to remove the reloadable component. This component cannot be added via this editor.</MST.removeReloadableCompComment>
+    <MST.researchPrerequisites>Research</MST.researchPrerequisites>
+    <MST.researchPrerequisitesComment>Research projects required to unlock this item's construction.</MST.researchPrerequisitesComment>
+    <MST.socialFightChanceFactor>SocFgtF</MST.socialFightChanceFactor>
+    <MST.statBases>BaseStats</MST.statBases>
+    <MST.statBasesComment>Directly modify this def's base stat values (e.g., market value, max hit points).</MST.statBasesComment>
+    <MST.statFactorsComment>Stat value multipliers applied by this def.</MST.statFactorsComment>
+    <MST.statOffsetsComment>Stat value offsets applied by this def.</MST.statOffsetsComment>
+    <MST.studiableFrequencyTicks>StudyFreq</MST.studiableFrequencyTicks>
+    <MST.stuffCategories>MatCat</MST.stuffCategories>
+    <MST.stuffCategoriesComment>Which categories of materials can be used to craft this item. Affects available materials when selecting Bills.</MST.stuffCategoriesComment>
+    <MST.visible>Visibility</MST.visible>
 </LanguageData>

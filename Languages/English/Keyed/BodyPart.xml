@@ -5,7 +5,6 @@
     <MST.Organ>Organ</MST.Organ>
     <MST.Bone>Bone</MST.Bone>
 
-    <MST.labelShort>Short</MST.labelShort>
     <MST.hitPoints>HP</MST.hitPoints>
     <MST.permanentInjuryChanceFactor>PermInj</MST.permanentInjuryChanceFactor>
     <MST.frostbiteVulnerability>Frostbite</MST.frostbiteVulnerability>
@@ -21,14 +20,10 @@
     <MST.pawnGeneratorCanAmputate>PawnAmp</MST.pawnGeneratorCanAmputate>
     <MST.canSuggestAmputation>SuggestAmp</MST.canSuggestAmputation>
     <MST.forceAlwaysRemovable>AlwaysRem</MST.forceAlwaysRemovable>
-    <MST.spawnThingOnRemoved>SpawnOnRm</MST.spawnThingOnRemoved>
-    <MST.removeRecipeLabelOverride>RmRecipeLbl</MST.removeRecipeLabelOverride>
-    <MST.executionPartPriority>ExecPrio</MST.executionPartPriority>
     <MST.hitChanceFactors>HitChance</MST.hitChanceFactors>
     <MST.raceLinks>Races</MST.raceLinks>
     <MST.bodyLinks>Bodies</MST.bodyLinks>
 
-    <MST.labelShortComment>Short label used in compact UI. Falls back to the full label when empty.</MST.labelShortComment>
     <MST.hitPointsComment>Base hit points of this body part before the pawn's health scale is applied.</MST.hitPointsComment>
     <MST.permanentInjuryChanceFactorComment>Multiplier for the chance that damage to this part leaves a permanent injury. 0 means never permanent.</MST.permanentInjuryChanceFactorComment>
     <MST.frostbiteVulnerabilityComment>Weight used when frostbite picks a body part. Higher means this part is more likely to be frostbitten.</MST.frostbiteVulnerabilityComment>
@@ -44,9 +39,6 @@
     <MST.pawnGeneratorCanAmputateComment>Whether the pawn generator may randomly amputate this part when generating a pawn.</MST.pawnGeneratorCanAmputateComment>
     <MST.canSuggestAmputationComment>Whether this part can be suggested for amputation in the health tab.</MST.canSuggestAmputationComment>
     <MST.forceAlwaysRemovableComment>Force this part to always be removable via surgery, even if it normally would not be.</MST.forceAlwaysRemovableComment>
-    <MST.spawnThingOnRemovedComment>Thing spawned (dropped) when this part is removed.</MST.spawnThingOnRemovedComment>
-    <MST.removeRecipeLabelOverrideComment>Overrides the label of the removal recipe for this part.</MST.removeRecipeLabelOverrideComment>
-    <MST.executionPartPriorityComment>Priority used when an execution picks which body part to hit. Higher is preferred.</MST.executionPartPriorityComment>
     <MST.hitChanceFactorsComment>Per-damage-type multipliers for the chance this part is hit. Damage types not listed default to 1.</MST.hitChanceFactorsComment>
     <MST.raceLinksComment>Click to list every race whose body contains this part; click an entry to jump.</MST.raceLinksComment>
 </LanguageData>

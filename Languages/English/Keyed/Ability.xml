@@ -6,9 +6,6 @@
     <MST.Sanguophage>Sanguophage</MST.Sanguophage>
     <MST.AbilityGroup>AbilGrp</MST.AbilityGroup>
     <MST.radius>Radius</MST.radius>
-    <MST.baseMoodEffect>MoodEff</MST.baseMoodEffect>
-    <MST.baseOpinionOffset>OpnOff</MST.baseOpinionOffset>
-    <MST.visible>Visibility</MST.visible>
     <MST.abilityDuration>Duration</MST.abilityDuration>
     <MST.abilityEntropyGain>PsyEnt+</MST.abilityEntropyGain>
     <MST.abilityPsyfocusCost>Psyfocus-</MST.abilityPsyfocusCost>

@@ -18,10 +18,6 @@
     <MST.stuffWorkToMake>材料工量</MST.stuffWorkToMake>
     <MST.stuffWorkToBuild>材料建量</MST.stuffWorkToBuild>
     <MST.stuffMeleeWeaponCooldownMultiplier>材近CD</MST.stuffMeleeWeaponCooldownMultiplier>
-    <MST.statBases>属性基础</MST.statBases>
-    <MST.statBasesComment>此材料的基础属性值。</MST.statBasesComment>
-    <MST.statOffsetsComment>材料提供的属性偏移值。</MST.statOffsetsComment>
-    <MST.statFactorsComment>材料提供的属性倍率。</MST.statFactorsComment>
     <MST.deepCommonality>深钻概率</MST.deepCommonality>
     <MST.deepCommonalityComment>被地质扫描仪扫描到的概率。</MST.deepCommonalityComment>
     <MST.deepCountPerPortion>深钻产出</MST.deepCountPerPortion>

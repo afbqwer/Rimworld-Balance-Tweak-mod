@@ -27,7 +27,6 @@
     <MST.OptimalRange>最适距离</MST.OptimalRange>
     <MST.allowInMechClusters>机械集群</MST.allowInMechClusters>
     <MST.collidesWithPawns>单位碰撞</MST.collidesWithPawns>
-    <MST.canOpenAnyDoor>强制开门</MST.canOpenAnyDoor>
     <MST.forcedMissRadius>误差范围</MST.forcedMissRadius>
     <MST.projectileSpeed>飞行速度</MST.projectileSpeed>
     <MST.damageAmountBase>基础伤害</MST.damageAmountBase>
@@ -36,10 +35,6 @@
     <MST.stoppingPower>抑制力</MST.stoppingPower>
     <MST.explosionRadius>爆炸范围</MST.explosionRadius>
     <MST.shootingAccuracyTurret>炮塔精度</MST.shootingAccuracyTurret>
-    <MST.fuelName>燃料</MST.fuelName>
-    <MST.fuelCapacity>燃料容量</MST.fuelCapacity>
-    <MST.fuelMultiplier>燃料倍率</MST.fuelMultiplier>
-    <MST.fuelConsumptionRate>燃料损耗</MST.fuelConsumptionRate>
     <MST.warmupMultiplier>瞄时倍率</MST.warmupMultiplier>
     <MST.rangeMultiplier>距离倍率</MST.rangeMultiplier>
     <MST.rangeArmorPenetrationMultiplier>远程穿甲</MST.rangeArmorPenetrationMultiplier>
@@ -60,26 +55,6 @@
     <MST.allowInMechClustersComment>是否允许在机械集群中出现。</MST.allowInMechClustersComment>
     <MST.collidesWithPawnsComment>单位是否禁止挤在同一格。</MST.collidesWithPawnsComment>
     <MST.canOpenAnyDoorComment>单位是否可以无视门的限制打开任何的门。</MST.canOpenAnyDoorComment>
-    <MST.stuffCategories>材料类别</MST.stuffCategories>
-    <MST.costList>制造成本</MST.costList>
-    <MST.stuffCategoriesComment>可以用于制作该物品的材料类别。影响工单选择时的可选材料。</MST.stuffCategoriesComment>
-    <MST.researchPrerequisites>研究需求</MST.researchPrerequisites>
-    <MST.researchPrerequisitesComment>解锁该物品建造所需的研究项目。</MST.researchPrerequisitesComment>
-    <MST.statBases>基础属性</MST.statBases>
-    <MST.statBasesComment>直接修改基础属性值（如市场价值等）。</MST.statBasesComment>
     <MST.equippedStatOffsets>装备加成</MST.equippedStatOffsets>
     <MST.equippedStatOffsetsComment>装备该武器时对角色属性的偏移加成。</MST.equippedStatOffsetsComment>
-    <MST.removeReloadableComp>移除装填</MST.removeReloadableComp>
-    <MST.removeReloadableCompComment>启用以移除此装填组件。本编辑器不支持添加此组件。</MST.removeReloadableCompComment>
-    <MST.reloadableAmmoDef>弹药</MST.reloadableAmmoDef>
-    <MST.reloadableAmmoCountToRefill>装填弹量</MST.reloadableAmmoCountToRefill>
-    <MST.reloadableAmmoCountToRefillComment>完全充满所有充能所需消耗的固定弹药数量。与 ammoCountPerCharge 二选一设置，不可同时使用。</MST.reloadableAmmoCountToRefillComment>
-    <MST.reloadableAmmoCountPerCharge>每次装弹</MST.reloadableAmmoCountPerCharge>
-    <MST.reloadableAmmoCountPerChargeComment>每次恢复充能消耗的弹药数量。与 ammoCountToRefill 二选一设置，不可同时使用。</MST.reloadableAmmoCountPerChargeComment>
-    <MST.reloadableBaseReloadTicks>装填时间</MST.reloadableBaseReloadTicks>
-    <MST.reloadableBaseReloadTicksComment>基础装填时间（单位：刻，1/60 秒）。当启用「冷却补弹」时，同时用作冷却时长。</MST.reloadableBaseReloadTicksComment>
-    <MST.reloadableReplenishAfterCooldown>冷却补弹</MST.reloadableReplenishAfterCooldown>
-    <MST.reloadableReplenishAfterCooldownComment>启用后，充能耗尽时将自动进入冷却，冷却结束后自动补满充能，无需手动装填。</MST.reloadableReplenishAfterCooldownComment>
-    <MST.reloadableMaxCharges>最大充能</MST.reloadableMaxCharges>
-    <MST.reloadableMaxChargesComment>该武器能持有的最大充能次数。</MST.reloadableMaxChargesComment>
 </LanguageData>

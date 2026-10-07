@@ -18,10 +18,6 @@
     <MST.stuffWorkToMake>StfW2M</MST.stuffWorkToMake>
     <MST.stuffWorkToBuild>StfW2B</MST.stuffWorkToBuild>
     <MST.stuffMeleeWeaponCooldownMultiplier>StfMCD</MST.stuffMeleeWeaponCooldownMultiplier>
-    <MST.statBases>Bases</MST.statBases>
-    <MST.statBasesComment>Base stats of this stuff.</MST.statBasesComment>
-    <MST.statOffsetsComment>Stat offsets from stuff properties.</MST.statOffsetsComment>
-    <MST.statFactorsComment>Stat factors from stuff properties.</MST.statFactorsComment>
     <MST.deepCommonality>DeepCmn</MST.deepCommonality>
     <MST.deepCommonalityComment>Commonality for deep scanning / ground-penetrating scanner.</MST.deepCommonalityComment>
     <MST.deepCountPerPortion>DeepCnt</MST.deepCountPerPortion>

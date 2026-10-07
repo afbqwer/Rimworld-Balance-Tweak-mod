@@ -11,9 +11,6 @@
     <MST.durationDays>DurDays</MST.durationDays>
     <MST.stackLimitForSameOtherPawn>PerTgtL</MST.stackLimitForSameOtherPawn>
     <MST.lerpMoodToZero>MoodFOT</MST.lerpMoodToZero>
-    <MST.baseMoodEffect>MoodEff</MST.baseMoodEffect>
-    <MST.baseOpinionOffset>OpnOff</MST.baseOpinionOffset>
-    <MST.visible>Visibility</MST.visible>
     <MST.stackLimit>stackLimit</MST.stackLimit>
     <MST.subdefLabel>Label</MST.subdefLabel>
     <MST.stackLimitComment>The stack limit for this item.</MST.stackLimitComment>

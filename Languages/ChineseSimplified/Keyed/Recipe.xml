@@ -19,7 +19,6 @@
     <MST.defaultIngredientFilterComment>新建账单时默认使用的物品过滤器，通常继承自固定配方过滤器的设定。</MST.defaultIngredientFilterComment>
     <MST.recipeUsers>工作台</MST.recipeUsers>
     <MST.researchPrerequisite>研究前置</MST.researchPrerequisite>
-    <MST.researchPrerequisites>研究前置列表</MST.researchPrerequisites>
     <MST.mechanitorOnlyRecipe>仅机械师</MST.mechanitorOnlyRecipe>
     <MST.mechanitorOnlyRecipeComment>仅机械师角色可以制作此配方。</MST.mechanitorOnlyRecipeComment>
     <MST.isViolation>损害关系</MST.isViolation>
@@ -29,7 +28,6 @@
     <MST.deathOnFailedSurgeryChance>失败死亡率</MST.deathOnFailedSurgeryChance>
     <MST.addsHediff>添加状态</MST.addsHediff>
     <MST.appliedOnFixedBodyParts>手术部位</MST.appliedOnFixedBodyParts>
-    <MST.developmentalStageFilter>发育阶段</MST.developmentalStageFilter>
     <MST.skillRequirements>技能需求</MST.skillRequirements>
     <MST.AddSkillReq>添加技能需求</MST.AddSkillReq>
     <MST.AddIngredient>添加配方</MST.AddIngredient>
@@ -43,7 +41,6 @@
     <MST.CostList>制造</MST.CostList>
     <MST.Crafting>配方</MST.Crafting>
     <MST.Surgery>手术</MST.Surgery>
-    <MST.Mechanoid>机械体</MST.Mechanoid>
 
     <MST.processIngredients>原料</MST.processIngredients>
     <MST.ticks>耗时(刻)</MST.ticks>

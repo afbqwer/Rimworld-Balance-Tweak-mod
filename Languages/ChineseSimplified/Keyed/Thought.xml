@@ -11,9 +11,6 @@
     <MST.durationDays>持续天数</MST.durationDays>
     <MST.stackLimitForSameOtherPawn>每人层限</MST.stackLimitForSameOtherPawn>
     <MST.lerpMoodToZero>影响衰减</MST.lerpMoodToZero>
-    <MST.baseMoodEffect>心情影响</MST.baseMoodEffect>
-    <MST.baseOpinionOffset>看法影响</MST.baseOpinionOffset>
-    <MST.visible>可见性</MST.visible>
     <MST.stackLimit>数量限制</MST.stackLimit>
     <MST.subdefLabel>名称</MST.subdefLabel>
     <MST.stackLimitComment>数量限制。</MST.stackLimitComment>

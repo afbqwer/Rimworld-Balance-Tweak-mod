@@ -17,15 +17,10 @@
     <MST.requiredWorkTypes>所需工作</MST.requiredWorkTypes>
     <MST.disabledWorkTypes>禁用工作</MST.disabledWorkTypes>
     <MST.requiredWorkTags>需工作Tag</MST.requiredWorkTags>
-    <MST.disabledWorkTags>禁工作Tag</MST.disabledWorkTags>
     <MST.degree>程度值</MST.degree>
     <MST.degreeLabel>程度标签</MST.degreeLabel>
-    <MST.socialFightChanceFactor>斗殴几率</MST.socialFightChanceFactor>
     <MST.marketValueFactorOffset>市场价值</MST.marketValueFactorOffset>
     <MST.randomDiseaseMtbDays>疾病间隔</MST.randomDiseaseMtbDays>
-    <MST.hungerRateFactor>饥饿倍率</MST.hungerRateFactor>
-    <MST.painOffset>疼痛偏移</MST.painOffset>
-    <MST.painFactor>疼痛倍率</MST.painFactor>
     <MST.forcedMentalStateMtbDays>崩溃间隔</MST.forcedMentalStateMtbDays>
     <MST.mentalBreakInspirationGainChance>灵感几率</MST.mentalBreakInspirationGainChance>
     <MST.randomMentalState>随机崩溃</MST.randomMentalState>
@@ -37,16 +32,11 @@
     <MST.allowedMeditationFocusTypes>冥想专注</MST.allowedMeditationFocusTypes>
     <MST.disallowedMeditationFocusTypes>禁止冥想</MST.disallowedMeditationFocusTypes>
     <MST.theOnlyAllowedMentalBreaks>仅限崩溃</MST.theOnlyAllowedMentalBreaks>
-    <MST.abilities>能力</MST.abilities>
-    <MST.enablesNeeds>启用需求</MST.enablesNeeds>
-    <MST.disablesNeeds>禁用需求</MST.disablesNeeds>
     <MST.skillGains>技能增益</MST.skillGains>
-    <MST.aptitudes>天赋</MST.aptitudes>
     <MST.FirstDegree>首个程度</MST.FirstDegree>
     <MST.commonalityComment>该特性在角色生成时的基础出现权重。值越高越常见。</MST.commonalityComment>
     <MST.commonalityFemaleComment>女性角色专用的出现权重。-1 = 使用通用权重。</MST.commonalityFemaleComment>
     <MST.disableHostilityFromAnimalTypeComment>此特性禁用敌意的动物类型。</MST.disableHostilityFromAnimalTypeComment>
     <MST.disableHostilityFromFactionComment>此特性禁用敌意的派系。</MST.disableHostilityFromFactionComment>
     <MST.skillGainsComment>该特性提供的技能增益。格式：技能 + 数值。</MST.skillGainsComment>
-    <MST.aptitudesComment>该特性赋予天赋的技能。格式：技能 + 等级加成。</MST.aptitudesComment>
 </LanguageData>

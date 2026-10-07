@@ -6,12 +6,7 @@
     <MST.PowerBuilding>电力建筑</MST.PowerBuilding>
     <MST.basePowerConsumption>电力消耗</MST.basePowerConsumption>
     <MST.fillPercent>填充率</MST.fillPercent>
-    <MST.costList>制造成本</MST.costList>
     <MST.fillPercentComment>建筑的填充率，影响掩体效果、是否可通行等。警告：不要在开始游戏后修改此项，会导致寻路问题！</MST.fillPercentComment>
-    <MST.stuffCategories>材料类别</MST.stuffCategories>
-    <MST.stuffCategoriesComment>可以用于制作该物品的材料类别。影响工单选择时的可选材料。</MST.stuffCategoriesComment>
-    <MST.researchPrerequisites>研究需求</MST.researchPrerequisites>
-    <MST.researchPrerequisitesComment>解锁该物品建造所需的研究项目。</MST.researchPrerequisitesComment>
     <MST.isTargetable>可被瞄准</MST.isTargetable>
     <MST.isTargetableComment>此建筑是否可在战斗中被手动指定为攻击目标。</MST.isTargetableComment>
     <MST.alwaysDeconstructible>始终可拆</MST.alwaysDeconstructible>
@@ -51,7 +46,6 @@
     <MST.destroyable>可摧毁</MST.destroyable>
     <MST.selectable>可选中</MST.selectable>
     <MST.replaceTags>替换标签</MST.replaceTags>
-    <MST.fertility>肥沃度</MST.fertility>
     <MST.fertilityComment>此建筑的土壤肥沃度值。仅与和土壤交互的建筑相关。</MST.fertilityComment>
 
     <!-- BuildingProperties 字段 -->
@@ -71,7 +65,6 @@
     <!-- Turret 字段 -->
     <MST.turretBurstCooldownTime>爆发冷却</MST.turretBurstCooldownTime>
     <MST.turretInitialCooldownTime>初始冷却</MST.turretInitialCooldownTime>
-    <MST.combatPower>战斗功率</MST.combatPower>
 
     <!-- Furniture 字段 -->
 
@@ -91,10 +84,6 @@
     <MST.recipes>配方列表</MST.recipes>
 
     <!-- Refuelable 字段 -->
-    <MST.fuelName>燃料类型</MST.fuelName>
-    <MST.fuelCapacity>燃料容量</MST.fuelCapacity>
-    <MST.fuelConsumptionRate>燃料消耗率</MST.fuelConsumptionRate>
-    <MST.fuelMultiplier>燃料倍率</MST.fuelMultiplier>
 
     <!-- Power 字段 -->
     <MST.shortCircuitInRain>雨天短路</MST.shortCircuitInRain>
@@ -102,12 +91,6 @@
     <MST.allowWireConnection>允许电线</MST.allowWireConnection>
 
     <!-- Anomaly 字段 -->
-    <MST.studiableFrequencyTicks>研究频率</MST.studiableFrequencyTicks>
-    <MST.anomalyKnowledge>异象知识</MST.anomalyKnowledge>
-    <MST.activityStartingRangeMin>活动Min</MST.activityStartingRangeMin>
-    <MST.activityStartingRangeMax>活动Max</MST.activityStartingRangeMax>
-    <MST.changePerDayBase>每日变化</MST.changePerDayBase>
-    <MST.changePerDamage>伤害变化</MST.changePerDamage>
 
     <!-- Mineable 分类 -->
     <MST.Mineable>矿物</MST.Mineable>

@@ -6,9 +6,6 @@
     <MST.Sanguophage>血源质</MST.Sanguophage>
     <MST.AbilityGroup>能力组</MST.AbilityGroup>
     <MST.radius>半径</MST.radius>
-    <MST.baseMoodEffect>心情影响</MST.baseMoodEffect>
-    <MST.baseOpinionOffset>看法影响</MST.baseOpinionOffset>
-    <MST.visible>可见性</MST.visible>
     <MST.abilityDuration>持续时间</MST.abilityDuration>
     <MST.abilityEntropyGain>心灵熵+</MST.abilityEntropyGain>
     <MST.abilityPsyfocusCost>精神力-</MST.abilityPsyfocusCost>

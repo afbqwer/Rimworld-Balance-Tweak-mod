@@ -16,32 +16,17 @@
     <MST.randomChosen>随机获得</MST.randomChosen>
     <MST.passOnDirectly>直接遗传</MST.passOnDirectly>
     <MST.removeOnRedress>重塑移除</MST.removeOnRedress>
-    <MST.statOffsetsComment>此基因施加的属性数值偏移。</MST.statOffsetsComment>
-    <MST.statFactorsComment>此基因施加的属性数值倍率。</MST.statFactorsComment>
-    <MST.capMods>机能修正</MST.capMods>
     <MST.capModsComment>此基因施加的角色能力修正（偏移、最大值、后倍率）。</MST.capModsComment>
-    <MST.damageFactors>伤害因子</MST.damageFactors>
     <MST.damageFactorsComment>此基因施加的伤害类型倍率。</MST.damageFactorsComment>
-    <MST.abilities>能力</MST.abilities>
-    <MST.abilitiesComment>此基因赋予的能力列表。</MST.abilitiesComment>
     <MST.forcedTraits>强制特性</MST.forcedTraits>
     <MST.forcedTraitsComment>此基因强制添加的特性（含程度值）。</MST.forcedTraitsComment>
     <MST.suppressedTraits>抑制特性</MST.suppressedTraits>
     <MST.suppressedTraitsComment>此基因抑制的特性（含程度值）。</MST.suppressedTraitsComment>
-    <MST.aptitudes>天赋</MST.aptitudes>
-    <MST.aptitudesComment>此基因赋予的技能天赋（技能等级加成）。</MST.aptitudesComment>
     <MST.passionModSkill>热情技能</MST.passionModSkill>
     <MST.passionModSkillComment>此基因热情修正影响的技能。</MST.passionModSkillComment>
     <MST.passionModType>热情类型</MST.passionModType>
     <MST.passionModTypeComment>热情修正类型：AddOneLevel=增加一级热情，DropAll=移除所有热情。</MST.passionModTypeComment>
-    <MST.enablesNeeds>启用需求</MST.enablesNeeds>
-    <MST.enablesNeedsComment>此基因启用的需求列表。</MST.enablesNeedsComment>
-    <MST.disablesNeeds>禁用需求</MST.disablesNeeds>
-    <MST.disablesNeedsComment>此基因禁用的需求列表。</MST.disablesNeedsComment>
-    <MST.disabledWorkTags>禁用工作</MST.disabledWorkTags>
     <MST.disabledWorkTagsComment>此基因禁用工作类型。</MST.disabledWorkTagsComment>
-    <MST.makeImmuneTo>免疫</MST.makeImmuneTo>
-    <MST.makeImmuneToComment>此基因使角色免疫的健康状态。</MST.makeImmuneToComment>
     <MST.hediffGiversCannotGive>阻止来源</MST.hediffGiversCannotGive>
     <MST.hediffGiversCannotGiveComment>此基因阻止添加健康状态的来源。</MST.hediffGiversCannotGiveComment>
 </LanguageData>

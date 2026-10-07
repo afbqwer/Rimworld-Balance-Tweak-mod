@@ -7,25 +7,20 @@
     <MST.commonality>Common</MST.commonality>
     <MST.commonalityFemale>CommonF</MST.commonalityFemale>
     <MST.canBeSuppressed>Suppress</MST.canBeSuppressed>
-    <MST.allowOnHostileSpawn>HostileSpawn</MST.allowOnHostileSpawn>
+    <MST.allowOnHostileSpawn>HostSpawn</MST.allowOnHostileSpawn>
     <MST.disableHostilityFromFaction>NoHostFac</MST.disableHostilityFromFaction>
     <MST.disableHostilityFromAnimalType>NoHostAnim</MST.disableHostilityFromAnimalType>
     <MST.conflictingTraits>ConflictTr</MST.conflictingTraits>
     <MST.exclusionTags>ExclTags</MST.exclusionTags>
-    <MST.conflictingPassions>ConflictPass</MST.conflictingPassions>
+    <MST.conflictingPassions>ConfPass</MST.conflictingPassions>
     <MST.forcedPassions>ForcePass</MST.forcedPassions>
     <MST.requiredWorkTypes>ReqWork</MST.requiredWorkTypes>
     <MST.disabledWorkTypes>DisWork</MST.disabledWorkTypes>
     <MST.requiredWorkTags>ReqWTags</MST.requiredWorkTags>
-    <MST.disabledWorkTags>DisWTags</MST.disabledWorkTags>
     <MST.degree>Degree</MST.degree>
     <MST.degreeLabel>DegLabel</MST.degreeLabel>
-    <MST.socialFightChanceFactor>SocFgtF</MST.socialFightChanceFactor>
     <MST.marketValueFactorOffset>MktValO</MST.marketValueFactorOffset>
     <MST.randomDiseaseMtbDays>DisDays</MST.randomDiseaseMtbDays>
-    <MST.hungerRateFactor>HungF</MST.hungerRateFactor>
-    <MST.painOffset>PainO</MST.painOffset>
-    <MST.painFactor>PainF</MST.painFactor>
     <MST.forcedMentalStateMtbDays>BrkDnD</MST.forcedMentalStateMtbDays>
     <MST.mentalBreakInspirationGainChance>InspCh</MST.mentalBreakInspirationGainChance>
     <MST.randomMentalState>RandMS</MST.randomMentalState>
@@ -37,16 +32,11 @@
     <MST.allowedMeditationFocusTypes>AllMed</MST.allowedMeditationFocusTypes>
     <MST.disallowedMeditationFocusTypes>DisMed</MST.disallowedMeditationFocusTypes>
     <MST.theOnlyAllowedMentalBreaks>OnlyMB</MST.theOnlyAllowedMentalBreaks>
-    <MST.abilities>Abilities</MST.abilities>
-    <MST.enablesNeeds>EnblNd</MST.enablesNeeds>
-    <MST.disablesNeeds>DsblNd</MST.disablesNeeds>
     <MST.skillGains>SkillGain</MST.skillGains>
-    <MST.aptitudes>Aptitude</MST.aptitudes>
     <MST.FirstDegree>FirstDeg</MST.FirstDegree>
     <MST.commonalityComment>Base weight for this trait to appear on pawn generation. Higher = more common.</MST.commonalityComment>
     <MST.commonalityFemaleComment>Female-specific commonality. -1 = use commonality value.</MST.commonalityFemaleComment>
     <MST.disableHostilityFromAnimalTypeComment>Animal type that this trait disables hostility from.</MST.disableHostilityFromAnimalTypeComment>
     <MST.disableHostilityFromFactionComment>Faction that this trait disables hostility from.</MST.disableHostilityFromFactionComment>
     <MST.skillGainsComment>Skill gains granted by this trait. Format: skill + amount.</MST.skillGainsComment>
-    <MST.aptitudesComment>Skills this trait grants aptitude for. Format: skill + level bonus.</MST.aptitudesComment>
 </LanguageData>

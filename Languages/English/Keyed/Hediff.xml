@@ -5,7 +5,6 @@
     <MST.Injury>Injury</MST.Injury>
     <MST.AddedPart>AddedPart</MST.AddedPart>
     <MST.Addiction>Addiction</MST.Addiction>
-    <MST.Disease>Disease</MST.Disease>
     <MST.Pregnancy>Pregnancy</MST.Pregnancy>
     <MST.Psyche>Psyche</MST.Psyche>
     <MST.initialSeverity>InitSev</MST.initialSeverity>
@@ -41,9 +40,7 @@
     <MST.becomeVisibleComment>Whether this stage is visible in the health status UI.</MST.becomeVisibleComment>
     <MST.lifeThreatening>Lethal</MST.lifeThreatening>
     <MST.lifeThreateningComment>Whether this stage is lethal (can cause death at high enough severity).</MST.lifeThreateningComment>
-    <MST.painFactor>PainF</MST.painFactor>
     <MST.painFactorComment>Multiplier for pain received (1.0 is normal).</MST.painFactorComment>
-    <MST.painOffset>PainO</MST.painOffset>
     <MST.painOffsetComment>Fixed offset to pain received.</MST.painOffsetComment>
     <MST.totalBleedFactor>BleedF</MST.totalBleedFactor>
     <MST.totalBleedFactorComment>Multiplier for total bleed rate from all bleeding sources.</MST.totalBleedFactorComment>
@@ -53,7 +50,6 @@
     <MST.vomitMtbDaysComment>Mean time between vomiting events (in days). -1 disables.</MST.vomitMtbDaysComment>
     <MST.deathMtbDays>DeathD</MST.deathMtbDays>
     <MST.deathMtbDaysComment>Mean time between death events from this stage (in days). -1 disables.</MST.deathMtbDaysComment>
-    <MST.hungerRateFactor>HungF</MST.hungerRateFactor>
     <MST.hungerRateFactorOffset>HungO</MST.hungerRateFactorOffset>
     <MST.hungerRateFactorOffsetComment>Fixed offset to hunger rate (adds to the factor).</MST.hungerRateFactorOffsetComment>
     <MST.restFallFactor>RestF</MST.restFallFactor>
@@ -65,7 +61,6 @@
     <MST.severityGainFactorComment>Multiplier for natural severity increase rate.</MST.severityGainFactorComment>
     <MST.partEfficiencyOffset>PrEffO</MST.partEfficiencyOffset>
     <MST.partEfficiencyOffsetComment>Fixed offset to body part efficiency, affecting part functionality.</MST.partEfficiencyOffsetComment>
-    <MST.socialFightChanceFactor>SocFgtF</MST.socialFightChanceFactor>
     <MST.mentalBreakMtbDays>BrkDwnD</MST.mentalBreakMtbDays>
     <MST.mentalBreakMtbDaysComment>Mean time between mental breaks (in days). -1 disables.</MST.mentalBreakMtbDaysComment>
     <MST.blocksMentalBreaks>BlkBrk</MST.blocksMentalBreaks>
@@ -92,18 +87,11 @@
     <MST.statOffsetEffectMultiplierComment>A stat that multiplies statOffset values for this stage.</MST.statOffsetEffectMultiplierComment>
     <MST.statFactorEffectMultiplierComment>A stat that multiplies statFactor values for this stage.</MST.statFactorEffectMultiplierComment>
     <MST.capacityFactorEffectMultiplierComment>A stat that multiplies capacity modifier values for this stage.</MST.capacityFactorEffectMultiplierComment>
-    <MST.capMods>CapMods</MST.capMods>
-    <MST.damageFactors>DmgF</MST.damageFactors>
-    <MST.enablesNeeds>EnblNd</MST.enablesNeeds>
-    <MST.disablesNeeds>DsblNd</MST.disablesNeeds>
-    <MST.enablesNeedsComment>Needs that this stage enables for the pawn. Warning: May cause unexpected behavior if the need is not normally available.</MST.enablesNeedsComment>
-    <MST.disablesNeedsComment>Needs that this stage disables for the pawn.</MST.disablesNeedsComment>
-    <MST.makeImmuneTo>Immune</MST.makeImmuneTo>
-    <MST.makeImmuneToComment>HediffDefs that this stage makes the pawn immune to.</MST.makeImmuneToComment>
-    <MST.hediffGivers>HediffGivers</MST.hediffGivers>
+    <MST.hediffGivers>Hediffs</MST.hediffGivers>
     <MST.hediffGiversComment>Hediff givers that apply hediffs at this stage. Remove-only.</MST.hediffGiversComment>
-    <MST.mentalStateGivers>MentalStateGivers</MST.mentalStateGivers>
+    <MST.mentalStateGivers>MindState</MST.mentalStateGivers>
     <MST.mentalStateGiversComment>Mental state givers that may trigger mental breaks at this stage. Remove-only.</MST.mentalStateGiversComment>
+    <MST.subdefOverrideLabel>OvrLabel</MST.subdefOverrideLabel>
     <MST.MtbDays>MTB</MST.MtbDays>
     <MST.injuryProps>InjProps</MST.injuryProps>
     <MST.addedPartProps>AddPart</MST.addedPartProps>
@@ -111,7 +99,7 @@
     <MST.addedPartPropsComment>Whether AddedBodyPartProps sub-object exists. Fields below are only editable when true.</MST.addedPartPropsComment>
     <MST.painPerSeverity>Pain/Sev</MST.painPerSeverity>
     <MST.painPerSeverityComment>Pain generated per unit of severity.</MST.painPerSeverityComment>
-    <MST.averagePainPerSeverityPermanent>PermPain/Sev</MST.averagePainPerSeverityPermanent>
+    <MST.averagePainPerSeverityPermanent>PermPain</MST.averagePainPerSeverityPermanent>
     <MST.averagePainPerSeverityPermanentComment>Average pain per severity when the injury becomes permanent.</MST.averagePainPerSeverityPermanentComment>
     <MST.bleedRate>BleedRt</MST.bleedRate>
     <MST.canMerge>CanMerge</MST.canMerge>
@@ -139,8 +127,6 @@
     <MST.severityPerDayImmuneComment>Severity change per day while immune.</MST.severityPerDayImmuneComment>
     <MST.infectionChance>InfChnc</MST.infectionChance>
     <MST.infectionChanceComment>Chance of infection occurring.</MST.infectionChanceComment>
-    <MST.abilities>Abilities</MST.abilities>
-    <MST.abilitiesComment>AbilityDefs granted by this hediff.</MST.abilitiesComment>
     <MST.removeOnRedressChanceByDaysCurve>RmvCurve</MST.removeOnRedressChanceByDaysCurve>
     <MST.removeOnRedressChanceByDaysCurveComment>Curve defining the chance to remove this hediff on redress by days since installation.</MST.removeOnRedressChanceByDaysCurveComment>
     <MST.disappearsAtTotalTendQuality>DisTQ</MST.disappearsAtTotalTendQuality>

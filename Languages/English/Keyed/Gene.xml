@@ -16,32 +16,17 @@
     <MST.randomChosen>Random</MST.randomChosen>
     <MST.passOnDirectly>PassOn</MST.passOnDirectly>
     <MST.removeOnRedress>RmRedress</MST.removeOnRedress>
-    <MST.statOffsetsComment>Stat value offsets applied by this gene.</MST.statOffsetsComment>
-    <MST.statFactorsComment>Stat value multipliers applied by this gene.</MST.statFactorsComment>
-    <MST.capMods>CapMod</MST.capMods>
     <MST.capModsComment>Pawn capacity modifiers (offset, setMax, postFactor) applied by this gene.</MST.capModsComment>
-    <MST.damageFactors>DmgFac</MST.damageFactors>
     <MST.damageFactorsComment>Damage type multipliers applied by this gene.</MST.damageFactorsComment>
-    <MST.abilities>Abilities</MST.abilities>
-    <MST.abilitiesComment>Abilities granted by this gene.</MST.abilitiesComment>
     <MST.forcedTraits>FrcTraits</MST.forcedTraits>
     <MST.forcedTraitsComment>Traits forced by this gene (with optional degree).</MST.forcedTraitsComment>
     <MST.suppressedTraits>SupTraits</MST.suppressedTraits>
     <MST.suppressedTraitsComment>Traits suppressed by this gene (with optional degree).</MST.suppressedTraitsComment>
-    <MST.aptitudes>Aptitude</MST.aptitudes>
-    <MST.aptitudesComment>Skill aptitudes (skill level bonuses) granted by this gene.</MST.aptitudesComment>
     <MST.passionModSkill>PassSkill</MST.passionModSkill>
     <MST.passionModSkillComment>Skill affected by this gene's passion modifier.</MST.passionModSkillComment>
     <MST.passionModType>PassType</MST.passionModType>
     <MST.passionModTypeComment>Type of passion modification: AddOneLevel adds one passion level, DropAll removes all passion.</MST.passionModTypeComment>
-    <MST.enablesNeeds>EnablesNeeds</MST.enablesNeeds>
-    <MST.enablesNeedsComment>Needs enabled by this gene.</MST.enablesNeedsComment>
-    <MST.disablesNeeds>DisablesNeeds</MST.disablesNeeds>
-    <MST.disablesNeedsComment>Needs disabled by this gene.</MST.disablesNeedsComment>
-    <MST.disabledWorkTags>DisWork</MST.disabledWorkTags>
     <MST.disabledWorkTagsComment>Work types disabled by this gene.</MST.disabledWorkTagsComment>
-    <MST.makeImmuneTo>Immune</MST.makeImmuneTo>
-    <MST.makeImmuneToComment>Hediffs this gene makes the pawn immune to.</MST.makeImmuneToComment>
-    <MST.hediffGiversCannotGive>BlockHediff</MST.hediffGiversCannotGive>
+    <MST.hediffGiversCannotGive>Blocked</MST.hediffGiversCannotGive>
     <MST.hediffGiversCannotGiveComment>HediffGivers that this gene prevents from giving hediffs.</MST.hediffGiversCannotGiveComment>
 </LanguageData>

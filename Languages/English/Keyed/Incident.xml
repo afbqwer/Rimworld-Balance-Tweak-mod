@@ -19,8 +19,7 @@
     <MST.minThreatPointsComment> The minimum number of threat points for this event. </MST.minThreatPointsComment>
     <MST.maxThreatPointsComment> The maximum number of threat points for this event. </MST.maxThreatPointsComment>
     <MST.baseChanceWithRoyaltyComment> The probability of this event being triggered if the DLC "Royal Power" is available. </MST.baseChanceWithRoyaltyComment>
-    <MST.Disease>Disease</MST.Disease>
-    <MST.diseaseVictimFractionRange>VictimFraction</MST.diseaseVictimFractionRange>
+    <MST.diseaseVictimFractionRange>Infected%</MST.diseaseVictimFractionRange>
     <MST.diseaseVictimFractionRangeComment> The fraction of colonists that can be infected by this disease (min-max range). </MST.diseaseVictimFractionRangeComment>
     <MST.actualChance>ActChance</MST.actualChance>
     <MST.actualChanceComment> The actual probability = baseChance / (sum of all baseChance in this category). Shows Null if baseChance is 0. </MST.actualChanceComment>

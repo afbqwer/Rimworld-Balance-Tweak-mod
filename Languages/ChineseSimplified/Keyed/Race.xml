@@ -4,7 +4,6 @@
     <MST.Entity>实体</MST.Entity>
     <MST.Humanlike>人类</MST.Humanlike>
     <MST.Insect>虫族</MST.Insect>
-    <MST.Mechanoid>机械</MST.Mechanoid>
     <MST.Animal>动物</MST.Animal>
     <MST.sharpArmor>锐器护甲</MST.sharpArmor>
     <MST.bluntArmor>钝器护甲</MST.bluntArmor>
@@ -34,7 +33,6 @@
     <MST.vacuumResistance>真空抗性</MST.vacuumResistance>
     <MST.workSpeedGlobalOffsetMech>机械速度+</MST.workSpeedGlobalOffsetMech>
     <MST.psychicSensitivity>心灵敏感</MST.psychicSensitivity>
-    <MST.combatPower>战斗力</MST.combatPower>
     <MST.corepartHP>躯干HP</MST.corepartHP>
     <MST.MeleeHitChance>近战命中</MST.MeleeHitChance>
     <MST.massCarryCapacity>携带重量</MST.massCarryCapacity>
@@ -42,13 +40,6 @@
     <MST.bodyDef>身体</MST.bodyDef>
     <MST.combatPowerComment>此类型占用的袭击点数。</MST.combatPowerComment>
     <MST.bioferriteDensity>活铁密度</MST.bioferriteDensity>
-    <MST.studiableFrequencyTicks>可研究频率</MST.studiableFrequencyTicks>
-    <MST.knowledgeCategory>知识分类</MST.knowledgeCategory>
-    <MST.anomalyKnowledge>异象知识</MST.anomalyKnowledge>
-    <MST.activityStartingRangeMin>最小活跃</MST.activityStartingRangeMin>
-    <MST.activityStartingRangeMax>最大活跃</MST.activityStartingRangeMax>
-    <MST.changePerDayBase>日+活跃</MST.changePerDayBase>
-    <MST.changePerDamage>损伤+活跃</MST.changePerDamage>
     <MST.projectileInterceptorRadius>护盾半径</MST.projectileInterceptorRadius>
     <MST.projectileInterceptorRadiusComment>护盾的半径范围。</MST.projectileInterceptorRadiusComment>
     <MST.projectileInterceptorHitPoints>护盾HP</MST.projectileInterceptorHitPoints>

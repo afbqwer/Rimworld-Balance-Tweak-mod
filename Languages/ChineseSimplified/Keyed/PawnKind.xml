@@ -24,11 +24,9 @@
     <MST.chronologicalAgeRange>年龄范围</MST.chronologicalAgeRange>
     <MST.minGenerationAge>最小年龄</MST.minGenerationAge>
     <MST.maxGenerationAge>最大年龄</MST.maxGenerationAge>
-    <MST.canOpenAnyDoor>强制开门</MST.canOpenAnyDoor>
     <MST.canOpenDoors>可开门</MST.canOpenDoors>
     <MST.isBoss>是Boss</MST.isBoss>
     <MST.preventIdeo>无文化</MST.preventIdeo>
-    <MST.studiableAsPrisoner>囚犯研究</MST.studiableAsPrisoner>
     <MST.humanPregnancyChance>怀孕概率</MST.humanPregnancyChance>
     <MST.allowOldAgeInjuries>老年伤病</MST.allowOldAgeInjuries>
     <MST.forceNoDeathNotification>隐藏死亡</MST.forceNoDeathNotification>
@@ -74,7 +72,6 @@
 
     <!-- Second Priority: List<Def> -->
     <MST.apparelRequired>强制着装</MST.apparelRequired>
-    <MST.abilities>能力列表</MST.abilities>
     <MST.disallowedTraits>禁用特性</MST.disallowedTraits>
     <MST.forcedAddictions>强制成瘾</MST.forcedAddictions>
     <MST.techHediffsRequired>强制植入物</MST.techHediffsRequired>

@@ -5,20 +5,20 @@
     <MST.Space>真空</MST.Space>
     <MST.animalDensity>动物密度</MST.animalDensity>
     <MST.plantDensity>植物密度</MST.plantDensity>
-    <MST.wildPlantRegrowDays>植物再生天数</MST.wildPlantRegrowDays>
+    <MST.wildPlantRegrowDays>再生天数</MST.wildPlantRegrowDays>
     <MST.diseaseMtbDays>疾病间隔</MST.diseaseMtbDays>
     <MST.diseaseMtbDaysComment>此群系疾病事件平均发生间隔（天数），越小越频繁。</MST.diseaseMtbDaysComment>
     <MST.movementDifficulty>通行难度</MST.movementDifficulty>
     <MST.movementDifficultyComment>商队在大世界地图上经过此群系格子的路径成本。</MST.movementDifficultyComment>
     <MST.forageability>觅食效率</MST.forageability>
     <MST.forageabilityComment>商队/远行队在此群系觅食获得食物的效率。</MST.forageabilityComment>
-    <MST.settlementSelectionWeight>据点选址权重</MST.settlementSelectionWeight>
+    <MST.settlementSelectionWeight>选址权重</MST.settlementSelectionWeight>
     <MST.settlementSelectionWeightComment>派系据点选址时选中此群系的相对权重。</MST.settlementSelectionWeightComment>
-    <MST.campSelectionWeight>营地选址权重</MST.campSelectionWeight>
+    <MST.campSelectionWeight>营地权重</MST.campSelectionWeight>
     <MST.campSelectionWeightComment>农场营地选址时选中此群系的相对权重。</MST.campSelectionWeightComment>
     <MST.pollutionOffset>污染偏移</MST.pollutionOffset>
     <MST.pollutionOffsetComment>世界生成时此群系地块的初始污染偏移量（Biotech 污染机制）。</MST.pollutionOffsetComment>
-    <MST.wildAnimalScariaChance>野兽狂暴几率</MST.wildAnimalScariaChance>
+    <MST.wildAnimalScariaChance>狂暴几率</MST.wildAnimalScariaChance>
     <MST.wildAnimalScariaChanceComment>此群系生成的野生动物携带狂暴症（Scaria）的几率。</MST.wildAnimalScariaChanceComment>
     <MST.geyserCountFactor>间歇泉系数</MST.geyserCountFactor>
     <MST.geyserCountFactorComment>地图生成时蒸汽间歇泉数量的倍率。</MST.geyserCountFactorComment>
@@ -34,11 +34,11 @@
     <MST.allowRiversComment>世界生成时是否允许在此群系生成河流。</MST.allowRiversComment>
     <MST.allowPollution>允许污染</MST.allowPollution>
     <MST.allowPollutionComment>此群系是否允许被污染。</MST.allowPollutionComment>
-    <MST.allowFarmingCamps>允许农场营地</MST.allowFarmingCamps>
+    <MST.allowFarmingCamps>农场营地</MST.allowFarmingCamps>
     <MST.allowFarmingCampsComment>是否允许在此群系建立农场营地。</MST.allowFarmingCampsComment>
-    <MST.wildAnimalsCanWanderInto>野兽可游荡进入</MST.wildAnimalsCanWanderInto>
+    <MST.wildAnimalsCanWanderInto>野兽游荡</MST.wildAnimalsCanWanderInto>
     <MST.wildAnimalsCanWanderIntoComment>其他群系的野生动物是否可游荡进入此群系的地图。</MST.wildAnimalsCanWanderIntoComment>
-    <MST.wildPlantsCareAboutLocalFertility>植物受肥沃度影响</MST.wildPlantsCareAboutLocalFertility>
+    <MST.wildPlantsCareAboutLocalFertility>肥沃度影响</MST.wildPlantsCareAboutLocalFertility>
     <MST.wildPlantsCareAboutLocalFertilityComment>野生植物出现率是否受地块局部肥沃度影响。</MST.wildPlantsCareAboutLocalFertilityComment>
     <MST.impassable>不可通行</MST.impassable>
     <MST.impassableComment>商队是否完全无法穿过此群系（如大洋）。</MST.impassableComment>
