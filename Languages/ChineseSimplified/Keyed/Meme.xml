@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Meme>模因</MST.Meme>
+    <MST.impact>影响</MST.impact>
+    <MST.selectionWeightFactor>随机权重</MST.selectionWeightFactor>
+    <MST.selectionWeightFactorComment>作为随机模因出现的权重。权重越高越常见。</MST.selectionWeightFactorComment>
+</LanguageData>

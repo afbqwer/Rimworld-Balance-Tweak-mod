@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Thought>想法</MST.Thought>
+    <MST.ThoughtStage>想法阶段</MST.ThoughtStage>
+    <MST.Situational>情景</MST.Situational>
+    <MST.Memory>记忆</MST.Memory>
+    <MST.Social>社交</MST.Social>
+    <MST.FirstStage>首个阶段</MST.FirstStage>
+    <MST.StageNum>阶段数</MST.StageNum>
+    <MST.stackedEffectMultiplier>多层倍率</MST.stackedEffectMultiplier>
+    <MST.durationDays>持续天数</MST.durationDays>
+    <MST.stackLimitForSameOtherPawn>每人层限</MST.stackLimitForSameOtherPawn>
+    <MST.lerpMoodToZero>影响衰减</MST.lerpMoodToZero>
+    <MST.baseMoodEffect>心情影响</MST.baseMoodEffect>
+    <MST.baseOpinionOffset>看法影响</MST.baseOpinionOffset>
+    <MST.visible>可见性</MST.visible>
+    <MST.stackLimit>数量限制</MST.stackLimit>
+    <MST.stackLimitComment>此想法的数量限制。</MST.stackLimitComment>
+    <MST.stackedEffectMultiplierComment>此想法的数量叠加乘算倍率。</MST.stackedEffectMultiplierComment>
+    <MST.durationDaysComment>此想法的持续天数。</MST.durationDaysComment>
+    <MST.stackLimitForSameOtherPawnComment>此想法类型对同一个"目标"想法的数量不能超过此值。-1为无限制。</MST.stackLimitForSameOtherPawnComment>
+    <MST.lerpMoodToZeroComment>此想法的心情影响是否随着时间减少。</MST.lerpMoodToZeroComment>
+</LanguageData>

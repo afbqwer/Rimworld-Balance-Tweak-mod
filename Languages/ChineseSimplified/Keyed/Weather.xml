@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Weather>天气</MST.Weather>
+    <MST.accuracyMultiplier>精度乘数</MST.accuracyMultiplier>
+    <MST.moveSpeedMultiplier>移速乘数</MST.moveSpeedMultiplier>
+    <MST.windSpeedFactor>风速因子</MST.windSpeedFactor>
+</LanguageData>

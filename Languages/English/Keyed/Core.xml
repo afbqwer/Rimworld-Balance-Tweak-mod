@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.ResetCol>RstSelC</MST.ResetCol>
+    <MST.ClickConfirm>Confirm?</MST.ClickConfirm>
+    <MST.String>Text</MST.String>
+    <MST.OpenconfigfolderButton>CfgFldr</MST.OpenconfigfolderButton>
+    <MST.ResetSort>RstSrt</MST.ResetSort>
+    <MST.None>None</MST.None>
+    <MST.NoSort>No Sort</MST.NoSort>
+    <MST.Ascending>Ascending</MST.Ascending>
+    <MST.Descending>Descending</MST.Descending>
+    <MST.ShowAll>ShwAll</MST.ShowAll>
+    <MST.HideAll>HdAll</MST.HideAll>
+    <MST.ByType>OpByTyp</MST.ByType>
+    <MST.Field>Field</MST.Field>
+    <MST.Display>Display</MST.Display>
+    <MST.Float>Float</MST.Float>
+    <MST.Prec>Percentage</MST.Prec>
+    <MST.Int>Integer</MST.Int>
+    <MST.Link>Link</MST.Link>
+    <MST.Bool>Toggle</MST.Bool>
+    <MST.empty>Empty</MST.empty>
+    <MST.Enum>Enum</MST.Enum>
+    <MST.Flags>Flag</MST.Flags>
+    <MST.Curve>Curve</MST.Curve>
+    <MST.IngredientFilter>IngredFilter</MST.IngredientFilter>
+    <MST.IngredientList>IngredientList</MST.IngredientList>
+    <MST.IntList>IntList</MST.IntList>
+    <MST.ProcessIngredientList>ProcIngredList</MST.ProcessIngredientList>
+    <MST.ProcessResultList>ProcResultList</MST.ProcessResultList>
+    <MST.BodyPartTree>BodyTree</MST.BodyPartTree>
+    <MST.RaceLinks>RaceLinks</MST.RaceLinks>
+    <MST.BodyLinks>BodyLinks</MST.BodyLinks>
+    <MST.Range>Range</MST.Range>
+    <MST.SkillReqList>SkillReqList</MST.SkillReqList>
+    <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
+    <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
+    <MST.CurrentColumn>SelCol:</MST.CurrentColumn>
+    <MST.FlatInput>Flat:</MST.FlatInput>
+    <MST.PrecInput>Mult:</MST.PrecInput>
+    <MST.LowerLimit>Min:</MST.LowerLimit>
+    <MST.UpperLimit>Max:</MST.UpperLimit>
+    <MST.Apply>ApGlob</MST.Apply>
+    <MST.ResetCur>RstDspI</MST.ResetCur>
+    <MST.Openconfigfolder>Open Config Folder (Configuration only saved when window closed)</MST.Openconfigfolder>
+    <MST.showAbstract>Show Default</MST.showAbstract>
+    <MST.showAbstractTooltip>If the value is Null, whether to display the default value for the selected column. Note: The actual value is not changed.</MST.showAbstractTooltip>
+    <MST.showChanged>Show Result</MST.showChanged>
+    <MST.showChangedTooltip>Whether to display the result of applying global changes to the selected column. Note: The actual value is not changed.</MST.showChangedTooltip>
+    <MST.showDisplayMode>Display Mode</MST.showDisplayMode>
+    <MST.showDisplayModeTooltip>Display all cells in read-only mode. Editing is disabled.</MST.showDisplayModeTooltip>
+    <MST.ResetColTooltip>Reset all data displayed in the currently selected column. Does not reset data not displayed in the list.</MST.ResetColTooltip>
+    <MST.JumpToDesc>Click the name to jump to its associated data.</MST.JumpToDesc>
+    <MST.ResetCurTooltip>Reset all data currently displayed. Does not reset data not displayed in the list.</MST.ResetCurTooltip>
+    <MST.ApplyToolTip>Modify all values in the selected column. Only modifies data displayed in the current list. The result is (Value + Flat Change) * Multiplier.</MST.ApplyToolTip>
+    <MST.SimpleDefEditer>Simple Def Editor</MST.SimpleDefEditer>
+    <MST.EditCurve>Edit Curve</MST.EditCurve>
+    <MST.Points>Points</MST.Points>
+    <MST.AddPoint>Add Point</MST.AddPoint>
+    <MST.DeletePoint>Delete Point</MST.DeletePoint>
+    <MST.DuplicatePoint>Duplicate Point</MST.DuplicatePoint>
+    <MST.Reset>Reset</MST.Reset>
+    <MST.Save>Save</MST.Save>
+    <MST.Cancel>Cancel</MST.Cancel>
+    <MST.Close>Close</MST.Close>
+    <MST.Name>Name</MST.Name>
+    <MST.FromMod>From Mod:</MST.FromMod>
+    <MST.Stat>Stat</MST.Stat>
+    <MST.Normal>Normal</MST.Normal>
+    <MST.Structure>Struct</MST.Structure>
+    <MST.Special>Special</MST.Special>
+    <MST.Misc>Misc</MST.Misc>
+    <MST.Other>Other</MST.Other>
+    <MST.Item>Item</MST.Item>
+    <MST.Filth>Filth</MST.Filth>
+    <MST.useHitPoints>UseHP</MST.useHitPoints>
+    <MST.Good>Good</MST.Good>
+    <MST.Bad>Bad</MST.Bad>
+    <MST.Basic>Basic</MST.Basic>
+    <MST.Anomaly>Anomaly</MST.Anomaly>
+    <MST.Empty>Empty</MST.Empty>
+    <MST.Value>Value</MST.Value>
+    <MST.SaveStatMods>Save</MST.SaveStatMods>
+    <MST.CancelStatMods>Cancel</MST.CancelStatMods>
+    <MST.AddStatMod>Add Stat</MST.AddStatMod>
+    <MST.SelectStat>(Select Stat)</MST.SelectStat>
+    <MST.AddDamageFactor>Add Damage</MST.AddDamageFactor>
+    <MST.SelectDamageDef>(Select Damage)</MST.SelectDamageDef>
+    <MST.Factor>Factor</MST.Factor>
+    <MST.StatModList>StatList</MST.StatModList>
+    <MST.statOffsets>StatOffsets</MST.statOffsets>
+    <MST.statFactors>StatFactors</MST.statFactors>
+    <MST.Clear>Clear</MST.Clear>
+    <MST.CurrentDef>Current:</MST.CurrentDef>
+    <MST.DefSelector>DefSel</MST.DefSelector>
+    <MST.CapModList>CapList</MST.CapModList>
+    <MST.DamageModList>DmgList</MST.DamageModList>
+    <MST.AddCapMod>Add Cap</MST.AddCapMod>
+    <MST.CapModCapacity>Capacity</MST.CapModCapacity>
+    <MST.CapModOffset>Offset</MST.CapModOffset>
+    <MST.CapModSetMax>SetMax</MST.CapModSetMax>
+    <MST.CapModPostFactor>PostFct</MST.CapModPostFactor>
+    <MST.CapModStatFactor>StatFct</MST.CapModStatFactor>
+    <MST.CapModEvalStat>EvalStat</MST.CapModEvalStat>
+    <MST.DefList>DefList</MST.DefList>
+    <MST.HediffGiverList>HediffGiver</MST.HediffGiverList>
+    <MST.MentalStateGiverList>MentalStGiver</MST.MentalStateGiverList>
+    <MST.SkillGainList>SkillGainList</MST.SkillGainList>
+    <MST.AptitudeList>AptitudeList</MST.AptitudeList>
+    <MST.StringList>StringList</MST.StringList>
+    <MST.AddDef>Add Def</MST.AddDef>
+    <MST.SelectDef>(Select Def)</MST.SelectDef>
+    <MST.AddSkillGain>Add Skill</MST.AddSkillGain>
+    <MST.AddAptitude>Add Aptitude</MST.AddAptitude>
+    <MST.SelectSkill>(Select Skill)</MST.SelectSkill>
+    <MST.GeneticTraitList>TraitList</MST.GeneticTraitList>
+    <MST.AddTrait>Add Trait</MST.AddTrait>
+    <MST.SelectTrait>(Select Trait)</MST.SelectTrait>
+    <MST.Degree>Degree</MST.Degree>
+    <MST.Amount>Amount</MST.Amount>
+    <MST.Level>Level</MST.Level>
+    <MST.SaveDefList>Save</MST.SaveDefList>
+    <MST.CancelDefList>Cancel</MST.CancelDefList>
+    <MST.AddString>Add String</MST.AddString>
+    <MST.AddInt>Add Int</MST.AddInt>
+    <MST.EmptyString>(Empty)</MST.EmptyString>
+    <MST.AddThingDefCount>Add Thing</MST.AddThingDefCount>
+    <MST.SelectThingDef>(Select Thing)</MST.SelectThingDef>
+    <MST.ThingDef>ThingDef</MST.ThingDef>
+    <MST.Stuff>Stuff</MST.Stuff>
+    <MST.Count>Count</MST.Count>
+    <MST.ThingDefCountList>ThingCountList</MST.ThingDefCountList>
+    <MST.Categories>Categories</MST.Categories>
+    <MST.DisallowedCategories>Disallowed Categories</MST.DisallowedCategories>
+    <MST.SpecialFiltersToAllow>Special Filters To Allow</MST.SpecialFiltersToAllow>
+    <MST.SpecialFiltersToDisallow>Special Filters To Disallow</MST.SpecialFiltersToDisallow>
+    <MST.ThingDefs>Thing Defs</MST.ThingDefs>
+    <MST.StuffCategoriesToAllow>Stuff Categories To Allow</MST.StuffCategoriesToAllow>
+    <MST.TradeTagsToAllow>Trade Tags To Allow</MST.TradeTagsToAllow>
+    <MST.TradeTagsToDisallow>Trade Tags To Disallow</MST.TradeTagsToDisallow>
+    <MST.ThingSetMakerTagsToAllow>Thing Set Maker Tags To Allow</MST.ThingSetMakerTagsToAllow>
+    <MST.ThingSetMakerTagsToDisallow>Thing Set Maker Tags To Disallow</MST.ThingSetMakerTagsToDisallow>
+    <MST.DisallowedThingDefs>Disallowed Thing Defs</MST.DisallowedThingDefs>
+    <MST.ExtraAllowedDefs>Extra Allowed Defs</MST.ExtraAllowedDefs>
+    <MST.ExtraDisallowedDefs>Extra Disallowed Defs</MST.ExtraDisallowedDefs>
+    <MST.Edit>Edit</MST.Edit>
+    <MST.TestFilter>Update Filter</MST.TestFilter>
+    <MST.ClickTestToPreview>Click "Update Filter" to preview</MST.ClickTestToPreview>
+    <MST.ShowOnlyAllowed>Show Allowed Only</MST.ShowOnlyAllowed>
+    <MST.GeneralSettings>General Settings</MST.GeneralSettings>
+    <MST.NameColWidth>Name Col Width</MST.NameColWidth>
+    <MST.DataColWidth>Data Col Width</MST.DataColWidth>
+    <MST.DataCleanup>Data Cleanup</MST.DataCleanup>
+    <MST.RemoveFailedDirect>Remove Failed Direct Items</MST.RemoveFailedDirect>
+    <MST.RemoveFailedDelayed>Remove Failed Delayed Items</MST.RemoveFailedDelayed>
+    <MST.RemoveFailedResolve>Remove Failed Resolve Items</MST.RemoveFailedResolve>
+    <MST.RemoveAllData>Remove All Data</MST.RemoveAllData>
+    <MST.ConfirmRemove>Confirm Remove</MST.ConfirmRemove>
+    <MST.CancelRemove>Cancel</MST.CancelRemove>
+    <MST.FailResolveDefs>ResolveDefs Failed</MST.FailResolveDefs>
+    <MST.FailDefNotFound>Def Not Found</MST.FailDefNotFound>
+    <MST.FailParentNotFound>Parent Not Found</MST.FailParentNotFound>
+    <MST.AllDataWillBeRemoved>Will be removed</MST.AllDataWillBeRemoved>
+    <MST.RemoveAllFailed>Remove All Failed Items</MST.RemoveAllFailed>
+    <MST.Copy>Copy</MST.Copy>
+    <MST.Paste>Paste</MST.Paste>
+    <MST.CopyDefName>Copy defName</MST.CopyDefName>
+    <MST.Pin>Pin</MST.Pin>
+    <MST.Unpin>Unpin</MST.Unpin>
+    <MST.Category>Category</MST.Category>
+    <MST.PasteSuccess>Paste successful</MST.PasteSuccess>
+    <MST.PasteFailed>Paste failed: invalid data</MST.PasteFailed>
+    <MST.CopySuccess>Copy successful</MST.CopySuccess>
+    <MST.CopyFailed>Nothing to copy</MST.CopyFailed>
+    <MST.MainWindowSize>Main Window Size</MST.MainWindowSize>
+    <MST.MainWindowWidth>Window Width</MST.MainWindowWidth>
+    <MST.MainWindowHeight>Window Height</MST.MainWindowHeight>
+</LanguageData>

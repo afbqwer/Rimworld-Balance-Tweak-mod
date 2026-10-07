@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Terrain>Terrain</MST.Terrain>
+    <MST.cleaningTimeFactor>CleanF</MST.cleaningTimeFactor>
+    <MST.filthMultiplier>FilthM</MST.filthMultiplier>
+    <MST.pathCost>pathCost</MST.pathCost>
+    <MST.fertility>fertility</MST.fertility>
+    <MST.extraDeteriorationFactor>deterioration</MST.extraDeteriorationFactor>
+    <MST.toxicBuildupFactor>toxic</MST.toxicBuildupFactor>
+    <MST.changeable>changeable</MST.changeable>
+    <MST.holdSnowOrSand>holdSnow</MST.holdSnowOrSand>
+    <MST.layerable>layerable</MST.layerable>
+    <MST.canEverTerraform>terraform</MST.canEverTerraform>
+    <MST.extinguishesFire>extinguish</MST.extinguishesFire>
+    <MST.destroyOnBombDamageThreshold>expThr</MST.destroyOnBombDamageThreshold>
+    <MST.destroyOnBombDamageThresholdComment>Explosion damage threshold to destroy this terrain. -1 means immune to bomb/explosion destruction.</MST.destroyOnBombDamageThresholdComment>
+    <MST.tags>tags</MST.tags>
+    <MST.affordances>affordances</MST.affordances>
+    <MST.researchPrerequisites>research</MST.researchPrerequisites>
+    <MST.costList>costList</MST.costList>
+    <MST.stuffCategories>stuffCategory</MST.stuffCategories>
+    <MST.Foundation>Foundation</MST.Foundation>
+    <MST.Water>Water</MST.Water>
+    <MST.SandSoil>Sand / Soil</MST.SandSoil>
+    <MST.Stone>Stone</MST.Stone>
+    <MST.Floor>Floor</MST.Floor>
+</LanguageData>

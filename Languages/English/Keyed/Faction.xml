@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Faction>Faction</MST.Faction>
+    <MST.raidCommonalityFromPointsCurve>RaidCurve</MST.raidCommonalityFromPointsCurve>
+    <MST.maxPawnCostPerTotalPointsCurve>MaxPwnCst</MST.maxPawnCostPerTotalPointsCurve>
+    <MST.settlementGenerationWeight>SetWght</MST.settlementGenerationWeight>
+    <MST.naturalEnemy>NatEnmy</MST.naturalEnemy>
+    <MST.permanentEnemy>PrmEnmy</MST.permanentEnemy>
+</LanguageData>

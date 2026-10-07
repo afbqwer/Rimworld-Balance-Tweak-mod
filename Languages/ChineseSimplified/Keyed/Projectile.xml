@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Projectile>投射物</MST.Projectile>
+    <MST.BulletProjectile>子弹投射</MST.BulletProjectile>
+    <MST.BeamProjectile>光束投射</MST.BeamProjectile>
+    <MST.ExplosionProjectile>爆炸投射</MST.ExplosionProjectile>
+    <MST.SpecialProjectile>特殊投射</MST.SpecialProjectile>
+</LanguageData>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Food>食物</MST.Food>
+    <MST.Corpse>尸体</MST.Corpse>
+    <MST.PlantCrop>作物</MST.PlantCrop>
+    <MST.PlantTree>树木</MST.PlantTree>
+    <MST.PlantWild>野生</MST.PlantWild>
+    <MST.MeatAndEgg>肉蛋</MST.MeatAndEgg>
+    <MST.Meal>餐食</MST.Meal>
+    <MST.Raw>生食</MST.Raw>
+    <MST.Drug>药物</MST.Drug>
+    <MST.nutrition>营养</MST.nutrition>
+    <MST.baseIngestTicks>食用刻数</MST.baseIngestTicks>
+    <MST.joy>娱乐</MST.joy>
+    <MST.preferability>偏好度</MST.preferability>
+    <MST.medicalPotency>医疗效果</MST.medicalPotency>
+    <MST.medicalQualityMax>最高医疗</MST.medicalQualityMax>
+    <MST.canRot>可否腐坏</MST.canRot>
+    <MST.daysToRotStart>腐烂天数</MST.daysToRotStart>
+    <MST.rotDestroys>腐烂销毁</MST.rotDestroys>
+    <MST.rotDamagePerDay>腐烂日伤</MST.rotDamagePerDay>
+    <MST.daysToDessicated>风干天数</MST.daysToDessicated>
+    <MST.dessicatedDamagePerDay>风干日伤</MST.dessicatedDamagePerDay>
+    <MST.canRotComment>该食物是否拥有腐烂组件，可以进行腐坏。</MST.canRotComment>
+    <MST.daysToRotStartComment>开始腐烂所需的天数。仅对拥有腐烂组件的食物有效。修改值仅适用于已有腐烂组件的物品。</MST.daysToRotStartComment>
+    <MST.rotDestroysComment>完全腐烂后物品是否被销毁。若为否则腐烂后物品依然存在。</MST.rotDestroysComment>
+    <MST.rotDamagePerDayComment>腐烂过程中每天受到的HP伤害。</MST.rotDamagePerDayComment>
+    <MST.daysToDessicatedComment>腐烂后变为风干所需的天数。</MST.daysToDessicatedComment>
+    <MST.dessicatedDamagePerDayComment>风干过程中每天受到的HP伤害。</MST.dessicatedDamagePerDayComment>
+    <!-- Plant field titles -->
+    <MST.growDays>生长天数</MST.growDays>
+    <MST.harvestYield>产量</MST.harvestYield>
+    <MST.sowWork>播种工作</MST.sowWork>
+    <MST.harvestWork>收获工作</MST.harvestWork>
+    <MST.sowMinSkill>技能需求</MST.sowMinSkill>
+    <MST.harvestMinGrowth>最低生长度</MST.harvestMinGrowth>
+    <MST.harvestAfterGrowth>多次收获</MST.harvestAfterGrowth>
+    <MST.fertilityMin>最低肥力</MST.fertilityMin>
+    <MST.fertilitySensitivity>肥力敏感</MST.fertilitySensitivity>
+    <MST.minGrowthTemperature>最低温度</MST.minGrowthTemperature>
+    <MST.maxGrowthTemperature>最高温度</MST.maxGrowthTemperature>
+    <MST.growMinGlow>最低光照</MST.growMinGlow>
+    <MST.growOptimalGlow>最佳光照</MST.growOptimalGlow>
+    <MST.lifespanDaysPerGrowDays>寿命倍率</MST.lifespanDaysPerGrowDays>
+    <MST.completelyIgnoreFertility>无视肥力</MST.completelyIgnoreFertility>
+    <MST.blockAdjacentSow>禁止邻种</MST.blockAdjacentSow>
+    <MST.harvestFailable>收获可失败</MST.harvestFailable>
+    <MST.autoHarvestable>自动收获</MST.autoHarvestable>
+    <MST.neverBlightable>永不枯萎</MST.neverBlightable>
+    <MST.dieIfNoSunlight>无光即死</MST.dieIfNoSunlight>
+    <MST.minSpacingBetweenSamePlant>最小间距</MST.minSpacingBetweenSamePlant>
+    <MST.harvestedThingData>收获物品</MST.harvestedThingData>
+    <MST.harvestedByData>对应植物</MST.harvestedByData>
+    <MST.sowTags>播种标签</MST.sowTags>
+    <MST.sowResearchPrerequisites>研究前提</MST.sowResearchPrerequisites>
+    <MST.pollution>污染需求</MST.pollution>
+    <!-- Plant field comments -->
+    <MST.harvestAfterGrowthComment>大于0表示可多次收获（如茶树），0或默认表示一次性收获。</MST.harvestAfterGrowthComment>
+    <MST.lifespanDaysPerGrowDaysComment>植物寿命 = 生长天数 × 此倍数。0表示植物不会自然死亡。</MST.lifespanDaysPerGrowDaysComment>
+    <MST.completelyIgnoreFertilityComment>开启后植物完全无视肥力，可在任意土壤生长。</MST.completelyIgnoreFertilityComment>
+    <MST.blockAdjacentSowComment>开启后该植物旁边不能种植同种植物。</MST.blockAdjacentSowComment>
+    <MST.harvestFailableComment>关闭后收获必定成功（不受技能影响）。</MST.harvestFailableComment>
+    <MST.dieIfNoSunlightComment>无光照时植物是否死亡（关闭后可在完全黑暗环境生长）。</MST.dieIfNoSunlightComment>
+    <MST.minSpacingBetweenSamePlantComment>同种植物之间的最小间距。0表示无限制。</MST.minSpacingBetweenSamePlantComment>
+</LanguageData>

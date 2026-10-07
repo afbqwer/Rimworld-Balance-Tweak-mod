@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Terrain>地形</MST.Terrain>
+    <MST.cleaningTimeFactor>清洁倍率</MST.cleaningTimeFactor>
+    <MST.filthMultiplier>污物倍率</MST.filthMultiplier>
+    <MST.pathCost>通行消耗</MST.pathCost>
+    <MST.fertility>肥沃度</MST.fertility>
+    <MST.extraDeteriorationFactor>额外老化</MST.extraDeteriorationFactor>
+    <MST.toxicBuildupFactor>毒物累积</MST.toxicBuildupFactor>
+    <MST.changeable>可改建</MST.changeable>
+    <MST.holdSnowOrSand>保留积雪/沙</MST.holdSnowOrSand>
+    <MST.layerable>可覆盖建造</MST.layerable>
+    <MST.canEverTerraform>可塑形</MST.canEverTerraform>
+    <MST.extinguishesFire>灭火</MST.extinguishesFire>
+    <MST.destroyOnBombDamageThreshold>爆炸耐久</MST.destroyOnBombDamageThreshold>
+    <MST.destroyOnBombDamageThresholdComment>地形被爆炸摧毁的伤害阈值，-1 表示不会被爆炸摧毁。</MST.destroyOnBombDamageThresholdComment>
+    <MST.tags>标签</MST.tags>
+    <MST.affordances>地形承载</MST.affordances>
+    <MST.researchPrerequisites>研究前置</MST.researchPrerequisites>
+    <MST.costList>制造成本</MST.costList>
+    <MST.stuffCategories>材料分类</MST.stuffCategories>
+    <MST.Foundation>地基</MST.Foundation>
+    <MST.Water>水体</MST.Water>
+    <MST.SandSoil>沙土</MST.SandSoil>
+    <MST.Stone>石头</MST.Stone>
+    <MST.Floor>地板</MST.Floor>
+</LanguageData>

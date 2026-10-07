@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.PawnKind>单位类型</MST.PawnKind>
+    <MST.weaponMoney>武器预算</MST.weaponMoney>
+    <MST.apparelMoney>服装预算</MST.apparelMoney>
+    <MST.gearHealthRange>耐久范围</MST.gearHealthRange>
+    <MST.itemQuality>物品品质</MST.itemQuality>
+    <MST.forceWeaponQuality>武器品质</MST.forceWeaponQuality>
+    <MST.minApparelQuality>最低品质</MST.minApparelQuality>
+    <MST.maxApparelQuality>最高品质</MST.maxApparelQuality>
+    <MST.forceNormalGearQuality>普通品质</MST.forceNormalGearQuality>
+    <MST.nakedChance>裸体概率</MST.nakedChance>
+    <MST.biocodeWeaponChance>武器编码</MST.biocodeWeaponChance>
+    <MST.destroyGearOnDrop>掉落销毁</MST.destroyGearOnDrop>
+    <MST.canStrip>可剥除装备</MST.canStrip>
+    <MST.apparelAllowHeadgearChance>头饰概率</MST.apparelAllowHeadgearChance>
+    <MST.ignoreApparelAllowChance>无视头饰</MST.ignoreApparelAllowChance>
+    <MST.maxPerGroup>最大数量</MST.maxPerGroup>
+    <MST.canBeScattered>可分散布局</MST.canBeScattered>
+    <MST.appearsRandomlyInCombatGroups>随机编组</MST.appearsRandomlyInCombatGroups>
+    <MST.wildGroupSize>群体规模</MST.wildGroupSize>
+    <MST.ecoSystemWeight>生态权重</MST.ecoSystemWeight>
+    <MST.fixedGender>固定性别</MST.fixedGender>
+    <MST.chronologicalAgeRange>年龄范围</MST.chronologicalAgeRange>
+    <MST.minGenerationAge>最小年龄</MST.minGenerationAge>
+    <MST.maxGenerationAge>最大年龄</MST.maxGenerationAge>
+    <MST.canOpenAnyDoor>强制开门</MST.canOpenAnyDoor>
+    <MST.canOpenDoors>可开门</MST.canOpenDoors>
+    <MST.isBoss>是Boss</MST.isBoss>
+    <MST.preventIdeo>无文化</MST.preventIdeo>
+    <MST.studiableAsPrisoner>囚犯研究</MST.studiableAsPrisoner>
+    <MST.humanPregnancyChance>怀孕概率</MST.humanPregnancyChance>
+    <MST.allowOldAgeInjuries>老年伤病</MST.allowOldAgeInjuries>
+    <MST.forceNoDeathNotification>隐藏死亡</MST.forceNoDeathNotification>
+    <MST.controlGroupPortraitZoom>头像缩放</MST.controlGroupPortraitZoom>
+    <MST.showInDebugSpawner>Debug显示</MST.showInDebugSpawner>
+    <MST.royalTitleChance>头衔概率</MST.royalTitleChance>
+    <MST.useFactionXenotypes>派系基因</MST.useFactionXenotypes>
+    <MST.allowRoyalRoomRequirements>皇家房间</MST.allowRoyalRoomRequirements>
+    <MST.allowRoyalApparelRequirements>皇家服装</MST.allowRoyalApparelRequirements>
+
+    <!-- Second Priority: Combat & AI -->
+    <MST.isFighter>战斗单位</MST.isFighter>
+    <MST.forceDeathOnDowned>倒地必死</MST.forceDeathOnDowned>
+    <MST.overrideDeathOnDownedChance>倒地概率</MST.overrideDeathOnDownedChance>
+    <MST.fleeHealthThresholdRange>逃跑阈值</MST.fleeHealthThresholdRange>
+    <MST.ignoresPainShock>无视疼痛</MST.ignoresPainShock>
+    <MST.canMeleeAttack>可近战攻击</MST.canMeleeAttack>
+    <MST.aiAvoidCover>回避掩体</MST.aiAvoidCover>
+    <MST.canBeSapper>破袭者</MST.canBeSapper>
+    <MST.isGoodBreacher>擅长破墙</MST.isGoodBreacher>
+    <MST.defendPointRadius>防御点半径</MST.defendPointRadius>
+    <MST.canArriveManhunter>可狂暴猎杀</MST.canArriveManhunter>
+    <MST.immuneToTraps>免疫陷阱</MST.immuneToTraps>
+    <MST.immuneToGameConditionEffects>免疫环境</MST.immuneToGameConditionEffects>
+
+    <!-- Second Priority: Capture & Prison -->
+    <MST.basePrisonBreakMtbDays>越狱间隔</MST.basePrisonBreakMtbDays>
+    <MST.acceptArrestChanceFactor>逮捕概率</MST.acceptArrestChanceFactor>
+    <MST.skipResistant>跳过抗性</MST.skipResistant>
+
+    <!-- Second Priority: Faction & Hostility -->
+    <MST.factionHostileOnKill>击杀后敌对</MST.factionHostileOnKill>
+    <MST.factionHostileOnDeath>死亡后敌对</MST.factionHostileOnDeath>
+    <MST.hostileToAll>全派系敌对</MST.hostileToAll>
+    <MST.factionLeader>派系领袖</MST.factionLeader>
+
+    <!-- Second Priority: List<string> -->
+    <MST.weaponTags>武器标签</MST.weaponTags>
+    <MST.apparelTags>服装标签</MST.apparelTags>
+    <MST.apparelDisallowTags>禁用服装</MST.apparelDisallowTags>
+    <MST.techHediffsTags>植入物标签</MST.techHediffsTags>
+    <MST.techHediffsDisallowTags>禁用植入</MST.techHediffsDisallowTags>
+
+    <!-- Second Priority: List<Def> -->
+    <MST.apparelRequired>强制着装</MST.apparelRequired>
+    <MST.abilities>能力列表</MST.abilities>
+    <MST.disallowedTraits>禁用特性</MST.disallowedTraits>
+    <MST.forcedAddictions>强制成瘾</MST.forcedAddictions>
+    <MST.techHediffsRequired>强制植入物</MST.techHediffsRequired>
+    <MST.titleSelectOne>可选头衔</MST.titleSelectOne>
+
+    <!-- Second Priority: Def Selector -->
+    <MST.defaultFactionDef>默认派系</MST.defaultFactionDef>
+    <MST.weaponStuffOverride>材料覆写</MST.weaponStuffOverride>
+    <MST.invFoodDef>携带食物</MST.invFoodDef>
+    <MST.titleRequired>所需头衔</MST.titleRequired>
+    <MST.minTitleRequired>最低头衔</MST.minTitleRequired>
+    <MST.mutant>变异类型</MST.mutant>
+    <MST.favoriteColor>偏好颜色</MST.favoriteColor>
+
+    <!-- Second Priority: Numeric -->
+    <MST.techHediffsMoney>植入物预算</MST.techHediffsMoney>
+    <MST.techHediffsChance>植入物概率</MST.techHediffsChance>
+    <MST.techHediffsMaxAmount>最大植入</MST.techHediffsMaxAmount>
+    <MST.invNutrition>携带营养值</MST.invNutrition>
+    <MST.chemicalAddictionChance>化学成瘾</MST.chemicalAddictionChance>
+    <MST.combatEnhancingDrugsChance>药物概率</MST.combatEnhancingDrugsChance>
+    <MST.combatEnhancingDrugsCount>药物数量</MST.combatEnhancingDrugsCount>
+    <MST.extraSkillLevels>技能等级</MST.extraSkillLevels>
+    <MST.minTotalSkillLevels>技能总和</MST.minTotalSkillLevels>
+    <MST.minBestSkillLevel>技能要求</MST.minBestSkillLevel>
+    <MST.isGoodPsychicRitualInvoker>心灵仪式</MST.isGoodPsychicRitualInvoker>
+    <MST.apparelIgnoreSeasons>无视季节</MST.apparelIgnoreSeasons>
+    <MST.apparelIgnorePollution>无视污染</MST.apparelIgnorePollution>
+    <MST.ignoreFactionApparelStuffRequirements>无视材料</MST.ignoreFactionApparelStuffRequirements>
+    <MST.ignoreIdeoApparelColors>无视颜色</MST.ignoreIdeoApparelColors>
+    <MST.trader>是否为商人</MST.trader>
+    <MST.generateInitialNonFamilyRelations>生成关系</MST.generateInitialNonFamilyRelations>
+</LanguageData>

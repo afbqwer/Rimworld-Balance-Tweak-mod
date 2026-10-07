@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Meme>Meme</MST.Meme>
+    <MST.impact>impact</MST.impact>
+    <MST.selectionWeightFactor>Weight</MST.selectionWeightFactor>
+    <MST.selectionWeightFactorComment>The weights that randomly appear as memes. The higher the weight, the more common it is.</MST.selectionWeightFactorComment>
+</LanguageData>

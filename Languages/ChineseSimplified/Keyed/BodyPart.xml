@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.BodyPart>身体部位</MST.BodyPart>
+    <MST.Skin>皮肤覆盖</MST.Skin>
+    <MST.Organ>器官</MST.Organ>
+    <MST.Bone>骨头</MST.Bone>
+
+    <MST.labelShort>短名</MST.labelShort>
+    <MST.hitPoints>生命值</MST.hitPoints>
+    <MST.permanentInjuryChanceFactor>永久伤率</MST.permanentInjuryChanceFactor>
+    <MST.frostbiteVulnerability>冻伤权重</MST.frostbiteVulnerability>
+    <MST.skinCovered>有皮肤</MST.skinCovered>
+    <MST.alive>活性</MST.alive>
+    <MST.delicate>脆弱</MST.delicate>
+    <MST.beautyRelated>美观相关</MST.beautyRelated>
+    <MST.conceptual>概念性</MST.conceptual>
+    <MST.socketed>插槽</MST.socketed>
+    <MST.destroyableByDamage>可损毁</MST.destroyableByDamage>
+    <MST.canBeVacuumBurnt>真空灼烧</MST.canBeVacuumBurnt>
+    <MST.canScarify>可留疤</MST.canScarify>
+    <MST.pawnGeneratorCanAmputate>生成可截</MST.pawnGeneratorCanAmputate>
+    <MST.canSuggestAmputation>建议截肢</MST.canSuggestAmputation>
+    <MST.forceAlwaysRemovable>强制可移除</MST.forceAlwaysRemovable>
+    <MST.spawnThingOnRemoved>移除掉落</MST.spawnThingOnRemoved>
+    <MST.removeRecipeLabelOverride>移除配方名</MST.removeRecipeLabelOverride>
+    <MST.executionPartPriority>处决优先级</MST.executionPartPriority>
+    <MST.hitChanceFactors>命中权重</MST.hitChanceFactors>
+    <MST.raceLinks>种族关联</MST.raceLinks>
+    <MST.bodyLinks>身体关联</MST.bodyLinks>
+
+    <MST.labelShortComment>紧凑界面中使用的简称。为空时回退到完整名称。</MST.labelShortComment>
+    <MST.hitPointsComment>该身体部位的基础生命值（未计入角色健康倍率）。</MST.hitPointsComment>
+    <MST.permanentInjuryChanceFactorComment>该部位受伤后留下永久性损伤的几率倍率。0 表示永不永久化。</MST.permanentInjuryChanceFactorComment>
+    <MST.frostbiteVulnerabilityComment>冻伤选择部位时的权重，越高越容易被冻伤。</MST.frostbiteVulnerabilityComment>
+    <MST.skinCoveredComment>该部位是否被皮肤覆盖。影响皮肤层健康状态（烧伤/割伤）与护甲覆盖。</MST.skinCoveredComment>
+    <MST.aliveComment>该部位是否属于活体组织。非活体部位不会流血，也不受血肉类健康状态影响。</MST.aliveComment>
+    <MST.delicateComment>脆弱部位更容易被伤害摧毁。</MST.delicateComment>
+    <MST.beautyRelatedComment>该部位的损伤或毁容是否影响角色的美观。</MST.beautyRelatedComment>
+    <MST.conceptualComment>概念性部位并非实体（如腰），永远不会被伤害命中。</MST.conceptualComment>
+    <MST.socketedComment>插槽部位是连接点，本身无法被单独伤害。</MST.socketedComment>
+    <MST.destroyableByDamageComment>该部位是否可被伤害摧毁。关闭后永远不会被摧毁。</MST.destroyableByDamageComment>
+    <MST.canBeVacuumBurntComment>该部位是否会被真空（太空）灼烧。</MST.canBeVacuumBurntComment>
+    <MST.canScarifyComment>该部位是否可以留下伤疤。</MST.canScarifyComment>
+    <MST.pawnGeneratorCanAmputateComment>生成角色时是否允许随机截除该部位。</MST.pawnGeneratorCanAmputateComment>
+    <MST.canSuggestAmputationComment>是否可在健康页签中建议对该部位进行截肢。</MST.canSuggestAmputationComment>
+    <MST.forceAlwaysRemovableComment>强制该部位始终可通过手术移除（即使常规情况下不可移除）。</MST.forceAlwaysRemovableComment>
+    <MST.spawnThingOnRemovedComment>该部位被移除时掉落的物品。</MST.spawnThingOnRemovedComment>
+    <MST.removeRecipeLabelOverrideComment>覆盖该部位移除配方的显示名称。</MST.removeRecipeLabelOverrideComment>
+    <MST.executionPartPriorityComment>处决时选择命中部位的优先级，越高越优先。</MST.executionPartPriorityComment>
+    <MST.hitChanceFactorsComment>按伤害类型设置该部位被命中的几率倍率。未列出的伤害类型默认为 1。</MST.hitChanceFactorsComment>
+    <MST.raceLinksComment>点击查看所有身体包含此部位的种族，点击条目可跳转。</MST.raceLinksComment>
+</LanguageData>

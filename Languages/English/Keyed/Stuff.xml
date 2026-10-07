@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Metallic>Metallic</MST.Metallic>
+    <MST.Woody>Woody</MST.Woody>
+    <MST.Stony>Stony</MST.Stony>
+    <MST.Fabric>Fabric</MST.Fabric>
+    <MST.Leathery>Leathery</MST.Leathery>
+    <MST.stuffPowerArmorSharp>StfShpA</MST.stuffPowerArmorSharp>
+    <MST.stuffPowerArmorBlunt>StfBltA</MST.stuffPowerArmorBlunt>
+    <MST.stuffPowerArmorHeat>StfHtA</MST.stuffPowerArmorHeat>
+    <MST.stuffPowerInsulationCold>StfCldI</MST.stuffPowerInsulationCold>
+    <MST.stuffPowerInsulationHeat>StfHtI</MST.stuffPowerInsulationHeat>
+    <MST.sharpDamageMultiplier>StfShpD</MST.sharpDamageMultiplier>
+    <MST.bluntDamageMultiplier>StfBltD</MST.bluntDamageMultiplier>
+    <MST.stuffMaxHitPoints>StfDur</MST.stuffMaxHitPoints>
+    <MST.stuffFlammability>StfFlm</MST.stuffFlammability>
+    <MST.stuffBeauty>StfBea</MST.stuffBeauty>
+    <MST.stuffWorkToMake>StfW2M</MST.stuffWorkToMake>
+    <MST.stuffWorkToBuild>StfW2B</MST.stuffWorkToBuild>
+    <MST.stuffMeleeWeaponCooldownMultiplier>StfMCD</MST.stuffMeleeWeaponCooldownMultiplier>
+    <MST.statBases>Bases</MST.statBases>
+    <MST.statBasesComment>Base stats of this stuff.</MST.statBasesComment>
+    <MST.statOffsetsComment>Stat offsets from stuff properties.</MST.statOffsetsComment>
+    <MST.statFactorsComment>Stat factors from stuff properties.</MST.statFactorsComment>
+    <MST.deepCommonality>DeepCmn</MST.deepCommonality>
+    <MST.deepCommonalityComment>Commonality for deep scanning / ground-penetrating scanner.</MST.deepCommonalityComment>
+    <MST.deepCountPerPortion>DeepCnt</MST.deepCountPerPortion>
+    <MST.deepCountPerPortionComment>Yield per portion from deep drilling.</MST.deepCountPerPortionComment>
+    <MST.deepCountPerCell>CellCnt</MST.deepCountPerCell>
+    <MST.deepCountPerCellComment>Resource count per cell from ground-penetrating scanner.</MST.deepCountPerCellComment>
+    <MST.deepLumpSizeRange>LumpRng</MST.deepLumpSizeRange>
+    <MST.deepLumpSizeRangeComment>Range of resource cell count after scanning (min~max).</MST.deepLumpSizeRangeComment>
+</LanguageData>

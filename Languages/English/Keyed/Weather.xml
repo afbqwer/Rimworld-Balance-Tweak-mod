@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Weather>Weather</MST.Weather>
+    <MST.accuracyMultiplier>acc</MST.accuracyMultiplier>
+    <MST.moveSpeedMultiplier>move</MST.moveSpeedMultiplier>
+    <MST.windSpeedFactor>windSpd</MST.windSpeedFactor>
+</LanguageData>

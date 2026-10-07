@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Building>Building</MST.Building>
+    <MST.Turret>TurBldg</MST.Turret>
+    <MST.Frame>FrmBldg</MST.Frame>
+    <MST.PowerBuilding>PwrBldg</MST.PowerBuilding>
+    <MST.basePowerConsumption>PwrCons</MST.basePowerConsumption>
+    <MST.fillPercent>FillPct</MST.fillPercent>
+    <MST.costList>Cost</MST.costList>
+    <MST.fillPercentComment>The fill percentage of the building, affecting cover effectiveness, passability, etc. Warning: Do not modify this after starting a game, as it can cause pathfinding issues!</MST.fillPercentComment>
+    <MST.stuffCategories>MatCat</MST.stuffCategories>
+    <MST.stuffCategoriesComment>Which categories of materials can be used to craft this item. Affects available materials when selecting Bills.</MST.stuffCategoriesComment>
+    <MST.researchPrerequisites>Reqs</MST.researchPrerequisites>
+    <MST.researchPrerequisitesComment>Research projects required to unlock this item's construction.</MST.researchPrerequisitesComment>
+    <MST.isTargetable>TgtAble</MST.isTargetable>
+    <MST.isTargetableComment>Whether this building can be manually targeted in combat.</MST.isTargetableComment>
+    <MST.alwaysDeconstructible>AlwDec</MST.alwaysDeconstructible>
+    <MST.alwaysDeconstructibleComment>Whether this building can always be deconstructed regardless of faction.</MST.alwaysDeconstructibleComment>
+    <MST.alwaysUninstallable>AlwUnin</MST.alwaysUninstallable>
+    <MST.alwaysUninstallableComment>Whether this building can always be uninstalled (picked up) regardless of faction.</MST.alwaysUninstallableComment>
+    <MST.uninstallWork>UninWrk</MST.uninstallWork>
+    <MST.uninstallWorkComment>Work amount required to uninstall this building.</MST.uninstallWorkComment>
+    <MST.claimable>Claim</MST.claimable>
+    <MST.claimableComment>Whether this building can be claimed by other factions.</MST.claimableComment>
+    <MST.repairable>Repair</MST.repairable>
+    <MST.repairableComment>Whether this building can be repaired when damaged.</MST.repairableComment>
+    <MST.isAirtight>Airtight</MST.isAirtight>
+    <MST.isAirtightComment>Whether this building creates an airtight seal, separating indoor and outdoor environments.</MST.isAirtightComment>
+    <MST.workTableWorkSpeedFactor>WSpdFact</MST.workTableWorkSpeedFactor>
+    <MST.unpoweredWorkTableWorkSpeedFactor>UnpWSpd</MST.unpoweredWorkTableWorkSpeedFactor>
+    <MST.unpoweredWorkTableWorkSpeedFactorComment>Work speed factor when the work table has no power.</MST.unpoweredWorkTableWorkSpeedFactorComment>
+    <MST.workTableNotInRoomRoleFactor>WNotRmF</MST.workTableNotInRoomRoleFactor>
+    <MST.workTableNotInRoomRoleFactorComment>Work speed factor when not in the correct room role.</MST.workTableNotInRoomRoleFactorComment>
+    <MST.workTableRoomRole>WkRmRole</MST.workTableRoomRole>
+    <MST.workTableRoomRoleComment>The room role associated with this work table.</MST.workTableRoomRoleComment>
+
+    <!-- BuildingType 分类 -->
+    <MST.Door>Door</MST.Door>
+    <MST.Bed>Bed</MST.Bed>
+    <MST.LightSource>LightSrc</MST.LightSource>
+    <MST.TemperatureControl>TempCtrl</MST.TemperatureControl>
+    <MST.Production>Production</MST.Production>
+    <MST.Nature>Nature</MST.Nature>
+    <MST.Prop>Prop</MST.Prop>
+
+    <!-- ThingDef 通用字段 -->
+    <MST.constructionSkillPrerequisite>ConstSkill</MST.constructionSkillPrerequisite>
+    <MST.holdsRoof>HoldsRoof</MST.holdsRoof>
+    <MST.blockLight>BlkLight</MST.blockLight>
+    <MST.blockWind>BlkWind</MST.blockWind>
+    <MST.destroyable>Destroya</MST.destroyable>
+    <MST.selectable>Selecta</MST.selectable>
+    <MST.replaceTags>RepTags</MST.replaceTags>
+    <MST.fertility>Fertility</MST.fertility>
+    <MST.fertilityComment>Soil fertility value for this building. Only relevant for buildings that interact with soil.</MST.fertilityComment>
+
+    <!-- BuildingProperties 字段 -->
+
+    <!-- Door 字段 -->
+    <MST.canExchangeVacuum>ExchVac</MST.canExchangeVacuum>
+    <MST.poweredDoorOpenSpeedFactor>PwOpenSpd</MST.poweredDoorOpenSpeedFactor>
+    <MST.poweredDoorCloseSpeedFactor>PwClsSpd</MST.poweredDoorCloseSpeedFactor>
+    <MST.unpoweredDoorOpenSpeedFactor>UnpOpnSpd</MST.unpoweredDoorOpenSpeedFactor>
+    <MST.unpoweredDoorCloseSpeedFactor>UnpClsSpd</MST.unpoweredDoorCloseSpeedFactor>
+
+    <!-- Bed 字段 -->
+    <MST.bed_healPerDay>HealDay</MST.bed_healPerDay>
+    <MST.bed_maxBodySize>MaxBodSz</MST.bed_maxBodySize>
+    <MST.bed_caravansCanUse>Caravans</MST.bed_caravansCanUse>
+
+    <!-- Turret 字段 -->
+    <MST.turretBurstCooldownTime>BurstCD</MST.turretBurstCooldownTime>
+    <MST.turretInitialCooldownTime>InitCD</MST.turretInitialCooldownTime>
+    <MST.combatPower>CbtPower</MST.combatPower>
+
+    <!-- Furniture 字段 -->
+
+    <!-- LightSource 字段 -->
+    <MST.glowRadius>GlwRad</MST.glowRadius>
+    <MST.overlightRadius>OvLitRad</MST.overlightRadius>
+    <MST.scheduleStartTime>SchStart</MST.scheduleStartTime>
+    <MST.scheduleEndTime>SchEnd</MST.scheduleEndTime>
+
+    <!-- TemperatureControl 字段 -->
+    <MST.energyPerSecond>EngPerS</MST.energyPerSecond>
+    <MST.defaultTargetTemperature>DefTemp</MST.defaultTargetTemperature>
+    <MST.minTargetTemperature>MinTemp</MST.minTargetTemperature>
+    <MST.maxTargetTemperature>MaxTemp</MST.maxTargetTemperature>
+
+    <!-- Production 字段 -->
+    <MST.recipes>Recipes</MST.recipes>
+
+    <!-- Refuelable 字段 -->
+    <MST.fuelName>Fuel</MST.fuelName>
+    <MST.fuelCapacity>FuelCap</MST.fuelCapacity>
+    <MST.fuelConsumptionRate>FuelRate</MST.fuelConsumptionRate>
+    <MST.fuelMultiplier>FuelMult</MST.fuelMultiplier>
+
+    <!-- Power 字段 -->
+    <MST.shortCircuitInRain>RainSC</MST.shortCircuitInRain>
+    <MST.transmitsPower>TransPwr</MST.transmitsPower>
+    <MST.allowWireConnection>WireConn</MST.allowWireConnection>
+
+    <!-- Anomaly 字段 -->
+    <MST.studiableFrequencyTicks>StudyFreq</MST.studiableFrequencyTicks>
+    <MST.anomalyKnowledge>AnomKnwl</MST.anomalyKnowledge>
+    <MST.activityStartingRangeMin>ActRngMin</MST.activityStartingRangeMin>
+    <MST.activityStartingRangeMax>ActRngMax</MST.activityStartingRangeMax>
+    <MST.changePerDayBase>ChgDay</MST.changePerDayBase>
+    <MST.changePerDamage>ChgDmg</MST.changePerDamage>
+
+    <!-- Mineable 分类 -->
+    <MST.Mineable>Mineable</MST.Mineable>
+
+    <!-- Mineable 字段 -->
+    <MST.mineableThing>MineThing</MST.mineableThing>
+    <MST.mineableYield>Yield</MST.mineableYield>
+    <MST.veinMineable>Vein</MST.veinMineable>
+    <MST.mineableNonMinedEfficiency>NonMinEff</MST.mineableNonMinedEfficiency>
+    <MST.mineableDropChance>DropChance</MST.mineableDropChance>
+    <MST.mineableYieldWasteable>Wasteable</MST.mineableYieldWasteable>
+    <MST.mineableScatterCommonality>ScatterCom</MST.mineableScatterCommonality>
+    <MST.mineablePreventMeteorite>NoMeteor</MST.mineablePreventMeteorite>
+    <MST.mineablePreventNaturalRockOnSurface>NoSurfRock</MST.mineablePreventNaturalRockOnSurface>
+    <MST.isNaturalRock>NatRock</MST.isNaturalRock>
+    <MST.isResourceRock>ResRock</MST.isResourceRock>
+</LanguageData>

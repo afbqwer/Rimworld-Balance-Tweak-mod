@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Ability>Ability</MST.Ability>
+    <MST.VPEAbility>VPE Psy</MST.VPEAbility>
+    <MST.Psychic>Psychic</MST.Psychic>
+    <MST.Sanguophage>Sanguophage</MST.Sanguophage>
+    <MST.AbilityGroup>AbilGrp</MST.AbilityGroup>
+    <MST.radius>Radius</MST.radius>
+    <MST.baseMoodEffect>MoodEff</MST.baseMoodEffect>
+    <MST.baseOpinionOffset>OpnOff</MST.baseOpinionOffset>
+    <MST.visible>Visibility</MST.visible>
+    <MST.abilityDuration>Duration</MST.abilityDuration>
+    <MST.abilityEntropyGain>PsyEnt+</MST.abilityEntropyGain>
+    <MST.abilityPsyfocusCost>Psyfocus-</MST.abilityPsyfocusCost>
+    <MST.requireLineOfSight>ReqLOS</MST.requireLineOfSight>
+    <MST.psylevel>PsyLvl</MST.psylevel>
+    <MST.cooldownTicksRange>CDRng</MST.cooldownTicksRange>
+    <MST.abilityGroupCooldownTicks>GrpCD</MST.abilityGroupCooldownTicks>
+    <MST.aiCanUse>AICan</MST.aiCanUse>
+    <MST.distanceToTarget>CastRng</MST.distanceToTarget>
+    <MST.castTime>CastTm</MST.castTime>
+    <MST.durationTime>Duration</MST.durationTime>
+    <MST.psyfocusCost>Psyfocus-</MST.psyfocusCost>
+    <MST.entropyGain>PsyEnt+</MST.entropyGain>
+    <MST.initialWillRange>InitWR</MST.initialWillRange>
+    <MST.initialResistanceRange>InitRR</MST.initialResistanceRange>
+    <MST.cooldownTicksRangeComment>The range for the cooldown time. In ticks (1/60 second), e.g., 30 ticks is 0.5 seconds.</MST.cooldownTicksRangeComment>
+    <MST.abilityGroupCooldownTicksComment>The cooldown time for all abilities in the ability group. Changing this will affect all abilities in the same group. In ticks (1/60 second), e.g., 30 ticks is 0.5 seconds.</MST.abilityGroupCooldownTicksComment>
+    <MST.aiCanUseComment>Whether the AI can use this ability. Even if enabled, your own pawns must be under AI control to be affected, and the AI may still not use it due to other conditions.</MST.aiCanUseComment>
+    <MST.AbilityGroupComment>The AbilityGroup to which the ability belongs.</MST.AbilityGroupComment>
+</LanguageData>

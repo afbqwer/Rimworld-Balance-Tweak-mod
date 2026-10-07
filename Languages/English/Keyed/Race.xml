@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Race>Race</MST.Race>
+    <MST.Entity>Entity</MST.Entity>
+    <MST.Humanlike>Human</MST.Humanlike>
+    <MST.Insect>Insect</MST.Insect>
+    <MST.Mechanoid>Mechanoid</MST.Mechanoid>
+    <MST.Animal>Animal</MST.Animal>
+    <MST.sharpArmor>ShpArm</MST.sharpArmor>
+    <MST.bluntArmor>BltArm</MST.bluntArmor>
+    <MST.heatArmor>HtArm</MST.heatArmor>
+    <MST.baseHealthScale>HlthMlt</MST.baseHealthScale>
+    <MST.bandwidthCost>BW Cost</MST.bandwidthCost>
+    <MST.moveSpeed>MoveSpd</MST.moveSpeed>
+    <MST.workSpeedGlobal>WrkSpd</MST.workSpeedGlobal>
+    <MST.mechFixedSkillLevel>SkLvl</MST.mechFixedSkillLevel>
+    <MST.shootingAccuracyPawn>RngAcc</MST.shootingAccuracyPawn>
+    <MST.aimingDelayFactor>AimMult</MST.aimingDelayFactor>
+    <MST.rangedCooldownFactor>CD Mult</MST.rangedCooldownFactor>
+    <MST.meleeDamageFactor>MelDmgM</MST.meleeDamageFactor>
+    <MST.meleeCooldownFactor>MelCD</MST.meleeCooldownFactor>
+    <MST.meleeDodgeChance>MelDdg</MST.meleeDodgeChance>
+    <MST.wildness>Wildness</MST.wildness>
+    <MST.lifeExpectancy>LifeExp</MST.lifeExpectancy>
+    <MST.lifespanYears>LifeYears</MST.lifespanYears>
+    <MST.baseHungerRate>HungRt</MST.baseHungerRate>
+    <MST.carryingCapacity>CarrCap</MST.carryingCapacity>
+    <MST.injuryHealingFactor>HealFac</MST.injuryHealingFactor>
+    <MST.incomingDamageFactor>DmgTakF</MST.incomingDamageFactor>
+    <MST.staggerDurationFactor>StagDur</MST.staggerDurationFactor>
+    <MST.marketValue>MktVal</MST.marketValue>
+    <MST.baseBodySize>BdySz</MST.baseBodySize>
+    <MST.mechBandwidth>BWProv</MST.mechBandwidth>
+    <MST.vacuumResistance>VacRes</MST.vacuumResistance>
+    <MST.workSpeedGlobalOffsetMech>MchWSp+</MST.workSpeedGlobalOffsetMech>
+    <MST.psychicSensitivity>PsySen</MST.psychicSensitivity>
+    <MST.combatPower>CbtPwr</MST.combatPower>
+    <MST.corepartHP>TorsoHP</MST.corepartHP>
+    <MST.MeleeHitChance>MeleHit</MST.MeleeHitChance>
+    <MST.massCarryCapacity>m.Carry</MST.massCarryCapacity>
+    <MST.RaceTool>RaceMan</MST.RaceTool>
+    <MST.bodyDef>Body</MST.bodyDef>
+    <MST.combatPowerComment>The raid point cost for this type.</MST.combatPowerComment>
+    <MST.bioferriteDensity>BiofDens</MST.bioferriteDensity>
+    <MST.studiableFrequencyTicks>StdyFreq</MST.studiableFrequencyTicks>
+    <MST.knowledgeCategory>KnowCat</MST.knowledgeCategory>
+    <MST.anomalyKnowledge>AnomKnow</MST.anomalyKnowledge>
+    <MST.activityStartingRangeMin>ActRngMn</MST.activityStartingRangeMin>
+    <MST.activityStartingRangeMax>ActRngMx</MST.activityStartingRangeMax>
+    <MST.changePerDayBase>Chg/Day</MST.changePerDayBase>
+    <MST.changePerDamage>Chg/Dmg</MST.changePerDamage>
+    <MST.projectileInterceptorRadius>ShdRad</MST.projectileInterceptorRadius>
+    <MST.projectileInterceptorRadiusComment>The shield radius.</MST.projectileInterceptorRadiusComment>
+    <MST.projectileInterceptorHitPoints>ShdHP</MST.projectileInterceptorHitPoints>
+    <MST.projectileInterceptorHitPointsComment>The shield's maximum hit points.</MST.projectileInterceptorHitPointsComment>
+    <MST.projectileInterceptorChargeDurationTicks>ChrgDur</MST.projectileInterceptorChargeDurationTicks>
+    <MST.projectileInterceptorChargeDurationTicksComment>How long the shield stays active after charging.</MST.projectileInterceptorChargeDurationTicksComment>
+    <MST.projectileInterceptorRechargeHitPointsIntervalTicks>RchrgHP</MST.projectileInterceptorRechargeHitPointsIntervalTicks>
+    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>How many ticks between each HP recharge tick.</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
+    <MST.projectileInterceptorDisarmedByEmpForTicks>EmpDur</MST.projectileInterceptorDisarmedByEmpForTicks>
+    <MST.projectileInterceptorDisarmedByEmpForTicksComment>How long the shield is disabled by EMP.</MST.projectileInterceptorDisarmedByEmpForTicksComment>
+    <MST.eggLayIntervalDays>EggDays</MST.eggLayIntervalDays>
+    <MST.eggCountRangeMin>EggCntMn</MST.eggCountRangeMin>
+    <MST.eggCountRangeMax>EggCntMx</MST.eggCountRangeMax>
+    <MST.eggFertilizationCountMax>EggFrtMx</MST.eggFertilizationCountMax>
+    <MST.eggLayFemaleOnly>Egg♀Only</MST.eggLayFemaleOnly>
+    <MST.eggProgressUnfertilizedMax>EggPrgUF</MST.eggProgressUnfertilizedMax>
+    <MST.milkIntervalDays>MilkDays</MST.milkIntervalDays>
+    <MST.milkAmount>MilkAmt</MST.milkAmount>
+    <MST.milkFemaleOnly>Milk♀Only</MST.milkFemaleOnly>
+    <MST.shearIntervalDays>ShrDays</MST.shearIntervalDays>
+    <MST.woolAmount>WoolAmt</MST.woolAmount>
+</LanguageData>

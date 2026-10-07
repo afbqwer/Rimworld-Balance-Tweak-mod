@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Projectile>Projectile</MST.Projectile>
+    <MST.BulletProjectile>BulProj</MST.BulletProjectile>
+    <MST.BeamProjectile>BmProj</MST.BeamProjectile>
+    <MST.ExplosionProjectile>ExpProj</MST.ExplosionProjectile>
+    <MST.SpecialProjectile>SpcProj</MST.SpecialProjectile>
+</LanguageData>

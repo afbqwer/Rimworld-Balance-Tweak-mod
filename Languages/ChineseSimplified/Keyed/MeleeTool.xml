@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.MeleeTool>招式</MST.MeleeTool>
+    <MST.MeleeWeaponTool>近武招式</MST.MeleeWeaponTool>
+    <MST.RangedWeaponTool>远武招式</MST.RangedWeaponTool>
+    <MST.toolLabel>招式名称</MST.toolLabel>
+    <MST.cooldownTime>冷却时间</MST.cooldownTime>
+    <MST.bodypartLabel>身体部位</MST.bodypartLabel>
+    <MST.damageType>伤害类型</MST.damageType>
+    <MST.EXdamageNum>额外数量</MST.EXdamageNum>
+    <MST.EXdamageAmountBase>额外伤害</MST.EXdamageAmountBase>
+    <MST.EXarmorPenetrationBase>额外穿透</MST.EXarmorPenetrationBase>
+    <MST.EXdamageType>额外类型</MST.EXdamageType>
+    <MST.EXchance>额外概率</MST.EXchance>
+    <MST.haveSurpriseAttack>可偷袭</MST.haveSurpriseAttack>
+    <MST.haveSurpriseAttackComment>此招式在偷袭（如猎杀人类的首次攻击）时，是否会附带额外效果。编辑器不支持编辑此项。</MST.haveSurpriseAttackComment>
+    <MST.EXdamageNumComment>此招式是否会附带额外的伤害效果。编辑器只能编辑前两个额外效果，且无法添加新的额外效果，只能修改已有的额外效果。</MST.EXdamageNumComment>
+    <MST.EXdamageAmountBaseComment>此招式附带额外伤害效果的数值。编辑器无法添加新的额外效果，只能修改已有的额外效果。</MST.EXdamageAmountBaseComment>
+    <MST.EXchanceComment>此招式附带额外伤害效果的概率。编辑器无法添加新的额外效果，只能修改已有的额外效果。</MST.EXchanceComment>
+    <MST.EXarmorPenetrationBaseComment>此招式附带额外伤害效果的护甲穿透。如果为-1，意味着护甲穿透为伤害的15%，如10伤害对应15%护甲穿透。
+        编辑器无法添加新的额外效果，只能修改已有的额外效果。</MST.EXarmorPenetrationBaseComment>
+    <MST.EX2damageType>额外类型2</MST.EX2damageType>
+    <MST.EX2damageAmountBase>额外伤害2</MST.EX2damageAmountBase>
+    <MST.EX2armorPenetrationBase>额外穿透2</MST.EX2armorPenetrationBase>
+    <MST.EX2chance>额外概率2</MST.EX2chance>
+    <MST.EX2damageTypeComment>此招式的第二个额外伤害效果的类型。编辑器无法添加新的额外效果，只能修改已有的额外效果。</MST.EX2damageTypeComment>
+    <MST.EX2damageAmountBaseComment>此招式第二个额外伤害效果的数值。编辑器无法添加新的额外效果，只能修改已有的额外效果。</MST.EX2damageAmountBaseComment>
+    <MST.EX2chanceComment>此招式第二个额外伤害效果的概率。编辑器无法添加新的额外效果，只能修改已有的额外效果。</MST.EX2chanceComment>
+    <MST.EX2armorPenetrationBaseComment>此招式第二个额外伤害效果的护甲穿透。如果为-1，意味着护甲穿透为伤害的15%，如10伤害对应15%护甲穿透。
+        编辑器无法添加新的额外效果，只能修改已有的额外效果。</MST.EX2armorPenetrationBaseComment>
+    <MST.HediffTool>健康招式</MST.HediffTool>
+</LanguageData>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Food>Food</MST.Food>
+    <MST.Corpse>Corpse</MST.Corpse>
+    <MST.PlantCrop>Crop</MST.PlantCrop>
+    <MST.PlantTree>Tree</MST.PlantTree>
+    <MST.PlantWild>Wild</MST.PlantWild>
+    <MST.MeatAndEgg>MeatEgg</MST.MeatAndEgg>
+    <MST.Meal>Meal</MST.Meal>
+    <MST.Raw>Raw</MST.Raw>
+    <MST.Drug>Drug</MST.Drug>
+    <MST.nutrition>Nutr</MST.nutrition>
+    <MST.baseIngestTicks>EatTicks</MST.baseIngestTicks>
+    <MST.joy>Joy</MST.joy>
+    <MST.preferability>Prefer</MST.preferability>
+    <MST.medicalPotency>MedPot</MST.medicalPotency>
+    <MST.medicalQualityMax>MedQual</MST.medicalQualityMax>
+    <MST.canRot>CanRot</MST.canRot>
+    <MST.daysToRotStart>RotStart</MST.daysToRotStart>
+    <MST.rotDestroys>RotDstry</MST.rotDestroys>
+    <MST.rotDamagePerDay>RotDmg</MST.rotDamagePerDay>
+    <MST.daysToDessicated>DessStart</MST.daysToDessicated>
+    <MST.dessicatedDamagePerDay>DessDmg</MST.dessicatedDamagePerDay>
+    <MST.canRotComment>Whether this food has a rot comp and can spoil.</MST.canRotComment>
+    <MST.daysToRotStartComment>Days until rot starts. Only applies to food with a rot comp. Modified values apply to items that already have a rot comp.</MST.daysToRotStartComment>
+    <MST.rotDestroysComment>Whether the item is destroyed when fully rotted. If false, it becomes a rotten but still existing item.</MST.rotDestroysComment>
+    <MST.rotDamagePerDayComment>HP damage per day from rotting.</MST.rotDamagePerDayComment>
+    <MST.daysToDessicatedComment>Days until dessicated (dried out) after becoming rotten.</MST.daysToDessicatedComment>
+    <MST.dessicatedDamagePerDayComment>HP damage per day from dessication.</MST.dessicatedDamagePerDayComment>
+    <!-- Plant field titles -->
+    <MST.growDays>GrowDays</MST.growDays>
+    <MST.harvestYield>Yield</MST.harvestYield>
+    <MST.sowWork>SowWork</MST.sowWork>
+    <MST.harvestWork>HrvstWork</MST.harvestWork>
+    <MST.sowMinSkill>SkillReq</MST.sowMinSkill>
+    <MST.harvestMinGrowth>MinGrowth</MST.harvestMinGrowth>
+    <MST.harvestAfterGrowth>MultiHrvst</MST.harvestAfterGrowth>
+    <MST.fertilityMin>MinFert</MST.fertilityMin>
+    <MST.fertilitySensitivity>FertSens</MST.fertilitySensitivity>
+    <MST.minGrowthTemperature>MinTemp</MST.minGrowthTemperature>
+    <MST.maxGrowthTemperature>MaxTemp</MST.maxGrowthTemperature>
+    <MST.growMinGlow>MinGlow</MST.growMinGlow>
+    <MST.growOptimalGlow>OptGlow</MST.growOptimalGlow>
+    <MST.lifespanDaysPerGrowDays>LifeMul</MST.lifespanDaysPerGrowDays>
+    <MST.completelyIgnoreFertility>NoFert</MST.completelyIgnoreFertility>
+    <MST.blockAdjacentSow>NoAdj</MST.blockAdjacentSow>
+    <MST.harvestFailable>FailHrv</MST.harvestFailable>
+    <MST.autoHarvestable>AutoHrv</MST.autoHarvestable>
+    <MST.neverBlightable>NoBlight</MST.neverBlightable>
+    <MST.dieIfNoSunlight>DieDark</MST.dieIfNoSunlight>
+    <MST.minSpacingBetweenSamePlant>Spacing</MST.minSpacingBetweenSamePlant>
+    <MST.harvestedThingData>HarvDef</MST.harvestedThingData>
+    <MST.harvestedByData>Plant</MST.harvestedByData>
+    <MST.sowTags>SowTags</MST.sowTags>
+    <MST.sowResearchPrerequisites>Research</MST.sowResearchPrerequisites>
+    <MST.pollution>Pollution</MST.pollution>
+    <!-- Plant field comments -->
+    <MST.harvestAfterGrowthComment>Values &gt;0 allow multi-harvest (e.g. tea). 0 or default = one-time harvest.</MST.harvestAfterGrowthComment>
+    <MST.lifespanDaysPerGrowDaysComment>Plant lifespan = growDays x this multiplier. 0 means immortal.</MST.lifespanDaysPerGrowDaysComment>
+    <MST.completelyIgnoreFertilityComment>When enabled, plant ignores fertility entirely.</MST.completelyIgnoreFertilityComment>
+    <MST.blockAdjacentSowComment>Prevents sowing of the same plant adjacent to existing ones.</MST.blockAdjacentSowComment>
+    <MST.harvestFailableComment>When disabled, harvesting always succeeds (skill ignored).</MST.harvestFailableComment>
+    <MST.dieIfNoSunlightComment>Whether the plant dies without sunlight (turn off for cave plants).</MST.dieIfNoSunlightComment>
+    <MST.minSpacingBetweenSamePlantComment>Minimum spacing between same plant types. 0 = unlimited.</MST.minSpacingBetweenSamePlantComment>
+</LanguageData>

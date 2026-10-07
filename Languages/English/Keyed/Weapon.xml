@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Weapon>Weapon</MST.Weapon>
+    <MST.RangedWeapon>RngWpn</MST.RangedWeapon>
+    <MST.MeleeWeapon>MelWpn</MST.MeleeWeapon>
+    <MST.TurretWeapon>TurWpn</MST.TurretWeapon>
+    <MST.BuildinWeapon>BltWpn</MST.BuildinWeapon>
+    <MST.WeaponTool>WpnMan</MST.WeaponTool>
+    <MST.TurretGun>TurWpn</MST.TurretGun>
+    <MST.GunTurret>WpnTur</MST.GunTurret>
+    <MST.DPS>DPS</MST.DPS>
+    <MST.MeleeDPS>MelDPS</MST.MeleeDPS>
+    <MST.MaxRangedDPS>MaxRDPS</MST.MaxRangedDPS>
+    <MST.AverageRangedDPS>AvgRDPS</MST.AverageRangedDPS>
+    <MST.LMeleeDPS>LegMDPS</MST.LMeleeDPS>
+    <MST.LRangedDPS>LegRDPS</MST.LRangedDPS>
+    <MST.accuracyTouch>PBAcc</MST.accuracyTouch>
+    <MST.accuracyShort>SRAcc</MST.accuracyShort>
+    <MST.accuracyMedium>MRAcc</MST.accuracyMedium>
+    <MST.accuracyLong>LRAcc</MST.accuracyLong>
+    <MST.minRange>MinRng</MST.minRange>
+    <MST.maxRange>MaxRng</MST.maxRange>
+    <MST.warmup>WrmTime</MST.warmup>
+    <MST.cooldown>CD Time</MST.cooldown>
+    <MST.ticksBetweenBurstShots>ShotInt</MST.ticksBetweenBurstShots>
+    <MST.burstShotCount>BurCnt</MST.burstShotCount>
+    <MST.OptimalRange>OptRng</MST.OptimalRange>
+    <MST.allowInMechClusters>AlwMCl</MST.allowInMechClusters>
+    <MST.collidesWithPawns>ColWPa</MST.collidesWithPawns>
+    <MST.canOpenAnyDoor>CanOpDr</MST.canOpenAnyDoor>
+    <MST.forcedMissRadius>FMisRad</MST.forcedMissRadius>
+    <MST.projectileSpeed>ProjSpd</MST.projectileSpeed>
+    <MST.damageAmountBase>BaseDmg</MST.damageAmountBase>
+    <MST.armorPenetrationBase>ArmPen</MST.armorPenetrationBase>
+    <MST.normalarmorPenetrationBase>StdPen</MST.normalarmorPenetrationBase>
+    <MST.stoppingPower>StopPwr</MST.stoppingPower>
+    <MST.explosionRadius>ExpRad</MST.explosionRadius>
+    <MST.shootingAccuracyTurret>TurAcc</MST.shootingAccuracyTurret>
+    <MST.fuelName>Fuel</MST.fuelName>
+    <MST.fuelCapacity>FuelCap</MST.fuelCapacity>
+    <MST.fuelMultiplier>FMult</MST.fuelMultiplier>
+    <MST.fuelConsumptionRate>FConsR</MST.fuelConsumptionRate>
+    <MST.warmupMultiplier>WrmMult</MST.warmupMultiplier>
+    <MST.rangeMultiplier>RngMult</MST.rangeMultiplier>
+    <MST.rangeArmorPenetrationMultiplier>RngAPM</MST.rangeArmorPenetrationMultiplier>
+    <MST.rangeDamageMultiplier>RngDmgM</MST.rangeDamageMultiplier>
+    <MST.meleeDamageMultiplier>MelDmgM</MST.meleeDamageMultiplier>
+    <MST.MaxRangedDPSComment>The maximum DPS of a ranged weapon. Results may deviate for weapons with special mechanics.</MST.MaxRangedDPSComment>
+    <MST.AverageRangedDPSComment>The expected DPS of a ranged weapon firing at its optimal accuracy range. Results may deviate for weapons with special mechanics.</MST.AverageRangedDPSComment>
+    <MST.LMeleeDPSComment>The expected DPS of a legendary quality melee weapon. If unaffected by quality, the value is the same as non-quality.</MST.LMeleeDPSComment>
+    <MST.LRangedDPSComment>The expected DPS of a legendary quality ranged weapon firing at its optimal accuracy range. If unaffected by quality, the value is the same as non-quality.</MST.LRangedDPSComment>
+    <MST.ticksBetweenBurstShotsComment>The interval between each shot after aiming, in ticks (1/60 second), e.g., 30 ticks is 0.5 seconds.</MST.ticksBetweenBurstShotsComment>
+    <MST.OptimalRangeComment>The distance at which a ranged weapon has the highest accuracy. Results may deviate for weapons with special mechanics.</MST.OptimalRangeComment>
+    <MST.explosionRadiusComment>The radius of the explosion. The editor does not support adding explosion effects; it will only modify existing ones.</MST.explosionRadiusComment>
+    <MST.fuelMultiplierComment>The multiplier for fuel consumption. The editor will only modify existing fuel properties.</MST.fuelMultiplierComment>
+    <MST.fuelConsumptionRateComment>The multiplier for fuel depletion over time. The value is meaningless if fuel does not deplete over time. The editor will only modify existing fuel properties.</MST.fuelConsumptionRateComment>
+    <MST.projectileSpeedComment>The flight speed of the projectile on the map.</MST.projectileSpeedComment>
+    <MST.damageAmountBaseComment>The base damage dealt. If -1, it means the damage value is solely determined by the damage type's default damage.</MST.damageAmountBaseComment>
+    <MST.armorPenetrationBaseComment>The armor penetration of the damage. If -1, it means the armor penetration is 15% of the damage, e.g., 10 damage corresponds to 15% armor penetration.</MST.armorPenetrationBaseComment>
+    <MST.allowInMechClustersComment>Whether it is allowed to appear in mechanoid clusters.</MST.allowInMechClustersComment>
+    <MST.collidesWithPawnsComment>Whether pawns are prevented from sharing the same tile.</MST.collidesWithPawnsComment>
+    <MST.canOpenAnyDoorComment>Whether the pawn can open any door regardless of restrictions.</MST.canOpenAnyDoorComment>
+    <MST.stuffCategories>MatCat</MST.stuffCategories>
+    <MST.stuffCategoriesComment>Which categories of materials can be used to craft this item. Affects available materials when selecting Bills.</MST.stuffCategoriesComment>
+    <MST.researchPrerequisites>Reqs</MST.researchPrerequisites>
+    <MST.researchPrerequisitesComment>Research projects required to unlock this item's construction.</MST.researchPrerequisitesComment>
+    <MST.statBases>StatB</MST.statBases>
+    <MST.statBasesComment>Directly modify the weapon's base stat values (e.g., market value, max hit points).</MST.statBasesComment>
+    <MST.equippedStatOffsets>EqpOff</MST.equippedStatOffsets>
+    <MST.equippedStatOffsetsComment>Offset bonuses to pawn stats when this weapon is equipped.</MST.equippedStatOffsetsComment>
+    <MST.removeReloadableComp>RmvRld</MST.removeReloadableComp>
+    <MST.removeReloadableCompComment>Enable to remove the reloadable component. This component cannot be added via this editor.</MST.removeReloadableCompComment>
+    <MST.reloadableAmmoDef>Ammo</MST.reloadableAmmoDef>
+    <MST.reloadableAmmoCountToRefill>AmmoRfl</MST.reloadableAmmoCountToRefill>
+    <MST.reloadableAmmoCountToRefillComment>Fixed amount of ammo consumed to fully refill all charges. Set this OR ammoCountPerCharge, not both.</MST.reloadableAmmoCountToRefillComment>
+    <MST.reloadableAmmoCountPerCharge>AmmoChg</MST.reloadableAmmoCountPerCharge>
+    <MST.reloadableAmmoCountPerChargeComment>Ammo consumed per charge restored. Set this OR ammoCountToRefill, not both.</MST.reloadableAmmoCountPerChargeComment>
+    <MST.reloadableBaseReloadTicks>RldTks</MST.reloadableBaseReloadTicks>
+    <MST.reloadableBaseReloadTicksComment>Base reload time in ticks (1/60 sec). Also used as the cooldown duration when replenishAfterCooldown is enabled.</MST.reloadableBaseReloadTicksComment>
+    <MST.reloadableReplenishAfterCooldown>Rplnsh</MST.reloadableReplenishAfterCooldown>
+    <MST.reloadableReplenishAfterCooldownComment>If enabled, charges automatically replenish after a cooldown instead of requiring manual reload.</MST.reloadableReplenishAfterCooldownComment>
+    <MST.reloadableMaxCharges>MaxChg</MST.reloadableMaxCharges>
+    <MST.reloadableMaxChargesComment>Maximum number of charges this weapon can hold.</MST.reloadableMaxChargesComment>
+</LanguageData>

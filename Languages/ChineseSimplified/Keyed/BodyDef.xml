@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.BodyDef>身体</MST.BodyDef>
+    <MST.parts>部位</MST.parts>
+    <MST.partsComment>该身体的部位树。点击打开树形编辑窗口，可增删、移动部位，并编辑其属性与所引用的部位定义。</MST.partsComment>
+
+    <MST.def>部位定义</MST.def>
+    <MST.customLabel>自定义名称</MST.customLabel>
+    <MST.coverage>覆盖率</MST.coverage>
+    <MST.height>高度</MST.height>
+    <MST.depth>深度</MST.depth>
+    <MST.groups>部位组</MST.groups>
+
+    <MST.defComment>该节点引用的 BodyPartDef。点击“->”可跳转到 BodyPart 页签中对应的数据。</MST.defComment>
+    <MST.customLabelComment>可选的、针对该身体的名称，覆盖部位定义自身的名称。留空则使用部位定义的名称。</MST.customLabelComment>
+    <MST.coverageComment>该部位占父级剩余覆盖率（0-1）的比例。</MST.coverageComment>
+    <MST.heightComment>命中该部位时使用的高度分类（上/中/下）。</MST.heightComment>
+    <MST.depthComment>命中该部位时使用的深度分类（外/内）。</MST.depthComment>
+    <MST.groupsComment>该节点所属的部位组（用于衣物/护甲的覆盖判定）。</MST.groupsComment>
+
+    <MST.AddChildPart>新增子部位</MST.AddChildPart>
+    <MST.AddSiblingPart>新增同级部位</MST.AddSiblingPart>
+    <MST.ChangePartDef>更换部位定义</MST.ChangePartDef>
+    <MST.DuplicatePart>复制部位</MST.DuplicatePart>
+    <MST.RenamePart>重命名</MST.RenamePart>
+    <MST.MovePartUp>上移</MST.MovePartUp>
+    <MST.MovePartDown>下移</MST.MovePartDown>
+    <MST.DeletePart>删除部位</MST.DeletePart>
+    <MST.BodyPartTreeHint>右键部位节点可增删改；拖拽可调整同级顺序或改变层级；双击可重命名。</MST.BodyPartTreeHint>
+
+    <MST.Undefined>未定义</MST.Undefined>
+    <MST.Bottom>下</MST.Bottom>
+    <MST.Middle>中</MST.Middle>
+    <MST.Top>上</MST.Top>
+    <MST.Inside>内</MST.Inside>
+    <MST.Outside>外</MST.Outside>
+</LanguageData>

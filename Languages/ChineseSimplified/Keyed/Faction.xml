@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Faction>派系</MST.Faction>
+    <MST.raidCommonalityFromPointsCurve>袭击常见度</MST.raidCommonalityFromPointsCurve>
+    <MST.maxPawnCostPerTotalPointsCurve>单位消耗</MST.maxPawnCostPerTotalPointsCurve>
+    <MST.settlementGenerationWeight>定居点权重</MST.settlementGenerationWeight>
+    <MST.naturalEnemy>自然敌对</MST.naturalEnemy>
+    <MST.permanentEnemy>永久敌对</MST.permanentEnemy>
+</LanguageData>

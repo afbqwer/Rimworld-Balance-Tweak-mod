@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.MeleeTool>Maneuver</MST.MeleeTool>
+    <MST.MeleeWeaponTool>MelWpnM</MST.MeleeWeaponTool>
+    <MST.RangedWeaponTool>RngWpnM</MST.RangedWeaponTool>
+    <MST.toolLabel>ManName</MST.toolLabel>
+    <MST.cooldownTime>CD Time</MST.cooldownTime>
+    <MST.bodypartLabel>BdyPt</MST.bodypartLabel>
+    <MST.damageType>DmgTyp</MST.damageType>
+    <MST.EXdamageNum>XAmt</MST.EXdamageNum>
+    <MST.EXdamageAmountBase>XDmg</MST.EXdamageAmountBase>
+    <MST.EXarmorPenetrationBase>XPen</MST.EXarmorPenetrationBase>
+    <MST.EXdamageType>XTyp</MST.EXdamageType>
+    <MST.EXchance>XCh</MST.EXchance>
+    <MST.haveSurpriseAttack>CanAmb</MST.haveSurpriseAttack>
+    <MST.haveSurpriseAttackComment>Whether this maneuver has additional effects during ambushes (e.g., the first attack when hunting humans). The editor does not support editing this item.</MST.haveSurpriseAttackComment>
+    <MST.EXdamageNumComment>Whether this maneuver has additional damage effects. The editor can only edit the first two extra effects and cannot add new ones, only modify existing ones.</MST.EXdamageNumComment>
+    <MST.EXdamageAmountBaseComment>The value of the extra damage effect attached to this maneuver. The editor cannot add new extra effects, only modify existing ones.</MST.EXdamageAmountBaseComment>
+    <MST.EXchanceComment>The chance of the extra damage effect attached to this maneuver. The editor cannot add new extra effects, only modify existing ones.</MST.EXchanceComment>
+    <MST.EXarmorPenetrationBaseComment>The armor penetration of the extra damage effect attached to this maneuver. If -1, it means the armor penetration is 15% of the damage, e.g., 10 damage corresponds to 15% armor penetration.
+        The editor cannot add new extra effects, only modify existing ones.</MST.EXarmorPenetrationBaseComment>
+    <MST.EX2damageType>XTyp2</MST.EX2damageType>
+    <MST.EX2damageAmountBase>XDmg2</MST.EX2damageAmountBase>
+    <MST.EX2armorPenetrationBase>XPen2</MST.EX2armorPenetrationBase>
+    <MST.EX2chance>XCh2</MST.EX2chance>
+    <MST.EX2damageTypeComment>The damage type of the second extra damage effect. The editor cannot add new extra effects, only modify existing ones.</MST.EX2damageTypeComment>
+    <MST.EX2damageAmountBaseComment>The value of the second extra damage effect. The editor cannot add new extra effects, only modify existing ones.</MST.EX2damageAmountBaseComment>
+    <MST.EX2chanceComment>The chance of the second extra damage effect. The editor cannot add new extra effects, only modify existing ones.</MST.EX2chanceComment>
+    <MST.EX2armorPenetrationBaseComment>The armor penetration of the second extra damage effect. If -1, it means the armor penetration is 15% of the damage, e.g., 10 damage corresponds to 15% armor penetration.
+        The editor cannot add new extra effects, only modify existing ones.</MST.EX2armorPenetrationBaseComment>
+    <MST.HediffTool>HediffMan</MST.HediffTool>
+</LanguageData>

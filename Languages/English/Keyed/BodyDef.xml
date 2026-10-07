@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.BodyDef>Body</MST.BodyDef>
+    <MST.parts>Parts</MST.parts>
+    <MST.partsComment>The body part tree of this body. Click to open the tree editor where you can add, remove, reorder and edit the parts (and the BodyPartDef they reference).</MST.partsComment>
+
+    <MST.def>BodyPart</MST.def>
+    <MST.customLabel>Label</MST.customLabel>
+    <MST.coverage>Coverage</MST.coverage>
+    <MST.height>Height</MST.height>
+    <MST.depth>Depth</MST.depth>
+    <MST.groups>Groups</MST.groups>
+
+    <MST.defComment>The BodyPartDef this node references. Click "->" to jump to its data on the BodyPart tab.</MST.defComment>
+    <MST.customLabelComment>Optional per-body label overriding the BodyPartDef label. Leave empty to use the def label.</MST.customLabelComment>
+    <MST.coverageComment>Fraction (0-1) of the parent's remaining coverage this part occupies.</MST.coverageComment>
+    <MST.heightComment>Height category used when selecting this part to hit (Top/Middle/Bottom).</MST.heightComment>
+    <MST.depthComment>Depth category used when selecting this part to hit (Outside/Inside).</MST.depthComment>
+    <MST.groupsComment>Body part groups this node belongs to (used by apparel/armor coverage).</MST.groupsComment>
+
+    <MST.AddChildPart>Add child part</MST.AddChildPart>
+    <MST.AddSiblingPart>Add sibling part</MST.AddSiblingPart>
+    <MST.ChangePartDef>Change body part</MST.ChangePartDef>
+    <MST.DuplicatePart>Duplicate part</MST.DuplicatePart>
+    <MST.RenamePart>Rename</MST.RenamePart>
+    <MST.MovePartUp>Move up</MST.MovePartUp>
+    <MST.MovePartDown>Move down</MST.MovePartDown>
+    <MST.DeletePart>Delete part</MST.DeletePart>
+    <MST.BodyPartTreeHint>Right-click a part to add/remove/edit; drag to reorder or reparent; double-click to rename.</MST.BodyPartTreeHint>
+
+    <MST.Undefined>Undefined</MST.Undefined>
+    <MST.Bottom>Bottom</MST.Bottom>
+    <MST.Middle>Middle</MST.Middle>
+    <MST.Top>Top</MST.Top>
+    <MST.Inside>Inside</MST.Inside>
+    <MST.Outside>Outside</MST.Outside>
+</LanguageData>

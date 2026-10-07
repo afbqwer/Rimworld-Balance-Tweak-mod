@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Recipe>Recipe</MST.Recipe>
+    <MST.workAmount>Work</MST.workAmount>
+    <MST.workAmountComment>Base work amount required to complete this recipe. If set to -1, the work amount is determined by the product item's work amount (WorkToMake).</MST.workAmountComment>
+    <MST.workSpeedStat>WorkSpd</MST.workSpeedStat>
+    <MST.targetCountAdjustment>TargetCnt</MST.targetCountAdjustment>
+    <MST.targetCountAdjustmentComment>Multiplier for batch output count per bill production.</MST.targetCountAdjustmentComment>
+    <MST.unfinishedThingDef>Unfinished</MST.unfinishedThingDef>
+    <MST.unfinishedThingDefComment>Unfinished thing produced when the crafting job is interrupted. WARNING: Changing this on recipes without material ingredients to a material-dependent unfinished type may cause errors.</MST.unfinishedThingDefComment>
+    <MST.generated>gened</MST.generated>
+    <MST.workSkill>Skill</MST.workSkill>
+    <MST.workSkillLearnFactor>LearnFac</MST.workSkillLearnFactor>
+    <MST.products>Products</MST.products>
+    <MST.ingredients>Ingredients</MST.ingredients>
+    <MST.fixedIngredientFilter>FixFilter</MST.fixedIngredientFilter>
+    <MST.fixedIngredientFilterComment>Global ingredient filter that restricts which materials can be used; all ingredient slots are subject to this filter.</MST.fixedIngredientFilterComment>
+    <MST.defaultIngredientFilter>DefFilter</MST.defaultIngredientFilter>
+    <MST.defaultIngredientFilterComment>Default ingredient filter used when creating a new bill; typically copied from the fixed ingredient filter.</MST.defaultIngredientFilterComment>
+    <MST.recipeUsers>Workbenches</MST.recipeUsers>
+    <MST.researchPrerequisite>Research</MST.researchPrerequisite>
+    <MST.researchPrerequisites>Researches</MST.researchPrerequisites>
+    <MST.mechanitorOnlyRecipe>MechOnly</MST.mechanitorOnlyRecipe>
+    <MST.mechanitorOnlyRecipeComment>Only mechanitor pawns can craft this recipe.</MST.mechanitorOnlyRecipeComment>
+    <MST.isViolation>Violation</MST.isViolation>
+    <MST.isViolationComment>If enabled, performing this surgery on a non-ally pawn will harm faction relations.</MST.isViolationComment>
+    <MST.anesthetize>Anesthetize</MST.anesthetize>
+    <MST.surgerySuccessChanceFactor>SurgChance</MST.surgerySuccessChanceFactor>
+    <MST.deathOnFailedSurgeryChance>DeathChance</MST.deathOnFailedSurgeryChance>
+    <MST.addsHediff>AddsHediff</MST.addsHediff>
+    <MST.appliedOnFixedBodyParts>BodyParts</MST.appliedOnFixedBodyParts>
+    <MST.developmentalStageFilter>DevStage</MST.developmentalStageFilter>
+    <MST.skillRequirements>SkillReqs</MST.skillRequirements>
+    <MST.AddSkillReq>Add Skill Req</MST.AddSkillReq>
+    <MST.AddIngredient>Add Ingredient</MST.AddIngredient>
+    <MST.SelectIngredientFilter>Select filter({0})</MST.SelectIngredientFilter>
+    <MST.formingTicks>FormTicks</MST.formingTicks>
+    <MST.formingTicksComment>Ticks needed to form a mechanoid (used by mech gestators/autonomous workbenches); consumed once per gestation cycle.</MST.formingTicksComment>
+    <MST.gestationCycles>GestCyc</MST.gestationCycles>
+    <MST.gestationCyclesComment>Total gestation cycles required to grow a mechanoid; each cycle consumes one forming tick duration.</MST.gestationCyclesComment>
+    <MST.mechResurrection>MechRes</MST.mechResurrection>
+    <MST.mechResurrectionComment>If enabled, this recipe allows using parts to repair and resurrect a destroyed mech.</MST.mechResurrectionComment>
+    <MST.CostList>CostList</MST.CostList>
+    <MST.Crafting>Crafting</MST.Crafting>
+    <MST.Surgery>Surgery</MST.Surgery>
+    <MST.Mechanoid>Mechanoid</MST.Mechanoid>
+
+    <MST.processIngredients>Ingredients</MST.processIngredients>
+    <MST.ticks>Ticks</MST.ticks>
+    <MST.ticksQuality>TicksByQuality</MST.ticksQuality>
+    <MST.ticksQualityComment>Processing ticks per quality level, ordered from lowest to highest quality.</MST.ticksQualityComment>
+    <MST.processResults>Results</MST.processResults>
+    <MST.isLightDependingProcess>LightDep</MST.isLightDependingProcess>
+    <MST.isLightDependingProcessComment>If enabled, processing efficiency depends on current light level; must be within the specified range to work.</MST.isLightDependingProcessComment>
+    <MST.minLight>MinLight</MST.minLight>
+    <MST.maxLight>MaxLight</MST.maxLight>
+    <MST.temperatureRuinable>TempRuin</MST.temperatureRuinable>
+    <MST.temperatureRuinableComment>If enabled, temperatures outside the safe range will ruin the ingredients, causing product loss.</MST.temperatureRuinableComment>
+    <MST.minSafeTemperature>MinTemp</MST.minSafeTemperature>
+    <MST.maxSafeTemperature>MaxTemp</MST.maxSafeTemperature>
+    <MST.maxOutputCount>MaxOut</MST.maxOutputCount>
+    <MST.maxOutputCountComment>Maximum number of output items per process cycle.</MST.maxOutputCountComment>
+    <MST.Factory>Factory</MST.Factory>
+    <MST.Process>Process</MST.Process>
+
+    <MST.processUser>Building</MST.processUser>
+    <MST.hidden>Hidden</MST.hidden>
+
+    <MST.IngredientDisallowed>Disallowed Things</MST.IngredientDisallowed>
+</LanguageData>

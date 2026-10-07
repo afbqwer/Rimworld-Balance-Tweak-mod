@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Research>Research</MST.Research>
+    <MST.researchTab>Tab</MST.researchTab>
+    <MST.baseCost>Cost</MST.baseCost>
+    <MST.researchViewX>X</MST.researchViewX>
+    <MST.researchViewY>Y</MST.researchViewY>
+    <MST.techLevel>Level</MST.techLevel>
+    <MST.knowledgeCost>Know</MST.knowledgeCost>
+    <MST.knowledgeCategory>KnowCat</MST.knowledgeCategory>
+    <MST.techprintCount>TPCount</MST.techprintCount>
+    <MST.techprintCommonality>TPCom</MST.techprintCommonality>
+    <MST.techprintMarketValue>TPVal</MST.techprintMarketValue>
+    <MST.Hidden>Hidden</MST.Hidden>
+</LanguageData>

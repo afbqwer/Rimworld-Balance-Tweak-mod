@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Race>种族</MST.Race>
+    <MST.Entity>实体</MST.Entity>
+    <MST.Humanlike>人类</MST.Humanlike>
+    <MST.Insect>虫族</MST.Insect>
+    <MST.Mechanoid>机械</MST.Mechanoid>
+    <MST.Animal>动物</MST.Animal>
+    <MST.sharpArmor>锐器护甲</MST.sharpArmor>
+    <MST.bluntArmor>钝器护甲</MST.bluntArmor>
+    <MST.heatArmor>热能护甲</MST.heatArmor>
+    <MST.baseHealthScale>生命倍率</MST.baseHealthScale>
+    <MST.bandwidthCost>消耗带宽</MST.bandwidthCost>
+    <MST.moveSpeed>移动速度</MST.moveSpeed>
+    <MST.workSpeedGlobal>工作速度</MST.workSpeedGlobal>
+    <MST.mechFixedSkillLevel>技能等级</MST.mechFixedSkillLevel>
+    <MST.shootingAccuracyPawn>远程命中</MST.shootingAccuracyPawn>
+    <MST.aimingDelayFactor>瞄准倍率</MST.aimingDelayFactor>
+    <MST.rangedCooldownFactor>冷却倍率</MST.rangedCooldownFactor>
+    <MST.meleeDamageFactor>近战倍率</MST.meleeDamageFactor>
+    <MST.meleeCooldownFactor>近战冷却</MST.meleeCooldownFactor>
+    <MST.meleeDodgeChance>近战闪避</MST.meleeDodgeChance>
+    <MST.wildness>野性</MST.wildness>
+    <MST.lifeExpectancy>预期寿命</MST.lifeExpectancy>
+    <MST.lifespanYears>寿命(年)</MST.lifespanYears>
+    <MST.baseHungerRate>饥饿速度</MST.baseHungerRate>
+    <MST.carryingCapacity>携带能力</MST.carryingCapacity>
+    <MST.injuryHealingFactor>自愈系数</MST.injuryHealingFactor>
+    <MST.incomingDamageFactor>承伤系数</MST.incomingDamageFactor>
+    <MST.staggerDurationFactor>受击硬直</MST.staggerDurationFactor>
+    <MST.marketValue>市场价值</MST.marketValue>
+    <MST.baseBodySize>体型</MST.baseBodySize>
+    <MST.mechBandwidth>提供带宽</MST.mechBandwidth>
+    <MST.vacuumResistance>真空抗性</MST.vacuumResistance>
+    <MST.workSpeedGlobalOffsetMech>机械速度+</MST.workSpeedGlobalOffsetMech>
+    <MST.psychicSensitivity>心灵敏感</MST.psychicSensitivity>
+    <MST.combatPower>战斗力</MST.combatPower>
+    <MST.corepartHP>躯干HP</MST.corepartHP>
+    <MST.MeleeHitChance>近战命中</MST.MeleeHitChance>
+    <MST.massCarryCapacity>携带重量</MST.massCarryCapacity>
+    <MST.RaceTool>种族招式</MST.RaceTool>
+    <MST.bodyDef>身体</MST.bodyDef>
+    <MST.combatPowerComment>此类型占用的袭击点数。</MST.combatPowerComment>
+    <MST.bioferriteDensity>活铁密度</MST.bioferriteDensity>
+    <MST.studiableFrequencyTicks>可研究频率</MST.studiableFrequencyTicks>
+    <MST.knowledgeCategory>知识分类</MST.knowledgeCategory>
+    <MST.anomalyKnowledge>异象知识</MST.anomalyKnowledge>
+    <MST.activityStartingRangeMin>最小活跃</MST.activityStartingRangeMin>
+    <MST.activityStartingRangeMax>最大活跃</MST.activityStartingRangeMax>
+    <MST.changePerDayBase>日+活跃</MST.changePerDayBase>
+    <MST.changePerDamage>损伤+活跃</MST.changePerDamage>
+    <MST.projectileInterceptorRadius>护盾半径</MST.projectileInterceptorRadius>
+    <MST.projectileInterceptorRadiusComment>护盾的半径范围。</MST.projectileInterceptorRadiusComment>
+    <MST.projectileInterceptorHitPoints>护盾HP</MST.projectileInterceptorHitPoints>
+    <MST.projectileInterceptorHitPointsComment>护盾的最大生命值。</MST.projectileInterceptorHitPointsComment>
+    <MST.projectileInterceptorChargeDurationTicks>充能持续</MST.projectileInterceptorChargeDurationTicks>
+    <MST.projectileInterceptorChargeDurationTicksComment>护盾充能后持续的时间（ tick ）。</MST.projectileInterceptorChargeDurationTicksComment>
+    <MST.projectileInterceptorRechargeHitPointsIntervalTicks>回复间隔</MST.projectileInterceptorRechargeHitPointsIntervalTicks>
+    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>每次HP回复之间的间隔（ tick ）。</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
+    <MST.projectileInterceptorDisarmedByEmpForTicks>EMP瘫痪</MST.projectileInterceptorDisarmedByEmpForTicks>
+    <MST.projectileInterceptorDisarmedByEmpForTicksComment>EMP瘫痪护盾的时长（ tick ）。</MST.projectileInterceptorDisarmedByEmpForTicksComment>
+    <MST.eggLayIntervalDays>产蛋间隔</MST.eggLayIntervalDays>
+    <MST.eggCountRangeMin>最少产蛋</MST.eggCountRangeMin>
+    <MST.eggCountRangeMax>最多产蛋</MST.eggCountRangeMax>
+    <MST.eggFertilizationCountMax>最大受精</MST.eggFertilizationCountMax>
+    <MST.eggLayFemaleOnly>仅雌产蛋</MST.eggLayFemaleOnly>
+    <MST.eggProgressUnfertilizedMax>未受精上限</MST.eggProgressUnfertilizedMax>
+    <MST.milkIntervalDays>产奶间隔</MST.milkIntervalDays>
+    <MST.milkAmount>产奶量</MST.milkAmount>
+    <MST.milkFemaleOnly>仅雌产奶</MST.milkFemaleOnly>
+    <MST.shearIntervalDays>剪毛间隔</MST.shearIntervalDays>
+    <MST.woolAmount>产毛量</MST.woolAmount>
+</LanguageData>

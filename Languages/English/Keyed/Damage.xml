@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Damage>Damage</MST.Damage>
+    <MST.Melee>Melee</MST.Melee>
+    <MST.Explosion>Explosion</MST.Explosion>
+    <MST.Stun>Stun</MST.Stun>
+    <MST.defaultDamage>dmg</MST.defaultDamage>
+    <MST.defaultArmorPenetration>AP</MST.defaultArmorPenetration>
+    <MST.defaultStoppingPower>stopping</MST.defaultStoppingPower>
+    <MST.minDamageToFragment>frag</MST.minDamageToFragment>
+    <MST.buildingDamageFactor>build</MST.buildingDamageFactor>
+    <MST.buildingDamageFactorPassable>buildPass</MST.buildingDamageFactorPassable>
+    <MST.buildingDamageFactorImpassable>buildImp</MST.buildingDamageFactorImpassable>
+    <MST.plantDamageFactor>plant</MST.plantDamageFactor>
+    <MST.corpseDamageFactor>corpse</MST.corpseDamageFactor>
+    <MST.harmsHealth>harms</MST.harmsHealth>
+    <MST.makesBlood>blood</MST.makesBlood>
+    <MST.isRanged>ranged</MST.isRanged>
+    <MST.isExplosive>explosive</MST.isExplosive>
+    <MST.execution>exec</MST.execution>
+    <MST.causeStun>stun</MST.causeStun>
+    <MST.ignoreShields>ignShield</MST.ignoreShields>
+    <MST.harmAllLayersUntilOutside>allLayers</MST.harmAllLayersUntilOutside>
+    <MST.scaleDamageToBuildingsBasedOnFlammability>flamBuild</MST.scaleDamageToBuildingsBasedOnFlammability>
+    <MST.explosionAffectOutsidePartsOnly>explOut</MST.explosionAffectOutsidePartsOnly>
+    <MST.stunAdaptationTicks>stunAdapt</MST.stunAdaptationTicks>
+    <MST.constantStunDurationTicks>stunDur</MST.constantStunDurationTicks>
+    <MST.bluntStunDuration>bluntStun</MST.bluntStunDuration>
+    <MST.stunResistStat>stunResist</MST.stunResistStat>
+    <MST.armorCategory>armorCat</MST.armorCategory>
+    <MST.hediff>hediff</MST.hediff>
+    <MST.hediffSkin>hediffSkin</MST.hediffSkin>
+    <MST.hediffSolid>hediffSol</MST.hediffSolid>
+    <MST.igniteChanceByTargetFlammability>ignCurve</MST.igniteChanceByTargetFlammability>
+    <MST.cutExtraTargetsCurve>cutTargets</MST.cutExtraTargetsCurve>
+    <MST.bluntStunChancePerDamagePctOfCorePartToHeadCurve>stunHead</MST.bluntStunChancePerDamagePctOfCorePartToHeadCurve>
+    <MST.bluntStunChancePerDamagePctOfCorePartToBodyCurve>stunBody</MST.bluntStunChancePerDamagePctOfCorePartToBodyCurve>
+    <MST.stabChanceOfForcedInternal>stabInt</MST.stabChanceOfForcedInternal>
+    <MST.cutCleaveBonus>cleave</MST.cutCleaveBonus>
+    <MST.bluntInnerHitChance>bluntInner</MST.bluntInnerHitChance>
+    <MST.bluntInnerHitDamageFractionToConvert>bluntConv</MST.bluntInnerHitDamageFractionToConvert>
+    <MST.bluntInnerHitDamageFractionToAdd>bluntAdd</MST.bluntInnerHitDamageFractionToAdd>
+    <MST.scratchSplitPercentage>scratch</MST.scratchSplitPercentage>
+    <MST.overkillPctToDestroyPart>overkill</MST.overkillPctToDestroyPart>
+    <MST.explosionHeatEnergyPerCell>heat</MST.explosionHeatEnergyPerCell>
+    <MST.expolosionPropagationSpeed>propSpd</MST.expolosionPropagationSpeed>
+    <MST.explosionInteriorCellCountMultiplier>intCellCnt</MST.explosionInteriorCellCountMultiplier>
+    <MST.explosionInteriorCellDistanceMultiplier>intCellDst</MST.explosionInteriorCellDistanceMultiplier>
+    <MST.igniteCellChance>ignite</MST.igniteCellChance>
+    <MST.defLabel>label</MST.defLabel>
+    <MST.harmsHealthComment>Does this damage reduce health? If off, the damage does not reduce health (e.g. pure stun/EMP) but may still have other effects.</MST.harmsHealthComment>
+    <MST.makesBloodComment>Whether the damage produces blood filth at the wound. If off, no blood stains appear.</MST.makesBloodComment>
+    <MST.isRangedComment>Whether the game treats this as ranged damage. Affects shooting, hit chance, melee dodging, etc.</MST.isRangedComment>
+    <MST.isExplosiveComment>Whether the damage is dealt as an explosion. When on, the explosion detail fields below apply to targets in the blast area.</MST.isExplosiveComment>
+    <MST.executionComment>Execution damage: instantly executes the target on hit (ignores remaining health). Used for execution/finisher mechanics.</MST.executionComment>
+    <MST.causeStunComment>Whether this damage stuns the target. When on, targets briefly lose the ability to act; duration is set by the stun fields below.</MST.causeStunComment>
+    <MST.ignoreShieldsComment>Whether this damage ignores shields (belt shields, energy shields) and hits the body directly.</MST.ignoreShieldsComment>
+    <MST.minDamageToFragmentComment>Damage at or above this value destroys a body part into fragments.</MST.minDamageToFragmentComment>
+    <MST.overkillPctToDestroyPartComment>If overkill damage reaches this fraction of a part's max HP, the part is destroyed (decimal range 0~1).</MST.overkillPctToDestroyPartComment>
+    <MST.bluntInnerHitChanceComment>Chance for blunt damage to bypass outer layers and directly hit internal organs.</MST.bluntInnerHitChanceComment>
+    <MST.bluntInnerHitDamageFractionToConvertComment>Range of blunt damage converted into internal damage.</MST.bluntInnerHitDamageFractionToConvertComment>
+    <MST.bluntInnerHitDamageFractionToAddComment>Range of extra damage added when blunt hits internal organs.</MST.bluntInnerHitDamageFractionToAddComment>
+    <MST.bluntStunDurationComment>Stun duration (seconds) caused by blunt damage.</MST.bluntStunDurationComment>
+    <MST.stabChanceOfForcedInternalComment>Chance for a stab hit to force a hit on internal organs.</MST.stabChanceOfForcedInternalComment>
+    <MST.cutCleaveBonusComment>Extra bonus for cut damage triggering cleave (damaging nearby targets).</MST.cutCleaveBonusComment>
+    <MST.cutExtraTargetsCurveComment>Curve determining extra cleave targets based on cut damage dealt.</MST.cutExtraTargetsCurveComment>
+    <MST.scratchSplitPercentageComment>Fraction of scratch damage split into multiple smaller hits.</MST.scratchSplitPercentageComment>
+    <MST.stunAdaptationTicksComment>Adaptation time (ticks) before the same target can be stunned again; repeated stuns are weakened.</MST.stunAdaptationTicksComment>
+    <MST.constantStunDurationTicksComment>Fixed stun duration (ticks). Leave empty to compute stun from damage dealt.</MST.constantStunDurationTicksComment>
+    <MST.expolosionPropagationSpeedComment>How fast the explosion propagates through the grid.</MST.expolosionPropagationSpeedComment>
+    <MST.explosionInteriorCellCountMultiplierComment>Multiplier for interior explosion cells near the center.</MST.explosionInteriorCellCountMultiplierComment>
+    <MST.explosionInteriorCellDistanceMultiplierComment>Distance multiplier for interior explosion cells.</MST.explosionInteriorCellDistanceMultiplierComment>
+    <MST.scaleDamageToBuildingsBasedOnFlammabilityComment>Whether building damage scales with the building's flammability.</MST.scaleDamageToBuildingsBasedOnFlammabilityComment>
+    <MST.harmAllLayersUntilOutsideComment>Whether the damage penetrates all clothing layers until it reaches parts outside the outermost layer.</MST.harmAllLayersUntilOutsideComment>
+    <MST.explosionAffectOutsidePartsOnlyComment>Whether the explosion only affects outermost body parts.</MST.explosionAffectOutsidePartsOnlyComment>
+    <MST.igniteChanceByTargetFlammabilityComment>Only applies to fire damage (DamageWorker_Flame): chance to ignite based on target flammability.</MST.igniteChanceByTargetFlammabilityComment>
+    <MST.igniteCellChanceComment>Only applies to fire damage (DamageWorker_Flame): per-cell ignite chance.</MST.igniteCellChanceComment>
+</LanguageData>

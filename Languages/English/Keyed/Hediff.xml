@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Hediff>Hediff</MST.Hediff>
+    <MST.HediffStage>HediffStg</MST.HediffStage>
+    <MST.Injury>Injury</MST.Injury>
+    <MST.AddedPart>AddedPart</MST.AddedPart>
+    <MST.Addiction>Addiction</MST.Addiction>
+    <MST.Disease>Disease</MST.Disease>
+    <MST.Pregnancy>Pregnancy</MST.Pregnancy>
+    <MST.Psyche>Psyche</MST.Psyche>
+    <MST.initialSeverity>InitSev</MST.initialSeverity>
+    <MST.lethalSeverity>LethSev</MST.lethalSeverity>
+    <MST.minSeverity>MinSev</MST.minSeverity>
+    <MST.maxSeverity>MaxSev</MST.maxSeverity>
+    <MST.tendable>Tendable</MST.tendable>
+    <MST.isBad>IsBad</MST.isBad>
+    <MST.makesSickThought>SickTh</MST.makesSickThought>
+    <MST.makesSickThoughtComment>If enabled, the pawn will have the "Sick" mood thought (ThoughtWorker_Sick).</MST.makesSickThoughtComment>
+    <MST.makesAlert>Alert</MST.makesAlert>
+    <MST.makesAlertComment>Whether this hediff triggers medical alerts in the Health tab.</MST.makesAlertComment>
+    <MST.everCurableByItem>CureByI</MST.everCurableByItem>
+    <MST.everCurableByItemComment>Whether this hediff can be cured by medicine, biosculpter pods, medical abilities, etc.</MST.everCurableByItemComment>
+    <MST.keepOnBodyPartRestoration>KpOnRst</MST.keepOnBodyPartRestoration>
+    <MST.keepOnBodyPartRestorationComment>When a body part is restored via regeneration, hediffs without this flag are removed.</MST.keepOnBodyPartRestorationComment>
+    <MST.blocksSocialInteraction>BlkSoc</MST.blocksSocialInteraction>
+    <MST.blocksSleeping>BlkSlp</MST.blocksSleeping>
+    <MST.forceRemoveOnResurrection>FrcRem</MST.forceRemoveOnResurrection>
+    <MST.forceRemoveOnResurrectionComment>This hediff is forcefully removed when the pawn is resurrected.</MST.forceRemoveOnResurrectionComment>
+    <MST.preventsDeath>PrvDth</MST.preventsDeath>
+    <MST.preventsDeathComment>Prevents the pawn from dying from this hediff (won't die even if severity reaches lethal level).</MST.preventsDeathComment>
+    <MST.duplicationAllowed>DuplAlw</MST.duplicationAllowed>
+    <MST.duplicationAllowedComment>Whether the pawn can have multiple instances of this hediff.</MST.duplicationAllowedComment>
+    <MST.canAffectBionicOrImplant>AffBio</MST.canAffectBionicOrImplant>
+    <MST.canAffectBionicOrImplantComment>Whether this disease can affect bionic or implanted body parts. If disabled, it bypasses bionics.</MST.canAffectBionicOrImplantComment>
+    <MST.alwaysShowSeverity>ShwSev</MST.alwaysShowSeverity>
+    <MST.alwaysShowSeverityComment>Always display severity even when the hediff is not visible.</MST.alwaysShowSeverityComment>
+    <MST.organicAddedBodypart>OrgAP</MST.organicAddedBodypart>
+    <MST.organicAddedBodypartComment>Whether this added body part counts as organic (not mechanical/bionic), affects duplication mechanics.</MST.organicAddedBodypartComment>
+    <MST.stageLabel>StgLabel</MST.stageLabel>
+    <MST.becomeVisible>Visibl</MST.becomeVisible>
+    <MST.becomeVisibleComment>Whether this stage is visible in the health status UI.</MST.becomeVisibleComment>
+    <MST.lifeThreatening>Lethal</MST.lifeThreatening>
+    <MST.lifeThreateningComment>Whether this stage is lethal (can cause death at high enough severity).</MST.lifeThreateningComment>
+    <MST.painFactor>PainF</MST.painFactor>
+    <MST.painFactorComment>Multiplier for pain received (1.0 is normal).</MST.painFactorComment>
+    <MST.painOffset>PainO</MST.painOffset>
+    <MST.painOffsetComment>Fixed offset to pain received.</MST.painOffsetComment>
+    <MST.totalBleedFactor>BleedF</MST.totalBleedFactor>
+    <MST.totalBleedFactorComment>Multiplier for total bleed rate from all bleeding sources.</MST.totalBleedFactorComment>
+    <MST.naturalHealingFactor>HealF</MST.naturalHealingFactor>
+    <MST.naturalHealingFactorComment>Multiplier for natural healing speed. -1 means don't override.</MST.naturalHealingFactorComment>
+    <MST.vomitMtbDays>VomitD</MST.vomitMtbDays>
+    <MST.vomitMtbDaysComment>Mean time between vomiting events (in days). -1 disables.</MST.vomitMtbDaysComment>
+    <MST.deathMtbDays>DeathD</MST.deathMtbDays>
+    <MST.deathMtbDaysComment>Mean time between death events from this stage (in days). -1 disables.</MST.deathMtbDaysComment>
+    <MST.hungerRateFactor>HungF</MST.hungerRateFactor>
+    <MST.hungerRateFactorOffset>HungO</MST.hungerRateFactorOffset>
+    <MST.hungerRateFactorOffsetComment>Fixed offset to hunger rate (adds to the factor).</MST.hungerRateFactorOffsetComment>
+    <MST.restFallFactor>RestF</MST.restFallFactor>
+    <MST.restFallFactorOffset>RestO</MST.restFallFactorOffset>
+    <MST.restFallFactorOffsetComment>Fixed offset to rest fall rate (adds to the factor).</MST.restFallFactorOffsetComment>
+    <MST.fertilityFactor>FertF</MST.fertilityFactor>
+    <MST.fertilityFactorComment>Multiplier for the pawn's fertility, affecting pregnancy chance.</MST.fertilityFactorComment>
+    <MST.severityGainFactor>SevGF</MST.severityGainFactor>
+    <MST.severityGainFactorComment>Multiplier for natural severity increase rate.</MST.severityGainFactorComment>
+    <MST.partEfficiencyOffset>PrEffO</MST.partEfficiencyOffset>
+    <MST.partEfficiencyOffsetComment>Fixed offset to body part efficiency, affecting part functionality.</MST.partEfficiencyOffsetComment>
+    <MST.socialFightChanceFactor>SocFgtF</MST.socialFightChanceFactor>
+    <MST.mentalBreakMtbDays>BrkDwnD</MST.mentalBreakMtbDays>
+    <MST.mentalBreakMtbDaysComment>Mean time between mental breaks (in days). -1 disables.</MST.mentalBreakMtbDaysComment>
+    <MST.blocksMentalBreaks>BlkBrk</MST.blocksMentalBreaks>
+    <MST.blocksMentalBreaksComment>Prevents all types of mental breaks.</MST.blocksMentalBreaksComment>
+    <MST.blocksInspirations>BlkInsp</MST.blocksInspirations>
+    <MST.blocksInspirationsComment>Prevents all inspirations from triggering.</MST.blocksInspirationsComment>
+    <MST.overrideMoodBase>MoodOvr</MST.overrideMoodBase>
+    <MST.overrideMoodBaseComment>Overrides the pawn's base mood level. -1 means don't override.</MST.overrideMoodBaseComment>
+    <MST.opinionOfOthersFactor>OpnOF</MST.opinionOfOthersFactor>
+    <MST.opinionOfOthersFactorComment>Multiplier for the pawn's opinion of other pawns.</MST.opinionOfOthersFactorComment>
+    <MST.forgetMemoryThoughtMtbDays>FgtThD</MST.forgetMemoryThoughtMtbDays>
+    <MST.forgetMemoryThoughtMtbDaysComment>Mean time between forgetting random memories (in days). -1 disables.</MST.forgetMemoryThoughtMtbDaysComment>
+    <MST.preventVacuumBurns>PrvVcu</MST.preventVacuumBurns>
+    <MST.preventVacuumBurnsComment>Prevents vacuum burns in space for the pawn.</MST.preventVacuumBurnsComment>
+    <MST.regeneration>Regen</MST.regeneration>
+    <MST.regenerationComment>[Anomaly] HP regenerated per game tick. -1 means not in use.</MST.regenerationComment>
+    <MST.showRegenerationStat>ShwReg</MST.showRegenerationStat>
+    <MST.showRegenerationStatComment>Whether to show the regeneration stat in stat displays.</MST.showRegenerationStatComment>
+    <MST.multiplyStatChangesBySeverity>MulSev</MST.multiplyStatChangesBySeverity>
+    <MST.multiplyStatChangesBySeverityComment>When enabled, statOffsets/statFactors/capMods values are multiplied by current severity.</MST.multiplyStatChangesBySeverityComment>
+    <MST.statOffsetEffectMultiplier>OffMult</MST.statOffsetEffectMultiplier>
+    <MST.statFactorEffectMultiplier>FacMult</MST.statFactorEffectMultiplier>
+    <MST.capacityFactorEffectMultiplier>CapMult</MST.capacityFactorEffectMultiplier>
+    <MST.statOffsetEffectMultiplierComment>A stat that multiplies statOffset values for this stage.</MST.statOffsetEffectMultiplierComment>
+    <MST.statFactorEffectMultiplierComment>A stat that multiplies statFactor values for this stage.</MST.statFactorEffectMultiplierComment>
+    <MST.capacityFactorEffectMultiplierComment>A stat that multiplies capacity modifier values for this stage.</MST.capacityFactorEffectMultiplierComment>
+    <MST.capMods>CapMods</MST.capMods>
+    <MST.damageFactors>DmgF</MST.damageFactors>
+    <MST.enablesNeeds>EnblNd</MST.enablesNeeds>
+    <MST.disablesNeeds>DsblNd</MST.disablesNeeds>
+    <MST.enablesNeedsComment>Needs that this stage enables for the pawn. Warning: May cause unexpected behavior if the need is not normally available.</MST.enablesNeedsComment>
+    <MST.disablesNeedsComment>Needs that this stage disables for the pawn.</MST.disablesNeedsComment>
+    <MST.makeImmuneTo>Immune</MST.makeImmuneTo>
+    <MST.makeImmuneToComment>HediffDefs that this stage makes the pawn immune to.</MST.makeImmuneToComment>
+    <MST.hediffGivers>HediffGivers</MST.hediffGivers>
+    <MST.hediffGiversComment>Hediff givers that apply hediffs at this stage. Remove-only.</MST.hediffGiversComment>
+    <MST.mentalStateGivers>MentalStateGivers</MST.mentalStateGivers>
+    <MST.mentalStateGiversComment>Mental state givers that may trigger mental breaks at this stage. Remove-only.</MST.mentalStateGiversComment>
+    <MST.MtbDays>MTB</MST.MtbDays>
+    <MST.injuryProps>InjProps</MST.injuryProps>
+    <MST.addedPartProps>AddPart</MST.addedPartProps>
+    <MST.injuryPropsComment>Whether InjuryProps sub-object exists. Fields below are only editable when true.</MST.injuryPropsComment>
+    <MST.addedPartPropsComment>Whether AddedBodyPartProps sub-object exists. Fields below are only editable when true.</MST.addedPartPropsComment>
+    <MST.painPerSeverity>Pain/Sev</MST.painPerSeverity>
+    <MST.painPerSeverityComment>Pain generated per unit of severity.</MST.painPerSeverityComment>
+    <MST.averagePainPerSeverityPermanent>PermPain/Sev</MST.averagePainPerSeverityPermanent>
+    <MST.averagePainPerSeverityPermanentComment>Average pain per severity when the injury becomes permanent.</MST.averagePainPerSeverityPermanentComment>
+    <MST.bleedRate>BleedRt</MST.bleedRate>
+    <MST.canMerge>CanMerge</MST.canMerge>
+    <MST.canMergeComment>Whether this injury can merge with other injuries on the same body part.</MST.canMergeComment>
+    <MST.partEfficiency>PrtEff</MST.partEfficiency>
+    <MST.solid>Solid</MST.solid>
+    <MST.solidComment>Whether this added body part is solid (can be individually targeted and damaged).</MST.solidComment>
+    <MST.isGoodWeapon>GdWpn</MST.isGoodWeapon>
+    <MST.isGoodWeaponComment>Whether this added body part is considered a good melee attack weapon.</MST.isGoodWeaponComment>
+    <MST.betterThanNatural>BtrNat</MST.betterThanNatural>
+    <MST.betterThanNaturalComment>Whether this part is better than the natural body part (affects medical procedure behavior).</MST.betterThanNaturalComment>
+    <MST.tendDurationHours>TendDurH</MST.tendDurationHours>
+    <MST.tendDurationHoursComment>Tend duration in hours. -1 = permanent.</MST.tendDurationHoursComment>
+    <MST.severityPerDayTended>SevTend</MST.severityPerDayTended>
+    <MST.severityPerDayTendedComment>Severity change per day when tended.</MST.severityPerDayTendedComment>
+    <MST.tendAllAtOnce>TendAll</MST.tendAllAtOnce>
+    <MST.tendAllAtOnceComment>If true, all tend quality is applied at once instead of over time.</MST.tendAllAtOnceComment>
+    <MST.disappearsAfterTicks>DispHrs</MST.disappearsAfterTicks>
+    <MST.disappearsAfterTicksComment>Hours after which the hediff disappears.</MST.disappearsAfterTicksComment>
+    <MST.severityPerDay>SevDay</MST.severityPerDay>
+    <MST.severityPerDayComment>Severity change per day.</MST.severityPerDayComment>
+    <MST.immunityPerDaySick>ImmDayS</MST.immunityPerDaySick>
+    <MST.immunityPerDaySickComment>Immunity gain per day while sick.</MST.immunityPerDaySickComment>
+    <MST.severityPerDayImmune>SevDayIm</MST.severityPerDayImmune>
+    <MST.severityPerDayImmuneComment>Severity change per day while immune.</MST.severityPerDayImmuneComment>
+    <MST.infectionChance>InfChnc</MST.infectionChance>
+    <MST.infectionChanceComment>Chance of infection occurring.</MST.infectionChanceComment>
+    <MST.abilities>Abilities</MST.abilities>
+    <MST.abilitiesComment>AbilityDefs granted by this hediff.</MST.abilitiesComment>
+    <MST.removeOnRedressChanceByDaysCurve>RmvCurve</MST.removeOnRedressChanceByDaysCurve>
+    <MST.removeOnRedressChanceByDaysCurveComment>Curve defining the chance to remove this hediff on redress by days since installation.</MST.removeOnRedressChanceByDaysCurveComment>
+    <MST.disappearsAtTotalTendQuality>DisTQ</MST.disappearsAtTotalTendQuality>
+    <MST.disappearsAtTotalTendQualityComment>Total tend quality at which the hediff disappears. -1 = disabled.</MST.disappearsAtTotalTendQualityComment>
+    <MST.severityPerDayRange>SevDayRng</MST.severityPerDayRange>
+    <MST.severityPerDayRangeComment>Random range of severity change per day (min~max). Added to severityPerDay.</MST.severityPerDayRangeComment>
+    <MST.severityPerDayNotImmune>SevDayNI</MST.severityPerDayNotImmune>
+    <MST.severityPerDayNotImmuneComment>Severity change per day when not immune.</MST.severityPerDayNotImmuneComment>
+    <MST.hasGetsPermanent>GetsPerm</MST.hasGetsPermanent>
+    <MST.hasGetsPermanentComment>Toggle GetsPermanent comp. If enabled, this injury may become permanent.</MST.hasGetsPermanentComment>
+    <MST.becomePermanentChanceFactor>PermChF</MST.becomePermanentChanceFactor>
+    <MST.becomePermanentChanceFactorComment>Multiplier for the chance of this injury becoming permanent (default 1.0).</MST.becomePermanentChanceFactorComment>
+    <MST.hasGiveHediff>GiveHed</MST.hasGiveHediff>
+    <MST.hasGiveHediffComment>Toggle GiveHediff comp. If enabled, this hediff gives another hediff over time.</MST.hasGiveHediffComment>
+    <MST.giveHediffLabel>GivesHed</MST.giveHediffLabel>
+    <MST.giveHediffLabelComment>The hediff that will be given by this hediff.</MST.giveHediffLabelComment>
+    <MST.giveHediffAtSeverity>GiveSev</MST.giveHediffAtSeverity>
+    <MST.giveHediffAtSeverityComment>Severity at which the hediff is given.</MST.giveHediffAtSeverityComment>
+    <MST.VerbGiverTool>AttackMv</MST.VerbGiverTool>
+    <MST.VerbGiverToolComment>Attack tools granted by this hediff (from VerbGiver comp). Click to jump to the tool editor.</MST.VerbGiverToolComment>
+    <MST.hasReactOnDamage>ReactDMG</MST.hasReactOnDamage>
+    <MST.hasReactOnDamageComment>Toggle ReactOnDamage comp. If enabled, this hediff reacts when the pawn takes damage.</MST.hasReactOnDamageComment>
+    <MST.reactOnDamageCreateHediff>ReactHed</MST.reactOnDamageCreateHediff>
+    <MST.reactOnDamageCreateHediffComment>The hediff to create on the pawn when they take damage.</MST.reactOnDamageCreateHediffComment>
+</LanguageData>

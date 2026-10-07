@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.PawnKind>PnKnd</MST.PawnKind>
+    <MST.weaponMoney>Weapon Budget</MST.weaponMoney>
+    <MST.apparelMoney>Apparel Budget</MST.apparelMoney>
+    <MST.gearHealthRange>Gear Health Range</MST.gearHealthRange>
+    <MST.itemQuality>Item Quality</MST.itemQuality>
+    <MST.forceWeaponQuality>Force Weapon Quality</MST.forceWeaponQuality>
+    <MST.minApparelQuality>Min Apparel Quality</MST.minApparelQuality>
+    <MST.maxApparelQuality>Max Apparel Quality</MST.maxApparelQuality>
+    <MST.forceNormalGearQuality>Force Normal Quality</MST.forceNormalGearQuality>
+    <MST.nakedChance>Naked Chance</MST.nakedChance>
+    <MST.biocodeWeaponChance>Biocode Weapon Chance</MST.biocodeWeaponChance>
+    <MST.destroyGearOnDrop>Destroy Gear on Drop</MST.destroyGearOnDrop>
+    <MST.canStrip>Can Strip</MST.canStrip>
+    <MST.apparelAllowHeadgearChance>Headgear Chance</MST.apparelAllowHeadgearChance>
+    <MST.ignoreApparelAllowChance>Ignore Headgear Chance</MST.ignoreApparelAllowChance>
+    <MST.maxPerGroup>Max Per Group</MST.maxPerGroup>
+    <MST.canBeScattered>Can Be Scattered</MST.canBeScattered>
+    <MST.appearsRandomlyInCombatGroups>Random in Groups</MST.appearsRandomlyInCombatGroups>
+    <MST.wildGroupSize>Wild Group Size</MST.wildGroupSize>
+    <MST.ecoSystemWeight>Ecosystem Weight</MST.ecoSystemWeight>
+    <MST.fixedGender>Fixed Gender</MST.fixedGender>
+    <MST.chronologicalAgeRange>Age Range</MST.chronologicalAgeRange>
+    <MST.minGenerationAge>Min Gen. Age</MST.minGenerationAge>
+    <MST.maxGenerationAge>Max Gen. Age</MST.maxGenerationAge>
+    <MST.canOpenAnyDoor>Can Open Any Door</MST.canOpenAnyDoor>
+    <MST.canOpenDoors>Can Open Doors</MST.canOpenDoors>
+    <MST.isBoss>Is Boss</MST.isBoss>
+    <MST.preventIdeo>Prevent Ideology</MST.preventIdeo>
+    <MST.studiableAsPrisoner>Studiable as Prisoner</MST.studiableAsPrisoner>
+    <MST.humanPregnancyChance>Pregnancy Chance</MST.humanPregnancyChance>
+    <MST.allowOldAgeInjuries>Allow Old Injuries</MST.allowOldAgeInjuries>
+    <MST.forceNoDeathNotification>No Death Notice</MST.forceNoDeathNotification>
+    <MST.controlGroupPortraitZoom>Portrait Zoom</MST.controlGroupPortraitZoom>
+    <MST.showInDebugSpawner>Show in Debug</MST.showInDebugSpawner>
+    <MST.royalTitleChance>Royal Title Chance</MST.royalTitleChance>
+    <MST.useFactionXenotypes>Use Faction Xenotypes</MST.useFactionXenotypes>
+    <MST.allowRoyalRoomRequirements>Allow Royal Room</MST.allowRoyalRoomRequirements>
+    <MST.allowRoyalApparelRequirements>Allow Royal Apparel</MST.allowRoyalApparelRequirements>
+
+    <!-- Second Priority: Combat & AI -->
+    <MST.isFighter>Is Fighter</MST.isFighter>
+    <MST.forceDeathOnDowned>Force Death on Downed</MST.forceDeathOnDowned>
+    <MST.overrideDeathOnDownedChance>Death Chance on Downed</MST.overrideDeathOnDownedChance>
+    <MST.fleeHealthThresholdRange>Flee Health Threshold</MST.fleeHealthThresholdRange>
+    <MST.ignoresPainShock>Ignores Pain Shock</MST.ignoresPainShock>
+    <MST.canMeleeAttack>Can Melee Attack</MST.canMeleeAttack>
+    <MST.aiAvoidCover>AI Avoid Cover</MST.aiAvoidCover>
+    <MST.canBeSapper>Can Be Sapper</MST.canBeSapper>
+    <MST.isGoodBreacher>Is Good Breacher</MST.isGoodBreacher>
+    <MST.defendPointRadius>Defend Point Radius</MST.defendPointRadius>
+    <MST.canArriveManhunter>Can Arrive Manhunter</MST.canArriveManhunter>
+    <MST.immuneToTraps>Immune to Traps</MST.immuneToTraps>
+    <MST.immuneToGameConditionEffects>Immune to Conditions</MST.immuneToGameConditionEffects>
+
+    <!-- Second Priority: Capture & Prison -->
+    <MST.basePrisonBreakMtbDays>Prison Break Interval</MST.basePrisonBreakMtbDays>
+    <MST.acceptArrestChanceFactor>Arrest Chance Factor</MST.acceptArrestChanceFactor>
+    <MST.skipResistant>Skip Resistant</MST.skipResistant>
+
+    <!-- Second Priority: Faction & Hostility -->
+    <MST.factionHostileOnKill>Hostile on Kill</MST.factionHostileOnKill>
+    <MST.factionHostileOnDeath>Hostile on Death</MST.factionHostileOnDeath>
+    <MST.hostileToAll>Hostile to All</MST.hostileToAll>
+    <MST.factionLeader>Faction Leader</MST.factionLeader>
+
+    <!-- Second Priority: List<string> -->
+    <MST.weaponTags>Weapon Tags</MST.weaponTags>
+    <MST.apparelTags>Apparel Tags</MST.apparelTags>
+    <MST.apparelDisallowTags>Disallow Apparel Tags</MST.apparelDisallowTags>
+    <MST.techHediffsTags>Tech Hediff Tags</MST.techHediffsTags>
+    <MST.techHediffsDisallowTags>Disallow Hediff Tags</MST.techHediffsDisallowTags>
+
+    <!-- Second Priority: List<Def> -->
+    <MST.apparelRequired>Required Apparel</MST.apparelRequired>
+    <MST.abilities>Abilities</MST.abilities>
+    <MST.disallowedTraits>Disallowed Traits</MST.disallowedTraits>
+    <MST.forcedAddictions>Forced Addictions</MST.forcedAddictions>
+    <MST.techHediffsRequired>Required Hediffs</MST.techHediffsRequired>
+    <MST.titleSelectOne>Title Select One</MST.titleSelectOne>
+
+    <!-- Second Priority: Def Selector -->
+    <MST.defaultFactionDef>Default Faction</MST.defaultFactionDef>
+    <MST.weaponStuffOverride>Weapon Stuff Override</MST.weaponStuffOverride>
+    <MST.invFoodDef>Carried Food</MST.invFoodDef>
+    <MST.titleRequired>Required Title</MST.titleRequired>
+    <MST.minTitleRequired>Min Title Required</MST.minTitleRequired>
+    <MST.mutant>Mutant</MST.mutant>
+    <MST.favoriteColor>Favorite Color</MST.favoriteColor>
+
+    <!-- Second Priority: Numeric -->
+    <MST.techHediffsMoney>Hediff Budget</MST.techHediffsMoney>
+    <MST.techHediffsChance>Hediff Chance</MST.techHediffsChance>
+    <MST.techHediffsMaxAmount>Max Hediff Count</MST.techHediffsMaxAmount>
+    <MST.invNutrition>Carried Nutrition</MST.invNutrition>
+    <MST.chemicalAddictionChance>Addiction Chance</MST.chemicalAddictionChance>
+    <MST.combatEnhancingDrugsChance>Combat Drug Chance</MST.combatEnhancingDrugsChance>
+    <MST.combatEnhancingDrugsCount>Combat Drug Count</MST.combatEnhancingDrugsCount>
+    <MST.extraSkillLevels>Extra Skill Levels</MST.extraSkillLevels>
+    <MST.minTotalSkillLevels>Min Total Skills</MST.minTotalSkillLevels>
+    <MST.minBestSkillLevel>Min Best Skill</MST.minBestSkillLevel>
+    <MST.isGoodPsychicRitualInvoker>Good Ritual Invoker</MST.isGoodPsychicRitualInvoker>
+    <MST.apparelIgnoreSeasons>Ignore Seasons</MST.apparelIgnoreSeasons>
+    <MST.apparelIgnorePollution>Ignore Pollution</MST.apparelIgnorePollution>
+    <MST.ignoreFactionApparelStuffRequirements>Ignore Faction Stuff</MST.ignoreFactionApparelStuffRequirements>
+    <MST.ignoreIdeoApparelColors>Ignore Ideo Colors</MST.ignoreIdeoApparelColors>
+    <MST.trader>Is Trader</MST.trader>
+    <MST.generateInitialNonFamilyRelations>Gen. Non-Family Relations</MST.generateInitialNonFamilyRelations>
+</LanguageData>

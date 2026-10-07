@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Ability>能力</MST.Ability>
+    <MST.VPEAbility>VPE灵能</MST.VPEAbility>
+    <MST.Psychic>灵能</MST.Psychic>
+    <MST.Sanguophage>血源质</MST.Sanguophage>
+    <MST.AbilityGroup>能力组</MST.AbilityGroup>
+    <MST.radius>半径</MST.radius>
+    <MST.baseMoodEffect>心情影响</MST.baseMoodEffect>
+    <MST.baseOpinionOffset>看法影响</MST.baseOpinionOffset>
+    <MST.visible>可见性</MST.visible>
+    <MST.abilityDuration>持续时间</MST.abilityDuration>
+    <MST.abilityEntropyGain>心灵熵+</MST.abilityEntropyGain>
+    <MST.abilityPsyfocusCost>精神力-</MST.abilityPsyfocusCost>
+    <MST.requireLineOfSight>需要视野</MST.requireLineOfSight>
+    <MST.psylevel>灵能等级</MST.psylevel>
+    <MST.cooldownTicksRange>冷却范围</MST.cooldownTicksRange>
+    <MST.abilityGroupCooldownTicks>组冷却</MST.abilityGroupCooldownTicks>
+    <MST.aiCanUse>AI可用</MST.aiCanUse>
+    <MST.distanceToTarget>释放范围</MST.distanceToTarget>
+    <MST.castTime>释放时间</MST.castTime>
+    <MST.durationTime>持续时间</MST.durationTime>
+    <MST.psyfocusCost>精神力-</MST.psyfocusCost>
+    <MST.entropyGain>心灵熵+</MST.entropyGain>
+    <MST.initialWillRange>初始意志</MST.initialWillRange>
+    <MST.initialResistanceRange>初始抵抗</MST.initialResistanceRange>
+    <MST.cooldownTicksRangeComment>冷却时间的范围。单位为刻（1/60秒），如30刻为0.5秒。</MST.cooldownTicksRangeComment>
+    <MST.abilityGroupCooldownTicksComment>能力组中所有能力的冷却时间。修改之后会影响所有同一组的能力。单位为刻（1/60秒），如30刻为0.5秒。</MST.abilityGroupCooldownTicksComment>
+    <MST.aiCanUseComment>AI是否可以使用此能力。即使此项已经开启，我方单位必须处于AI控制才会受到此项影响，并且AI仍然可能由于其它条件而不使用此能力。</MST.aiCanUseComment>
+    <MST.AbilityGroupComment>能力所在的能力组（AbilityGroup）。</MST.AbilityGroupComment>
+</LanguageData>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Recipe>配方</MST.Recipe>
+    <MST.workAmount>工作量</MST.workAmount>
+    <MST.workAmountComment>完成此配方所需的基础工作量。设为 -1 时，工作量由产物物品的工作量（WorkToMake）决定。</MST.workAmountComment>
+    <MST.workSpeedStat>工作速度</MST.workSpeedStat>
+    <MST.targetCountAdjustment>基础产量</MST.targetCountAdjustment>
+    <MST.targetCountAdjustmentComment>每次制作批量产出的倍数调整值，影响账单中单次制作的数量。</MST.targetCountAdjustmentComment>
+    <MST.unfinishedThingDef>半成品</MST.unfinishedThingDef>
+    <MST.unfinishedThingDefComment>配方制作中断时产生的半成品。警告：对无材料类型的配方修改半成品为需要材料类型的半成品可能导致错误。</MST.unfinishedThingDefComment>
+    <MST.workSkill>技能</MST.workSkill>
+    <MST.workSkillLearnFactor>学习倍率</MST.workSkillLearnFactor>
+    <MST.products>产物</MST.products>
+    <MST.ingredients>配方</MST.ingredients>
+    <MST.generated>自动生成</MST.generated>
+    <MST.fixedIngredientFilter>固定配方</MST.fixedIngredientFilter>
+    <MST.fixedIngredientFilterComment>此配方的全局物品过滤器，限制可用的原材料种类，所有配方项均受其约束。</MST.fixedIngredientFilterComment>
+    <MST.defaultIngredientFilter>默认配方</MST.defaultIngredientFilter>
+    <MST.defaultIngredientFilterComment>新建账单时默认使用的物品过滤器，通常继承自固定配方过滤器的设定。</MST.defaultIngredientFilterComment>
+    <MST.recipeUsers>工作台</MST.recipeUsers>
+    <MST.researchPrerequisite>研究前置</MST.researchPrerequisite>
+    <MST.researchPrerequisites>研究前置列表</MST.researchPrerequisites>
+    <MST.mechanitorOnlyRecipe>仅机械师</MST.mechanitorOnlyRecipe>
+    <MST.mechanitorOnlyRecipeComment>仅机械师角色可以制作此配方。</MST.mechanitorOnlyRecipeComment>
+    <MST.isViolation>损害关系</MST.isViolation>
+    <MST.isViolationComment>启用后，在非友方角色身上执行此手术会损害派系关系。</MST.isViolationComment>
+    <MST.anesthetize>麻醉</MST.anesthetize>
+    <MST.surgerySuccessChanceFactor>手术成功率</MST.surgerySuccessChanceFactor>
+    <MST.deathOnFailedSurgeryChance>失败死亡率</MST.deathOnFailedSurgeryChance>
+    <MST.addsHediff>添加状态</MST.addsHediff>
+    <MST.appliedOnFixedBodyParts>手术部位</MST.appliedOnFixedBodyParts>
+    <MST.developmentalStageFilter>发育阶段</MST.developmentalStageFilter>
+    <MST.skillRequirements>技能需求</MST.skillRequirements>
+    <MST.AddSkillReq>添加技能需求</MST.AddSkillReq>
+    <MST.AddIngredient>添加配方</MST.AddIngredient>
+    <MST.SelectIngredientFilter>选择过滤器({0})</MST.SelectIngredientFilter>
+    <MST.formingTicks>成型耗时</MST.formingTicks>
+    <MST.formingTicksComment>机械体成型所需的刻数（机械培育器/自加工台使用），每次培育周期消耗一次。</MST.formingTicksComment>
+    <MST.gestationCycles>培育周期</MST.gestationCycles>
+    <MST.gestationCyclesComment>机械体培育所需的总周期数，每次周期完成消耗一次成型耗时。</MST.gestationCyclesComment>
+    <MST.mechResurrection>机械复活</MST.mechResurrection>
+    <MST.mechResurrectionComment>启用后，此配方允许使用零件修复已损坏的机械体，将其复活。</MST.mechResurrectionComment>
+    <MST.CostList>制造</MST.CostList>
+    <MST.Crafting>配方</MST.Crafting>
+    <MST.Surgery>手术</MST.Surgery>
+    <MST.Mechanoid>机械体</MST.Mechanoid>
+
+    <MST.processIngredients>原料</MST.processIngredients>
+    <MST.ticks>耗时(刻)</MST.ticks>
+    <MST.ticksQuality>品质耗时</MST.ticksQuality>
+    <MST.ticksQualityComment>不同品质等级对应的处理耗时（刻），按品质从低到高排列。</MST.ticksQualityComment>
+    <MST.processResults>产物</MST.processResults>
+    <MST.isLightDependingProcess>光照依赖</MST.isLightDependingProcess>
+    <MST.isLightDependingProcessComment>启用后，处理效率受当前光照强度影响，需在指定光照范围内才能工作。</MST.isLightDependingProcessComment>
+    <MST.minLight>最低光照</MST.minLight>
+    <MST.maxLight>最高光照</MST.maxLight>
+    <MST.temperatureRuinable>高温可毁</MST.temperatureRuinable>
+    <MST.temperatureRuinableComment>启用后，温度超出安全范围会破坏处理中的原料，导致产物损失。</MST.temperatureRuinableComment>
+    <MST.minSafeTemperature>最低安全温</MST.minSafeTemperature>
+    <MST.maxSafeTemperature>最高安全温</MST.maxSafeTemperature>
+    <MST.maxOutputCount>最大产出</MST.maxOutputCount>
+    <MST.maxOutputCountComment>单次处理的最大产出数量限制。</MST.maxOutputCountComment>
+    <MST.Factory>工厂</MST.Factory>
+    <MST.Process>处理</MST.Process>
+
+    <MST.processUser>使用建筑</MST.processUser>
+    <MST.hidden>隐藏</MST.hidden>
+
+    <MST.IngredientDisallowed>禁用物品</MST.IngredientDisallowed>
+</LanguageData>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Building>建筑</MST.Building>
+    <MST.Turret>炮塔建筑</MST.Turret>
+    <MST.Frame>框架建筑</MST.Frame>
+    <MST.PowerBuilding>电力建筑</MST.PowerBuilding>
+    <MST.basePowerConsumption>电力消耗</MST.basePowerConsumption>
+    <MST.fillPercent>填充率</MST.fillPercent>
+    <MST.costList>制造成本</MST.costList>
+    <MST.fillPercentComment>建筑的填充率，影响掩体效果、是否可通行等。警告：不要在开始游戏后修改此项，会导致寻路问题！</MST.fillPercentComment>
+    <MST.stuffCategories>材料类别</MST.stuffCategories>
+    <MST.stuffCategoriesComment>可以用于制作该物品的材料类别。影响工单选择时的可选材料。</MST.stuffCategoriesComment>
+    <MST.researchPrerequisites>研究需求</MST.researchPrerequisites>
+    <MST.researchPrerequisitesComment>解锁该物品建造所需的研究项目。</MST.researchPrerequisitesComment>
+    <MST.isTargetable>可被瞄准</MST.isTargetable>
+    <MST.isTargetableComment>此建筑是否可在战斗中被手动指定为攻击目标。</MST.isTargetableComment>
+    <MST.alwaysDeconstructible>始终可拆</MST.alwaysDeconstructible>
+    <MST.alwaysDeconstructibleComment>此建筑是否始终可以被拆除，不受阵营关系影响。</MST.alwaysDeconstructibleComment>
+    <MST.alwaysUninstallable>始终可卸</MST.alwaysUninstallable>
+    <MST.alwaysUninstallableComment>此建筑是否始终可以被卸载（拾起），不受阵营关系影响。</MST.alwaysUninstallableComment>
+    <MST.uninstallWork>卸载工作量</MST.uninstallWork>
+    <MST.uninstallWorkComment>卸载此建筑所需的工作量。</MST.uninstallWorkComment>
+    <MST.claimable>可认领</MST.claimable>
+    <MST.claimableComment>此建筑是否可被其他阵营认领。</MST.claimableComment>
+    <MST.repairable>可维修</MST.repairable>
+    <MST.repairableComment>此建筑在受损后是否可被修复。</MST.repairableComment>
+    <MST.isAirtight>气密</MST.isAirtight>
+    <MST.isAirtightComment>此建筑是否形成气密密封，分隔室内外环境。</MST.isAirtightComment>
+    <MST.workTableWorkSpeedFactor>工作效率</MST.workTableWorkSpeedFactor>
+    <MST.unpoweredWorkTableWorkSpeedFactor>无电力效率</MST.unpoweredWorkTableWorkSpeedFactor>
+    <MST.unpoweredWorkTableWorkSpeedFactorComment>无电力供应时工作台的工作效率倍率。</MST.unpoweredWorkTableWorkSpeedFactorComment>
+    <MST.workTableNotInRoomRoleFactor>非房间效率</MST.workTableNotInRoomRoleFactor>
+    <MST.workTableNotInRoomRoleFactorComment>工作台不在对应房间内时的工作效率倍率。</MST.workTableNotInRoomRoleFactorComment>
+    <MST.workTableRoomRole>工作房间</MST.workTableRoomRole>
+    <MST.workTableRoomRoleComment>该工作台对应的房间类型。</MST.workTableRoomRoleComment>
+
+    <!-- BuildingType 分类 -->
+    <MST.Door>门</MST.Door>
+    <MST.Bed>床</MST.Bed>
+    <MST.LightSource>光源</MST.LightSource>
+    <MST.TemperatureControl>温控</MST.TemperatureControl>
+    <MST.Production>生产</MST.Production>
+    <MST.Nature>自然</MST.Nature>
+    <MST.Prop>装饰</MST.Prop>
+
+    <!-- ThingDef 通用字段 -->
+    <MST.constructionSkillPrerequisite>建造技能</MST.constructionSkillPrerequisite>
+    <MST.holdsRoof>支撑屋顶</MST.holdsRoof>
+    <MST.blockLight>遮挡光线</MST.blockLight>
+    <MST.blockWind>挡风</MST.blockWind>
+    <MST.destroyable>可摧毁</MST.destroyable>
+    <MST.selectable>可选中</MST.selectable>
+    <MST.replaceTags>替换标签</MST.replaceTags>
+    <MST.fertility>肥沃度</MST.fertility>
+    <MST.fertilityComment>此建筑的土壤肥沃度值。仅与和土壤交互的建筑相关。</MST.fertilityComment>
+
+    <!-- BuildingProperties 字段 -->
+
+    <!-- Door 字段 -->
+    <MST.canExchangeVacuum>真空交换</MST.canExchangeVacuum>
+    <MST.poweredDoorOpenSpeedFactor>电动开门</MST.poweredDoorOpenSpeedFactor>
+    <MST.poweredDoorCloseSpeedFactor>电动关门</MST.poweredDoorCloseSpeedFactor>
+    <MST.unpoweredDoorOpenSpeedFactor>手动开门</MST.unpoweredDoorOpenSpeedFactor>
+    <MST.unpoweredDoorCloseSpeedFactor>手动关门</MST.unpoweredDoorCloseSpeedFactor>
+
+    <!-- Bed 字段 -->
+    <MST.bed_healPerDay>每日治疗量</MST.bed_healPerDay>
+    <MST.bed_maxBodySize>最大体型</MST.bed_maxBodySize>
+    <MST.bed_caravansCanUse>远征可用</MST.bed_caravansCanUse>
+
+    <!-- Turret 字段 -->
+    <MST.turretBurstCooldownTime>爆发冷却</MST.turretBurstCooldownTime>
+    <MST.turretInitialCooldownTime>初始冷却</MST.turretInitialCooldownTime>
+    <MST.combatPower>战斗功率</MST.combatPower>
+
+    <!-- Furniture 字段 -->
+
+    <!-- LightSource 字段 -->
+    <MST.glowRadius>发光半径</MST.glowRadius>
+    <MST.overlightRadius>过亮半径</MST.overlightRadius>
+    <MST.scheduleStartTime>定时开启</MST.scheduleStartTime>
+    <MST.scheduleEndTime>定时关闭</MST.scheduleEndTime>
+
+    <!-- TemperatureControl 字段 -->
+    <MST.energyPerSecond>能耗/秒</MST.energyPerSecond>
+    <MST.defaultTargetTemperature>默认温度</MST.defaultTargetTemperature>
+    <MST.minTargetTemperature>最低温度</MST.minTargetTemperature>
+    <MST.maxTargetTemperature>最高温度</MST.maxTargetTemperature>
+
+    <!-- Production 字段 -->
+    <MST.recipes>配方列表</MST.recipes>
+
+    <!-- Refuelable 字段 -->
+    <MST.fuelName>燃料类型</MST.fuelName>
+    <MST.fuelCapacity>燃料容量</MST.fuelCapacity>
+    <MST.fuelConsumptionRate>燃料消耗率</MST.fuelConsumptionRate>
+    <MST.fuelMultiplier>燃料倍率</MST.fuelMultiplier>
+
+    <!-- Power 字段 -->
+    <MST.shortCircuitInRain>雨天短路</MST.shortCircuitInRain>
+    <MST.transmitsPower>传输电力</MST.transmitsPower>
+    <MST.allowWireConnection>允许电线</MST.allowWireConnection>
+
+    <!-- Anomaly 字段 -->
+    <MST.studiableFrequencyTicks>研究频率</MST.studiableFrequencyTicks>
+    <MST.anomalyKnowledge>异象知识</MST.anomalyKnowledge>
+    <MST.activityStartingRangeMin>活动Min</MST.activityStartingRangeMin>
+    <MST.activityStartingRangeMax>活动Max</MST.activityStartingRangeMax>
+    <MST.changePerDayBase>每日变化</MST.changePerDayBase>
+    <MST.changePerDamage>伤害变化</MST.changePerDamage>
+
+    <!-- Mineable 分类 -->
+    <MST.Mineable>矿物</MST.Mineable>
+
+    <!-- Mineable 字段 -->
+    <MST.mineableThing>产出物品</MST.mineableThing>
+    <MST.mineableYield>产出数量</MST.mineableYield>
+    <MST.veinMineable>矿脉</MST.veinMineable>
+    <MST.mineableNonMinedEfficiency>非开采效率</MST.mineableNonMinedEfficiency>
+    <MST.mineableDropChance>掉落概率</MST.mineableDropChance>
+    <MST.mineableYieldWasteable>可浪费</MST.mineableYieldWasteable>
+    <MST.mineableScatterCommonality>散布概率</MST.mineableScatterCommonality>
+    <MST.mineablePreventMeteorite>防止陨石</MST.mineablePreventMeteorite>
+    <MST.mineablePreventNaturalRockOnSurface>防地表岩石</MST.mineablePreventNaturalRockOnSurface>
+    <MST.isNaturalRock>天然岩石</MST.isNaturalRock>
+    <MST.isResourceRock>资源岩石</MST.isResourceRock>
+</LanguageData>

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="BalanceTweak/BalanceTweak.csproj" />
+  <Project Path="CheckLoc/CheckLoc.csproj" />
+</Solution>

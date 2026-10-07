@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Metallic>金属</MST.Metallic>
+    <MST.Woody>木材</MST.Woody>
+    <MST.Stony>石料</MST.Stony>
+    <MST.Fabric>织物</MST.Fabric>
+    <MST.Leathery>皮革</MST.Leathery>
+    <MST.stuffPowerArmorSharp>材料锐防</MST.stuffPowerArmorSharp>
+    <MST.stuffPowerArmorBlunt>材料钝防</MST.stuffPowerArmorBlunt>
+    <MST.stuffPowerArmorHeat>材料热防</MST.stuffPowerArmorHeat>
+    <MST.stuffPowerInsulationCold>材料冷防</MST.stuffPowerInsulationCold>
+    <MST.stuffPowerInsulationHeat>材料热防</MST.stuffPowerInsulationHeat>
+    <MST.sharpDamageMultiplier>材料锐伤</MST.sharpDamageMultiplier>
+    <MST.bluntDamageMultiplier>材料钝伤</MST.bluntDamageMultiplier>
+    <MST.stuffMaxHitPoints>材料耐久</MST.stuffMaxHitPoints>
+    <MST.stuffFlammability>材料可燃</MST.stuffFlammability>
+    <MST.stuffBeauty>材料美观</MST.stuffBeauty>
+    <MST.stuffWorkToMake>材料工量</MST.stuffWorkToMake>
+    <MST.stuffWorkToBuild>材料建量</MST.stuffWorkToBuild>
+    <MST.stuffMeleeWeaponCooldownMultiplier>材近CD</MST.stuffMeleeWeaponCooldownMultiplier>
+    <MST.statBases>属性基础</MST.statBases>
+    <MST.statBasesComment>此材料的基础属性值。</MST.statBasesComment>
+    <MST.statOffsetsComment>材料提供的属性偏移值。</MST.statOffsetsComment>
+    <MST.statFactorsComment>材料提供的属性倍率。</MST.statFactorsComment>
+    <MST.deepCommonality>深钻概率</MST.deepCommonality>
+    <MST.deepCommonalityComment>被地质扫描仪扫描到的概率。</MST.deepCommonalityComment>
+    <MST.deepCountPerPortion>深钻产出</MST.deepCountPerPortion>
+    <MST.deepCountPerPortionComment>被深钻井钻探的每份产出量。</MST.deepCountPerPortionComment>
+    <MST.deepCountPerCell>扫描格产出</MST.deepCountPerCell>
+    <MST.deepCountPerCellComment>地质扫描仪扫描后每格可开采的资源量。</MST.deepCountPerCellComment>
+    <MST.deepLumpSizeRange>扫描范围</MST.deepLumpSizeRange>
+    <MST.deepLumpSizeRangeComment>地质扫描仪扫描后出现的资源格数范围（最少~最多）。</MST.deepLumpSizeRangeComment>
+</LanguageData>

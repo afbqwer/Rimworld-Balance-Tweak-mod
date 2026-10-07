@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Incident>Incident</MST.Incident>
+    <MST.baseChance>Chance</MST.baseChance>
+    <MST.earliestDay>ear.Day</MST.earliestDay>
+    <MST.minPopulation>min.Pop</MST.minPopulation>
+    <MST.minGreatestPopulation>gre.Pop</MST.minGreatestPopulation>
+    <MST.minAnomalyThreatLevel>ATLV</MST.minAnomalyThreatLevel>
+    <MST.minThreatPoints>minPt</MST.minThreatPoints>
+    <MST.maxThreatPoints>maxPt</MST.maxThreatPoints>
+    <MST.baseChanceWithRoyalty>RChance</MST.baseChanceWithRoyalty>
+    <MST.ThreatSmall>SThreat</MST.ThreatSmall>
+    <MST.ThreatBig>BThreat</MST.ThreatBig>
+    <MST.minimumContainmentStrength>MinConS</MST.minimumContainmentStrength>
+    <MST.earliestDayComment> The earliest number of days for which this event is triggered. </MST.earliestDayComment>
+    <MST.minPopulationComment> The minimum population required to trigger this event. If the colony's population is less than the minimum population, the event will not be triggered. </MST.minPopulationComment>
+    <MST.minGreatestPopulationComment> The maximum population required to trigger this event. The event will be triggered only if the population of the colony has ever exceeded the maximum population. </MST.minGreatestPopulationComment>
+    <MST.minAnomalyThreatLevelComment> The required level of boulders for triggering this event. </MST.minAnomalyThreatLevelComment>
+    <MST.minThreatPointsComment> The minimum number of threat points for this event. </MST.minThreatPointsComment>
+    <MST.maxThreatPointsComment> The maximum number of threat points for this event. </MST.maxThreatPointsComment>
+    <MST.baseChanceWithRoyaltyComment> The probability of this event being triggered if the DLC "Royal Power" is available. </MST.baseChanceWithRoyaltyComment>
+    <MST.Disease>Disease</MST.Disease>
+    <MST.diseaseVictimFractionRange>VictimFraction</MST.diseaseVictimFractionRange>
+    <MST.diseaseVictimFractionRangeComment> The fraction of colonists that can be infected by this disease (min-max range). </MST.diseaseVictimFractionRangeComment>
+    <MST.actualChance>ActChance</MST.actualChance>
+    <MST.actualChanceComment> The actual probability = baseChance / (sum of all baseChance in this category). Shows Null if baseChance is 0. </MST.actualChanceComment>
+</LanguageData>

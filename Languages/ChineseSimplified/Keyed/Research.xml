@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Research>研究</MST.Research>
+    <MST.researchTab>研究标签</MST.researchTab>
+    <MST.baseCost>基础花费</MST.baseCost>
+    <MST.researchViewX>X坐标</MST.researchViewX>
+    <MST.researchViewY>Y坐标</MST.researchViewY>
+    <MST.techLevel>科技水平</MST.techLevel>
+    <MST.knowledgeCost>知识花费</MST.knowledgeCost>
+    <MST.knowledgeCategory>知识类别</MST.knowledgeCategory>
+    <MST.techprintCount>蓝图数量</MST.techprintCount>
+    <MST.techprintCommonality>蓝图常见度</MST.techprintCommonality>
+    <MST.techprintMarketValue>蓝图价值</MST.techprintMarketValue>
+    <MST.Hidden>隐藏</MST.Hidden>
+</LanguageData>
