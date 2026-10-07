@@ -102,6 +102,10 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         else if (fieldType == typeof(List<ProcessResultItem>)) ExposeProcessResultList(meta);
         else if (fieldType == typeof(List<BiomePlantRecord>)) ExposeBiomePlantList(meta);
         else if (fieldType == typeof(List<BiomeAnimalRecord>)) ExposeBiomeAnimalList(meta);
+        else if (fieldType == typeof(List<FishChance>)) ExposeFishChanceList(meta);
+        else if (fieldType == typeof(List<BiomeDiseaseRecord>)) ExposeDiseaseList(meta);
+        else if (fieldType == typeof(List<WeatherCommonalityRecord>)) ExposeWeatherCommonalityList(meta);
+        else if (fieldType == typeof(List<TerrainThreshold>)) ExposeTerrainThresholdList(meta);
         else if (fieldType == typeof(ThingFilter)) ExposeIngredientFilter(meta);
         else if (fieldType == typeof(List<string>)) ExposeStringList(meta);
         else if (fieldType == typeof(List<int>)) ExposeIntList(meta);
@@ -345,6 +349,46 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             var list = (List<BiomeAnimalRecord>?)v;
             if (list == null || list.Count == 0) return null;
             return list.Select(SerializationHelper.BiomeAnimalRecordToItemString).ToList();
+        });
+    }
+
+    private void ExposeFishChanceList(StatFieldMeta meta)
+    {
+        ExposeList(meta, v =>
+        {
+            var list = (List<FishChance>?)v;
+            if (list == null || list.Count == 0) return null;
+            return list.Select(SerializationHelper.FishChanceToItemString).ToList();
+        });
+    }
+
+    private void ExposeDiseaseList(StatFieldMeta meta)
+    {
+        ExposeList(meta, v =>
+        {
+            var list = (List<BiomeDiseaseRecord>?)v;
+            if (list == null || list.Count == 0) return null;
+            return list.Select(SerializationHelper.BiomeDiseaseRecordToItemString).ToList();
+        });
+    }
+
+    private void ExposeWeatherCommonalityList(StatFieldMeta meta)
+    {
+        ExposeList(meta, v =>
+        {
+            var list = (List<WeatherCommonalityRecord>?)v;
+            if (list == null || list.Count == 0) return null;
+            return list.Select(SerializationHelper.WeatherCommonalityRecordToItemString).ToList();
+        });
+    }
+
+    private void ExposeTerrainThresholdList(StatFieldMeta meta)
+    {
+        ExposeList(meta, v =>
+        {
+            var list = (List<TerrainThreshold>?)v;
+            if (list == null || list.Count == 0) return null;
+            return list.Select(SerializationHelper.TerrainThresholdToItemString).ToList();
         });
     }
 

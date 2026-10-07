@@ -63,13 +63,78 @@ class BiomeData : TweakData<BiomeData>
     public List<BiomePlantRecord>? wildPlants = null;
     [TweakField(Style = ColumnStyle.BiomeAnimalList)]
     public List<BiomeAnimalRecord>? wildAnimals = null;
+    [TweakField(Style = ColumnStyle.BiomeAnimalList, MayRequire = "ludeon.rimworld.odyssey")]
+    public List<BiomeAnimalRecord>? coastalWildAnimals = null;
+    [TweakField(Style = ColumnStyle.BiomeAnimalList, MayRequire = "ludeon.rimworld.biotech")]
+    public List<BiomeAnimalRecord>? pollutionWildAnimals = null;
+
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<ThingDef>? allowedPackAnimals = null;
+
+    [TweakField(Style = ColumnStyle.DiseaseList)]
+    public List<BiomeDiseaseRecord>? diseases = null;
+
+    [TweakField(Style = ColumnStyle.WeatherCommonalityList)]
+    public List<WeatherCommonalityRecord>? baseWeatherCommonalities = null;
+
+    // fishTypes 是复合对象，四个鱼列表 + 稀有渔获子字段都是它下面的内容；
+    // Apply 中任一非空时先确保 fishTypes 实例存在。
+    [TweakField(Style = ColumnStyle.FishChanceList, MayRequire = "ludeon.rimworld.odyssey")]
+    public List<FishChance>? freshwaterCommon = null;
+    [TweakField(Style = ColumnStyle.FishChanceList, MayRequire = "ludeon.rimworld.odyssey")]
+    public List<FishChance>? freshwaterUncommon = null;
+    [TweakField(Style = ColumnStyle.FishChanceList, MayRequire = "ludeon.rimworld.odyssey")]
+    public List<FishChance>? saltwaterCommon = null;
+    [TweakField(Style = ColumnStyle.FishChanceList, MayRequire = "ludeon.rimworld.odyssey")]
+    public List<FishChance>? saltwaterUncommon = null;
+    [TweakField(Style = ColumnStyle.DefSelector, MayRequire = "ludeon.rimworld.odyssey")]
+    public ThingSetMakerDef? rareCatchesSetMaker = null;
+
+    // 地形生成（只影响新生成的地图）
+    [TweakField(Style = ColumnStyle.TerrainThresholdList)]
+    public List<TerrainThreshold>? terrainsByFertility = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? gravelTerrain = null;
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? noGravel = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<ThingDef>? extraRockTypes = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<ThingDef>? forceRockTypes = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? waterShallowTerrain = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? waterDeepTerrain = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? waterMovingShallowTerrain = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? waterMovingChestDeepTerrain = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? oceanShallowTerrain = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? oceanDeepTerrain = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? riverbankTerrain = null;
+    [TweakField(Style = ColumnStyle.Range)]
+    public IntRange? riverbankSizeRange = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? mudTerrain = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? coastalBeachTerrain = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TerrainDef? lakeBeachTerrain = null;
 
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
-    // BiomeDef.wildAnimals 是 private 字段，且动植物共性值缓存在私有字段里（懒加载、无失效机制），
-    // 只能反射读写；写完列表后把缓存置 null 强制下次访问重建，否则运行中修改不生效。
+    // BiomeDef 的 wildAnimals/coastalWildAnimals/pollutionWildAnimals/diseases/allowedPackAnimals
+    // 是 private 字段，且动植物与疾病共性值缓存在私有字段里（懒加载、无失效机制），只能反射读写；
+    // 写完列表后把缓存置 null 强制下次访问重建，否则运行中修改不生效。
     private static readonly FieldInfo? wildAnimalsField = AccessTools.Field(typeof(BiomeDef), "wildAnimals");
+    private static readonly FieldInfo? coastalWildAnimalsField = AccessTools.Field(typeof(BiomeDef), "coastalWildAnimals");
+    private static readonly FieldInfo? pollutionWildAnimalsField = AccessTools.Field(typeof(BiomeDef), "pollutionWildAnimals");
+    private static readonly FieldInfo? diseasesField = AccessTools.Field(typeof(BiomeDef), "diseases");
+    private static readonly FieldInfo? allowedPackAnimalsField = AccessTools.Field(typeof(BiomeDef), "allowedPackAnimals");
     private static readonly FieldInfo?[] biomeCacheFields =
     [
         AccessTools.Field(typeof(BiomeDef), "cachedAnimalCommonalities"),
@@ -79,6 +144,7 @@ class BiomeData : TweakData<BiomeData>
         AccessTools.Field(typeof(BiomeDef), "cachedWildPlants"),
         AccessTools.Field(typeof(BiomeDef), "cachedLowestWildPlantOrder"),
         AccessTools.Field(typeof(BiomeDef), "cachedMaxWildPlantsClusterRadius"),
+        AccessTools.Field(typeof(BiomeDef), "cachedDiseaseCommonalities"),
     ];
 
     public override void SetDef(Def def, SettingType type, bool tweaked = false)
@@ -111,6 +177,32 @@ class BiomeData : TweakData<BiomeData>
             foragedFood ??= d.foragedFood;
             wildPlants ??= d.wildPlants;
             wildAnimals ??= wildAnimalsField?.GetValue(d) as List<BiomeAnimalRecord>;
+            coastalWildAnimals ??= coastalWildAnimalsField?.GetValue(d) as List<BiomeAnimalRecord>;
+            pollutionWildAnimals ??= pollutionWildAnimalsField?.GetValue(d) as List<BiomeAnimalRecord>;
+            allowedPackAnimals ??= allowedPackAnimalsField?.GetValue(d) as List<ThingDef>;
+            diseases ??= diseasesField?.GetValue(d) as List<BiomeDiseaseRecord>;
+            baseWeatherCommonalities ??= d.baseWeatherCommonalities;
+            freshwaterCommon ??= d.fishTypes?.freshwater_Common;
+            freshwaterUncommon ??= d.fishTypes?.freshwater_Uncommon;
+            saltwaterCommon ??= d.fishTypes?.saltwater_Common;
+            saltwaterUncommon ??= d.fishTypes?.saltwater_Uncommon;
+            rareCatchesSetMaker ??= d.fishTypes?.rareCatchesSetMaker;
+            terrainsByFertility ??= d.terrainsByFertility;
+            gravelTerrain ??= d.gravelTerrain;
+            noGravel ??= d.noGravel;
+            extraRockTypes ??= d.extraRockTypes;
+            forceRockTypes ??= d.forceRockTypes;
+            waterShallowTerrain ??= d.waterShallowTerrain;
+            waterDeepTerrain ??= d.waterDeepTerrain;
+            waterMovingShallowTerrain ??= d.waterMovingShallowTerrain;
+            waterMovingChestDeepTerrain ??= d.waterMovingChestDeepTerrain;
+            oceanShallowTerrain ??= d.oceanShallowTerrain;
+            oceanDeepTerrain ??= d.oceanDeepTerrain;
+            riverbankTerrain ??= d.riverbankTerrain;
+            riverbankSizeRange ??= d.riverbankSizeRange;
+            mudTerrain ??= d.mudTerrain;
+            coastalBeachTerrain ??= d.coastalBeachTerrain;
+            lakeBeachTerrain ??= d.lakeBeachTerrain;
         }
     }
 
@@ -146,7 +238,46 @@ class BiomeData : TweakData<BiomeData>
 
         if (wildPlants != null) { def.wildPlants = wildPlants; }
         if (wildAnimals != null && wildAnimalsField != null) { wildAnimalsField.SetValue(def, wildAnimals); }
-        if (wildPlants != null || wildAnimals != null) { InvalidateBiomeCaches(def); }
+        if (coastalWildAnimals != null && coastalWildAnimalsField != null) { coastalWildAnimalsField.SetValue(def, coastalWildAnimals); }
+        if (pollutionWildAnimals != null && pollutionWildAnimalsField != null) { pollutionWildAnimalsField.SetValue(def, pollutionWildAnimals); }
+        if (allowedPackAnimals != null && allowedPackAnimalsField != null) { allowedPackAnimalsField.SetValue(def, allowedPackAnimals); }
+        if (diseases != null && diseasesField != null) { diseasesField.SetValue(def, diseases); }
+        if (baseWeatherCommonalities != null) { def.baseWeatherCommonalities = baseWeatherCommonalities; }
+
+        bool fishTouched = freshwaterCommon != null || freshwaterUncommon != null
+            || saltwaterCommon != null || saltwaterUncommon != null || rareCatchesSetMaker != null;
+        if (fishTouched)
+        {
+            def.fishTypes ??= new BiomeFishTypes();
+            if (freshwaterCommon != null) { def.fishTypes.freshwater_Common = freshwaterCommon; }
+            if (freshwaterUncommon != null) { def.fishTypes.freshwater_Uncommon = freshwaterUncommon; }
+            if (saltwaterCommon != null) { def.fishTypes.saltwater_Common = saltwaterCommon; }
+            if (saltwaterUncommon != null) { def.fishTypes.saltwater_Uncommon = saltwaterUncommon; }
+            if (rareCatchesSetMaker != null) { def.fishTypes.rareCatchesSetMaker = rareCatchesSetMaker; }
+        }
+
+        if (terrainsByFertility != null) { def.terrainsByFertility = terrainsByFertility; }
+        if (gravelTerrain != null) { def.gravelTerrain = gravelTerrain; }
+        if (noGravel.HasValue) { def.noGravel = noGravel.Value; }
+        if (extraRockTypes != null) { def.extraRockTypes = extraRockTypes; }
+        if (forceRockTypes != null) { def.forceRockTypes = forceRockTypes; }
+        if (waterShallowTerrain != null) { def.waterShallowTerrain = waterShallowTerrain; }
+        if (waterDeepTerrain != null) { def.waterDeepTerrain = waterDeepTerrain; }
+        if (waterMovingShallowTerrain != null) { def.waterMovingShallowTerrain = waterMovingShallowTerrain; }
+        if (waterMovingChestDeepTerrain != null) { def.waterMovingChestDeepTerrain = waterMovingChestDeepTerrain; }
+        if (oceanShallowTerrain != null) { def.oceanShallowTerrain = oceanShallowTerrain; }
+        if (oceanDeepTerrain != null) { def.oceanDeepTerrain = oceanDeepTerrain; }
+        if (riverbankTerrain != null) { def.riverbankTerrain = riverbankTerrain; }
+        if (riverbankSizeRange.HasValue) { def.riverbankSizeRange = riverbankSizeRange.Value; }
+        if (mudTerrain != null) { def.mudTerrain = mudTerrain; }
+        if (coastalBeachTerrain != null) { def.coastalBeachTerrain = coastalBeachTerrain; }
+        if (lakeBeachTerrain != null) { def.lakeBeachTerrain = lakeBeachTerrain; }
+
+        if (wildPlants != null || wildAnimals != null || coastalWildAnimals != null || pollutionWildAnimals != null
+            || diseases != null || fishTouched)
+        {
+            InvalidateBiomeCaches(def);
+        }
 
         if (defLabel != null) this.def.label = defLabel;
     }

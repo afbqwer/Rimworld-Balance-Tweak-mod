@@ -55,7 +55,7 @@ public class StatColumnConfig
         { FieldType.IntRange, new[] { ColumnStyle.Range } },
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
-        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList } },
+        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList } },
         { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks } },
     };
 
@@ -120,7 +120,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -131,7 +131,9 @@ public class StatColumnConfig
             or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.SkillReqList or ColumnStyle.TraitReqList
             or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList
             or ColumnStyle.BodyPartTree
-            or ColumnStyle.BiomePlantList or ColumnStyle.BiomeAnimalList;
+            or ColumnStyle.BiomePlantList or ColumnStyle.BiomeAnimalList
+            or ColumnStyle.FishChanceList or ColumnStyle.DiseaseList or ColumnStyle.WeatherCommonalityList
+            or ColumnStyle.TerrainThresholdList;
     }
 
     private void ValidateFieldTypeStyle()
@@ -457,7 +459,7 @@ public class StatColumnConfig
         }
 
         // 列表类型 (通过 SerializationHelper 序列化)
-        if (columnType is ColumnStyle.StatModList or ColumnStyle.CapModList or ColumnStyle.DamageModList or ColumnStyle.SkillGainList or ColumnStyle.SkillReqList or ColumnStyle.TraitReqList or ColumnStyle.AptitudeList or ColumnStyle.GeneticTraitList or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList or ColumnStyle.BiomePlantList or ColumnStyle.BiomeAnimalList)
+        if (columnType is ColumnStyle.StatModList or ColumnStyle.CapModList or ColumnStyle.DamageModList or ColumnStyle.SkillGainList or ColumnStyle.SkillReqList or ColumnStyle.TraitReqList or ColumnStyle.AptitudeList or ColumnStyle.GeneticTraitList or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList or ColumnStyle.BiomePlantList or ColumnStyle.BiomeAnimalList or ColumnStyle.TerrainThresholdList)
         {
             var list = (IList?)GetRawValue(data);
             if (list == null) return null;
@@ -477,6 +479,10 @@ public class StatColumnConfig
                 ColumnStyle.ProcessResultList => SerializationHelper.SerializeProcessResultItemList(list.Cast<ProcessResultItem>().ToList()),
                 ColumnStyle.BiomePlantList => SerializationHelper.SerializeBiomePlantList(list.Cast<BiomePlantRecord>().ToList()),
                 ColumnStyle.BiomeAnimalList => SerializationHelper.SerializeBiomeAnimalList(list.Cast<BiomeAnimalRecord>().ToList()),
+                ColumnStyle.FishChanceList => SerializationHelper.SerializeFishChanceList(list.Cast<FishChance>().ToList()),
+                ColumnStyle.DiseaseList => SerializationHelper.SerializeDiseaseList(list.Cast<BiomeDiseaseRecord>().ToList()),
+                ColumnStyle.WeatherCommonalityList => SerializationHelper.SerializeWeatherCommonalityList(list.Cast<WeatherCommonalityRecord>().ToList()),
+                ColumnStyle.TerrainThresholdList => SerializationHelper.SerializeTerrainThresholdList(list.Cast<TerrainThreshold>().ToList()),
                 _ => null
             };
         }
@@ -637,6 +643,30 @@ public class StatColumnConfig
             if (columnType == ColumnStyle.BiomeAnimalList)
             {
                 var list = SerializationHelper.DeserializeBiomeAnimalList(clipboardData);
+                if (list != null) { ApplyValue(data, list); return true; }
+                return false;
+            }
+            if (columnType == ColumnStyle.FishChanceList)
+            {
+                var list = SerializationHelper.DeserializeFishChanceList(clipboardData);
+                if (list != null) { ApplyValue(data, list); return true; }
+                return false;
+            }
+            if (columnType == ColumnStyle.DiseaseList)
+            {
+                var list = SerializationHelper.DeserializeDiseaseList(clipboardData);
+                if (list != null) { ApplyValue(data, list); return true; }
+                return false;
+            }
+            if (columnType == ColumnStyle.WeatherCommonalityList)
+            {
+                var list = SerializationHelper.DeserializeWeatherCommonalityList(clipboardData);
+                if (list != null) { ApplyValue(data, list); return true; }
+                return false;
+            }
+            if (columnType == ColumnStyle.TerrainThresholdList)
+            {
+                var list = SerializationHelper.DeserializeTerrainThresholdList(clipboardData);
                 if (list != null) { ApplyValue(data, list); return true; }
                 return false;
             }
@@ -949,6 +979,38 @@ public class StatColumnConfig
                         if (element is BiomeAnimalRecord bar)
                         {
                             var label = bar.animal?.label;
+                            if (!label.NullOrEmpty())
+                                return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
+                        }
+                        break;
+                    case ColumnStyle.FishChanceList:
+                        if (element is FishChance fc)
+                        {
+                            var label = fc.fishDef?.label;
+                            if (!label.NullOrEmpty())
+                                return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
+                        }
+                        break;
+                    case ColumnStyle.DiseaseList:
+                        if (element is BiomeDiseaseRecord bdr)
+                        {
+                            var label = bdr.diseaseInc?.label;
+                            if (!label.NullOrEmpty())
+                                return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
+                        }
+                        break;
+                    case ColumnStyle.WeatherCommonalityList:
+                        if (element is WeatherCommonalityRecord wcr)
+                        {
+                            var label = wcr.weather?.label;
+                            if (!label.NullOrEmpty())
+                                return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
+                        }
+                        break;
+                    case ColumnStyle.TerrainThresholdList:
+                        if (element is TerrainThreshold tt)
+                        {
+                            var label = tt.terrain?.label;
                             if (!label.NullOrEmpty())
                                 return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
                         }

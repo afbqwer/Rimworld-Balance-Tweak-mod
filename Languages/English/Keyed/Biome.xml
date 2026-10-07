@@ -52,4 +52,52 @@
     <MST.AddWildAnimal>Add wild animal</MST.AddWildAnimal>
     <MST.SelectPlant>(Select plant)</MST.SelectPlant>
     <MST.SelectAnimal>(Select animal)</MST.SelectAnimal>
+    <MST.coastalWildAnimals>coastAnml</MST.coastalWildAnimals>
+    <MST.coastalWildAnimalsComment>Wild animals spawning along coastlines and their commonality weights (visible to coastal caravans). Requires Odyssey.</MST.coastalWildAnimalsComment>
+    <MST.pollutionWildAnimals>polAnml</MST.pollutionWildAnimals>
+    <MST.pollutionWildAnimalsComment>Animals replacing normal wildlife on polluted tiles, with commonality weights. Requires Biotech.</MST.pollutionWildAnimalsComment>
+    <MST.allowedPackAnimals>packAnml</MST.allowedPackAnimals>
+    <MST.allowedPackAnimalsComment>Pack animals allowed in this biome (in caravans).</MST.allowedPackAnimalsComment>
+    <MST.diseases>diseases</MST.diseases>
+    <MST.diseasesComment>Disease incidents possible in this biome and their commonality weights. Works together with the disease interval field.</MST.diseasesComment>
+    <MST.baseWeatherCommonalities>weather</MST.baseWeatherCommonalities>
+    <MST.baseWeatherCommonalitiesComment>Base commonality weights of weathers in this biome. Read live by map weather decisions.</MST.baseWeatherCommonalitiesComment>
+    <MST.freshwaterCommon>fwCmn</MST.freshwaterCommon>
+    <MST.freshwaterCommonComment>Common fish in freshwater bodies (rivers/lakes) and their chance. Requires Odyssey.</MST.freshwaterCommonComment>
+    <MST.freshwaterUncommon>fwUnc</MST.freshwaterUncommon>
+    <MST.freshwaterUncommonComment>Less common fish in freshwater bodies and their chance. Requires Odyssey.</MST.freshwaterUncommonComment>
+    <MST.saltwaterCommon>swCmn</MST.saltwaterCommon>
+    <MST.saltwaterCommonComment>Common fish in saltwater bodies (oceans) and their chance. Requires Odyssey.</MST.saltwaterCommonComment>
+    <MST.saltwaterUncommon>swUnc</MST.saltwaterUncommon>
+    <MST.saltwaterUncommonComment>Less common fish in saltwater bodies and their chance. Requires Odyssey.</MST.saltwaterUncommonComment>
+    <MST.rareCatchesSetMaker>rareCatch</MST.rareCatchesSetMaker>
+    <MST.rareCatchesSetMakerComment>ThingSetMakerDef of rare catches while fishing. Requires Odyssey.</MST.rareCatchesSetMakerComment>
+    <MST.AddFish>Add fish</MST.AddFish>
+    <MST.SelectFish>(Select fish)</MST.SelectFish>
+    <MST.AddDisease>Add disease</MST.AddDisease>
+    <MST.SelectDisease>(Select disease)</MST.SelectDisease>
+    <MST.AddWeather>Add weather</MST.AddWeather>
+    <MST.SelectWeather>(Select weather)</MST.SelectWeather>
+    <MST.terrainsByFertility>terrain</MST.terrainsByFertility>
+    <MST.terrainsByFertilityComment>Base ground terrain chosen by per-cell fertility bands (entry: terrain/min/max). At least one entry must cover the full range (e.g. min=-999, max=999). Only affects newly generated maps.</MST.terrainsByFertilityComment>
+    <MST.gravelTerrain>gravel</MST.gravelTerrain>
+    <MST.noGravel>noGrvl</MST.noGravel>
+    <MST.noGravelComment>Disables the gravel band between elevation 0.55 and 0.61.</MST.noGravelComment>
+    <MST.extraRockTypes>xRock</MST.extraRockTypes>
+    <MST.extraRockTypesComment>Extra rock types this biome's mountains may generate (affects ore composition).</MST.extraRockTypesComment>
+    <MST.forceRockTypes>fRock</MST.forceRockTypes>
+    <MST.forceRockTypesComment>Forces this biome's mountains to only use these rock types.</MST.forceRockTypesComment>
+    <MST.waterShallowTerrain>wShlw</MST.waterShallowTerrain>
+    <MST.waterDeepTerrain>wDeep</MST.waterDeepTerrain>
+    <MST.waterMovingShallowTerrain>mwShlw</MST.waterMovingShallowTerrain>
+    <MST.waterMovingChestDeepTerrain>mwDeep</MST.waterMovingChestDeepTerrain>
+    <MST.oceanShallowTerrain>oShlw</MST.oceanShallowTerrain>
+    <MST.oceanDeepTerrain>oDeep</MST.oceanDeepTerrain>
+    <MST.riverbankTerrain>rBank</MST.riverbankTerrain>
+    <MST.riverbankSizeRange>rbSize</MST.riverbankSizeRange>
+    <MST.mudTerrain>mud</MST.mudTerrain>
+    <MST.coastalBeachTerrain>beach</MST.coastalBeachTerrain>
+    <MST.lakeBeachTerrain>lBeach</MST.lakeBeachTerrain>
+    <MST.AddTerrainBand>Add terrain band</MST.AddTerrainBand>
+    <MST.SelectTerrain>(Select terrain)</MST.SelectTerrain>
 </LanguageData>

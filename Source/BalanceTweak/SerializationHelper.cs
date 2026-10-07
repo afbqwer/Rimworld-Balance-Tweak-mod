@@ -552,6 +552,146 @@ public static class SerializationHelper
 
     #endregion
 
+    #region FishChance
+
+    public static string FishChanceToItemString(FishChance f)
+        => $"{f.fishDef?.defName ?? "NULL"}|{f.chance}";
+
+    public static FishChance? ParseFishChance(string str)
+    {
+        var parts = str.Split('|');
+        if (parts.Length != 2)
+        {
+            WarnSyntaxError("FishChance", str, "fishDefName|chance");
+            return null;
+        }
+        var fish = DefDatabase<ThingDef>.GetNamedSilentFail(parts[0]);
+        if (fish == null)
+        {
+            LogMissingDef("FishChance.fishDef", parts[0]);
+            return null;
+        }
+        if (!float.TryParse(parts[1], out var chance))
+        {
+            WarnSyntaxError("FishChance", str, "fishDefName|chance（chance 应为浮点数）");
+            return null;
+        }
+        return new FishChance { fishDef = fish, chance = chance };
+    }
+
+    public static string? SerializeFishChanceList(List<FishChance>? list)
+        => SerializeList(list, FishChanceToItemString);
+
+    public static List<FishChance>? DeserializeFishChanceList(string? data)
+        => DeserializeList(data, ParseFishChance, "DeserializeFishChanceList");
+
+    #endregion
+
+    #region BiomeDiseaseRecord
+
+    public static string BiomeDiseaseRecordToItemString(BiomeDiseaseRecord r)
+        => $"{r.diseaseInc?.defName ?? "NULL"}|{r.commonality}";
+
+    public static BiomeDiseaseRecord? ParseBiomeDiseaseRecord(string str)
+    {
+        var parts = str.Split('|');
+        if (parts.Length != 2)
+        {
+            WarnSyntaxError("BiomeDiseaseRecord", str, "diseaseIncidentDefName|commonality");
+            return null;
+        }
+        var diseaseInc = DefDatabase<IncidentDef>.GetNamedSilentFail(parts[0]);
+        if (diseaseInc == null)
+        {
+            LogMissingDef("BiomeDiseaseRecord.diseaseInc", parts[0]);
+            return null;
+        }
+        if (!float.TryParse(parts[1], out var commonality))
+        {
+            WarnSyntaxError("BiomeDiseaseRecord", str, "diseaseIncidentDefName|commonality（commonality 应为浮点数）");
+            return null;
+        }
+        return new BiomeDiseaseRecord { diseaseInc = diseaseInc, commonality = commonality };
+    }
+
+    public static string? SerializeDiseaseList(List<BiomeDiseaseRecord>? list)
+        => SerializeList(list, BiomeDiseaseRecordToItemString);
+
+    public static List<BiomeDiseaseRecord>? DeserializeDiseaseList(string? data)
+        => DeserializeList(data, ParseBiomeDiseaseRecord, "DeserializeDiseaseList");
+
+    #endregion
+
+    #region WeatherCommonalityRecord
+
+    public static string WeatherCommonalityRecordToItemString(WeatherCommonalityRecord r)
+        => $"{r.weather?.defName ?? "NULL"}|{r.commonality}";
+
+    public static WeatherCommonalityRecord? ParseWeatherCommonalityRecord(string str)
+    {
+        var parts = str.Split('|');
+        if (parts.Length != 2)
+        {
+            WarnSyntaxError("WeatherCommonalityRecord", str, "weatherDefName|commonality");
+            return null;
+        }
+        var weather = DefDatabase<WeatherDef>.GetNamedSilentFail(parts[0]);
+        if (weather == null)
+        {
+            LogMissingDef("WeatherCommonalityRecord.weather", parts[0]);
+            return null;
+        }
+        if (!float.TryParse(parts[1], out var commonality))
+        {
+            WarnSyntaxError("WeatherCommonalityRecord", str, "weatherDefName|commonality（commonality 应为浮点数）");
+            return null;
+        }
+        return new WeatherCommonalityRecord { weather = weather, commonality = commonality };
+    }
+
+    public static string? SerializeWeatherCommonalityList(List<WeatherCommonalityRecord>? list)
+        => SerializeList(list, WeatherCommonalityRecordToItemString);
+
+    public static List<WeatherCommonalityRecord>? DeserializeWeatherCommonalityList(string? data)
+        => DeserializeList(data, ParseWeatherCommonalityRecord, "DeserializeWeatherCommonalityList");
+
+    #endregion
+
+    #region TerrainThreshold
+
+    public static string TerrainThresholdToItemString(TerrainThreshold t)
+        => $"{t.terrain?.defName ?? "NULL"}|{t.min}|{t.max}";
+
+    public static TerrainThreshold? ParseTerrainThreshold(string str)
+    {
+        var parts = str.Split('|');
+        if (parts.Length != 3)
+        {
+            WarnSyntaxError("TerrainThreshold", str, "terrainDefName|min|max");
+            return null;
+        }
+        var terrain = DefDatabase<TerrainDef>.GetNamedSilentFail(parts[0]);
+        if (terrain == null)
+        {
+            LogMissingDef("TerrainThreshold.terrain", parts[0]);
+            return null;
+        }
+        if (!float.TryParse(parts[1], out var min) || !float.TryParse(parts[2], out var max))
+        {
+            WarnSyntaxError("TerrainThreshold", str, "terrainDefName|min|max（min/max 应为浮点数）");
+            return null;
+        }
+        return new TerrainThreshold { terrain = terrain, min = min, max = max };
+    }
+
+    public static string? SerializeTerrainThresholdList(List<TerrainThreshold>? list)
+        => SerializeList(list, TerrainThresholdToItemString);
+
+    public static List<TerrainThreshold>? DeserializeTerrainThresholdList(string? data)
+        => DeserializeList(data, ParseTerrainThreshold, "DeserializeTerrainThresholdList");
+
+    #endregion
+
     #region ProcessIngredientItem
 
     public static string ProcessIngredientItemToItemString(ProcessIngredientItem i)

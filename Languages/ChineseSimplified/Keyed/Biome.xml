@@ -52,4 +52,52 @@
     <MST.AddWildAnimal>添加野生动物</MST.AddWildAnimal>
     <MST.SelectPlant>(选择植物)</MST.SelectPlant>
     <MST.SelectAnimal>(选择动物)</MST.SelectAnimal>
+    <MST.coastalWildAnimals>海岸动物</MST.coastalWildAnimals>
+    <MST.coastalWildAnimalsComment>沿海岸线生成的野生动物及其出现权重（远行队沿海时可见）。需要 Odyssey。</MST.coastalWildAnimalsComment>
+    <MST.pollutionWildAnimals>污染区动物</MST.pollutionWildAnimals>
+    <MST.pollutionWildAnimalsComment>污染地块上替代普通野生动物生成的动物及其权重。需要 Biotech。</MST.pollutionWildAnimalsComment>
+    <MST.allowedPackAnimals>驮兽白名单</MST.allowedPackAnimals>
+    <MST.allowedPackAnimalsComment>允许在此群系（远行队中）使用的驮兽列表。</MST.allowedPackAnimalsComment>
+    <MST.diseases>疾病</MST.diseases>
+    <MST.diseasesComment>此群系可发生的疾病事件及其权重（commonality），配合"疾病间隔"字段生效。</MST.diseasesComment>
+    <MST.baseWeatherCommonalities>天气权重</MST.baseWeatherCommonalities>
+    <MST.baseWeatherCommonalitiesComment>此群系各天气的基础出现权重（commonality），地图天气决策实时读取。</MST.baseWeatherCommonalitiesComment>
+    <MST.freshwaterCommon>淡水常见鱼</MST.freshwaterCommon>
+    <MST.freshwaterCommonComment>淡水水体（河流/湖泊）常见的鱼及其 chance。需要 Odyssey。</MST.freshwaterCommonComment>
+    <MST.freshwaterUncommon>淡水少见鱼</MST.freshwaterUncommon>
+    <MST.freshwaterUncommonComment>淡水水体较少见到的鱼及其 chance。需要 Odyssey。</MST.freshwaterUncommonComment>
+    <MST.saltwaterCommon>海水常见鱼</MST.saltwaterCommon>
+    <MST.saltwaterCommonComment>海水水体（海洋）常见的鱼及其 chance。需要 Odyssey。</MST.saltwaterCommonComment>
+    <MST.saltwaterUncommon>海水少见鱼</MST.saltwaterUncommon>
+    <MST.saltwaterUncommonComment>海水水体较少见到的鱼及其 chance。需要 Odyssey。</MST.saltwaterUncommonComment>
+    <MST.rareCatchesSetMaker>稀有渔获</MST.rareCatchesSetMaker>
+    <MST.rareCatchesSetMakerComment>钓鱼时可能钓到的稀有渔获集合（ThingSetMakerDef）。需要 Odyssey。</MST.rareCatchesSetMakerComment>
+    <MST.AddFish>添加鱼类</MST.AddFish>
+    <MST.SelectFish>(选择鱼)</MST.SelectFish>
+    <MST.AddDisease>添加疾病</MST.AddDisease>
+    <MST.SelectDisease>(选择疾病)</MST.SelectDisease>
+    <MST.AddWeather>添加天气</MST.AddWeather>
+    <MST.SelectWeather>(选择天气)</MST.SelectWeather>
+    <MST.terrainsByFertility>地表构成</MST.terrainsByFertility>
+    <MST.terrainsByFertilityComment>按地块肥沃度区间选择的主地表（每条含 地形/min/max），必须至少一条覆盖全域（如 min=-999、max=999），只影响新生成的地图。</MST.terrainsByFertilityComment>
+    <MST.gravelTerrain>碎石地形</MST.gravelTerrain>
+    <MST.noGravel>无碎石</MST.noGravel>
+    <MST.noGravelComment>关闭海拔 0.55~0.61 之间的碎石带。</MST.noGravelComment>
+    <MST.extraRockTypes>额外岩石</MST.extraRockTypes>
+    <MST.extraRockTypesComment>此群系山脉可能生成的额外岩石类型（影响矿物构成）。</MST.extraRockTypesComment>
+    <MST.forceRockTypes>强制岩石</MST.forceRockTypes>
+    <MST.forceRockTypesComment>强制此群系山脉只使用这些岩石类型。</MST.forceRockTypesComment>
+    <MST.waterShallowTerrain>浅水地形</MST.waterShallowTerrain>
+    <MST.waterDeepTerrain>深水地形</MST.waterDeepTerrain>
+    <MST.waterMovingShallowTerrain>流动浅水</MST.waterMovingShallowTerrain>
+    <MST.waterMovingChestDeepTerrain>流动深水</MST.waterMovingChestDeepTerrain>
+    <MST.oceanShallowTerrain>海洋浅水</MST.oceanShallowTerrain>
+    <MST.oceanDeepTerrain>海洋深水</MST.oceanDeepTerrain>
+    <MST.riverbankTerrain>河岸地形</MST.riverbankTerrain>
+    <MST.riverbankSizeRange>河岸宽度</MST.riverbankSizeRange>
+    <MST.mudTerrain>泥地地形</MST.mudTerrain>
+    <MST.coastalBeachTerrain>海滩地形</MST.coastalBeachTerrain>
+    <MST.lakeBeachTerrain>湖滩地形</MST.lakeBeachTerrain>
+    <MST.AddTerrainBand>添加地表区间</MST.AddTerrainBand>
+    <MST.SelectTerrain>(选择地形)</MST.SelectTerrain>
 </LanguageData>

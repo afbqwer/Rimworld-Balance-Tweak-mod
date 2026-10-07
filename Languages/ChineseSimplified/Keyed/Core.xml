@@ -35,6 +35,10 @@
     <MST.TraitReqList>特征需求列表</MST.TraitReqList>
     <MST.BiomePlantList>野生植物列表</MST.BiomePlantList>
     <MST.BiomeAnimalList>野生动物列表</MST.BiomeAnimalList>
+    <MST.FishChanceList>鱼类列表</MST.FishChanceList>
+    <MST.DiseaseList>疾病列表</MST.DiseaseList>
+    <MST.WeatherCommonalityList>天气列表</MST.WeatherCommonalityList>
+    <MST.TerrainThresholdList>地形区间列表</MST.TerrainThresholdList>
     <MST.empty>空</MST.empty>
     <MST.ColumnConfig>列配置</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>列配置</MST.ColumnSelectorTitle>

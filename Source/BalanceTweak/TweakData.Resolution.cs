@@ -70,6 +70,10 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         if (fieldType == typeof(List<ProcessResultItem>)) return ResolveProcessResultList(meta);
         if (fieldType == typeof(List<BiomePlantRecord>)) return ResolveBiomePlantList(meta);
         if (fieldType == typeof(List<BiomeAnimalRecord>)) return ResolveBiomeAnimalList(meta);
+        if (fieldType == typeof(List<FishChance>)) return ResolveFishChanceList(meta);
+        if (fieldType == typeof(List<BiomeDiseaseRecord>)) return ResolveDiseaseList(meta);
+        if (fieldType == typeof(List<WeatherCommonalityRecord>)) return ResolveWeatherCommonalityList(meta);
+        if (fieldType == typeof(List<TerrainThreshold>)) return ResolveTerrainThresholdList(meta);
         if (fieldType == typeof(ThingFilter)) return ResolveIngredientFilter(meta);
         if (fieldType == typeof(List<string>)) return ResolveStringList(meta);
         if (fieldType == typeof(List<int>)) return ResolveIntList(meta);
@@ -329,6 +333,66 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             foreach (var str in strList)
             {
                 var item = SerializationHelper.ParseBiomeAnimalRecord(str);
+                if (item == null) return (null, false);
+                result.Add(item);
+            }
+            return (result.Count > 0 ? result : null, true);
+        });
+    }
+
+    private bool ResolveFishChanceList(StatFieldMeta meta)
+    {
+        return ResolveList(meta, strList =>
+        {
+            var result = new List<FishChance>(strList.Count);
+            foreach (var str in strList)
+            {
+                var item = SerializationHelper.ParseFishChance(str);
+                if (item == null) return (null, false);
+                result.Add(item);
+            }
+            return (result.Count > 0 ? result : null, true);
+        });
+    }
+
+    private bool ResolveDiseaseList(StatFieldMeta meta)
+    {
+        return ResolveList(meta, strList =>
+        {
+            var result = new List<BiomeDiseaseRecord>(strList.Count);
+            foreach (var str in strList)
+            {
+                var item = SerializationHelper.ParseBiomeDiseaseRecord(str);
+                if (item == null) return (null, false);
+                result.Add(item);
+            }
+            return (result.Count > 0 ? result : null, true);
+        });
+    }
+
+    private bool ResolveWeatherCommonalityList(StatFieldMeta meta)
+    {
+        return ResolveList(meta, strList =>
+        {
+            var result = new List<WeatherCommonalityRecord>(strList.Count);
+            foreach (var str in strList)
+            {
+                var item = SerializationHelper.ParseWeatherCommonalityRecord(str);
+                if (item == null) return (null, false);
+                result.Add(item);
+            }
+            return (result.Count > 0 ? result : null, true);
+        });
+    }
+
+    private bool ResolveTerrainThresholdList(StatFieldMeta meta)
+    {
+        return ResolveList(meta, strList =>
+        {
+            var result = new List<TerrainThreshold>(strList.Count);
+            foreach (var str in strList)
+            {
+                var item = SerializationHelper.ParseTerrainThreshold(str);
                 if (item == null) return (null, false);
                 result.Add(item);
             }

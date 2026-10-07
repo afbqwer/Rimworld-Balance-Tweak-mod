@@ -36,6 +36,10 @@
     <MST.TraitReqList>TraitReqList</MST.TraitReqList>
     <MST.BiomePlantList>WildPlantList</MST.BiomePlantList>
     <MST.BiomeAnimalList>WildAnimalList</MST.BiomeAnimalList>
+    <MST.FishChanceList>FishList</MST.FishChanceList>
+    <MST.DiseaseList>DiseaseList</MST.DiseaseList>
+    <MST.WeatherCommonalityList>WeatherList</MST.WeatherCommonalityList>
+    <MST.TerrainThresholdList>TerrainList</MST.TerrainThresholdList>
     <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>
