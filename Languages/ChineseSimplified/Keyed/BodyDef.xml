@@ -26,7 +26,7 @@
     <MST.MovePartUp>上移</MST.MovePartUp>
     <MST.MovePartDown>下移</MST.MovePartDown>
     <MST.DeletePart>删除部位</MST.DeletePart>
-    <MST.BodyPartTreeHint>右键部位节点可增删改；拖拽可调整同级顺序或改变层级；双击可重命名。</MST.BodyPartTreeHint>
+    <MST.BodyPartTreeHint>右键部位节点可增删改；拖拽可调整同级顺序或改变层级；双击可重命名。警告：不要在游戏开始后进行修改！</MST.BodyPartTreeHint>
 
     <MST.Undefined>未定义</MST.Undefined>
     <MST.Bottom>下</MST.Bottom>

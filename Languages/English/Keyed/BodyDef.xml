@@ -26,7 +26,7 @@
     <MST.MovePartUp>Move up</MST.MovePartUp>
     <MST.MovePartDown>Move down</MST.MovePartDown>
     <MST.DeletePart>Delete part</MST.DeletePart>
-    <MST.BodyPartTreeHint>Right-click a part to add/remove/edit; drag to reorder or reparent; double-click to rename.</MST.BodyPartTreeHint>
+    <MST.BodyPartTreeHint>Right-click a part to add/remove/edit; drag to reorder or reparent; double-click to rename. Warning: Do not make any modifications after the game has started!</MST.BodyPartTreeHint>
 
     <MST.Undefined>Undefined</MST.Undefined>
     <MST.Bottom>Bottom</MST.Bottom>
