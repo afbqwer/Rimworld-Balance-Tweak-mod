@@ -97,6 +97,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         else if (fieldType == typeof(List<ThingDefCountClass>)) ExposeThingDefCountList(meta);
         else if (fieldType == typeof(List<IngredientCount>)) ExposeIngredientList(meta);
         else if (fieldType == typeof(List<SkillRequirement>)) ExposeSkillReqList(meta);
+        else if (fieldType == typeof(List<TraitRequirement>)) ExposeTraitReqList(meta);
         else if (fieldType == typeof(List<ProcessIngredientItem>)) ExposeProcessIngredientList(meta);
         else if (fieldType == typeof(List<ProcessResultItem>)) ExposeProcessResultList(meta);
         else if (fieldType == typeof(ThingFilter)) ExposeIngredientFilter(meta);
@@ -273,6 +274,16 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             var list = (List<SkillRequirement>?)v;
             if (list == null || list.Count == 0) return null;
             return list.Select(SerializationHelper.SkillRequirementToItemString).ToList();
+        });
+    }
+
+    private void ExposeTraitReqList(StatFieldMeta meta)
+    {
+        ExposeList(meta, v =>
+        {
+            var list = (List<TraitRequirement>?)v;
+            if (list == null || list.Count == 0) return null;
+            return list.Select(SerializationHelper.TraitRequirementToItemString).ToList();
         });
     }
 

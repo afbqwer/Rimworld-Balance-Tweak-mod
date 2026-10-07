@@ -442,6 +442,46 @@ public static class SerializationHelper
 
     #endregion
 
+    #region TraitRequirement
+
+    public static string TraitRequirementToItemString(TraitRequirement tr)
+        => $"{tr.def?.defName ?? "NULL"}|{(tr.degree.HasValue ? tr.degree.Value.ToString() : "")}";
+
+    public static TraitRequirement? ParseTraitRequirement(string str)
+    {
+        var parts = str.Split('|');
+        if (parts.Length != 2)
+        {
+            WarnSyntaxError("TraitRequirement", str, "traitDefName|degree（degree 可为空表示任意强度）");
+            return null;
+        }
+        var trait = DefDatabase<TraitDef>.GetNamedSilentFail(parts[0]);
+        if (trait == null)
+        {
+            LogMissingDef("TraitRequirement.def", parts[0]);
+            return null;
+        }
+        int? degree = null;
+        if (!parts[1].NullOrEmpty())
+        {
+            if (!int.TryParse(parts[1], out var deg))
+            {
+                WarnSyntaxError("TraitRequirement", str, "traitDefName|degree（degree 应为整数或空）");
+                return null;
+            }
+            degree = deg;
+        }
+        return new TraitRequirement { def = trait, degree = degree };
+    }
+
+    public static string? SerializeTraitRequirementList(List<TraitRequirement>? list)
+        => SerializeList(list, TraitRequirementToItemString);
+
+    public static List<TraitRequirement>? DeserializeTraitRequirementList(string? data)
+        => DeserializeList(data, ParseTraitRequirement, "DeserializeTraitRequirementList");
+
+    #endregion
+
     #region ProcessIngredientItem
 
     public static string ProcessIngredientItemToItemString(ProcessIngredientItem i)

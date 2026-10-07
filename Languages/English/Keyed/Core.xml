@@ -33,6 +33,7 @@
     <MST.BodyLinks>BodyLinks</MST.BodyLinks>
     <MST.Range>Range</MST.Range>
     <MST.SkillReqList>SkillReqList</MST.SkillReqList>
+    <MST.TraitReqList>TraitReqList</MST.TraitReqList>
     <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>

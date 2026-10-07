@@ -69,6 +69,9 @@
     <MST.replaceThoughtsComment>获得此记忆时会移除这些想法的已有记忆。</MST.replaceThoughtsComment>
     <MST.nullifyingTraits>无效特征</MST.nullifyingTraits>
     <MST.nullifyingTraitsComment>拥有任一这些特征的角色永不获得此想法。</MST.nullifyingTraitsComment>
+    <MST.nullifyingTraitDegrees>无效特征强度</MST.nullifyingTraitDegrees>
+    <MST.nullifyingTraitDegreesComment>拥有任一这些特征（指定强度，Deg 留空为任意强度）的角色永不获得此想法。</MST.nullifyingTraitDegreesComment>
+    <MST.AddTraitReq>添加特征需求</MST.AddTraitReq>
     <MST.neverNullifyIfAnyTrait>永不无效特征</MST.neverNullifyIfAnyTrait>
     <MST.neverNullifyIfAnyTraitComment>若角色拥有任一这些特征，则其他无效条件不再使其失效。</MST.neverNullifyIfAnyTraitComment>
     <MST.requiredTraits>需要特征</MST.requiredTraits>

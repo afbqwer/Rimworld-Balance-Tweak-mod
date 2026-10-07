@@ -65,6 +65,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         if (fieldType == typeof(List<ThingDefCountClass>)) return ResolveThingDefCountList(meta);
         if (fieldType == typeof(List<IngredientCount>)) return ResolveIngredientList(meta);
         if (fieldType == typeof(List<SkillRequirement>)) return ResolveSkillReqList(meta);
+        if (fieldType == typeof(List<TraitRequirement>)) return ResolveTraitReqList(meta);
         if (fieldType == typeof(List<ProcessIngredientItem>)) return ResolveProcessIngredientList(meta);
         if (fieldType == typeof(List<ProcessResultItem>)) return ResolveProcessResultList(meta);
         if (fieldType == typeof(ThingFilter)) return ResolveIngredientFilter(meta);
@@ -240,6 +241,18 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         foreach (var str in strList)
         {
             var item = SerializationHelper.ParseSkillRequirement(str);
+            if (item == null) return (null, false);
+            result.Add(item);
+        }
+        return (result.Count > 0 ? result : null, true);
+    });
+
+    private bool ResolveTraitReqList(StatFieldMeta meta) => ResolveList(meta, strList =>
+    {
+        var result = new List<TraitRequirement>(strList.Count);
+        foreach (var str in strList)
+        {
+            var item = SerializationHelper.ParseTraitRequirement(str);
             if (item == null) return (null, false);
             result.Add(item);
         }

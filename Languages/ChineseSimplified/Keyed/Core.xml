@@ -32,6 +32,7 @@
     <MST.BodyLinks>身体链接</MST.BodyLinks>
     <MST.Range>范围</MST.Range>
     <MST.SkillReqList>技能需求列表</MST.SkillReqList>
+    <MST.TraitReqList>特征需求列表</MST.TraitReqList>
     <MST.empty>空</MST.empty>
     <MST.ColumnConfig>列配置</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>列配置</MST.ColumnSelectorTitle>

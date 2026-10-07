@@ -100,6 +100,8 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
     public List<TraitDef>? nullifyingTraits = null;
     [TweakField(Style = ColumnStyle.DefList)]
     public List<TraitDef>? neverNullifyIfAnyTrait = null;
+    [TweakField(Style = ColumnStyle.TraitReqList)]
+    public List<TraitRequirement>? nullifyingTraitDegrees = null;
     [TweakField(Style = ColumnStyle.DefList)]
     public List<TraitDef>? requiredTraits = null;
     [TweakField(Style = ColumnStyle.DefList)]
@@ -172,6 +174,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
             replaceThoughts ??= d.replaceThoughts;
             nullifyingTraits ??= d.nullifyingTraits;
             neverNullifyIfAnyTrait ??= d.neverNullifyIfAnyTrait;
+            nullifyingTraitDegrees ??= d.nullifyingTraitDegrees;
             requiredTraits ??= d.requiredTraits;
             nullifyingGenes ??= d.nullifyingGenes;
             requiredGenes ??= d.requiredGenes;
@@ -223,6 +226,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
         if (replaceThoughts != null) def.replaceThoughts = replaceThoughts;
         if (nullifyingTraits != null) def.nullifyingTraits = nullifyingTraits;
         if (neverNullifyIfAnyTrait != null) def.neverNullifyIfAnyTrait = neverNullifyIfAnyTrait;
+        if (nullifyingTraitDegrees != null) def.nullifyingTraitDegrees = nullifyingTraitDegrees;
         if (requiredTraits != null) def.requiredTraits = requiredTraits;
         if (nullifyingGenes != null) def.nullifyingGenes = nullifyingGenes;
         if (requiredGenes != null) def.requiredGenes = requiredGenes;

@@ -55,7 +55,7 @@ public class StatColumnConfig
         { FieldType.IntRange, new[] { ColumnStyle.Range } },
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
-        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree } },
+        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree } },
         { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks } },
     };
 
@@ -120,7 +120,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -128,7 +128,7 @@ public class StatColumnConfig
         return style is ColumnStyle.StatModList or ColumnStyle.CapModList or ColumnStyle.DamageModList
             or ColumnStyle.DefList or ColumnStyle.HediffGiverList or ColumnStyle.MentalStateGiverList
             or ColumnStyle.StringList or ColumnStyle.IntList or ColumnStyle.SkillGainList or ColumnStyle.AptitudeList or ColumnStyle.GeneticTraitList
-            or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.SkillReqList
+            or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.SkillReqList or ColumnStyle.TraitReqList
             or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList
             or ColumnStyle.BodyPartTree;
     }
@@ -456,7 +456,7 @@ public class StatColumnConfig
         }
 
         // 列表类型 (通过 SerializationHelper 序列化)
-        if (columnType is ColumnStyle.StatModList or ColumnStyle.CapModList or ColumnStyle.DamageModList or ColumnStyle.SkillGainList or ColumnStyle.SkillReqList or ColumnStyle.AptitudeList or ColumnStyle.GeneticTraitList or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList)
+        if (columnType is ColumnStyle.StatModList or ColumnStyle.CapModList or ColumnStyle.DamageModList or ColumnStyle.SkillGainList or ColumnStyle.SkillReqList or ColumnStyle.TraitReqList or ColumnStyle.AptitudeList or ColumnStyle.GeneticTraitList or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList)
         {
             var list = (IList?)GetRawValue(data);
             if (list == null) return null;
@@ -467,6 +467,7 @@ public class StatColumnConfig
                 ColumnStyle.DamageModList => SerializationHelper.SerializeDamageFactorList(list.Cast<DamageFactor>().ToList()),
                 ColumnStyle.SkillGainList => SerializationHelper.SerializeSkillGainList(list.Cast<SkillGain>().ToList()),
                 ColumnStyle.SkillReqList => SerializationHelper.SerializeSkillRequirementList(list.Cast<SkillRequirement>().ToList()),
+                ColumnStyle.TraitReqList => SerializationHelper.SerializeTraitRequirementList(list.Cast<TraitRequirement>().ToList()),
                 ColumnStyle.AptitudeList => SerializationHelper.SerializeAptitudeList(list.Cast<Aptitude>().ToList()),
                 ColumnStyle.GeneticTraitList => SerializationHelper.SerializeGeneticTraitDataList(list.Cast<GeneticTraitData>().ToList()),
                 ColumnStyle.ThingDefCountList => SerializationHelper.SerializeThingDefCountClassList(list.Cast<ThingDefCountClass>().ToList()),
@@ -579,6 +580,12 @@ public class StatColumnConfig
             if (columnType == ColumnStyle.SkillReqList)
             {
                 var list = SerializationHelper.DeserializeSkillRequirementList(clipboardData);
+                if (list != null) { ApplyValue(data, list); return true; }
+                return false;
+            }
+            if (columnType == ColumnStyle.TraitReqList)
+            {
+                var list = SerializationHelper.DeserializeTraitRequirementList(clipboardData);
                 if (list != null) { ApplyValue(data, list); return true; }
                 return false;
             }
@@ -882,6 +889,19 @@ public class StatColumnConfig
                             var label = sr.skill?.label;
                             if (!label.NullOrEmpty())
                                 return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
+                        }
+                        break;
+                    case ColumnStyle.TraitReqList:
+                        if (element is TraitRequirement tr)
+                        {
+                            var label = tr.def?.label;
+                            if (!label.NullOrEmpty())
+                            {
+                                var degStr = tr.degree.HasValue ? $"*{tr.degree.Value}" : "";
+                                return label!.Length > LabelTruncateLength
+                                    ? $"[{label[..LabelTruncateLength]}..{degStr}]"
+                                    : $"[{label}{degStr}]";
+                            }
                         }
                         break;
                     case ColumnStyle.ProcessIngredientList:

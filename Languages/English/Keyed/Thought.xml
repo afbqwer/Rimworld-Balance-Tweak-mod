@@ -69,6 +69,9 @@
     <MST.replaceThoughtsComment>Gaining this memory removes existing memories of these defs.</MST.replaceThoughtsComment>
     <MST.nullifyingTraits>NullTraits</MST.nullifyingTraits>
     <MST.nullifyingTraitsComment>Pawns with any of these traits never get this thought.</MST.nullifyingTraitsComment>
+    <MST.nullifyingTraitDegrees>NullTrtDeg</MST.nullifyingTraitDegrees>
+    <MST.nullifyingTraitDegreesComment>Pawns with any of these traits (at the specified degree, empty = any degree) never get this thought.</MST.nullifyingTraitDegreesComment>
+    <MST.AddTraitReq>Add Trait Req</MST.AddTraitReq>
     <MST.neverNullifyIfAnyTrait>NvNullTrt</MST.neverNullifyIfAnyTrait>
     <MST.neverNullifyIfAnyTraitComment>If the pawn has any of these traits, other nullifying conditions never nullify this thought.</MST.neverNullifyIfAnyTraitComment>
     <MST.requiredTraits>ReqTraits</MST.requiredTraits>
