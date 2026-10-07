@@ -39,6 +39,82 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
     [TweakField(Style = ColumnStyle.Bool)]
     public bool? lerpMoodToZero = null;
 
+    // 简单字段
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? stagesStack = null;
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? invert = null;
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? validWhileDespawned = null;
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? nullifiedIfNotColonist = null;
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? showBubble = null;
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? ignoreSubhumans = null;
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? doNotApplyToQuestLodgers = null;
+    [TweakField(Style = ColumnStyle.Prec)]
+    public float? lerpOpinionToZeroAfterDurationPct = null;
+    [TweakField()]
+    public float? maxCumulatedOpinionOffset = null;
+    [TweakField(Style = ColumnStyle.Int)]
+    public int? requiredTraitsDegree = null;
+    [TweakField(Style = ColumnStyle.Enum, EnumType = typeof(Gender))]
+    public Gender? gender = null;
+    [TweakField(Style = ColumnStyle.Flags, EnumType = typeof(DevelopmentalStage))]
+    public DevelopmentalStage? developmentalStageFilter = null;
+    [TweakField(Style = ColumnStyle.Flags, EnumType = typeof(DevelopmentalStage))]
+    public DevelopmentalStage? socialTargetDevelopmentalStageFilter = null;
+
+    // Def 引用字段
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public ThoughtDef? nextThought = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public ThoughtDef? producesMemoryThought = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public ThoughtDef? thoughtToMake = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public HediffDef? hediff = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public MentalStateDef? mentalState = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public GameConditionDef? gameCondition = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public StatDef? effectMultiplyingStat = null;
+    [TweakField(Style = ColumnStyle.Curve)]
+    public SimpleCurve? effectMultiplyingStatCurve = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public ExpectationDef? minExpectation = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public ExpectationDef? minExpectationForNegativeThought = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public ChemicalDef? chemicalDef = null;
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public TaleDef? taleDef = null;
+
+    // Def 列表字段
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<ThoughtDef>? replaceThoughts = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<TraitDef>? nullifyingTraits = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<TraitDef>? neverNullifyIfAnyTrait = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<TraitDef>? requiredTraits = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<GeneDef>? nullifyingGenes = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<GeneDef>? requiredGenes = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<HediffDef>? nullifyingHediffs = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<HediffDef>? requiredHediffs = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<PreceptDef>? nullifyingPrecepts = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<TaleDef>? nullifyingOwnTales = null;
+
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
@@ -68,6 +144,41 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
             durationDays ??= d.durationDays;
             stackLimitForSameOtherPawn ??= d.stackLimitForSameOtherPawn;
             lerpMoodToZero ??= d.lerpMoodToZero;
+            stagesStack ??= d.stagesStack;
+            invert ??= d.invert;
+            validWhileDespawned ??= d.validWhileDespawned;
+            nullifiedIfNotColonist ??= d.nullifiedIfNotColonist;
+            showBubble ??= d.showBubble;
+            ignoreSubhumans ??= d.ignoreSubhumans;
+            doNotApplyToQuestLodgers ??= d.doNotApplyToQuestLodgers;
+            lerpOpinionToZeroAfterDurationPct ??= d.lerpOpinionToZeroAfterDurationPct;
+            maxCumulatedOpinionOffset ??= d.maxCumulatedOpinionOffset;
+            requiredTraitsDegree ??= d.requiredTraitsDegree;
+            gender ??= d.gender;
+            developmentalStageFilter ??= d.developmentalStageFilter;
+            socialTargetDevelopmentalStageFilter ??= d.socialTargetDevelopmentalStageFilter;
+            nextThought ??= d.nextThought;
+            producesMemoryThought ??= d.producesMemoryThought;
+            thoughtToMake ??= d.thoughtToMake;
+            hediff ??= d.hediff;
+            mentalState ??= d.mentalState;
+            gameCondition ??= d.gameCondition;
+            effectMultiplyingStat ??= d.effectMultiplyingStat;
+            effectMultiplyingStatCurve ??= d.effectMultiplyingStatCurve;
+            minExpectation ??= d.minExpectation;
+            minExpectationForNegativeThought ??= d.minExpectationForNegativeThought;
+            chemicalDef ??= d.chemicalDef;
+            taleDef ??= d.taleDef;
+            replaceThoughts ??= d.replaceThoughts;
+            nullifyingTraits ??= d.nullifyingTraits;
+            neverNullifyIfAnyTrait ??= d.neverNullifyIfAnyTrait;
+            requiredTraits ??= d.requiredTraits;
+            nullifyingGenes ??= d.nullifyingGenes;
+            requiredGenes ??= d.requiredGenes;
+            nullifyingHediffs ??= d.nullifyingHediffs;
+            requiredHediffs ??= d.requiredHediffs;
+            nullifyingPrecepts ??= d.nullifyingPrecepts;
+            nullifyingOwnTales ??= d.nullifyingOwnTales;
         }
     }
 
@@ -84,6 +195,41 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
         if (durationDays.HasValue) { def.durationDays = durationDays.Value; }
         if (stackLimitForSameOtherPawn.HasValue) { def.stackLimitForSameOtherPawn = stackLimitForSameOtherPawn.Value; }
         if (lerpMoodToZero.HasValue) { def.lerpMoodToZero = lerpMoodToZero.Value; }
+        if (stagesStack.HasValue) { def.stagesStack = stagesStack.Value; }
+        if (invert.HasValue) { def.invert = invert.Value; }
+        if (validWhileDespawned.HasValue) { def.validWhileDespawned = validWhileDespawned.Value; }
+        if (nullifiedIfNotColonist.HasValue) { def.nullifiedIfNotColonist = nullifiedIfNotColonist.Value; }
+        if (showBubble.HasValue) { def.showBubble = showBubble.Value; }
+        if (ignoreSubhumans.HasValue) { def.ignoreSubhumans = ignoreSubhumans.Value; }
+        if (doNotApplyToQuestLodgers.HasValue) { def.doNotApplyToQuestLodgers = doNotApplyToQuestLodgers.Value; }
+        if (lerpOpinionToZeroAfterDurationPct.HasValue) { def.lerpOpinionToZeroAfterDurationPct = lerpOpinionToZeroAfterDurationPct.Value; }
+        if (maxCumulatedOpinionOffset.HasValue) { def.maxCumulatedOpinionOffset = maxCumulatedOpinionOffset.Value; }
+        if (requiredTraitsDegree.HasValue) { def.requiredTraitsDegree = requiredTraitsDegree.Value; }
+        if (gender.HasValue) { def.gender = gender.Value; }
+        if (developmentalStageFilter.HasValue) { def.developmentalStageFilter = developmentalStageFilter.Value; }
+        if (socialTargetDevelopmentalStageFilter.HasValue) { def.socialTargetDevelopmentalStageFilter = socialTargetDevelopmentalStageFilter.Value; }
+        if (nextThought != null) def.nextThought = nextThought;
+        if (producesMemoryThought != null) def.producesMemoryThought = producesMemoryThought;
+        if (thoughtToMake != null) def.thoughtToMake = thoughtToMake;
+        if (hediff != null) def.hediff = hediff;
+        if (mentalState != null) def.mentalState = mentalState;
+        if (gameCondition != null) def.gameCondition = gameCondition;
+        if (effectMultiplyingStat != null) def.effectMultiplyingStat = effectMultiplyingStat;
+        if (effectMultiplyingStatCurve != null) def.effectMultiplyingStatCurve = effectMultiplyingStatCurve;
+        if (minExpectation != null) def.minExpectation = minExpectation;
+        if (minExpectationForNegativeThought != null) def.minExpectationForNegativeThought = minExpectationForNegativeThought;
+        if (chemicalDef != null) def.chemicalDef = chemicalDef;
+        if (taleDef != null) def.taleDef = taleDef;
+        if (replaceThoughts != null) def.replaceThoughts = replaceThoughts;
+        if (nullifyingTraits != null) def.nullifyingTraits = nullifyingTraits;
+        if (neverNullifyIfAnyTrait != null) def.neverNullifyIfAnyTrait = neverNullifyIfAnyTrait;
+        if (requiredTraits != null) def.requiredTraits = requiredTraits;
+        if (nullifyingGenes != null) def.nullifyingGenes = nullifyingGenes;
+        if (requiredGenes != null) def.requiredGenes = requiredGenes;
+        if (nullifyingHediffs != null) def.nullifyingHediffs = nullifyingHediffs;
+        if (requiredHediffs != null) def.requiredHediffs = requiredHediffs;
+        if (nullifyingPrecepts != null) def.nullifyingPrecepts = nullifyingPrecepts;
+        if (nullifyingOwnTales != null) def.nullifyingOwnTales = nullifyingOwnTales;
     }
 
 

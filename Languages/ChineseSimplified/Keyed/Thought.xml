@@ -21,4 +21,68 @@
     <MST.durationDaysComment>此想法的持续天数。</MST.durationDaysComment>
     <MST.stackLimitForSameOtherPawnComment>此想法类型对同一个"目标"想法的数量不能超过此值。-1为无限制。</MST.stackLimitForSameOtherPawnComment>
     <MST.lerpMoodToZeroComment>此想法的心情影响是否随着时间减少。</MST.lerpMoodToZeroComment>
+    <MST.stagesStack>阶段叠加</MST.stagesStack>
+    <MST.stagesStackComment>允许处于不同阶段的同类想法相互叠加合并。关闭时只有相同阶段的实例才会合并。</MST.stagesStackComment>
+    <MST.invert>反转判定</MST.invert>
+    <MST.invertComment>反转 worker 判定：条件不满足时想法反而生效（第0阶段）。</MST.invertComment>
+    <MST.validWhileDespawned>离图有效</MST.validWhileDespawned>
+    <MST.validWhileDespawnedComment>角色离图（despawned）期间该记忆仍然有效。</MST.validWhileDespawnedComment>
+    <MST.nullifiedIfNotColonist>仅殖民者</MST.nullifiedIfNotColonist>
+    <MST.nullifiedIfNotColonistComment>非殖民者时此想法无效。</MST.nullifiedIfNotColonistComment>
+    <MST.showBubble>显示气泡</MST.showBubble>
+    <MST.showBubbleComment>获得此记忆时显示心情气泡。</MST.showBubbleComment>
+    <MST.ignoreSubhumans>忽略亚人类</MST.ignoreSubhumans>
+    <MST.ignoreSubhumansComment>对"亚人类"角色不应用此情景想法。</MST.ignoreSubhumansComment>
+    <MST.doNotApplyToQuestLodgers>不适用任务客居者</MST.doNotApplyToQuestLodgers>
+    <MST.doNotApplyToQuestLodgersComment>不将此想法应用于任务客居者（quest lodger）。</MST.doNotApplyToQuestLodgersComment>
+    <MST.lerpOpinionToZeroAfterDurationPct>看法衰减点</MST.lerpOpinionToZeroAfterDurationPct>
+    <MST.lerpOpinionToZeroAfterDurationPctComment>社交想法：持续时间超过此百分比后，看法影响逐渐衰减到0。</MST.lerpOpinionToZeroAfterDurationPctComment>
+    <MST.maxCumulatedOpinionOffset>看法累积上限</MST.maxCumulatedOpinionOffset>
+    <MST.maxCumulatedOpinionOffsetComment>此社交想法叠加实例累积看法影响的绝对值上限。</MST.maxCumulatedOpinionOffsetComment>
+    <MST.requiredTraitsDegree>特征强度</MST.requiredTraitsDegree>
+    <MST.requiredTraitsDegreeComment>requiredTraits 所需的特征强度（degree）。留空表示任意强度。</MST.requiredTraitsDegreeComment>
+    <MST.socialTargetDevelopmentalStageFilter>社交目标阶段</MST.socialTargetDevelopmentalStageFilter>
+    <MST.socialTargetDevelopmentalStageFilterComment>社交想法目标所处的发育阶段限制。Newborn/Baby/Child/Adult。</MST.socialTargetDevelopmentalStageFilterComment>
+    <MST.nextThought>后续想法</MST.nextThought>
+    <MST.nextThoughtComment>此记忆到期后替换成的后续记忆（仅记忆类想法，不能与 workerClass 同用）。</MST.nextThoughtComment>
+    <MST.producesMemoryThought>产生记忆</MST.producesMemoryThought>
+    <MST.producesMemoryThoughtComment>此情景想法生效时同时产生的记忆想法。</MST.producesMemoryThoughtComment>
+    <MST.thoughtToMake>连锁想法</MST.thoughtToMake>
+    <MST.thoughtToMakeComment>获得此记忆时同时获得的连锁想法（目标为同一对象）。</MST.thoughtToMakeComment>
+    <MST.mentalState>精神状态</MST.mentalState>
+    <MST.mentalStateComment>角色处于该精神状态时此想法生效（配合 ThoughtWorker_MentalState 类 worker）。</MST.mentalStateComment>
+    <MST.gameCondition>游戏条件</MST.gameCondition>
+    <MST.gameConditionComment>仅当此游戏条件激活时此想法生效。</MST.gameConditionComment>
+    <MST.effectMultiplyingStat>效果倍率属性</MST.effectMultiplyingStat>
+    <MST.effectMultiplyingStatComment>以角色身上的该属性值乘算此想法的效果。</MST.effectMultiplyingStatComment>
+    <MST.effectMultiplyingStatCurve>效果倍率曲线</MST.effectMultiplyingStatCurve>
+    <MST.effectMultiplyingStatCurveComment>将 effectMultiplyingStat 属性值映射为效果倍率的曲线。</MST.effectMultiplyingStatCurveComment>
+    <MST.minExpectation>最低期望</MST.minExpectation>
+    <MST.minExpectationComment>角色所在殖民地的期望等级达到该值时此想法才生效。</MST.minExpectationComment>
+    <MST.minExpectationForNegativeThought>负面最低期望</MST.minExpectationForNegativeThought>
+    <MST.minExpectationForNegativeThoughtComment>负面想法生效所需的最低殖民地期望等级。</MST.minExpectationForNegativeThoughtComment>
+    <MST.chemicalDef>关联成瘾物</MST.chemicalDef>
+    <MST.chemicalDefComment>仅对对此化学物质成瘾/有需求的角色生效。</MST.chemicalDefComment>
+    <MST.taleDef>关联故事</MST.taleDef>
+    <MST.taleDefComment>此记忆关联的故事（tale）。</MST.taleDefComment>
+    <MST.replaceThoughts>替换想法</MST.replaceThoughts>
+    <MST.replaceThoughtsComment>获得此记忆时会移除这些想法的已有记忆。</MST.replaceThoughtsComment>
+    <MST.nullifyingTraits>无效特征</MST.nullifyingTraits>
+    <MST.nullifyingTraitsComment>拥有任一这些特征的角色永不获得此想法。</MST.nullifyingTraitsComment>
+    <MST.neverNullifyIfAnyTrait>永不无效特征</MST.neverNullifyIfAnyTrait>
+    <MST.neverNullifyIfAnyTraitComment>若角色拥有任一这些特征，则其他无效条件不再使其失效。</MST.neverNullifyIfAnyTraitComment>
+    <MST.requiredTraits>需要特征</MST.requiredTraits>
+    <MST.requiredTraitsComment>角色必须拥有其中之一才能获得此想法。</MST.requiredTraitsComment>
+    <MST.nullifyingGenes>无效基因</MST.nullifyingGenes>
+    <MST.nullifyingGenesComment>拥有任一这些基因的角色永不获得此想法。</MST.nullifyingGenesComment>
+    <MST.requiredGenes>需要基因</MST.requiredGenes>
+    <MST.requiredGenesComment>角色必须拥有其中之一才能获得此想法。</MST.requiredGenesComment>
+    <MST.nullifyingHediffs>无效健康状态</MST.nullifyingHediffs>
+    <MST.nullifyingHediffsComment>拥有任一这些健康状态的角色永不获得此想法。</MST.nullifyingHediffsComment>
+    <MST.requiredHediffs>需要健康状态</MST.requiredHediffs>
+    <MST.requiredHediffsComment>角色必须拥有其中之一才能获得此想法。</MST.requiredHediffsComment>
+    <MST.nullifyingPrecepts>无效教条</MST.nullifyingPrecepts>
+    <MST.nullifyingPreceptsComment>角色意识形态拥有任一这些教条时此想法无效。</MST.nullifyingPreceptsComment>
+    <MST.nullifyingOwnTales>无效自身故事</MST.nullifyingOwnTales>
+    <MST.nullifyingOwnTalesComment>角色是这些故事的当事人时此想法无效。</MST.nullifyingOwnTalesComment>
 </LanguageData>

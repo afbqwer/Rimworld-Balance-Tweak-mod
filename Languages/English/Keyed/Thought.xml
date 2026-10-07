@@ -21,4 +21,68 @@
     <MST.durationDaysComment>The duration of this thought in days.</MST.durationDaysComment>
     <MST.stackLimitForSameOtherPawnComment>The maximum number of this thought type allowed for the same "target" thought. -1 means unlimited.</MST.stackLimitForSameOtherPawnComment>
     <MST.lerpMoodToZeroComment>Whether the mood effect of this thought decreases over time.</MST.lerpMoodToZeroComment>
+    <MST.stagesStack>StgStack</MST.stagesStack>
+    <MST.stagesStackComment>Allow thoughts of the same def at different stages to stack together. If false, only instances in the same stage merge.</MST.stagesStackComment>
+    <MST.invert>Invert</MST.invert>
+    <MST.invertComment>Invert the worker condition: the thought becomes active when the condition is NOT met (at stage 0).</MST.invertComment>
+    <MST.validWhileDespawned>ValidDsp</MST.validWhileDespawned>
+    <MST.validWhileDespawnedComment>The memory stays valid while its pawn is despawned.</MST.validWhileDespawnedComment>
+    <MST.nullifiedIfNotColonist>ColOnly</MST.nullifiedIfNotColonist>
+    <MST.nullifiedIfNotColonistComment>The thought is nullified if the pawn is not a colonist.</MST.nullifiedIfNotColonistComment>
+    <MST.showBubble>Bubble</MST.showBubble>
+    <MST.showBubbleComment>Show a mood thought bubble when this memory is gained.</MST.showBubbleComment>
+    <MST.ignoreSubhumans>NoSubhum</MST.ignoreSubhumans>
+    <MST.ignoreSubhumansComment>Do not apply this situational thought to subhuman pawns.</MST.ignoreSubhumansComment>
+    <MST.doNotApplyToQuestLodgers>NoQstLdg</MST.doNotApplyToQuestLodgers>
+    <MST.doNotApplyToQuestLodgersComment>Do not apply this thought to quest lodgers.</MST.doNotApplyToQuestLodgersComment>
+    <MST.lerpOpinionToZeroAfterDurationPct>OpnFOT</MST.lerpOpinionToZeroAfterDurationPct>
+    <MST.lerpOpinionToZeroAfterDurationPctComment>For social thoughts: after this percentage of the duration has passed, the opinion offset lerps back to zero.</MST.lerpOpinionToZeroAfterDurationPctComment>
+    <MST.maxCumulatedOpinionOffset>MaxOpn</MST.maxCumulatedOpinionOffset>
+    <MST.maxCumulatedOpinionOffsetComment>Maximum accumulated opinion offset from stacked instances of this social thought.</MST.maxCumulatedOpinionOffsetComment>
+    <MST.requiredTraitsDegree>TrtDeg</MST.requiredTraitsDegree>
+    <MST.requiredTraitsDegreeComment>Required degree for requiredTraits. Leave empty for any degree.</MST.requiredTraitsDegreeComment>
+    <MST.socialTargetDevelopmentalStageFilter>SocTgtDev</MST.socialTargetDevelopmentalStageFilter>
+    <MST.socialTargetDevelopmentalStageFilterComment>Which developmental stages the social target must be. Newborn/Baby/Child/Adult.</MST.socialTargetDevelopmentalStageFilterComment>
+    <MST.nextThought>NextThgt</MST.nextThought>
+    <MST.nextThoughtComment>Memory that replaces this one when it expires (memories only, cannot be combined with workerClass).</MST.nextThoughtComment>
+    <MST.producesMemoryThought>ProdMem</MST.producesMemoryThought>
+    <MST.producesMemoryThoughtComment>Memory thought produced when this situational thought is active.</MST.producesMemoryThoughtComment>
+    <MST.thoughtToMake>ChainThgt</MST.thoughtToMake>
+    <MST.thoughtToMakeComment>Another thought the pawn also gains (chained) when gaining this memory, targeting the same pawn.</MST.thoughtToMakeComment>
+    <MST.mentalState>Mental</MST.mentalState>
+    <MST.mentalStateComment>The thought is active while the pawn is in this mental state (with a ThoughtWorker_MentalState-based worker).</MST.mentalStateComment>
+    <MST.gameCondition>GmCond</MST.gameCondition>
+    <MST.gameConditionComment>The thought only applies while this game condition is active.</MST.gameConditionComment>
+    <MST.effectMultiplyingStat>EffMultStat</MST.effectMultiplyingStat>
+    <MST.effectMultiplyingStatComment>A stat on the pawn that multiplies this thought's effect.</MST.effectMultiplyingStatComment>
+    <MST.effectMultiplyingStatCurve>EffMultCrv</MST.effectMultiplyingStatCurve>
+    <MST.effectMultiplyingStatCurveComment>Curve mapping the effectMultiplyingStat value to the effect multiplier.</MST.effectMultiplyingStatCurveComment>
+    <MST.minExpectation>MinExp</MST.minExpectation>
+    <MST.minExpectationComment>The pawn's colony expectation must be at least this level for the thought to apply.</MST.minExpectationComment>
+    <MST.minExpectationForNegativeThought>MinExpNeg</MST.minExpectationForNegativeThought>
+    <MST.minExpectationForNegativeThoughtComment>Minimum colony expectation level for negative thoughts to apply.</MST.minExpectationForNegativeThoughtComment>
+    <MST.chemicalDef>Chemical</MST.chemicalDef>
+    <MST.chemicalDefComment>Only applies to pawns with an addiction/need for this chemical.</MST.chemicalDefComment>
+    <MST.taleDef>Tale</MST.taleDef>
+    <MST.taleDefComment>The tale this memory is associated with.</MST.taleDefComment>
+    <MST.replaceThoughts>RplcThgts</MST.replaceThoughts>
+    <MST.replaceThoughtsComment>Gaining this memory removes existing memories of these defs.</MST.replaceThoughtsComment>
+    <MST.nullifyingTraits>NullTraits</MST.nullifyingTraits>
+    <MST.nullifyingTraitsComment>Pawns with any of these traits never get this thought.</MST.nullifyingTraitsComment>
+    <MST.neverNullifyIfAnyTrait>NvNullTrt</MST.neverNullifyIfAnyTrait>
+    <MST.neverNullifyIfAnyTraitComment>If the pawn has any of these traits, other nullifying conditions never nullify this thought.</MST.neverNullifyIfAnyTraitComment>
+    <MST.requiredTraits>ReqTraits</MST.requiredTraits>
+    <MST.requiredTraitsComment>The pawn must have one of these traits to get this thought.</MST.requiredTraitsComment>
+    <MST.nullifyingGenes>NullGenes</MST.nullifyingGenes>
+    <MST.nullifyingGenesComment>Pawns with any of these genes never get this thought.</MST.nullifyingGenesComment>
+    <MST.requiredGenes>ReqGenes</MST.requiredGenes>
+    <MST.requiredGenesComment>The pawn must have one of these genes to get this thought.</MST.requiredGenesComment>
+    <MST.nullifyingHediffs>NullHdiffs</MST.nullifyingHediffs>
+    <MST.nullifyingHediffsComment>Pawns with any of these hediffs never get this thought.</MST.nullifyingHediffsComment>
+    <MST.requiredHediffs>ReqHdiffs</MST.requiredHediffs>
+    <MST.requiredHediffsComment>The pawn must have one of these hediffs to get this thought.</MST.requiredHediffsComment>
+    <MST.nullifyingPrecepts>NullPrecep</MST.nullifyingPrecepts>
+    <MST.nullifyingPreceptsComment>Nullified if the pawn's ideology has any of these precepts.</MST.nullifyingPreceptsComment>
+    <MST.nullifyingOwnTales>NullTales</MST.nullifyingOwnTales>
+    <MST.nullifyingOwnTalesComment>Nullified if the pawn is a subject of any of these tales.</MST.nullifyingOwnTalesComment>
 </LanguageData>
