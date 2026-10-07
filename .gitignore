@@ -11,6 +11,8 @@
 *.sln.docstates
 .trae/
 .workbuddy/
+.zcode/
+.zcodeignore
 Docs/
 
 # User-specific files (MonoDevelop/Xamarin Studio)

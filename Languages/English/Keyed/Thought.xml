@@ -2,7 +2,7 @@
 <LanguageData>
     <MST.Thought>Thought</MST.Thought>
     <MST.ThoughtStage>ThgtStg</MST.ThoughtStage>
-    <MST.Situational>Situational</MST.Situational>
+    <MST.Situational>Situatnl</MST.Situational>
     <MST.Memory>Memory</MST.Memory>
     <MST.Social>Social</MST.Social>
     <MST.FirstStage>1stStg</MST.FirstStage>
@@ -53,7 +53,7 @@
     <MST.mentalStateComment>The thought is active while the pawn is in this mental state (with a ThoughtWorker_MentalState-based worker).</MST.mentalStateComment>
     <MST.gameCondition>GmCond</MST.gameCondition>
     <MST.gameConditionComment>The thought only applies while this game condition is active.</MST.gameConditionComment>
-    <MST.effectMultiplyingStat>EffMultStat</MST.effectMultiplyingStat>
+    <MST.effectMultiplyingStat>EffMult</MST.effectMultiplyingStat>
     <MST.effectMultiplyingStatComment>A stat on the pawn that multiplies this thought's effect.</MST.effectMultiplyingStatComment>
     <MST.effectMultiplyingStatCurve>EffMultCrv</MST.effectMultiplyingStatCurve>
     <MST.effectMultiplyingStatCurveComment>Curve mapping the effectMultiplyingStat value to the effect multiplier.</MST.effectMultiplyingStatCurveComment>
