@@ -291,7 +291,7 @@ class FoodData : TweakData<FoodData>
                 }
                 if (def.plant != null)
                 {
-                    if (def.plant.mustBeWildToSow || def.plant.forceIsTree) return (int)FoodCategory.PlantTree;
+                    if (def.plant.IsTree) return (int)FoodCategory.PlantTree;
                     if (!def.plant.sowTags.NullOrEmpty()) return (int)FoodCategory.PlantCrop;
                     return (int)FoodCategory.PlantWild;
                 }

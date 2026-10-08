@@ -297,7 +297,6 @@ class BiomeData : TweakData<BiomeData>
     {
         Normal,
         Water,
-        Extreme,
         Space,
         Other,
     }
@@ -308,7 +307,6 @@ class BiomeData : TweakData<BiomeData>
         {
             if (def.isWaterBiome) return (int)BiomeCategory.Water;
             if (def.inVacuum) return (int)BiomeCategory.Space;
-            if (def.isExtremeBiome) return (int)BiomeCategory.Extreme;
             if (def.implemented) return (int)BiomeCategory.Normal;
         }
         return (int)BiomeCategory.Other;
