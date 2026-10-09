@@ -70,28 +70,35 @@ public class CapModListEditorWindow : ListEditorWindow<PawnCapacityModifier>
         float addButtonHeight = HasAddButton ? ButtonHeight + Spacing : 0f;
         float totalHeight = headerHeight + Spacing + workingList.Count * (EntryHeight + Spacing) + addButtonHeight;
 
-        Rect viewRect = new(rect.x, rect.y, rect.width - 16f, totalHeight);
+        Rect viewRect = new(0f, 0f, rect.width - 16f, totalHeight);
         Widgets.BeginScrollView(rect, ref scrollPosition, viewRect);
 
-        float curY = viewRect.y;
+        // Draw header（随内容滚动，滚出视野后跳过绘制）
+        float contentTop = headerHeight + Spacing;
+        bool headerVisible = headerHeight >= scrollPosition.y;
+        if (headerVisible)
+        {
+            Rect headerRect = new(0f, 0f, viewRect.width, headerHeight);
+            DrawHeader(headerRect);
+        }
 
-        // Draw header
-        Rect headerRect = new(viewRect.x, curY, viewRect.width, headerHeight);
-        DrawHeader(headerRect);
-        curY += headerHeight + Spacing;
+        // 虚拟滚动：只绘制可见范围内的条目（上下各多留一行余量）
+        float rowStride = EntryHeight + Spacing;
+        int firstVisible = Mathf.Max(0, Mathf.FloorToInt((scrollPosition.y - contentTop - EntryHeight) / rowStride));
+        int lastVisible = Mathf.Min(workingList.Count - 1, Mathf.CeilToInt((scrollPosition.y + rect.height + EntryHeight - contentTop) / rowStride));
 
         // Draw entries
-        for (int i = 0; i < workingList.Count; i++)
+        for (int i = firstVisible; i <= lastVisible; i++)
         {
-            Rect entryRect = new(viewRect.x, curY, viewRect.width, EntryHeight);
+            Rect entryRect = new(0f, contentTop + i * rowStride, viewRect.width, EntryHeight);
             DrawEntry(entryRect, i);
-            curY += EntryHeight + Spacing;
         }
 
         if (HasAddButton)
         {
-            Rect addButtonRect = new(viewRect.x, curY, viewRect.width, ButtonHeight);
-            if (Widgets.ButtonText(addButtonRect, AddButtonLabel))
+            float addButtonY = contentTop + workingList.Count * rowStride;
+            bool addButtonVisible = addButtonY + ButtonHeight >= scrollPosition.y && addButtonY <= scrollPosition.y + rect.height;
+            if (addButtonVisible && Widgets.ButtonText(new Rect(0f, addButtonY, viewRect.width, ButtonHeight), AddButtonLabel))
             {
                 OnAddItem();
             }

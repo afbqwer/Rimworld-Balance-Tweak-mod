@@ -57,21 +57,25 @@ public class ThingDefCountListEditorWindow : ListEditorWindow<ThingDefCountClass
         float addButtonHeight = HasAddButton ? ButtonHeight + Spacing : 0f;
         float totalHeight = workingList.Count * (EntryHeight + Spacing) + addButtonHeight;
 
-        Rect viewRect = new(listRect.x, listRect.y, listRect.width, totalHeight);
+        Rect viewRect = new(0f, 0f, listRect.width, totalHeight);
         Widgets.BeginScrollView(listRect, ref scrollPosition, viewRect);
 
-        float curY = viewRect.y;
-        for (int i = 0; i < workingList.Count; i++)
+        // 虚拟滚动：只绘制可见范围内的条目（上下各多留一行余量）
+        float rowStride = EntryHeight + Spacing;
+        int firstVisible = Mathf.Max(0, Mathf.FloorToInt((scrollPosition.y - EntryHeight) / rowStride));
+        int lastVisible = Mathf.Min(workingList.Count - 1, Mathf.CeilToInt((scrollPosition.y + listRect.height + EntryHeight) / rowStride));
+
+        for (int i = firstVisible; i <= lastVisible; i++)
         {
-            Rect entryRect = new(viewRect.x, curY, viewRect.width, EntryHeight);
+            Rect entryRect = new(0f, i * rowStride, viewRect.width, EntryHeight);
             DrawEntry(entryRect, i);
-            curY += EntryHeight + Spacing;
         }
 
         if (HasAddButton)
         {
-            Rect addButtonRect = new(viewRect.x, curY, viewRect.width, ButtonHeight);
-            if (Widgets.ButtonText(addButtonRect, AddButtonLabel))
+            float addButtonY = workingList.Count * rowStride;
+            bool addButtonVisible = addButtonY + ButtonHeight >= scrollPosition.y && addButtonY <= scrollPosition.y + listRect.height;
+            if (addButtonVisible && Widgets.ButtonText(new Rect(0f, addButtonY, viewRect.width, ButtonHeight), AddButtonLabel))
             {
                 OnAddItem();
             }
