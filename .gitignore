@@ -17,7 +17,7 @@ Docs/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
-
+*.code-workspace
 # Mono auto generated files
 mono_crash.*
 
