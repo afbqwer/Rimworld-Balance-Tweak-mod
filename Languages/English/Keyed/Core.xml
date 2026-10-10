@@ -60,6 +60,13 @@
     <MST.JumpToDesc>Click the name to jump to its associated data.</MST.JumpToDesc>
     <MST.ResetCurTooltip>Reset all data currently displayed. Does not reset data not displayed in the list.</MST.ResetCurTooltip>
     <MST.ApplyToolTip>Modify all values in the selected column. Only modifies data displayed in the current list. The result is (Value + Flat Change) * Multiplier.</MST.ApplyToolTip>
+    <MST.HelpTooltip>Operations
+- Top row: Apply = applies (value + flat) * multiplier to the visible data of the selected column, clamped by the lower/upper limits. Also: Columns / Settings / Reset Column / Reset Shown Items.
+- Bottom row: search, main type / sub type / mod filters, sort. "Show Result" and "Show Default" only change the display, never the data; "Display Mode" makes the whole table read-only.
+- Editing a cell: a checkbox toggles; number / percent values are typed in place; an enum opens a dropdown; text, lists, curves, def pickers and so on open their own editor window.
+- Batch edit: hold Shift and drag with the left button to copy the start cell's value to every cell you drag over in the same column.
+- Name column: left-click the name to jump to its owner; right-click for Pin / Reset / Copy defName; the R button resets that entry.
+- Right-click a data cell: Copy / Paste / Reset that field.</MST.HelpTooltip>
     <MST.SimpleDefEditer>Simple Def Editor</MST.SimpleDefEditer>
     <MST.EditCurve>Edit Curve</MST.EditCurve>
     <MST.Points>Points</MST.Points>
@@ -154,7 +161,7 @@
     <MST.TestFilter>Update Filter</MST.TestFilter>
     <MST.ClickTestToPreview>Click "Update Filter" to preview</MST.ClickTestToPreview>
     <MST.ShowOnlyAllowed>Show Allowed Only</MST.ShowOnlyAllowed>
-    <MST.GeneralSettings>General Settings</MST.GeneralSettings>
+    <MST.GeneralSettings>Settings</MST.GeneralSettings>
     <MST.NameColWidth>Name Col Width</MST.NameColWidth>
     <MST.DataColWidth>Data Col Width</MST.DataColWidth>
     <MST.DataCleanup>Data Cleanup</MST.DataCleanup>

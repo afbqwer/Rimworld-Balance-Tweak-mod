@@ -22,6 +22,10 @@ public partial class BalanceTweakSettings : ModSettings
     private const float IconSizePadded = 35f;
     private const float ResetButtonWidth = 30f;
     private const float Contracted = 2f;
+    /// <summary>筛选行最右侧「?」帮助按钮的边长（不可点击，只有悬浮提示）</summary>
+    private const float HelpButtonSize = 26f;
+    /// <summary>为「?」帮助按钮在筛选行右侧预留的宽度：搜索栏是整行唯一的弹性元素，从它身上扣</summary>
+    private const float HelpButtonReserve = 64f;
     #endregion
 
     #region 数据与状态
@@ -264,6 +268,9 @@ public partial class BalanceTweakSettings : ModSettings
     // Unity 的 IMGUI在每一帧会为不同的事件类型（EventType）多次调用 OnGUI(DoSettingsWindowContents) 方法。
     public void DoSettingsWindowContents(Rect inRect)
     {
+        // 必须放在所有绘制/点击处理之前：拖拽涂抹的收尾（松手复位 + 抑制点击）要在本帧任何点击判定之前完成
+        DragPaint.BeginFrame();
+
         TweakUtility.InitAndUpdateData();
 
         GUI.BeginGroup(inRect);
@@ -384,7 +391,9 @@ public partial class BalanceTweakSettings : ModSettings
         // 搜索框
         Rect searchInputTexture = new Rect(curX, bottomrow.y, bottomrow.height, bottomrow.height).ContractedBy(Contracted);
         curX += searchInputTexture.width;
-        Rect searchInputRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.19f + Contracted, bottomrow.height).ContractedBy(Contracted);
+        // 右侧为「?」帮助按钮腾出位置
+        float searchWidth = Mathf.Max(80f, bottomrow.width * 0.21f - HelpButtonReserve);
+        Rect searchInputRect = new Rect(curX, bottomrow.y, searchWidth + Contracted, bottomrow.height).ContractedBy(Contracted);
 
         const string SearchControlName = "SearchBox";
         GUI.DrawTexture(searchInputTexture, TexButton.Search);
@@ -478,7 +487,31 @@ public partial class BalanceTweakSettings : ModSettings
         TooltipHandler.TipRegion(showDisplayModeRect, "MST.showDisplayModeTooltip".Translate().RawText);
         Widgets.CheckboxLabeled(showDisplayModeRect, "MST.showDisplayMode".Translate().RawText, ref showDisplayMode);
         curX += showDisplayModeRect.width;
+
+        // 「?」帮助按钮：贴在最右侧，只显示提示、不接受点击。
+        // 尺寸与纵向位置跟同一行的其它筛选控件完全对齐（都是 30 高内缩 2 → 26）
+        Rect helpRect = new Rect(
+            bottomrow.xMax - HelpButtonSize - Contracted - 8f,
+            bottomrow.y + Contracted,
+            HelpButtonSize,
+            HelpButtonSize);
+        DrawHelpButton(helpRect);
     }
+
+    /// <summary>
+    /// 筛选行最右侧的「?」
+    /// 悬浮时显示整表操作说明。
+    /// </summary>
+    private static void DrawHelpButton(Rect rect)
+    {
+        if (Mouse.IsOver(rect)) Widgets.DrawHighlight(rect);
+        Text.Anchor = TextAnchor.MiddleCenter;
+        Text.Font = GameFont.Small;
+        Widgets.Label(rect, "?");
+        Text.Anchor = TextAnchor.MiddleCenter;
+        TooltipHandler.TipRegion(rect, "MST.HelpTooltip".Translate().RawText);
+    }
+
     /// <summary>绘制表头</summary>
     private static void DrawHeader(Rect rect)
     {
@@ -597,7 +630,8 @@ public partial class BalanceTweakSettings : ModSettings
             }
 
             // 点击逻辑（仅在非拖拽状态触发，且不在拖拽结束后的冷却帧内）
-            if (!headerDragActive && Event.current.type == EventType.MouseUp && draggingHeaderColumn == null && dragEndFrameCount <= 0 && headerCell.Contains(Event.current.mousePosition))
+            // !DragPaint.SuppressClick：数据区拖拽涂抹结束时若停在表头上，不应误选/误排序此列
+            if (!headerDragActive && !DragPaint.SuppressClick && Event.current.type == EventType.MouseUp && draggingHeaderColumn == null && dragEndFrameCount <= 0 && headerCell.Contains(Event.current.mousePosition))
             {
                 if (Event.current.button == 0)
                 {
@@ -906,12 +940,13 @@ public partial class BalanceTweakSettings : ModSettings
         {
             Widgets.DrawHighlight(nameClickRect);
         }
-        if (data.parentTweakId != null && Mouse.IsOver(nameClickRect) && Event.current.type == EventType.MouseUp && Event.current.button == 0)
+        // 数据区拖拽涂抹可能在名称列上松手，这里全部加点击抑制，避免误跳转/误弹信息卡/误重置
+        if (!DragPaint.SuppressClick && data.parentTweakId != null && Mouse.IsOver(nameClickRect) && Event.current.type == EventType.MouseUp && Event.current.button == 0)
         {
             TweakUtility.JumpToData(data.parentTweakId);
             Event.current.Use();
         }
-        else if (data.def != null && Current.Game != null && Mouse.IsOver(nameClickRect) && Event.current.type == EventType.MouseUp && Event.current.button == 0)
+        else if (!DragPaint.SuppressClick && data.def != null && Current.Game != null && Mouse.IsOver(nameClickRect) && Event.current.type == EventType.MouseUp && Event.current.button == 0)
         {
             Find.WindowStack.Add(new Dialog_InfoCard(data.def));
             Event.current.Use();
@@ -921,7 +956,7 @@ public partial class BalanceTweakSettings : ModSettings
         if (data.tweaked)
         {
             Widgets.DrawButtonGraphic(resetRect);
-            if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && resetRect.Contains(Event.current.mousePosition))
+            if (!DragPaint.SuppressClick && Event.current.type == EventType.MouseUp && Event.current.button == 0 && resetRect.Contains(Event.current.mousePosition))
             {
                 needRemove = data;
                 Event.current.Use();
@@ -977,6 +1012,44 @@ public partial class BalanceTweakSettings : ModSettings
         Rect cellBack = new(DataColWidth * col, line * LineHeight, DataColWidth, LineHeight);
         Rect cellRect = cellBack.ContractedBy(2f, 0f);
 
+        // === 拖拽涂抹（赋值式：Shift + 左键拖动，把起始格的值复制到扫过的同列行）===
+        // 命中区用整格 cellBack 而不是内缩后的 cellRect —— 行与行之间不能留缝，否则起拖会落在缝里「怎么拖都没反应」
+        bool paintable = IsPaintableColumn(config);
+        bool paintedCell = paintable && DragPaint.IsPainted(data.IdTag);
+        // 只有「原地文本输入框」才需要让位：它会在 MouseDown 那一刻抢焦点并进入选字，
+        // 让开必须在「按下那一帧」，不能等判定出拖（那时木已成舟）。开关 / 枚举 / 按钮格没有这个问题。
+        // hotControl == 0：若鼠标其实压在滚动条上（滚动条由 BeginScrollView 在内容之前处理并接管鼠标），
+        // 就不该把底下的输入框藏起来、更不该把它的焦点抢掉。
+        bool textField = paintable && IsTextFieldColumn(config.columnType);
+        bool yieldToPaint = textField && GUIUtility.hotControl == 0 && Mouse.IsOver(cellBack)
+            && (DragPaint.ClaimsTag(config) || (!DragPaint.Active && DragPaint.HasPaintIntent));
+        if (paintable)
+        {
+            var paintRole = DragPaint.Cell(cellBack, config);
+            if (paintRole == DragPaint.PaintResult.Anchor)
+            {
+                // 起始格可能还停在编辑缓冲里：先落盘再取值，否则涂出去的会是上一版旧值
+                CommitPendingEdit();
+                DragPaint.Value = config.GetCopyData(data);
+                // 没有可复制的东西时直接放弃本轮，别留下一个涂不出东西的幽灵手势。
+                // - null：空 Def 选择、空列表等（各序列化器对空输入统一返回 null）
+                // - IngredientFilter 的空串：它序列化 null 过滤器时给的是 ""，而反序列化 "" 会得到一个
+                //   「空的 ThingFilter」而不是 null —— 语义不等价，刷出去是破坏性的，宁可不起手
+                if (DragPaint.Value == null
+                    || (config.columnType == ColumnStyle.IngredientFilter && DragPaint.Value.Length == 0))
+                {
+                    DragPaint.Reset();
+                }
+            }
+            if (paintRole != DragPaint.PaintResult.None && DragPaint.Value != null
+                && DragPaint.MarkPainted(data.IdTag))
+            {
+                // 写入幂等，但列表/曲线类字段的写入含序列化+Apply，所以只在本轮首次扫到该行时才真正执行
+                config.TryPasteData(data, DragPaint.Value);
+                paintedCell = true;
+            }
+        }
+
         string configFieldName = config.fieldName;
 
         // 损坏字段显示原始数据值
@@ -997,7 +1070,8 @@ public partial class BalanceTweakSettings : ModSettings
             string idTag = data.IdTag;
             string controlName = string.Concat("Tweak_", idTag, "_", col.ToString(), "_", line.ToString());
             string currentFocus = _focusedControlCache;
-            bool isFocused = currentFocus == controlName;
+            // yieldToPaint 时本帧不画输入框，也就谈不上聚焦；同时让上面「已失焦 → 提交缓冲」的分支顺带把编辑落盘
+            bool isFocused = !yieldToPaint && currentFocus == controlName;
             string? displayText;
 
             if (editingControlName == controlName)
@@ -1037,42 +1111,56 @@ public partial class BalanceTweakSettings : ModSettings
 
             // 绘制输入框
             string newText;
-            GUI.SetNextControlName(controlName);
-            var num = config.GetNumericValue(data);
-            if (config.stat != null && num.HasValue && !config.isSPStat && (
-                (num.Value > config.stat.maxValue) || (num.Value < config.stat.minValue)))
+            if (yieldToPaint)
             {
-                GUI.color = Color.red;
+                // 让位给涂抹手势：本帧干脆不画输入框，只显示值。
+                // 单靠 GUI.enabled = false 不够（控件仍会被登记，MouseDown 照样被它消费），
+                // 而事后交还焦点也救不回已经被吃掉的那个 MouseDown。
+                GUIUtility.keyboardControl = 0;
+                GUIUtility.hotControl = 0;
+                Text.Anchor = TextAnchor.MiddleCenter;
+                Widgets.Label(cellRect, displayText ?? "");
+                newText = displayText ?? "";
             }
-            switch (config.columnType)
+            else
             {
-                case ColumnStyle.Float or ColumnStyle.Int or ColumnStyle.Range:
-                    newText = Widgets.TextField(cellRect, displayText);
-                    break;
-                case ColumnStyle.Prec:
-                    cellRect.SplitVertically(cellRect.width * 0.8f, out Rect left, out Rect right);
-                    Widgets.Label(right, "%");
-                    newText = Widgets.TextField(left, displayText);
-                    break;
-                case ColumnStyle.Bool:
-                    newText = DrawBoolFieldCell(cellRect, config, data, displayText);
-                    break;
-                case ColumnStyle.Enum:
-                    newText = DrawEnumDropdownCell(cellRect, config, data, displayText);
-                    break;
-                default:
-                    // 通过工厂统一调度按钮编辑器和列表编辑器
-                    if (EditorWindowFactory.TryGetValue(config.columnType, out var factory))
-                    {
-                        newText = config.isListStyle
-                            ? DrawListEditorCell(cellRect, config, data, () => factory(config, data))
-                            : DrawEditorButtonCell(cellRect, config, data, () => factory(config, data));
-                    }
-                    else
-                    {
-                        newText = "";
-                    }
-                    break;
+                GUI.SetNextControlName(controlName);
+                var num = config.GetNumericValue(data);
+                if (config.stat != null && num.HasValue && !config.isSPStat && (
+                    (num.Value > config.stat.maxValue) || (num.Value < config.stat.minValue)))
+                {
+                    GUI.color = Color.red;
+                }
+                switch (config.columnType)
+                {
+                    case ColumnStyle.Float or ColumnStyle.Int or ColumnStyle.Range:
+                        newText = Widgets.TextField(cellRect, displayText);
+                        break;
+                    case ColumnStyle.Prec:
+                        cellRect.SplitVertically(cellRect.width * 0.8f, out Rect left, out Rect right);
+                        Widgets.Label(right, "%");
+                        newText = Widgets.TextField(left, displayText);
+                        break;
+                    case ColumnStyle.Bool:
+                        newText = DrawBoolFieldCell(cellRect, config, data, displayText);
+                        break;
+                    case ColumnStyle.Enum:
+                        newText = DrawEnumDropdownCell(cellRect, config, data, displayText);
+                        break;
+                    default:
+                        // 通过工厂统一调度按钮编辑器和列表编辑器
+                        if (EditorWindowFactory.TryGetValue(config.columnType, out var factory))
+                        {
+                            newText = config.isListStyle
+                                ? DrawListEditorCell(cellRect, config, data, () => factory(config, data))
+                                : DrawEditorButtonCell(cellRect, config, data, () => factory(config, data));
+                        }
+                        else
+                        {
+                            newText = "";
+                        }
+                        break;
+                }
             }
             // 为损坏或已修改字段绘制背景（使用缓存的 configFieldName）
             if (configFieldName != null && data.IsFieldCorrupted(configFieldName))
@@ -1092,7 +1180,7 @@ public partial class BalanceTweakSettings : ModSettings
                 GUI.color = prevColor;
             }
             GUI.color = Color.white;
-            if (editingControlName == controlName && config.columnType is ColumnStyle.Float or ColumnStyle.Int or ColumnStyle.Prec or ColumnStyle.Range)
+            if (!yieldToPaint && editingControlName == controlName && config.columnType is ColumnStyle.Float or ColumnStyle.Int or ColumnStyle.Prec or ColumnStyle.Range)
             {
                 editingBuffer = newText;
             }
@@ -1119,6 +1207,11 @@ public partial class BalanceTweakSettings : ModSettings
             rightClickDown = false;
             rightClickData = null;
             rightClickColumnConfig = null;
+        }
+        // 涂抹高光：画在内容之上（细边框，不遮字）。用边框而非整格填色，免得把文字蒙蓝。
+        if (paintedCell)
+        {
+            DrawPaintBorder(cellBack);
         }
         Text.WordWrap = true;
     }
@@ -1162,7 +1255,7 @@ public partial class BalanceTweakSettings : ModSettings
             return displayText ?? "";
         }
 
-        if (Widgets.ButtonText(cellRect, displayText))
+        if (Widgets.ButtonText(cellRect, displayText) && !DragPaint.SuppressClick)
         {
             var menuOptions = new List<FloatMenuOption>();
             for (int i = 0; i < enumOptions.Count; i++)
@@ -1199,7 +1292,7 @@ public partial class BalanceTweakSettings : ModSettings
                 Text.Font = GameFont.Tiny;
                 Text.Anchor = TextAnchor.MiddleLeft;
                 Widgets.DrawButtonGraphic(cellRect);
-                if (cellRect.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseUp && Event.current.button == 0)
+                if (!DragPaint.SuppressClick && cellRect.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseUp && Event.current.button == 0)
                 {
                     if (d is TweakID id)
                     {
@@ -1216,7 +1309,7 @@ public partial class BalanceTweakSettings : ModSettings
                 Widgets.Label(cellRect, sourceText);
                 Text.Font = GameFont.Small;
                 Text.Anchor = TextAnchor.UpperLeft;
-                if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && cellRect.Contains(Event.current.mousePosition))
+                if (!DragPaint.SuppressClick && Event.current.type == EventType.MouseUp && Event.current.button == 0 && cellRect.Contains(Event.current.mousePosition))
                 {
                     Event.current.Use();
                     if (config.columnType == ColumnStyle.BodyLinks)
@@ -1270,6 +1363,58 @@ public partial class BalanceTweakSettings : ModSettings
         return body != null ? $"{body.LabelCap.Resolve()} ({body.defName})" : null;
     }
 
+    /// <summary>
+    /// 提交并清空「正在编辑」的输入缓冲。涂抹起始格 / 右键菜单等需要读或写真实值之前必须先落盘，
+    /// 否则读到的是缓冲里的旧值，或者稍后被缓冲回写覆盖。
+    /// </summary>
+    private static void CommitPendingEdit()
+    {
+        if (editingControlName != null && editingControlData != null && editingControlConfig != null && editingBuffer != null)
+        {
+            editingControlConfig.CheckAndApply(editingControlData, editingBuffer);
+        }
+        editingControlName = null;
+        editingBuffer = null;
+        editingControlData = null;
+        editingControlConfig = null;
+    }
+
+    /// <summary>该列是否支持拖拽涂抹（复制式写入）。</summary>
+    private static bool IsPaintableColumn(StatColumnConfig config)
+    {
+        // 只读列不参与：Display 类型没有可写字段，查看模式下整表禁编辑
+        if (config.columnDataType != ColumnDataType.Field) return false;
+        if (showDisplayMode) return false;
+        // 「显示结果值」是批量运算的预览态，该列此刻的编辑本身就被 CheckAndApply 禁用了
+        if (showChanged && ReferenceEquals(selectedCol, config)) return false;
+        // 关联跳转列没有「值」可复制，GetCopyData / TryPasteData 都不支持
+        if (config.columnType is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks) return false;
+        return true;
+    }
+
+    /// <summary>
+    /// 该列单元格里是不是「原地文本输入框」。
+    /// 这类格的 MouseDown 会被 <c>GUI.TextField</c> 吃成「聚焦 + 开始选字」，所以涂抹手势成立的那一帧
+    /// 必须干脆不画它（见 DrawDataColumns 里的 <c>yieldToPaint</c>），否则未聚焦的输入框会把那次
+    /// MouseDown 吞掉，之后无论怎么拖都进不了涂抹模式。
+    /// 注意 String 列虽然是文本，但走的是「按钮 → StringEditorWindow」而不是原地输入框，不在此列。
+    /// </summary>
+    private static bool IsTextFieldColumn(ColumnStyle style)
+        => style is ColumnStyle.Float or ColumnStyle.Int or ColumnStyle.Prec or ColumnStyle.Range;
+
+    /// <summary>涂抹高光：整格细边框。用边框而不是整格填色，是为了不把格内文字蒙上一层蓝。</summary>
+    private static void DrawPaintBorder(Rect cellBack)
+    {
+        const float thickness = 2f;
+        var prevColor = GUI.color;
+        GUI.color = new Color(0.25f, 0.65f, 1f, 0.9f);
+        GUI.DrawTexture(new Rect(cellBack.x, cellBack.y, cellBack.width, thickness), BaseContent.WhiteTex);
+        GUI.DrawTexture(new Rect(cellBack.x, cellBack.yMax - thickness, cellBack.width, thickness), BaseContent.WhiteTex);
+        GUI.DrawTexture(new Rect(cellBack.x, cellBack.y, thickness, cellBack.height), BaseContent.WhiteTex);
+        GUI.DrawTexture(new Rect(cellBack.xMax - thickness, cellBack.y, thickness, cellBack.height), BaseContent.WhiteTex);
+        GUI.color = prevColor;
+    }
+
     private static string DrawEditorButtonCell(Rect cellRect, StatColumnConfig config, TweakData data, Func<Window> createWindow)
     {
         string displayText = config.GetString(data);
@@ -1282,7 +1427,7 @@ public partial class BalanceTweakSettings : ModSettings
         Widgets.Label(cellRect, displayText);
         Text.Anchor = TextAnchor.UpperLeft;
         Text.Font = GameFont.Small;
-        if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && cellRect.Contains(Event.current.mousePosition))
+        if (!DragPaint.SuppressClick && Event.current.type == EventType.MouseUp && Event.current.button == 0 && cellRect.Contains(Event.current.mousePosition))
         {
             Event.current.Use();
             Find.WindowStack.Add(createWindow());
@@ -1298,7 +1443,7 @@ public partial class BalanceTweakSettings : ModSettings
         Text.Anchor = TextAnchor.MiddleCenter;
         Widgets.Label(cellRect, text);
         Text.Anchor = TextAnchor.UpperLeft;
-        if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && cellRect.Contains(Event.current.mousePosition))
+        if (!DragPaint.SuppressClick && Event.current.type == EventType.MouseUp && Event.current.button == 0 && cellRect.Contains(Event.current.mousePosition))
         {
             Event.current.Use();
             Find.WindowStack.Add(createWindow());
