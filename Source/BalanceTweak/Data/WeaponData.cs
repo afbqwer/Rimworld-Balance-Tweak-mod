@@ -367,10 +367,10 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         costStuffCount ??= (int?)GetCostStuffCount(this);
         if (def is ThingDef td)
         {
-            costList ??= td.costList;
-            stuffCategories ??= td.stuffCategories;
-            statBases ??= td.statBases;
-            equippedStatOffsets ??= td.equippedStatOffsets;
+            if (!IsFieldModified(nameof(costList))) costList ??= td.costList;
+            if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= td.stuffCategories;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= td.statBases;
+            if (!IsFieldModified(nameof(equippedStatOffsets))) equippedStatOffsets ??= td.equippedStatOffsets;
             var reloadable = td.GetCompProperties<CompProperties_ApparelReloadable>();
             if (reloadable != null)
             {

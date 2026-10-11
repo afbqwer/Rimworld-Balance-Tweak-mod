@@ -106,20 +106,20 @@ class GeneData : TweakData<GeneData>
             passOnDirectly ??= d.passOnDirectly;
             removeOnRedress ??= d.removeOnRedress;
 
-            statOffsets ??= d.statOffsets;
-            statFactors ??= d.statFactors;
-            capMods ??= d.capMods;
-            damageFactors ??= d.damageFactors;
+            if (!IsFieldModified(nameof(statOffsets))) statOffsets ??= d.statOffsets;
+            if (!IsFieldModified(nameof(statFactors))) statFactors ??= d.statFactors;
+            if (!IsFieldModified(nameof(capMods))) capMods ??= d.capMods;
+            if (!IsFieldModified(nameof(damageFactors))) damageFactors ??= d.damageFactors;
 
-            abilities ??= d.abilities;
-            forcedTraits ??= d.forcedTraits;
-            suppressedTraits ??= d.suppressedTraits;
-            aptitudes ??= d.aptitudes;
-            enablesNeeds ??= d.enablesNeeds;
-            disablesNeeds ??= d.disablesNeeds;
+            if (!IsFieldModified(nameof(abilities))) abilities ??= d.abilities;
+            if (!IsFieldModified(nameof(forcedTraits))) forcedTraits ??= d.forcedTraits;
+            if (!IsFieldModified(nameof(suppressedTraits))) suppressedTraits ??= d.suppressedTraits;
+            if (!IsFieldModified(nameof(aptitudes))) aptitudes ??= d.aptitudes;
+            if (!IsFieldModified(nameof(enablesNeeds))) enablesNeeds ??= d.enablesNeeds;
+            if (!IsFieldModified(nameof(disablesNeeds))) disablesNeeds ??= d.disablesNeeds;
             disabledWorkTags ??= d.disabledWorkTags;
-            makeImmuneTo ??= d.makeImmuneTo;
-            hediffGiversCannotGive ??= d.hediffGiversCannotGive;
+            if (!IsFieldModified(nameof(makeImmuneTo))) makeImmuneTo ??= d.makeImmuneTo;
+            if (!IsFieldModified(nameof(hediffGiversCannotGive))) hediffGiversCannotGive ??= d.hediffGiversCannotGive;
             if (d.passionMod != null)
             {
                 passionModSkill ??= d.passionMod.skill;

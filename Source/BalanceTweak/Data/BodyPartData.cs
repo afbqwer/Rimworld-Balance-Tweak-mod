@@ -92,7 +92,7 @@ class BodyPartData : TweakData<BodyPartData>
             if (desc.NullOrEmpty()) { desc = d.defName; }
             searchString = label + d.defName;
             hitPoints ??= d.hitPoints;
-            tags ??= d.tags;
+            if (!IsFieldModified(nameof(tags))) tags ??= d.tags;
             permanentInjuryChanceFactor ??= d.permanentInjuryChanceFactor;
             bleedRate ??= d.bleedRate;
             frostbiteVulnerability ??= d.frostbiteVulnerability;
@@ -109,7 +109,7 @@ class BodyPartData : TweakData<BodyPartData>
             pawnGeneratorCanAmputate ??= d.pawnGeneratorCanAmputate;
             canSuggestAmputation ??= d.canSuggestAmputation;
             forceAlwaysRemovable ??= d.forceAlwaysRemovable;
-            hitChanceFactors ??= d.hitChanceFactors?
+            if (!IsFieldModified(nameof(hitChanceFactors))) hitChanceFactors ??= d.hitChanceFactors?
                 .Select(kv => new DamageFactor { damageDef = kv.Key, factor = kv.Value })
                 .ToList();
         }

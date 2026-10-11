@@ -85,12 +85,12 @@ class TraitData : TweakData<TraitData>, ISubItemHost
             allowOnHostileSpawn ??= d.allowOnHostileSpawn;
             disableHostilityFromFaction ??= d.disableHostilityFromFaction;
             disableHostilityFromAnimalType ??= d.disableHostilityFromAnimalType;
-            conflictingTraits ??= d.conflictingTraits;
-            exclusionTags ??= d.exclusionTags;
-            conflictingPassions ??= d.conflictingPassions;
-            forcedPassions ??= d.forcedPassions;
-            requiredWorkTypes ??= d.requiredWorkTypes;
-            disabledWorkTypes ??= d.disabledWorkTypes;
+            if (!IsFieldModified(nameof(conflictingTraits))) conflictingTraits ??= d.conflictingTraits;
+            if (!IsFieldModified(nameof(exclusionTags))) exclusionTags ??= d.exclusionTags;
+            if (!IsFieldModified(nameof(conflictingPassions))) conflictingPassions ??= d.conflictingPassions;
+            if (!IsFieldModified(nameof(forcedPassions))) forcedPassions ??= d.forcedPassions;
+            if (!IsFieldModified(nameof(requiredWorkTypes))) requiredWorkTypes ??= d.requiredWorkTypes;
+            if (!IsFieldModified(nameof(disabledWorkTypes))) disabledWorkTypes ??= d.disabledWorkTypes;
             requiredWorkTags ??= d.requiredWorkTags;
             disabledWorkTags ??= d.disabledWorkTags;
         }

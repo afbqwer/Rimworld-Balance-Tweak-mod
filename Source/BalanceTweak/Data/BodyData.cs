@@ -40,7 +40,7 @@ class BodyData : TweakData<BodyData>
             desc = d.description;
             if (desc.NullOrEmpty()) { desc = d.defName; }
             searchString = label + d.defName;
-            parts ??= BodyPartTreeCodec.Encode(d.corePart);
+            if (!IsFieldModified(nameof(parts))) parts ??= BodyPartTreeCodec.Encode(d.corePart);
         }
     }
 

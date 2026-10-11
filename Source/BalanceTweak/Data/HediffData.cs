@@ -341,7 +341,7 @@ class HediffData : TweakData<HediffData>, ISubItemHost
             }
 
             // Phase 5: Extension fields
-            abilities ??= d.abilities;
+            if (!IsFieldModified(nameof(abilities))) abilities ??= d.abilities;
 
             if (_hediffGiverRefs != null)
             {
@@ -351,7 +351,7 @@ class HediffData : TweakData<HediffData>, ISubItemHost
             }
             else
             {
-                hediffGivers ??= d.hediffGivers;
+                if (!IsFieldModified(nameof(hediffGivers))) hediffGivers ??= d.hediffGivers;
             }
 
             removeOnRedressChanceByDaysCurve ??= d.removeOnRedressChanceByDaysCurve;

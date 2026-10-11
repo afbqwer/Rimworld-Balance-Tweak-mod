@@ -90,7 +90,7 @@ class AbilityData : TweakData<AbilityData>
                 maxRange ??= Verb.range;
                 requireLineOfSight ??= Verb.requireLineOfSight;
             }
-            statBases ??= d.statBases?.Select(s => new StatModifier { stat = s.stat, value = s.value }).ToList();
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases?.Select(s => new StatModifier { stat = s.stat, value = s.value }).ToList();
         }
         if (DataUtility.MayRequire(TweakDatabase.VEP))
         {

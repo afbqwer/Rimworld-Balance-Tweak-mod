@@ -31,6 +31,14 @@ public partial class BalanceTweakSettings : ModSettings
     #region 数据与状态
     // 静态数据
     public static Dictionary<TweakID, TweakData> tweakDatas = new();
+
+    /// <summary>
+    /// L0 三态语义灰度开关。
+    /// false（默认）= 旧行为：空值视同"未设置"，Def 上的原值不动（Cleared 退化为 Unset）。
+    /// true        = 新语义：已改且为空 = Cleared，集合清空 Def、标量/Def 引用还原原值。
+    /// 由 C 组接到设置界面，人工核对 dry-run 报告后再开。不参与序列化。
+    /// </summary>
+    public static bool clearedSemanticsEnabled = false;
     public static Dictionary<SettingType, Dictionary<TweakID, TweakData>> cachedData = new();
     public static HashSet<TweakID> pinnedIds = new();
 

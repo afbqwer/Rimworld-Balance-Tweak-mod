@@ -124,7 +124,7 @@ class FoodData : TweakData<FoodData>
             preferability ??= d.ingestible.preferability;
             }
             canRot = false;
-            statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
             foreach (var cp in d.comps)
             {
                 if (cp is CompProperties_Rottable cr)
@@ -166,8 +166,8 @@ class FoodData : TweakData<FoodData>
                     if (harvestedData != null)
                         harvestedThingData = harvestedData.id;
                 }
-                sowTags ??= d.plant.sowTags;
-                sowResearchPrerequisites ??= d.plant.sowResearchPrerequisites;
+                if (!IsFieldModified(nameof(sowTags))) sowTags ??= d.plant.sowTags;
+                if (!IsFieldModified(nameof(sowResearchPrerequisites))) sowResearchPrerequisites ??= d.plant.sowResearchPrerequisites;
                 pollution ??= d.plant.pollution;
             }
             else if (harvestedByData == null)

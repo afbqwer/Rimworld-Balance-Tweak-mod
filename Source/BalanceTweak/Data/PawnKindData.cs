@@ -317,19 +317,19 @@ class PawnKindData : TweakData<PawnKindData>
             factionLeader ??= d.factionLeader;
 
             // Second Priority: List<string>
-            weaponTags ??= d.weaponTags;
-            apparelTags ??= d.apparelTags;
-            apparelDisallowTags ??= d.apparelDisallowTags;
-            techHediffsTags ??= d.techHediffsTags;
-            techHediffsDisallowTags ??= d.techHediffsDisallowTags;
+            if (!IsFieldModified(nameof(weaponTags))) weaponTags ??= d.weaponTags;
+            if (!IsFieldModified(nameof(apparelTags))) apparelTags ??= d.apparelTags;
+            if (!IsFieldModified(nameof(apparelDisallowTags))) apparelDisallowTags ??= d.apparelDisallowTags;
+            if (!IsFieldModified(nameof(techHediffsTags))) techHediffsTags ??= d.techHediffsTags;
+            if (!IsFieldModified(nameof(techHediffsDisallowTags))) techHediffsDisallowTags ??= d.techHediffsDisallowTags;
 
             // Second Priority: List<Def>
-            apparelRequired ??= d.apparelRequired;
-            abilities ??= d.abilities;
-            disallowedTraits ??= d.disallowedTraits;
-            forcedAddictions ??= d.forcedAddictions;
-            techHediffsRequired ??= d.techHediffsRequired;
-            titleSelectOne ??= d.titleSelectOne;
+            if (!IsFieldModified(nameof(apparelRequired))) apparelRequired ??= d.apparelRequired;
+            if (!IsFieldModified(nameof(abilities))) abilities ??= d.abilities;
+            if (!IsFieldModified(nameof(disallowedTraits))) disallowedTraits ??= d.disallowedTraits;
+            if (!IsFieldModified(nameof(forcedAddictions))) forcedAddictions ??= d.forcedAddictions;
+            if (!IsFieldModified(nameof(techHediffsRequired))) techHediffsRequired ??= d.techHediffsRequired;
+            if (!IsFieldModified(nameof(titleSelectOne))) titleSelectOne ??= d.titleSelectOne;
 
             // Second Priority: Def Selector
             defaultFactionDef ??= d.defaultFactionDef;

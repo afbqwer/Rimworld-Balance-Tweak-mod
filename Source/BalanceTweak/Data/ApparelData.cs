@@ -211,17 +211,17 @@ public class ApparelData : TweakData<ApparelData>
         equipPower = (float?)GetEquipPower(this, isCompQuality);
         if (def is ThingDef d)
         {
-            costList ??= d.costList?.ToList();
-            stuffCategories ??= d.stuffCategories?.ToList();
+            if (!IsFieldModified(nameof(costList))) costList ??= d.costList?.ToList();
+            if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= d.stuffCategories?.ToList();
             techLevel ??= d.techLevel;
-            bodyPartGroups ??= d.apparel.bodyPartGroups;
-            layers ??= d.apparel.layers;
+            if (!IsFieldModified(nameof(bodyPartGroups))) bodyPartGroups ??= d.apparel.bodyPartGroups;
+            if (!IsFieldModified(nameof(layers))) layers ??= d.apparel.layers;
             careIfWornByCorpse ??= d.apparel.careIfWornByCorpse;
             careIfDamaged ??= d.apparel.careIfDamaged;
             gender ??= d.apparel.gender;
             developmentalStageFilter ??= d.apparel.developmentalStageFilter;
-            statBases ??= d.statBases;
-            equippedStatOffsets ??= d.equippedStatOffsets;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(equippedStatOffsets))) equippedStatOffsets ??= d.equippedStatOffsets;
             var shield = d.GetCompProperties<CompProperties_Shield>();
             if (shield != null)
             {

@@ -50,7 +50,7 @@ class MiscThingData : TweakData<MiscThingData>
             if (desc.NullOrEmpty()) { desc = d.defName; }
             searchString = label + d.defName;
             stackLimit ??= d.stackLimit;
-            statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
             pathCost ??= d.pathCost;
             useHitPoints ??= d.useHitPoints;
             destroyable ??= d.destroyable;

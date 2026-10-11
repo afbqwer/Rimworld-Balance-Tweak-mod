@@ -91,7 +91,7 @@ class ProjectileData : TweakData<ProjectileData>
         defLabel ??= def?.label;
         if (def is ThingDef d)
         {
-            statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
         }
         if (tweaked == false)
         {

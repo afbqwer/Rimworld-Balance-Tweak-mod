@@ -133,10 +133,10 @@ public class RecipeData : TweakData<RecipeData>
             unfinishedThingDef ??= d.unfinishedThingDef;
             workSkill ??= d.workSkill;
             workSkillLearnFactor ??= d.workSkillLearnFactor;
-            products ??= d.products;
-            recipeUsers ??= d.recipeUsers;
+            if (!IsFieldModified(nameof(products))) products ??= d.products;
+            if (!IsFieldModified(nameof(recipeUsers))) recipeUsers ??= d.recipeUsers;
             researchPrerequisite ??= d.researchPrerequisite;
-            researchPrerequisites ??= d.researchPrerequisites;
+            if (!IsFieldModified(nameof(researchPrerequisites))) researchPrerequisites ??= d.researchPrerequisites;
             mechanitorOnlyRecipe ??= d.mechanitorOnlyRecipe;
             isViolation ??= d.isViolation;
             anesthetize ??= d.anesthetize;
@@ -145,12 +145,12 @@ public class RecipeData : TweakData<RecipeData>
             formingTicks ??= d.formingTicks;
             gestationCycles ??= d.gestationCycles;
             mechResurrection ??= d.mechResurrection;
-            ingredients ??= d.ingredients;
-            fixedIngredientFilter ??= d.fixedIngredientFilter;
-            defaultIngredientFilter ??= d.defaultIngredientFilter;
+            if (!IsFieldModified(nameof(ingredients))) ingredients ??= d.ingredients;
+            if (!IsFieldModified(nameof(fixedIngredientFilter))) fixedIngredientFilter ??= d.fixedIngredientFilter;
+            if (!IsFieldModified(nameof(defaultIngredientFilter))) defaultIngredientFilter ??= d.defaultIngredientFilter;
             addsHediff ??= d.addsHediff;
-            appliedOnFixedBodyParts ??= d.appliedOnFixedBodyParts;
-            skillRequirements = d.skillRequirements;
+            if (!IsFieldModified(nameof(appliedOnFixedBodyParts))) appliedOnFixedBodyParts ??= d.appliedOnFixedBodyParts;
+            if (!IsFieldModified(nameof(skillRequirements))) skillRequirements = d.skillRequirements;
         }
         else
         {

@@ -144,20 +144,20 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
             mentalBreakInspirationGainChance ??= degreeData.mentalBreakInspirationGainChance;
             randomMentalState ??= degreeData.randomMentalState;
             forcedMentalState ??= degreeData.forcedMentalState;
-            statOffsets ??= degreeData.statOffsets;
-            statFactors ??= degreeData.statFactors;
-            disallowedMentalStates ??= degreeData.disallowedMentalStates;
-            disallowedThoughts ??= degreeData.disallowedThoughts;
-            disallowedInspirations ??= degreeData.disallowedInspirations;
-            mentalBreakInspirationGainSet ??= degreeData.mentalBreakInspirationGainSet;
-            allowedMeditationFocusTypes ??= degreeData.allowedMeditationFocusTypes;
-            disallowedMeditationFocusTypes ??= degreeData.disallowedMeditationFocusTypes;
-            theOnlyAllowedMentalBreaks ??= degreeData.theOnlyAllowedMentalBreaks;
-            abilities ??= degreeData.abilities;
-            enablesNeeds ??= degreeData.enablesNeeds;
-            disablesNeeds ??= degreeData.disablesNeeds;
-            skillGains ??= degreeData.skillGains;
-            aptitudes ??= degreeData.aptitudes;
+            if (!IsFieldModified(nameof(statOffsets))) statOffsets ??= degreeData.statOffsets;
+            if (!IsFieldModified(nameof(statFactors))) statFactors ??= degreeData.statFactors;
+            if (!IsFieldModified(nameof(disallowedMentalStates))) disallowedMentalStates ??= degreeData.disallowedMentalStates;
+            if (!IsFieldModified(nameof(disallowedThoughts))) disallowedThoughts ??= degreeData.disallowedThoughts;
+            if (!IsFieldModified(nameof(disallowedInspirations))) disallowedInspirations ??= degreeData.disallowedInspirations;
+            if (!IsFieldModified(nameof(mentalBreakInspirationGainSet))) mentalBreakInspirationGainSet ??= degreeData.mentalBreakInspirationGainSet;
+            if (!IsFieldModified(nameof(allowedMeditationFocusTypes))) allowedMeditationFocusTypes ??= degreeData.allowedMeditationFocusTypes;
+            if (!IsFieldModified(nameof(disallowedMeditationFocusTypes))) disallowedMeditationFocusTypes ??= degreeData.disallowedMeditationFocusTypes;
+            if (!IsFieldModified(nameof(theOnlyAllowedMentalBreaks))) theOnlyAllowedMentalBreaks ??= degreeData.theOnlyAllowedMentalBreaks;
+            if (!IsFieldModified(nameof(abilities))) abilities ??= degreeData.abilities;
+            if (!IsFieldModified(nameof(enablesNeeds))) enablesNeeds ??= degreeData.enablesNeeds;
+            if (!IsFieldModified(nameof(disablesNeeds))) disablesNeeds ??= degreeData.disablesNeeds;
+            if (!IsFieldModified(nameof(skillGains))) skillGains ??= degreeData.skillGains;
+            if (!IsFieldModified(nameof(aptitudes))) aptitudes ??= degreeData.aptitudes;
         }
         return true;
     }

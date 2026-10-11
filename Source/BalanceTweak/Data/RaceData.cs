@@ -186,7 +186,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
             baseBodySize ??= d.race?.baseBodySize;
             baseHungerRate ??= d.race?.baseHungerRate;
             lifeExpectancy ??= d.race?.lifeExpectancy;
-            statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
             foreach (var cp in d.comps)
             {
                 if (cp is CompProperties_ProducesBioferrite bioferrite)

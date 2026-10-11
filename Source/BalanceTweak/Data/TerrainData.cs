@@ -72,12 +72,12 @@ class TerrainData : TweakData<TerrainData>
             layerable ??= d.layerable;
             canEverTerraform ??= d.canEverTerraform;
             extinguishesFire ??= d.extinguishesFire;
-            statBases ??= d.statBases;
-            tags ??= d.tags;
-            affordances ??= d.affordances;
-            researchPrerequisites ??= d.researchPrerequisites;
-            costList ??= d.costList;
-            stuffCategories ??= d.stuffCategories;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(tags))) tags ??= d.tags;
+            if (!IsFieldModified(nameof(affordances))) affordances ??= d.affordances;
+            if (!IsFieldModified(nameof(researchPrerequisites))) researchPrerequisites ??= d.researchPrerequisites;
+            if (!IsFieldModified(nameof(costList))) costList ??= d.costList;
+            if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= d.stuffCategories;
         }
     }
 

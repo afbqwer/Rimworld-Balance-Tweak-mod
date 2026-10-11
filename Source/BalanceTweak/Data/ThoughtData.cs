@@ -171,17 +171,17 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
             minExpectationForNegativeThought ??= d.minExpectationForNegativeThought;
             chemicalDef ??= d.chemicalDef;
             taleDef ??= d.taleDef;
-            replaceThoughts ??= d.replaceThoughts;
-            nullifyingTraits ??= d.nullifyingTraits;
-            neverNullifyIfAnyTrait ??= d.neverNullifyIfAnyTrait;
-            nullifyingTraitDegrees ??= d.nullifyingTraitDegrees;
-            requiredTraits ??= d.requiredTraits;
-            nullifyingGenes ??= d.nullifyingGenes;
-            requiredGenes ??= d.requiredGenes;
-            nullifyingHediffs ??= d.nullifyingHediffs;
-            requiredHediffs ??= d.requiredHediffs;
-            nullifyingPrecepts ??= d.nullifyingPrecepts;
-            nullifyingOwnTales ??= d.nullifyingOwnTales;
+            if (!IsFieldModified(nameof(replaceThoughts))) replaceThoughts ??= d.replaceThoughts;
+            if (!IsFieldModified(nameof(nullifyingTraits))) nullifyingTraits ??= d.nullifyingTraits;
+            if (!IsFieldModified(nameof(neverNullifyIfAnyTrait))) neverNullifyIfAnyTrait ??= d.neverNullifyIfAnyTrait;
+            if (!IsFieldModified(nameof(nullifyingTraitDegrees))) nullifyingTraitDegrees ??= d.nullifyingTraitDegrees;
+            if (!IsFieldModified(nameof(requiredTraits))) requiredTraits ??= d.requiredTraits;
+            if (!IsFieldModified(nameof(nullifyingGenes))) nullifyingGenes ??= d.nullifyingGenes;
+            if (!IsFieldModified(nameof(requiredGenes))) requiredGenes ??= d.requiredGenes;
+            if (!IsFieldModified(nameof(nullifyingHediffs))) nullifyingHediffs ??= d.nullifyingHediffs;
+            if (!IsFieldModified(nameof(requiredHediffs))) requiredHediffs ??= d.requiredHediffs;
+            if (!IsFieldModified(nameof(nullifyingPrecepts))) nullifyingPrecepts ??= d.nullifyingPrecepts;
+            if (!IsFieldModified(nameof(nullifyingOwnTales))) nullifyingOwnTales ??= d.nullifyingOwnTales;
         }
     }
 

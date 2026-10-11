@@ -233,12 +233,12 @@ class BuildingData : TweakData<BuildingData>
             fillPercent = d.fillPercent;
             pathCost ??= d.pathCost;
             costStuffCount ??= d.costStuffCount;
-            costList ??= d.costList;
-            stuffCategories ??= d.stuffCategories;
-            researchPrerequisites ??= d.researchPrerequisites;
+            if (!IsFieldModified(nameof(costList))) costList ??= d.costList;
+            if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= d.stuffCategories;
+            if (!IsFieldModified(nameof(researchPrerequisites))) researchPrerequisites ??= d.researchPrerequisites;
             normalMarketValue ??= (float?)GetNormalMarketValue(this);
-            statBases ??= d.statBases;
-            replaceTags ??= d.replaceTags;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(replaceTags))) replaceTags ??= d.replaceTags;
             // 新增 ThingDef 字段
             //passability ??= d.passability;
             constructionSkillPrerequisite ??= d.constructionSkillPrerequisite;
@@ -279,7 +279,7 @@ class BuildingData : TweakData<BuildingData>
                 allowWireConnection ??= d.building.allowWireConnection;
             }
             // ThingDef 直接列表字段
-            recipes ??= d.recipes;
+            if (!IsFieldModified(nameof(recipes))) recipes ??= d.recipes;
 
             foreach (var cp in d.comps)
             {

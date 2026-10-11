@@ -73,9 +73,9 @@ class StuffData : TweakData<StuffData>
             deepCountPerPortion ??= d.deepCountPerPortion;
             deepCountPerCell ??= d.deepCountPerCell;
             deepLumpSizeRange ??= d.deepLumpSizeRange;
-            statBases ??= d.statBases;
-            statOffsets ??= d.stuffProps?.statOffsets;
-            statFactors ??= d.stuffProps?.statFactors;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(statOffsets))) statOffsets ??= d.stuffProps?.statOffsets;
+            if (!IsFieldModified(nameof(statFactors))) statFactors ??= d.stuffProps?.statFactors;
         }
     }
 

@@ -234,13 +234,13 @@ class HediffStageData : TweakData<HediffStageData>
             statOffsetEffectMultiplier ??= stage.statOffsetEffectMultiplier;
             statFactorEffectMultiplier ??= stage.statFactorEffectMultiplier;
             capacityFactorEffectMultiplier ??= stage.capacityFactorEffectMultiplier;
-            statOffsets ??= stage.statOffsets;
-            statFactors ??= stage.statFactors;
-            capMods ??= stage.capMods;
-            damageFactors ??= stage.damageFactors;
-            enablesNeeds ??= stage.enablesNeeds;
-            disablesNeeds ??= stage.disablesNeeds;
-            makeImmuneTo ??= stage.makeImmuneTo;
+            if (!IsFieldModified(nameof(statOffsets))) statOffsets ??= stage.statOffsets;
+            if (!IsFieldModified(nameof(statFactors))) statFactors ??= stage.statFactors;
+            if (!IsFieldModified(nameof(capMods))) capMods ??= stage.capMods;
+            if (!IsFieldModified(nameof(damageFactors))) damageFactors ??= stage.damageFactors;
+            if (!IsFieldModified(nameof(enablesNeeds))) enablesNeeds ??= stage.enablesNeeds;
+            if (!IsFieldModified(nameof(disablesNeeds))) disablesNeeds ??= stage.disablesNeeds;
+            if (!IsFieldModified(nameof(makeImmuneTo))) makeImmuneTo ??= stage.makeImmuneTo;
 
             if (_hediffGiverRefs != null)
             {
@@ -250,7 +250,7 @@ class HediffStageData : TweakData<HediffStageData>
             }
             else
             {
-                hediffGivers ??= stage.hediffGivers?.ToList();
+                if (!IsFieldModified(nameof(hediffGivers))) hediffGivers ??= stage.hediffGivers?.ToList();
             }
 
             if (_mentalStateGiverRefs != null)
@@ -279,7 +279,7 @@ class HediffStageData : TweakData<HediffStageData>
             }
             else
             {
-                mentalStateGivers ??= stage.mentalStateGivers?.Select(m => new MentalStateGiver
+                if (!IsFieldModified(nameof(mentalStateGivers))) mentalStateGivers ??= stage.mentalStateGivers?.Select(m => new MentalStateGiver
                 {
                     mentalState = m.mentalState,
                     mtbDays = m.mtbDays
