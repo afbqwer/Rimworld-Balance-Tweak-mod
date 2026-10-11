@@ -171,6 +171,17 @@ public static partial class TweakDatabase
         var sw = Stopwatch.StartNew();
         var totalSw = Stopwatch.StartNew();
         var timings = new List<string>();
+        double measuredMs = 0;
+
+        // 阶段计时统一走这里：读表 → 累加已归属耗时 → 记一行 → 重新计时。
+        // 之前各阶段散落的 sw.Restart()/sw.Elapsed 容易出现"忘记读"或"忘记重启"，让阶段之和与总计对不上。
+        void Mark(string name)
+        {
+            double ms = sw.Elapsed.TotalMilliseconds;
+            measuredMs += ms;
+            timings.Add($"  {name}: {ms:F1}ms");
+            sw.Restart();
+        }
 
         // 清除上次记录
         failedResolveItems.Clear();
@@ -178,11 +189,12 @@ public static partial class TweakDatabase
         failedDelayedItems.Clear();
 
         InitAllMeleeDamageDef();
-        timings.Add($"  InitAllMeleeDamageDef: {sw.Elapsed.TotalMilliseconds:F1}ms");
+        Mark("InitAllMeleeDamageDef");
 
         var pendingItems = new List<(Def, TweakData, SettingType)>();
         int thingDefCount = DefDatabase<ThingDef>.DefCount;
         Log.Message($"[BalanceTweak] Def 统计：ThingDef={thingDefCount}, PawnKindDef={DefDatabase<PawnKindDef>.DefCount}, AbilityDef={DefDatabase<AbilityDef>.DefCount}, ThoughtDef={DefDatabase<ThoughtDef>.DefCount}, GeneDef={DefDatabase<GeneDef>.DefCount}, MemeDef={DefDatabase<MemeDef>.DefCount}, IncidentDef={DefDatabase<IncidentDef>.DefCount}, ResearchProjectDef={DefDatabase<ResearchProjectDef>.DefCount}, FactionDef={DefDatabase<FactionDef>.DefCount}, HediffDef={DefDatabase<HediffDef>.DefCount}, TraitDef={DefDatabase<TraitDef>.DefCount}, TerrainDef={DefDatabase<TerrainDef>.DefCount}");
+        // 上面那句 Def 统计日志不计入任何阶段（会落到"未归属"），这里重新起表，让"规则分类"只含分类本身。
         sw.Restart();
 
         // 分类完全由 TweakRegistry 的规则表驱动（规则来自各 Data 类上的 [TweakFor]），
@@ -190,59 +202,69 @@ public static partial class TweakDatabase
         var classify = ClassifyAll();
         pendingItems.AddRange(classify.Items);
         classify.ByDefType.TryGetValue(typeof(ThingDef), out int thingProcessed);
-        timings.Add($"  规则分类: {sw.Elapsed.TotalMilliseconds:F1}ms（ThingDef {thingProcessed} 个，兜底 {classify.Fallback} 个）");
+        if (classify.MultiMatched.Count > 0)
+            Log.Message($"[BalanceTweak] 并列挂载：{classify.MultiMatched.Count} 条（{string.Join(", ", classify.MultiMatched.Take(20))}）");
+        Mark($"规则分类（ThingDef {thingProcessed} 个，兜底 {classify.Fallback} 个）");
         //Log.Message($"[BalanceTweak] ThingDef 覆盖：总数 {thingProcessed}，规则分类 {thingProcessed - classify.Fallback - classify.Uncovered}，兜底 Misc {classify.Fallback}，放弃 {classify.Uncovered}（无编辑价值，不建实例）");
         //Log.Message($"[BalanceTweak] 兜底 Misc 按 ThingCategory：{string.Join(", ", classify.FallbackByCategory.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value}"))}");
         //if (classify.FallbackSamples.Count > 0)
         //    Log.Message($"[BalanceTweak] 兜底 Misc 示例（最多 30）：{string.Join(", ", classify.FallbackSamples)}");
         //if (classify.UncoveredSamples.Count > 0)
         //    Log.Message($"[BalanceTweak] 放弃的 ThingDef 示例（最多 30）：{string.Join(", ", classify.UncoveredSamples)}");
-        if (classify.MultiMatched.Count > 0)
-            Log.Message($"[BalanceTweak] 并列挂载：{classify.MultiMatched.Count} 条（{string.Join(", ", classify.MultiMatched.Take(20))}）");
         var sortedItems = pendingItems.OrderBy(item => item.Item2.LoadingOrd).ToList();
 
         var typeCounts = sortedItems.GroupBy(x => x.Item3)
                                      .Select(g => $"{g.Key}: {g.Count()}")
                                      .ToList();
         Log.Message($"[BalanceTweak] pendingItems 按类型统计：{string.Join(", ", typeCounts)}");
-        sw.Restart();
+        Mark("Def 排序与统计");
 
         int originalAdded = 0;
 
-        var setDefSw = new Dictionary<SettingType, Stopwatch>();
+        // 细分耗时改用累加式，而不是"Start/Stop 配对的共享 Stopwatch"：
+        // 后者一旦 SetDef / CreateSubItems 抛异常，Stop() 就会被跳过，把异常日志和后续 item 之间的空档
+        // 全算进该类型；subItemSw 还是单个共享实例，一旦挂住会跨类型传播污染。
+        // itemSw 每个 item 都 Restart()，配 finally 兜底，异常路径下读到的也只是一次 item 的耗时。
+        var setDefMs = new Dictionary<SettingType, double>();
         var setDefCount = new Dictionary<SettingType, int>();
         var subItemCount = new Dictionary<SettingType, int>();
-        var subItemSw = new Stopwatch();
+        var itemSw = new Stopwatch();
+        double subItemMs = 0;
 
         foreach (var (def, data, settingType) in sortedItems)
         {
             try
             {
-                if (!setDefSw.TryGetValue(settingType, out var stSw))
+                itemSw.Restart();
+                try
                 {
-                    stSw = new Stopwatch();
-                    setDefSw[settingType] = stSw;
+                    data.SetDef(def, settingType, false);
+                    originalData.Add(data.id, data);
+                    originalAdded++;
                 }
-                stSw.Start();
-                data.SetDef(def, settingType, false);
-                originalData.Add(data.id, data);
-                originalAdded++;
-                stSw.Stop();
-                setDefCount.TryGetValue(settingType, out var cnt);
-                setDefCount[settingType] = cnt + 1;
+                finally
+                {
+                    setDefMs[settingType] = setDefMs.GetValueOrDefault(settingType) + itemSw.Elapsed.TotalMilliseconds;
+                }
+                setDefCount[settingType] = setDefCount.GetValueOrDefault(settingType) + 1;
 
                 // 子项（武器招式 / 想法阶段 / 健康阶段 / 特性程度）由宿主类自己实现 ISubItemHost 产出，
                 // 这里不再为每种类型维护一段硬编码块 —— 新增子项类型只需宿主类加个方法。
                 if (data is ISubItemHost host)
                 {
-                    subItemSw.Start();
-                    foreach (var sub in host.CreateSubItems(data, false))
+                    itemSw.Restart();
+                    try
                     {
-                        originalData.TryAdd(sub.id, sub);
-                        subItemCount.TryGetValue(sub.id.settingType, out var sCnt);
-                        subItemCount[sub.id.settingType] = sCnt + 1;
+                        foreach (var sub in host.CreateSubItems(data, false))
+                        {
+                            originalData.TryAdd(sub.id, sub);
+                            subItemCount[sub.id.settingType] = subItemCount.GetValueOrDefault(sub.id.settingType) + 1;
+                        }
                     }
-                    subItemSw.Stop();
+                    finally
+                    {
+                        subItemMs += itemSw.Elapsed.TotalMilliseconds;
+                    }
                 }
             }
             catch (Exception e)
@@ -251,27 +273,25 @@ public static partial class TweakDatabase
             }
         }
 
-        var subItemMs = subItemSw.Elapsed.TotalMilliseconds;
-        var setDefMs = setDefSw.Values.Sum(sw => sw.Elapsed.TotalMilliseconds);
-        var totalMs = setDefMs + subItemMs;
+        var totalMs = setDefMs.Values.Sum() + subItemMs;
+        measuredMs += totalMs;
         timings.Add($"  originalData 创建 ({totalMs:F1}ms):");
-        foreach (var kv in setDefSw.OrderBy(kv => kv.Key))
+        foreach (var kv in setDefMs.OrderBy(kv => kv.Key))
         {
-            timings.Add($"    {kv.Key}: {kv.Value.Elapsed.TotalMilliseconds:F1}ms ({setDefCount[kv.Key]} 项)");
+            timings.Add($"    {kv.Key}: {kv.Value:F1}ms ({setDefCount[kv.Key]} 项)");
         }
         timings.Add($"    子项合计: {subItemMs:F1}ms（{string.Join(", ", subItemCount.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}: {kv.Value}"))}）");
+        // 该段耗时已由上面的细分统计认领，这里只把外层表归零，免得它被算进下一个阶段。
+        sw.Restart();
 
         if (DataUtility.MayRequire(VEF))
         {
-            sw.Restart();
             RecipeProcessHelper.PopulateProcessUsers();
-            timings.Add($"  PopulateProcessUsers: {sw.Elapsed.TotalMilliseconds:F1}ms");
+            Mark("PopulateProcessUsers");
         }
-        sw.Restart();
         // 计算 IncidentData 的实际概率
         IncidentData.RecalculateFromOriginals();
-        timings.Add($"  IncidentData.RecalculateFromOriginals: {sw.Elapsed.TotalMilliseconds:F1}ms");
-        sw.Restart();
+        Mark("IncidentData.RecalculateFromOriginals");
 
         int resolvedCount = 0;
         int skipResolveCount = 0;
@@ -296,10 +316,9 @@ public static partial class TweakDatabase
             }
             resolvedCount++;
         }
-        timings.Add($"  已存数据 ResolveDefs: {sw.Elapsed.TotalMilliseconds:F1}ms ({resolvedCount} 解析/{skipResolveCount} 未解析)");
         if (nullEntryCount > 0)
             Log.Warning($"[BalanceTweak] 有 {nullEntryCount} 条已存数据的类型无法识别（数据类被改名或删除？），已跳过。");
-        sw.Restart();
+        Mark($"已存数据 ResolveDefs ({resolvedCount} 解析/{skipResolveCount} 未解析)");
 
         var lazy = new List<TweakData>();
         int appliedModified = 0;
@@ -339,6 +358,10 @@ public static partial class TweakDatabase
             }
         }
 
+        if (notFoundCount > 0)
+            Log.Message($"[BalanceTweak] 有 {notFoundCount} 个修改项未找到对应的 Def（可能因 Mod 变动导致），已跳过。");
+        Mark($"直接修改项 Apply ({appliedModified} 已应用)");
+
         // 分类规则调整会让旧存档里的 settingType 与新规则不一致（见 Docs/ThingDefCoverage_Design.md §11.2）。
         // 数据本身已按新规则正确落到对应 def 上，这里只把字典键一并归一化 —— 否则
         // TweakUtility.InitAndUpdateData 按新键查找会落空，UI 会把已修改项显示成"未修改"。
@@ -358,12 +381,8 @@ public static partial class TweakDatabase
                 rekeyed++;
             }
             Log.Message($"[BalanceTweak] 分类漂移：{drifted.Count} 条已按当前规则重新归类，{rekeyed} 条已改挂页签。示例：{string.Join(", ", drifted.Take(10).Select(d => $"{d.oldKey} -> {d.data.id}"))}");
+            Mark($"分类漂移重挂 ({rekeyed} 条改挂页签)");
         }
-
-        if (notFoundCount > 0)
-            Log.Message($"[BalanceTweak] 有 {notFoundCount} 个修改项未找到对应的 Def（可能因 Mod 变动导致），已跳过。");
-        timings.Add($"  直接修改项 Apply: {sw.Elapsed.TotalMilliseconds:F1}ms ({appliedModified} 已应用)");
-        sw.Restart();
 
         int lazyApplied = 0;
         int parentNotFoundCount = 0;
@@ -402,10 +421,15 @@ public static partial class TweakDatabase
             Log.Message($"[BalanceTweak] 有 {parentNotFoundCount} 个延迟项未找到父项，已跳过。");
         if (setParentFailedCount > 0)
             Log.Message($"[BalanceTweak] 有 {setParentFailedCount} 个延迟项设置父项失败，已跳过。");
-        timings.Add($"  延迟修改项 Apply: {sw.Elapsed.TotalMilliseconds:F1}ms ({lazyApplied} 已应用)");
+        Mark($"延迟修改项 Apply ({lazyApplied} 已应用)");
+
+        // 各阶段之和若小于总计，差额就是没被任何阶段认领的开销 —— 显式打出来，免得"账对不上"却无从判断。
+        totalSw.Stop();
+        double elapsedMs = totalSw.Elapsed.TotalMilliseconds;
+        timings.Add($"  未归属: {elapsedMs - measuredMs:F1}ms");
 
         var report = string.Join("\n", timings);
-        Log.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {totalSw.Elapsed.TotalMilliseconds:F1}ms");
+        Log.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {elapsedMs:F1}ms");
     }
 
     public static ApparelData? GetApparelDataFromName(string defName)
