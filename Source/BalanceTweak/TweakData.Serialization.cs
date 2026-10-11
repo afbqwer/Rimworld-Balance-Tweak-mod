@@ -64,11 +64,11 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             {
                 if (meta.Attr.DataType != ColumnDataType.Field) continue;
                 var value = meta.Field.GetValue(this);
-                // value != null catches simple types (float?, int?, bool?, etc.) loaded via ExposeSimple.
-                // _savedLoadData.ContainsKey catches complex types (Def, List<>, ThingFilter, etc.)
-                // whose data was stored in _savedLoadData by ExposeDef/ExposeList/etc. during LoadingVars
-                // but whose field value hasn't been SetValue'd yet (will be done by ResolveDefs later).
-                if (value != null || _savedLoadData?.ContainsKey(meta.Field.Name) == true)
+                // 判据见 TweakData.IsBackCompatModified：只认"值非 null"或"key 存在且值非空"。
+                // 旧实现用 _savedLoadData.ContainsKey 判定，而那些 Expose* 的加载分支会
+                // 无条件写 key（值是 null / 空列表时也写）⇒ 所有未动过的列表字段都被误标成"已改"，
+                // L0 新语义一开就会被整片清空，故必须排除空值。
+                if (IsBackCompatModified(value, meta.Field.Name, _savedLoadData))
                     _modifiedFieldNames.Add(meta.Field.Name);
             }
             _backCompatResolved = true;

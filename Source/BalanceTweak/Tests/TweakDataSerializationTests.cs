@@ -99,6 +99,11 @@ public static class TweakDataSerializationTests
         RunTest("BackCompat PostLoadInit 跟踪 Def 字段", () => testBackCompat_TracksDefField(), ref passed, ref failed);
         RunTest("BackCompat PostLoadInit 跟踪列表类型字段", () => testBackCompat_TracksListFields(), ref passed, ref failed);
         RunTest("BackCompat PostLoadInit 混合类型全部跟踪", () => testBackCompat_TracksAllMixedTypes(), ref passed, ref failed);
+        // ─── ★T1 反破坏红线 ───
+        RunTest("★T1 代际 A + 未动过的列表/ThingFilter 字段 → 不进 _modifiedFieldNames", () => testBackCompat_GenA_UntouchedListFields(), ref passed, ref failed);
+
+        // ─── L0 三态内核判据 ───
+        RunTest("IsEmptyValue 空值判定（ThingFilter 优先于 ICollection）", () => testIsEmptyValue_EmptyRules(), ref passed, ref failed);
 
         Log.Message("[BalanceTweak 测试] 完成.");
         if (failed > 0)
@@ -954,6 +959,69 @@ public static class TweakDataSerializationTests
     }
 
     /// <summary>
+    /// ★T1（反破坏红线）：代际 A 存档（没有 modifiedFieldNames 节点）+ 用户**从未动过**的
+    /// 列表 / Def 字段 ⇒ 绝不能进 _modifiedFieldNames。
+    ///
+    /// 背景：代际 A 的 ExposeList / ExposeDefList / ExposeStringList / ExposeIntList /
+    /// ExposeIngredientFilter 在 LoadingVars 分支里**无条件写 key**（值为 null / 空列表时也写）。
+    /// 旧实现用 `_savedLoadData.ContainsKey` 判定"改过"，于是所有未动过的列表字段都被误标，
+    /// L0 新语义一开就会把它们整片清空 → 旧档数据丢失。这是 A 组的最高风险项。
+    /// </summary>
+    private static void testBackCompat_GenA_UntouchedListFields()
+    {
+        var gene = new GeneData();
+        SetSavedLoadData(gene, new Dictionary<string, object?>
+        {
+            // 未动过的列表字段：key 在、值为 null 或空列表（Expose* 加载分支的必然产物）
+            ["statOffsets"] = null,
+            ["abilities"] = new List<string>(),
+            ["capMods"] = new List<string>(),
+            ["damageFactors"] = null,
+            // 未动过的 Def 字段：ExposeDef 只在非空时才写 key，这里顺带覆盖空串的边角情形
+            ["passionModSkill"] = "",
+        });
+
+        SimulateBackCompatPostLoadInit(gene);
+
+        Assert(!gene.IsFieldModified("statOffsets"), "未动过的 List<StatModifier> statOffsets 不得进 _modifiedFieldNames（红线）");
+        Assert(!gene.IsFieldModified("abilities"), "未动过的 List<AbilityDef> abilities 不得进 _modifiedFieldNames（红线）");
+        Assert(!gene.IsFieldModified("capMods"), "未动过的 List<PawnCapacityModifier> capMods 不得进 _modifiedFieldNames（红线）");
+        Assert(!gene.IsFieldModified("damageFactors"), "未动过的 List<DamageFactor> damageFactors 不得进 _modifiedFieldNames（红线）");
+        Assert(!gene.IsFieldModified("passionModSkill"), "空 defName 的 Def 字段不得进 _modifiedFieldNames");
+        Assert(gene.CountFieldModified() == 0, $"_modifiedFieldNames 应保持为空，实际 {gene.CountFieldModified()} 个");
+
+        // 反向校验：真正改过的字段仍必须被跟踪（别把启发式收过头）
+        var gene2 = new GeneData();
+        SetSavedLoadData(gene2, new Dictionary<string, object?>
+        {
+            ["abilities"] = new List<string> { "EntitySkip" },
+            ["passionModSkill"] = "Shooting",
+        });
+        SimulateBackCompatPostLoadInit(gene2);
+        Assert(gene2.IsFieldModified("abilities"), "非空列表 abilities 必须被跟踪");
+        Assert(gene2.IsFieldModified("passionModSkill"), "有效 defName 的 Def 字段必须被跟踪");
+    }
+
+    /// <summary>
+    /// L0 三态内核的判据 IsEmptyValue：null / 空串 / 空集合 / 无允许项的 ThingFilter 判空；
+    /// 其它一律不判空。ThingFilter 的分支必须早于 ICollection（否则过滤器会被当普通集合误判）。
+    /// </summary>
+    private static void testIsEmptyValue_EmptyRules()
+    {
+        Assert(TweakData.IsEmptyValue(null), "null 应判空");
+        Assert(TweakData.IsEmptyValue(""), "空串应判空");
+        Assert(!TweakData.IsEmptyValue("x"), "非空串不判空");
+        Assert(TweakData.IsEmptyValue(new List<string>()), "空列表应判空");
+        Assert(!TweakData.IsEmptyValue(new List<string> { "a" }), "非空列表不判空");
+        Assert(TweakData.IsEmptyValue(new ThingFilter()), "无允许项的 ThingFilter 应判空");
+        var tf = new ThingFilter();
+        tf.SetAllow(ThingDefOf.Steel, true);
+        Assert(!TweakData.IsEmptyValue(tf), "有允许项的 ThingFilter 不判空");
+        Assert(!TweakData.IsEmptyValue(1f), "值类型不判空");
+        Assert(!TweakData.IsEmptyValue(false), "false 不判空");
+    }
+
+    /// <summary>
     /// 模拟 BackCompat PostLoadInit 阶段的字段跟踪逻辑。
     /// 代码路径与 TweakData.Serialization.cs 中 LoadAllFieldsForBackCompat() 的 PostLoadInit 部分保持一致。
     /// </summary>
@@ -974,8 +1042,9 @@ public static class TweakDataSerializationTests
         {
             if (meta.Attr.DataType != StatColumnConfig.ColumnDataType.Field) continue;
             var value = meta.Field.GetValue(instance);
-            // 必须同时检查 value != null 和 _savedLoadData.ContainsKey
-            if (value != null || savedLoadData?.ContainsKey(meta.Field.Name) == true)
+            // 直接复用真实判据（A1 收紧后：只认"值非 null"或"key 存在且值非空"），
+            // 避免测试里再抄一份逻辑、日后两处漂移。
+            if (TweakData.IsBackCompatModified(value, meta.Field.Name, savedLoadData))
                 instance.MarkFieldModified(meta.Field.Name);
         }
 

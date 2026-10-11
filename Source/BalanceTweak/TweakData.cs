@@ -10,6 +10,17 @@ using static BalanceTweak.TweakDatabase;
 
 namespace BalanceTweak;
 
+/// <summary>
+/// [TweakField] 字段的三态（L0 语义）。
+/// Unset   —— 用户没动过，Apply 时不得写 Def。
+/// Set     —— 用户改过且值为非空，Apply 时写入 Def。
+/// Cleared —— 用户改过但值为空（列表空/过滤器空/字段为 null），Apply 时按字段类别
+///            "清空 Def"（集合）或"还原原值"（标量 / Def 引用）。
+///
+/// 判据只有 <see cref="TweakData{T}._modifiedFieldNames"/> —— 绝不用"值 == null"反推。
+/// </summary>
+public enum FieldState { Unset, Set, Cleared }
+
 public abstract partial class TweakData : IExposable
 {
     public Def? def;
@@ -80,6 +91,36 @@ public abstract partial class TweakData : IExposable
     }
 
     #region 工具方法
+
+    /// <summary>
+    /// 空值判定：null / 空字符串 / 空集合 / 无任何允许项的 ThingFilter。
+    /// 注意 <see cref="ThingFilter"/> 的分支必须排在 ICollection 之前。
+    /// 放在非泛型基类，供 LoadAllFieldsForBackCompat、三态内核与运行期自检共用。
+    /// </summary>
+    public static bool IsEmptyValue(object? v) => v switch
+    {
+        null => true,
+        string s => s.Length == 0,
+        ThingFilter tf => tf.AllowedDefCount == 0,
+        System.Collections.ICollection c => c.Count == 0,
+        _ => false,
+    };
+
+    /// <summary>
+    /// A1 判据：backcompat（代际 A 存档）阶段判定某字段是否算"改过"。
+    ///
+    /// - <paramref name="value"/> 非 null：简单类型（float?/int?/bool? 等）由 ExposeSimple 在
+    ///   LoadingVars 阶段就 SetValue 到字段上了。
+    /// - <paramref name="savedLoadData"/> 命中且值非空：复杂类型（Def / List&lt;&gt; / ThingFilter 等）
+    ///   由 ExposeDef/ExposeList/ExposeStringList/ExposeIntList/ExposeIngredientFilter 在 LoadingVars
+    ///   阶段写进 _savedLoadData（字段本身要等 ResolveDefs 才 SetValue）。
+    ///   这些加载分支**无条件写 key**（值为 null / 空列表时也写），所以这里只认非空值 ——
+    ///   否则会把所有未动过的列表字段误标成"已改"，L0 新语义一开就会被整片清空。
+    /// </summary>
+    internal static bool IsBackCompatModified(object? value, string fieldName,
+        Dictionary<string, object?>? savedLoadData)
+        => value != null
+           || (savedLoadData?.TryGetValue(fieldName, out var saved) == true && !IsEmptyValue(saved));
 
     public static TweakData? GetData(TweakID? id)
     {
