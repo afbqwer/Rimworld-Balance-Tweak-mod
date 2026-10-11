@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ModMetaData>
-  <name>Simple Def Editor</name>
-  <packageId>assssssqwww.BalanceTweak</packageId>
+  <name>Simple Def Editor Dev</name>
+  <packageId>assssssqwww.BalanceTweak.l0</packageId>
   <author>assssssqwww</author>
   <supportedVersions>
     <li>1.6</li>
@@ -24,5 +24,5 @@ Edit game Def data in a datatable within Mod Settings. Supports 20+ Def types in
     <li>vanillaexpanded.vpsycastse</li>
     <li>assssssqwww.ModResearchTweak</li>
   </loadAfter>
-  <modVersion IgnoreIfNoMatchingField="True">1.7.0</modVersion>
+  <modVersion IgnoreIfNoMatchingField="True">1.8.0</modVersion>
 </ModMetaData>
