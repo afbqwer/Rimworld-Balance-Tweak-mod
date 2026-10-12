@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using RimWorld;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -35,7 +34,7 @@ public static class TweakSelfCheck
     private const string Tag = "[BT/SELFCHECK]";
     private const string SnapTag = "[BT/SNAP]";
     private const int MaxWarnPerCheck = 50;
-    private const int MaxSnapLines = 20000;
+    private const int MaxOrigSnapLines = 20000;
     private const int SnapshotLogLines = 200;
 
     private readonly struct R
@@ -158,6 +157,9 @@ public static class TweakSelfCheck
         int checks = 0, issues = 0, printed = 0;
         foreach (var data in Loaded())
         {
+            // def 缺失（Mod 卸载导致 371 条"未找到对应 Def"）的条目无法 Apply：
+            // clone.Apply() 只会对每条刷一行 Log.Error「的def为!」，既测不出幂等性又淹没日志 —— 跳过。
+            if (data.def == null) continue;
             checks++;
             var before = DisplayLines(data);
             if (before.Count == 0) continue;
@@ -265,6 +267,10 @@ public static class TweakSelfCheck
                 if (col.columnDataType != ColumnDataType.Field) continue;
                 if (col.stat != null || col.isSPStat || col.columnType == ColumnStyle.StatModList) continue;
                 if (data.StateOfField(col.fieldName) != FieldState.Unset) continue;
+                // Def 引用字段（如 ProjectileData.damageType）只在"非 tweaked"路径从 def 回填
+                // （SetDef 的 GetProjectileProp 在 tweaked==true 时整段跳过），已改条目的实例侧合法为 null，
+                // 与实例比较必误报；这类字段由 SC4 走探针读真实 def 覆盖，故此处跳过。
+                if (col.GetRawValue(data) is Def || col.GetRawValue(orig) is Def) continue;
 
                 checks++;
                 string now = col.GetString(data) ?? "";
@@ -304,28 +310,41 @@ public static class TweakSelfCheck
     ///   与 <c>[BT/MIGRATE]</c> dry-run 报告逐条对照。</item>
     /// </list>
     /// 跨运行比较用 <see cref="DiffSnapshots"/>。
+    ///
+    /// <b>顺序：先 user 后 orig；只有 orig 会被 <see cref="MaxOrigSnapLines"/> 截断。</b>
+    /// 只有 <c>src=user</c> 的 <c>state</c> 列会随灰度开关变化（灰度关把 Cleared 退化成 Unset，
+    /// 见 <see cref="TweakData.StateOfField"/>）—— 它是跨运行 diff 的唯一信号，绝不能截断；
+    /// <c>src=orig</c> 灰度无关、运行期稳定，仅作基线，全量可达数十万行，故截断。
+    /// （旧实现 orig 在前且与 user 共用同一个 20000 上限，被 orig 吃满 ⇒ <b>user 一行都写不进</b>，
+    /// diff 恒为空 —— 这是本次修掉的假阴性。）
     /// </summary>
     public static int SnapshotAll()
     {
-        var sb = new StringBuilder();
-        int n = 0;
-        foreach (var data in SnapshotTargets())
-        {
-            string src = data.Value;
-            foreach (var col in data.Key.AllColumn)
+        var lines = new List<string>();
+
+        // user（已存修改）在前：跨运行 / 灰度开关唯一会变的信号 —— 全量，绝不截断。
+        foreach (var data in Loaded().OrderBy(d => d.id.ToString()))
+            foreach (var col in data.AllColumn)
             {
                 if (col.columnDataType != ColumnDataType.Field) continue;
-                sb.Append(SnapTag).Append(' ').Append(src).Append(' ')
-                  .Append(data.Key.GetType().Name).Append('(').Append(data.Key.id.defName).Append(") | ")
-                  .Append(col.fieldName).Append(" | ")
-                  .Append(data.Key.StateOfField(col.fieldName)).Append(" | ")
-                  .Append(col.GetString(data.Key) ?? "").Append('\n');
-                if (++n >= MaxSnapLines) break;
+                lines.Add(SnapLine(data, "user", col));
             }
-            if (n >= MaxSnapLines) break;
+
+        // orig（原始库）在后：灰度无关、运行期稳定，仅作基线 —— 超 MaxOrigSnapLines 截断。
+        int nOrig = 0;
+        foreach (var data in TweakDatabase.AllOriginals.Values.OrderBy(d => d.id.ToString()))
+        {
+            if (nOrig >= MaxOrigSnapLines) break;
+            foreach (var col in data.AllColumn)
+            {
+                if (col.columnDataType != ColumnDataType.Field) continue;
+                if (nOrig >= MaxOrigSnapLines) break;
+                lines.Add(SnapLine(data, "orig", col));
+                nOrig++;
+            }
         }
 
-        string text = sb.ToString();
+        string text = string.Join("\n", lines);
         string file = Path.Combine(GenFilePaths.ConfigFolderPath,
             $"BalanceTweak_Snapshot_v{formatVersion}_{DateTime.Now:yyyyMMdd_HHmmss}"
             + $"{(clearedSemanticsEnabled ? "_grayOn" : "_grayOff")}.txt");
@@ -333,20 +352,15 @@ public static class TweakSelfCheck
         catch (Exception e) { Log.Error($"{SnapTag} 写盘失败：{file}: {e.Message}"); }
 
         // 全量进文件，日志只给头部 —— 否则每次启动都要把上万行灌进 Player.log。
-        string head = string.Join("\n", text.Split('\n').Take(SnapshotLogLines));
-        Log.Message($"{SnapTag} 共 {n} 行（src=orig 为原始库、src=user 为已存修改）。\n{head}"
+        string head = string.Join("\n", lines.Take(SnapshotLogLines));
+        Log.Message($"{SnapTag} 共 {lines.Count} 行（src=user 已存修改在前、不截断；src=orig 原始库基线截断 {nOrig}/{MaxOrigSnapLines}）。\n{head}"
                   + $"\n{SnapTag} 已落盘：{file}（跨运行 diff：TweakSelfCheck.DiffSnapshots(before, after)）");
-        return n;
+        return lines.Count;
     }
 
-    /// <summary>快照目标：原始库（src=orig）+ 已存修改（src=user），按 id 排序保证跨运行可 diff。</summary>
-    private static IEnumerable<KeyValuePair<TweakData, string>> SnapshotTargets()
-    {
-        foreach (var data in TweakDatabase.AllOriginals.Values.OrderBy(d => d.id.ToString()))
-            yield return new KeyValuePair<TweakData, string>(data, "orig");
-        foreach (var data in Loaded().OrderBy(d => d.id.ToString()))
-            yield return new KeyValuePair<TweakData, string>(data, "user");
-    }
+    private static string SnapLine(TweakData data, string src, StatColumnConfig col)
+        => $"{SnapTag} {src} {data.GetType().Name}({data.id.defName}) | {col.fieldName} | "
+         + $"{data.StateOfField(col.fieldName)} | {col.GetString(data) ?? ""}";
 
     /// <summary>
     /// 跨运行 diff：逐行比较两份快照文件，打印"状态/值发生变化"的字段清单与计数。
