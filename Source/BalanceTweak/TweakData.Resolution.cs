@@ -60,7 +60,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// L0 自检用（运行期字段，不序列化）：ResolveDefs 末尾记下当前显式清空的字段名。
     /// 这些字段的语义是 Cleared，Apply 之后必须仍为空 —— 若被 SetDef / GenValues 的 <c>??=</c>
     /// 回填了，就是漏加守卫（见 Docs/NullSemantics_L0_Plan.md §4.2，由 SC2 校验）。
-    /// 判据不依赖灰度开关：与灰度无关地、这些字段本来就该保持空。
+    /// 判据只看显式清空集合：这些字段本来就该保持空。
     /// </summary>
     private void RecordClearedSnapshot()
     {

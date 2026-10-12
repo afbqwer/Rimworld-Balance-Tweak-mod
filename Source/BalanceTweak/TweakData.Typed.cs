@@ -110,8 +110,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
                     //   ① forceResetStats：一次重置，需清掉 def 上的脏数据，防 Phase 3 把脏值回读进字段；
                     //   ② L0 Cleared：用户主动清空该列表，语义即为"把 def 上的对应列表也清掉"
                     //      —— 与 Phase 2 对单个 StatDef 字段的"value==null ⇒ 移除"对齐。
-                    // 判据用 StateOf(f)==Cleared 而非裸 IsFieldModified：灰度关闭时 Cleared 退化为
-                    // Unset，本分支不触发，行为与旧版逐字段一致（红线 #1 / #11）。
+                    // 判据用 StateOf(f)==Cleared 而非裸 IsFieldModified：Cleared 只由显式清空写入，
+                    // 未显式清空的空列表不会走到这里（Reset 的脏数据由 forceResetStats 兜）。
                     if (forceResetStats || StateOf(meta.Field.Name) == FieldState.Cleared)
                     {
                         anyWrite = true;
@@ -334,13 +334,11 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
 
     /// <summary>
     /// 字段三态。判据是两个显式集合（Set=<see cref="_modifiedFieldNames"/>，Cleared=<see cref="_clearedFieldNames"/>），
-    /// <b>绝不用"值 == null / 值为空"反推</b> —— 迁移期被批量标记的空值字段不能再被误判成清空。
-    /// 灰度关闭时 Cleared 退化为 Unset（开关关 = 不启用清空语义）。
+    /// <b>绝不用"值 == null / 值为空"反推</b> —— Cleared 只由编辑器的清空动作（<see cref="MarkFieldCleared"/>）写入。
     /// </summary>
     protected FieldState StateOf(string f)
     {
-        if (_clearedFieldNames.Contains(f))
-            return clearedSemanticsEnabled ? FieldState.Cleared : FieldState.Unset;
+        if (_clearedFieldNames.Contains(f)) return FieldState.Cleared;
 
         return _modifiedFieldNames.Contains(f) && !IsEmptyValue(RawVal(f))
             ? FieldState.Set : FieldState.Unset;
@@ -411,14 +409,15 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     }
 
     /// <summary>
-    /// string 目标。注意与 <see cref="ApplyV{TV}"/> 的区别：字符串的"空"在旧版里是<b>非 null 的空串</b>，
-    /// 旧代码判据是 <c>!= null</c>（空串照样写）⇒ 灰度关时必须照写，否则与旧版不逐字段一致（红线 #11）。
-    /// 灰度开且"已改且值为空串"时按 <see cref="FieldState.Cleared"/> 处理（还原原值）。
+    /// string 目标。与 <see cref="ApplyV{TV}"/> 的区别：字符串的"空"在旧版里是<b>非 null 的空串</b>，
+    /// 旧代码判据是 <c>!= null</c>（空串照样写）⇒ 非 Cleared 时照写，保持与旧版逐字段一致。
+    /// <see cref="FieldState.Cleared"/> ⇒ 还原原值（判据只看显式清空集合，不再用"值为空 + 已改"反推）。
+    /// 编辑器不对 String 列开放清空，故 Cleared 分支通常只出现在程序化 / 测试场景。
     /// </summary>
     protected internal void ApplyS(string f, Action<string> set)
     {
         if (RawVal(f) is not string s) return;
-        if (clearedSemanticsEnabled && s.Length == 0 && IsFieldModified(f)) { Revert(f, set); return; }
+        if (StateOf(f) == FieldState.Cleared) { Revert(f, set); return; }
         set(s);
     }
 

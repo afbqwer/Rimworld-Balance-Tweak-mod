@@ -16,8 +16,7 @@ namespace BalanceTweak;
 public static class TweakDataSerializationTests
 {
     static TweakDataSerializationTests(){
-        // 取消注释以在游戏启动时运行测试
-        //LongEventHandler.QueueLongEvent(RunSerializationTests, "BalanceTweak testing", doAsynchronously: false, null);
+        LongEventHandler.QueueLongEvent(RunSerializationTests, "BalanceTweak testing", doAsynchronously: false, null);
     }
 
     private static void RunSerializationTests()
@@ -107,14 +106,14 @@ public static class TweakDataSerializationTests
 
         // ─── B 组：Resolve 显式置空 + Apply 门控 ───
         RunTest("★B1 已改但空 → ResolveList 显式置空（Cleared）", () => testB1_ResolveList_ExplicitClear(), ref passed, ref failed);
-        RunTest("B 灰度关 = 旧行为（未改字段不触发 setter）", () => testB_GrayOff_OldBehavior(), ref passed, ref failed);
-        RunTest("B 列表/可空 Cleared → setter 收到 null", () => testB_GrayOn_ClearedSetsNull(), ref passed, ref failed);
-        RunTest("B 标量/Def/string Cleared → 还原原值", () => testB_GrayOn_ClearedReverts(), ref passed, ref failed);
+        RunTest("B 未改字段不触发 setter（旧行为）", () => testB_UnsetNotWritten(), ref passed, ref failed);
+        RunTest("B 列表/可空 Cleared → setter 收到 null", () => testB_ClearedSetsNull(), ref passed, ref failed);
+        RunTest("B 标量/Def/string Cleared → 还原原值", () => testB_ClearedReverts(), ref passed, ref failed);
         RunTest("B 原值缺席 → 保持现状 + 不抛异常（Revert 兜底）", () => testB_RevertFallback(), ref passed, ref failed);
 
         // ─── C 组：三态接线 / 自检 ───
-        RunTest("C 跨类型三态入口 StateOfField（灰度关/开）", () => testC_StateOfField_CrossType(), ref passed, ref failed);
-        RunTest("★T8 EqualsData 三态（灰度关比旧行为一致，灰度开保护意图）", () => testC_EqualsData_ThreeState(), ref passed, ref failed);
+        RunTest("C 跨类型三态入口 StateOfField", () => testC_StateOfField_CrossType(), ref passed, ref failed);
+        RunTest("★T8 EqualsData 三态（状态不同即视为已改，保护清空意图）", () => testC_EqualsData_ThreeState(), ref passed, ref failed);
         RunTest("★SC2 复活检测判据（未回填不报，回填必报）", () => testC_SC2_RevivedDetection(), ref passed, ref failed);
         RunTest("★T11 自检 RunAll 不抛异常", () => testC_SelfCheck_RunAll_NoThrow(), ref passed, ref failed);
 
@@ -1054,70 +1053,56 @@ public static class TweakDataSerializationTests
     }
 
     /// <summary>
-    /// 灰度关闭 = 旧行为：未改字段不触发 setter；已改非空 → 写入；已改但空 → Cleared 退化为 Unset（不写）。
+    /// 未改字段不触发 setter；已改非空 → 写入；"已改但值空"（未显式清空）⇒ 退化为 Unset，不写。
+    /// ApplyS 兼容旧版判据（非 null 即照写）：空串在未 Cleared 时仍照写。
     /// </summary>
-    private static void testB_GrayOff_OldBehavior()
+    private static void testB_UnsetNotWritten()
     {
-        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
-        BalanceTweakSettings.clearedSemanticsEnabled = false;
-        try
-        {
-            var g1 = new GeneData();
-            bool called = false, listCalled = false;
-            g1.ApplyV<float>("selectionWeight", v => called = true);
-            g1.ApplyL<StatModifier>("statOffsets", v => listCalled = true);
-            Assert(!called && !listCalled, "灰度关：未改字段不应触发 setter（旧行为）");
+        var g1 = new GeneData();
+        bool called = false, listCalled = false;
+        g1.ApplyV<float>("selectionWeight", v => called = true);
+        g1.ApplyL<StatModifier>("statOffsets", v => listCalled = true);
+        Assert(!called && !listCalled, "未改字段不应触发 setter");
 
-            var g2 = new GeneData { selectionWeight = 3f };
-            g2.MarkFieldModified("selectionWeight");
-            float captured = 0f;
-            g2.ApplyV<float>("selectionWeight", v => captured = v);
-            Assert(Math.Abs(captured - 3f) < 0.001f, "灰度关：已改非空字段应写入");
+        var g2 = new GeneData { selectionWeight = 3f };
+        g2.MarkFieldModified("selectionWeight");
+        float captured = 0f;
+        g2.ApplyV<float>("selectionWeight", v => captured = v);
+        Assert(Math.Abs(captured - 3f) < 0.001f, "已改非空字段应写入");
 
-            var g3 = new GeneData { selectionWeight = null };
-            g3.MarkFieldModified("selectionWeight");
-            bool called3 = false;
-            g3.ApplyV<float>("selectionWeight", v => called3 = true);
-            Assert(!called3, "灰度关：已改但空 ⇒ Cleared 退化为 Unset，不写（旧行为）");
+        var g3 = new GeneData { selectionWeight = null };
+        g3.MarkFieldModified("selectionWeight");
+        bool called3 = false;
+        g3.ApplyV<float>("selectionWeight", v => called3 = true);
+        Assert(!called3, "已改但值空（未显式清空）⇒ Unset，不写");
 
-            // ApplyS 兼容红线 #11：空串在灰度关时仍照写（旧代码判据是 != null）
-            var g4 = new GeneData { defLabel = "" };
-            g4.MarkFieldModified("defLabel");
-            string? capS = null; bool calledS = false;
-            g4.ApplyS("defLabel", v => { capS = v; calledS = true; });
-            Assert(calledS && capS == "", "灰度关：空串仍照写（与旧版 != null 一致）");
-        }
-        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+        var g4 = new GeneData { defLabel = "" };
+        g4.MarkFieldModified("defLabel");
+        string? capS = null; bool calledS = false;
+        g4.ApplyS("defLabel", v => { capS = v; calledS = true; });
+        Assert(calledS && capS == "", "空串在未 Cleared 时仍照写（与旧版 != null 一致）");
     }
 
-    /// <summary>灰度开启：集合 / 可空目标 Cleared ⇒ setter 收到 null（清空）。</summary>
-    private static void testB_GrayOn_ClearedSetsNull()
+    /// <summary>集合 / 可空目标 Cleared ⇒ setter 收到 null（清空）。</summary>
+    private static void testB_ClearedSetsNull()
     {
-        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
-        BalanceTweakSettings.clearedSemanticsEnabled = true;
-        try
-        {
-            var g1 = new GeneData();
-            g1.statOffsets = null; // 用户清空
-            g1.MarkFieldCleared("statOffsets");
-            List<StatModifier>? capL = new(); bool calledL = false;
-            g1.ApplyL<StatModifier>("statOffsets", v => { capL = v; calledL = true; });
-            Assert(calledL && capL == null, "灰度开：列表 Cleared ⇒ setter 收到 null（清空）");
+        var g1 = new GeneData();
+        g1.statOffsets = null; // 用户清空
+        g1.MarkFieldCleared("statOffsets");
+        List<StatModifier>? capL = new(); bool calledL = false;
+        g1.ApplyL<StatModifier>("statOffsets", v => { capL = v; calledL = true; });
+        Assert(calledL && capL == null, "列表 Cleared ⇒ setter 收到 null（清空）");
 
-            var g2 = new GeneData { selectionWeight = null };
-            g2.MarkFieldCleared("selectionWeight");
-            float? capN = 1f; bool calledN = false;
-            g2.ApplyN<float>("selectionWeight", v => { capN = v; calledN = true; });
-            Assert(calledN && capN == null, "灰度开：可空目标 Cleared ⇒ setter 收到 null");
-        }
-        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+        var g2 = new GeneData { selectionWeight = null };
+        g2.MarkFieldCleared("selectionWeight");
+        float? capN = 1f; bool calledN = false;
+        g2.ApplyN<float>("selectionWeight", v => { capN = v; calledN = true; });
+        Assert(calledN && capN == null, "可空目标 Cleared ⇒ setter 收到 null");
     }
 
-    /// <summary>灰度开启：标量 / Def 引用 / string 的 Cleared ⇒ 还原 GetOriginal(id) 的同字段原值。</summary>
-    private static void testB_GrayOn_ClearedReverts()
+    /// <summary>标量 / Def 引用 / string 的 Cleared ⇒ 还原 GetOriginal(id) 的同字段原值。</summary>
+    private static void testB_ClearedReverts()
     {
-        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
-        BalanceTweakSettings.clearedSemanticsEnabled = true;
         var id = new TweakData.TweakID("__BT_Test_Original__", BalanceTweakSettings.SettingType.Gene);
         try
         {
@@ -1131,102 +1116,61 @@ public static class TweakDataSerializationTests
             g1.MarkFieldCleared("passionModSkill");
             SkillDef? capD = null; bool calledD = false;
             g1.ApplyD<SkillDef>("passionModSkill", v => { capD = v; calledD = true; });
-            Assert(calledD && capD == orig.passionModSkill, "灰度开：Def 引用 Cleared ⇒ 还原原引用");
+            Assert(calledD && capD == orig.passionModSkill, "Def 引用 Cleared ⇒ 还原原引用");
 
             var g2 = new GeneData { id = id, selectionWeight = null };
             g2.MarkFieldCleared("selectionWeight");
             float capV = 0f; bool calledV = false;
             g2.ApplyV<float>("selectionWeight", v => { capV = v; calledV = true; });
-            Assert(calledV && Math.Abs(capV - 7f) < 0.001f, "灰度开：标量 Cleared ⇒ 还原原值");
+            Assert(calledV && Math.Abs(capV - 7f) < 0.001f, "标量 Cleared ⇒ 还原原值");
 
             var g3 = new GeneData { id = id, defLabel = "" };
             g3.MarkFieldCleared("defLabel");
             string? capS = null; bool calledS = false;
             g3.ApplyS("defLabel", v => { capS = v; calledS = true; });
-            Assert(calledS && capS == "OrigLabel", "灰度开：空串 Cleared ⇒ 还原原字符串");
+            Assert(calledS && capS == "OrigLabel", "string Cleared ⇒ 还原原字符串");
         }
-        finally
-        {
-            TweakDatabase.AllOriginals.Remove(id);
-            BalanceTweakSettings.clearedSemanticsEnabled = origin;
-        }
+        finally { TweakDatabase.AllOriginals.Remove(id); }
     }
 
     /// <summary>原值缺席（老档 / 原始数据被换掉）：保持现状、不抛异常、不写坏值（Revert 兜底）。</summary>
     private static void testB_RevertFallback()
     {
-        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
-        BalanceTweakSettings.clearedSemanticsEnabled = true;
         var id = new TweakData.TweakID("__BT_Test_NoOriginal__", BalanceTweakSettings.SettingType.Gene);
-        try
-        {
-            TweakDatabase.AllOriginals.Remove(id); // 确保无原值
-            var g = new GeneData { id = id, selectionWeight = null };
-            g.MarkFieldCleared("selectionWeight");
-            bool called = false;
-            g.ApplyV<float>("selectionWeight", v => called = true); // 不应抛异常
-            Assert(!called, "原值缺席：保持现状、不写、不抛异常");
-        }
-        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+        TweakDatabase.AllOriginals.Remove(id); // 确保无原值
+        var g = new GeneData { id = id, selectionWeight = null };
+        g.MarkFieldCleared("selectionWeight");
+        bool called = false;
+        g.ApplyV<float>("selectionWeight", v => called = true); // 不应抛异常
+        Assert(!called, "原值缺席：保持现状、不写、不抛异常");
     }
 
-    // ═══════════════════════ C 组：版本戳 / 迁移 / 三态 / 自检 ═══════════════════════
+    // ═══════════════════════ C 组：三态 / 自检 ═══════════════════════
 
-    /// <summary>
-    /// 跨类型只读入口 StateOfField（dry-run 与自检都走它）：
-    /// Cleared 只来自显式清空集合；灰度关退化为 Unset，灰度开才是 Cleared。
-    /// </summary>
+    /// <summary>跨类型只读入口 StateOfField：Cleared 只来自显式清空集合。</summary>
     private static void testC_StateOfField_CrossType()
     {
-        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
-        try
-        {
-            var g = new GeneData { selectionWeight = null };
-            g.MarkFieldCleared("selectionWeight");
+        var g = new GeneData { selectionWeight = null };
+        g.MarkFieldCleared("selectionWeight");
+        Assert(g.StateOfField("selectionWeight") == FieldState.Cleared, "显式清空 ⇒ Cleared");
+        Assert(g.StateOfField("biostatMet") == FieldState.Unset, "未改字段 ⇒ Unset");
 
-            BalanceTweakSettings.clearedSemanticsEnabled = false;
-            Assert(g.StateOfField("selectionWeight") == FieldState.Unset,
-                "灰度关：已改但空 ⇒ 退化为 Unset（旧行为）");
-            Assert(g.StateOfField("biostatMet") == FieldState.Unset,
-                "灰度关：未改字段 ⇒ Unset");
-
-            BalanceTweakSettings.clearedSemanticsEnabled = true;
-            Assert(g.StateOfField("selectionWeight") == FieldState.Cleared,
-                "灰度开：已改但空 ⇒ Cleared");
-            Assert(g.StateOfField("biostatMet") == FieldState.Unset,
-                "灰度开：未改字段仍为 Unset");
-
-            var g2 = new GeneData { selectionWeight = 2f };
-            g2.MarkFieldModified("selectionWeight");
-            Assert(g2.StateOfField("selectionWeight") == FieldState.Set,
-                "灰度开：已改且非空 ⇒ Set");
-        }
-        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+        var g2 = new GeneData { selectionWeight = 2f };
+        g2.MarkFieldModified("selectionWeight");
+        Assert(g2.StateOfField("selectionWeight") == FieldState.Set, "已改且非空 ⇒ Set");
     }
 
     /// <summary>
-    /// ★T8：EqualsData 的三态处理。
-    /// 灰度关：只比值 —— 与旧实现逐字段一致（值相同即视为"未改"，可被重置流程回收）。
-    /// 灰度开：先比状态 —— 状态不同（Set vs Unset）即视为"已改"，别把修改/清空意图误删。
+    /// ★T8：EqualsData 先比状态、再比值 —— 状态不同（Set vs Unset）即视为"已改"，
+    /// 保护用户的修改/清空意图不被重置流程误删。
     /// </summary>
     private static void testC_EqualsData_ThreeState()
     {
-        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
-        try
-        {
-            var modified = new GeneData { selectionWeight = 1f };
-            modified.MarkFieldModified("selectionWeight");
-            var untouched = new GeneData { selectionWeight = 1f };
-
-            BalanceTweakSettings.clearedSemanticsEnabled = false;
-            Assert(modified.EqualsData(untouched),
-                "灰度关：值相同 ⇒ 视为未改（旧行为，重置流程可回收该条）");
-
-            BalanceTweakSettings.clearedSemanticsEnabled = true;
-            Assert(!modified.EqualsData(untouched),
-                "灰度开：Set vs Unset ⇒ 视为已改（保护用户的修改/清空意图不被误删）");
-        }
-        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+        var modified = new GeneData { selectionWeight = 1f };
+        modified.MarkFieldModified("selectionWeight");
+        var untouched = new GeneData { selectionWeight = 1f };
+        Assert(!modified.EqualsData(untouched),
+            "Set vs Unset ⇒ 视为已改（值虽相同，仍保护用户意图）");
     }
 
     /// <summary>

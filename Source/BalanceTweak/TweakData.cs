@@ -19,8 +19,8 @@ namespace BalanceTweak;
 ///
 /// 判据是两个显式集合：<see cref="TweakData{T}._modifiedFieldNames"/>（Set）
 /// 与 <see cref="TweakData{T}._clearedFieldNames"/>（Cleared），互斥。
-/// <b>绝不用"值 == null / 值为空"反推</b> —— 否则迁移期被批量标记为"已改"的空值字段
-/// 会在灰度开启后被整片误清空（见 Docs/NullSemantics_L0_Plan.md）。
+/// <b>绝不用"值 == null / 值为空"反推</b> —— 否则历史数据里被批量标记为"已改"的空值字段
+/// 会被整片误清空（见 Docs/NullSemantics_L0_Plan.md）。
 /// </summary>
 public enum FieldState { Unset, Set, Cleared }
 
@@ -232,11 +232,9 @@ public abstract partial class TweakData : IExposable
     {
         foreach (var c in AllColumn)
         {
-            // L0 三态：灰度开启时先比状态、再比值。
-            // 否则"Cleared 字段的值恰好与原值相同"会被判成"未改"，
+            // 三态：先比状态、再比值。否则"Cleared 字段的值恰好与原值相同"会被判成"未改"，
             // 让 ResetSingleItem / ResetSelectedColumn 误删用户的清空意图。
-            // 灰度关闭时不比状态 —— 与旧实现逐字段一致（反破坏红线 #11）。
-            if (clearedSemanticsEnabled && StateOfField(c.fieldName) != other.StateOfField(c.fieldName))
+            if (StateOfField(c.fieldName) != other.StateOfField(c.fieldName))
                 return false;
             if (!ValuesEqual(c.GetRawValue(this), c.GetRawValue(other)))
                 return false;

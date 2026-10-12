@@ -77,13 +77,6 @@ public class GeneralSettingsWindow : Window
         }
         curY += ButtonHeight + SectionPadding;
 
-        // === L0 三态语义（灰度开关） ===
-        DrawSectionHeader(ref curY, inRect.width, "MST.ExperimentalSection".Translate().RawText);
-        Rect l0Rect = new(10f, curY, inRect.width - 20f, RowHeight);
-        Widgets.CheckboxLabeled(l0Rect, "MST.clearedSemantics".Translate().RawText, ref clearedSemanticsEnabled);
-        TooltipHandler.TipRegion(l0Rect, "MST.clearedSemanticsTip".Translate().RawText);
-        curY += RowHeight + SectionPadding;
-
         // === 数据清理 ===
         DrawSectionHeader(ref curY, inRect.width, "MST.DataCleanup".Translate().RawText);
 

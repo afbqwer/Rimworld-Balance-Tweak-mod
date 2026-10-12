@@ -189,9 +189,6 @@
     <MST.MainWindowSize>主窗口大小</MST.MainWindowSize>
     <MST.MainWindowWidth>窗口宽度</MST.MainWindowWidth>
     <MST.MainWindowHeight>窗口高度</MST.MainWindowHeight>
-    <MST.ExperimentalSection>实验性语义</MST.ExperimentalSection>
-    <MST.clearedSemantics>启用 L0 clear 语义（清空字段生效）</MST.clearedSemantics>
-    <MST.clearedSemanticsTip>关闭（默认）= 旧行为：把字段值清空不会影响 Def 上的原值。\n开启 = 三态语义：已改且为空 = 「清空」，列表/过滤器清掉 Def 上的对应项，标量/Def 引用还原原值。\n开启前请先在 Player.log 里核对 [BT/MIGRATE] dry-run 报告（列出将清空/还原的字段）。勾选后请关闭本窗口保存设置，再重启游戏生效。</MST.clearedSemanticsTip>
     <MST.abilities>能力</MST.abilities>
     <MST.abilitiesComment>该定义赋予角色的能力列表。</MST.abilitiesComment>
     <MST.activityStartingRangeMax>活跃上限</MST.activityStartingRangeMax>

@@ -24,10 +24,10 @@ namespace BalanceTweak;
 public static class TweakSelfCheck
 {
 #if DEBUG
-    /// <summary>灰度期在 Debug 构建里强制开启；发布版默认关闭（零性能开销）。</summary>
+    /// <summary>Debug 构建里强制开启；发布版默认关闭（零性能开销）。</summary>
     public static bool selfCheckEnabled = true;
 #else
-    /// <summary>灰度期在 Debug 构建里强制开启；发布版默认关闭（零性能开销）。</summary>
+    /// <summary>Debug 构建里强制开启；发布版默认关闭（零性能开销）。</summary>
     public static bool selfCheckEnabled = false;
 #endif
 
@@ -62,7 +62,7 @@ public static class TweakSelfCheck
         r += Guard("SC6", SC6_Snapshot);
 
         if (r.Issues == 0)
-            Log.Message($"{Tag} SC1–SC6 全部通过（共 {r.Checks} 项检查，gray={clearedSemanticsEnabled}）。");
+            Log.Message($"{Tag} SC1–SC6 全部通过（共 {r.Checks} 项检查）。");
         else
             Log.Warning($"{Tag} SC1–SC6 完成：检查 {r.Checks} 项，异常 {r.Issues} 项（详见上方 [BT/SELFCHECK] 警告）。");
     }
@@ -111,12 +111,12 @@ public static class TweakSelfCheck
                 bool mod = data.IsFieldModified(f);
                 bool empty = IsEmptyValue(col.GetRawValue(data));
                 FieldState expected = cleared
-                    ? (clearedSemanticsEnabled ? FieldState.Cleared : FieldState.Unset)
+                    ? FieldState.Cleared
                     : (mod && !empty ? FieldState.Set : FieldState.Unset);
                 if (actual != expected)
                 {
                     Warn("SC1", $"{data.id} 字段 {f}: 实际 {actual}，期望 {expected}"
-                             + $"（cleared={cleared}, modified={mod}, empty={empty}, gray={clearedSemanticsEnabled}）", ref issues, printed++);
+                             + $"（cleared={cleared}, modified={mod}, empty={empty}）", ref issues, printed++);
                 }
             }
         }
@@ -305,24 +305,22 @@ public static class TweakSelfCheck
     ///
     /// 用法（= 全字段自动化回归，替代手测）：
     /// <list type="number">
-    /// <item><b>旧版本</b>跑一次 → A；</item>
-    /// <item><b>新版本（关闭灰度）</b>跑一次 → B；<b>A 与 B 必须逐行一致</b>（回归基线，验证无回归）；</item>
-    /// <item><b>新版本（开启灰度）</b>跑一次 → C；B vs C 的差异 = 本次升级的<b>实际影响面</b>。</item>
+    /// <item><b>改动前</b>跑一次 → A；</item>
+    /// <item><b>改动后</b>跑一次 → B；<b>A 与 B 的差异 = 本次改动的实际影响面</b>（无差异 = 无回归）。</item>
     /// </list>
     /// 跨运行比较用 <see cref="DiffSnapshots"/>。
     ///
     /// <b>顺序：先 user 后 orig；只有 orig 会被 <see cref="MaxOrigSnapLines"/> 截断。</b>
-    /// 只有 <c>src=user</c> 的 <c>state</c> 列会随灰度开关变化（灰度关把 Cleared 退化成 Unset，
-    /// 见 <see cref="TweakData.StateOfField"/>）—— 它是跨运行 diff 的唯一信号，绝不能截断；
-    /// <c>src=orig</c> 灰度无关、运行期稳定，仅作基线，全量可达数十万行，故截断。
+    /// <c>src=user</c> 是已存修改的 <c>state</c> + 值，是跨运行 diff 的唯一信号，绝不能截断；
+    /// <c>src=orig</c> 是原始库基线、运行期稳定，全量可达数十万行，故截断。
     /// （旧实现 orig 在前且与 user 共用同一个 20000 上限，被 orig 吃满 ⇒ <b>user 一行都写不进</b>，
-    /// diff 恒为空 —— 这是本次修掉的假阴性。）
+    /// diff 恒为空 —— 这是早先修掉的假阴性。）
     /// </summary>
     public static int SnapshotAll()
     {
         var lines = new List<string>();
 
-        // user（已存修改）在前：跨运行 / 灰度开关唯一会变的信号 —— 全量，绝不截断。
+        // user（已存修改）在前：跨运行 diff 的唯一信号 —— 全量，绝不截断。
         foreach (var data in Loaded().OrderBy(d => d.id.ToString()))
             foreach (var col in data.AllColumn)
             {
@@ -330,7 +328,7 @@ public static class TweakSelfCheck
                 lines.Add(SnapLine(data, "user", col));
             }
 
-        // orig（原始库）在后：灰度无关、运行期稳定，仅作基线 —— 超 MaxOrigSnapLines 截断。
+        // orig（原始库）在后：运行期稳定，仅作基线 —— 超 MaxOrigSnapLines 截断。
         int nOrig = 0;
         foreach (var data in TweakDatabase.AllOriginals.Values.OrderBy(d => d.id.ToString()))
         {
@@ -346,8 +344,7 @@ public static class TweakSelfCheck
 
         string text = string.Join("\n", lines);
         string file = Path.Combine(GenFilePaths.ConfigFolderPath,
-            $"BalanceTweak_Snapshot_{DateTime.Now:yyyyMMdd_HHmmss}"
-            + $"{(clearedSemanticsEnabled ? "_grayOn" : "_grayOff")}.txt");
+            $"BalanceTweak_Snapshot_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
         try { File.WriteAllText(file, text); }
         catch (Exception e) { Log.Error($"{SnapTag} 写盘失败：{file}: {e.Message}"); }
 

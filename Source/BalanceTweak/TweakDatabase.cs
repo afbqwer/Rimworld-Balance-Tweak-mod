@@ -439,7 +439,7 @@ public static partial class TweakDatabase
         var report = string.Join("\n", timings);
         Log.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {elapsedMs:F1}ms");
 
-        // C3：运行期自检（SC1–SC6）。灰度期在 Debug 构建里强制开启；发布版默认关闭（零开销）。
+        // C3：运行期自检（SC1–SC6）。Debug 构建里强制开启；发布版默认关闭（零开销）。
         TweakSelfCheck.RunAll();
     }
 

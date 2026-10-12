@@ -244,8 +244,11 @@ class BiomeData : TweakData<BiomeData>
         ApplyL<BiomeDiseaseRecord>(nameof(diseases), v => { if (diseasesField != null) diseasesField.SetValue(def, v); });
         ApplyL<WeatherCommonalityRecord>(nameof(baseWeatherCommonalities), v => def.baseWeatherCommonalities = v);
 
-        bool fishTouched = freshwaterCommon != null || freshwaterUncommon != null
-            || saltwaterCommon != null || saltwaterUncommon != null || rareCatchesSetMaker != null;
+        bool fishTouched = StateOf(nameof(freshwaterCommon)) != FieldState.Unset
+            || StateOf(nameof(freshwaterUncommon)) != FieldState.Unset
+            || StateOf(nameof(saltwaterCommon)) != FieldState.Unset
+            || StateOf(nameof(saltwaterUncommon)) != FieldState.Unset
+            || StateOf(nameof(rareCatchesSetMaker)) != FieldState.Unset;
         if (fishTouched)
         {
             def.fishTypes ??= new BiomeFishTypes();
@@ -273,8 +276,12 @@ class BiomeData : TweakData<BiomeData>
         ApplyD<TerrainDef>(nameof(coastalBeachTerrain), v => def.coastalBeachTerrain = v);
         ApplyD<TerrainDef>(nameof(lakeBeachTerrain), v => def.lakeBeachTerrain = v);
 
-        if (wildPlants != null || wildAnimals != null || coastalWildAnimals != null || pollutionWildAnimals != null
-            || diseases != null || fishTouched)
+        if (StateOf(nameof(wildPlants)) != FieldState.Unset
+            || StateOf(nameof(wildAnimals)) != FieldState.Unset
+            || StateOf(nameof(coastalWildAnimals)) != FieldState.Unset
+            || StateOf(nameof(pollutionWildAnimals)) != FieldState.Unset
+            || StateOf(nameof(diseases)) != FieldState.Unset
+            || fishTouched)
         {
             InvalidateBiomeCaches(def);
         }

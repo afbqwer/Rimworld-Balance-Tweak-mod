@@ -32,15 +32,6 @@ public partial class BalanceTweakSettings : ModSettings
     // 静态数据
     public static Dictionary<TweakID, TweakData> tweakDatas = new();
 
-    /// <summary>
-    /// L0 三态语义灰度开关（已接到「总体设置」窗口，<b>随 Mod 设置持久化</b>）。
-    /// false（默认）= 旧行为：空值视同"未设置"，Def 上的原值不动（Cleared 退化为 Unset）。
-    /// true        = 新语义：已改且为空 = Cleared，集合清空 Def、标量/Def 引用还原原值。
-    /// 因为 <see cref="TweakDatabase.Init"/> 在启动时就已跑完，勾选后必须**重启**才生效 ——
-    /// 所以这项必须落盘：否则重启又回到默认的 false，开关形同虚设（见 §10.5 偏差 #11）。
-    /// </summary>
-    public static bool clearedSemanticsEnabled = false;
-
     public static Dictionary<SettingType, Dictionary<TweakID, TweakData>> cachedData = new();
     public static HashSet<TweakID> pinnedIds = new();
 
@@ -183,10 +174,6 @@ public partial class BalanceTweakSettings : ModSettings
     #region 数据存储
     public override void ExposeData()
     {
-        // 灰度开关必须落盘：Init() 在启动时就跑完，勾选后要重启才生效 ——
-        // 不落盘的话重启又回到默认 false，开关形同虚设。
-        // 同样靠"旧版 mod 读到未知节点会忽略"成立（对红线 #7 的有意偏离，见 §10.5 偏差 #11）。
-        Scribe_Values.Look(ref clearedSemanticsEnabled, "clearedSemanticsEnabled", false);
         Scribe_Collections.Look(ref tweakDatas, "tweakDatas", LookMode.Deep);
         // 序列化 hiddenColumnIds (按 SettingType 分组)
         List<string>? hiddenColumnIdsFlat = null;

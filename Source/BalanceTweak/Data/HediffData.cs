@@ -429,7 +429,7 @@ class HediffData : TweakData<HediffData>, ISubItemHost
         // GetsPermanent Comp toggle
         // 注意：hasGetsPermanent / becomePermanentChanceFactor 在 SetDef 里恒被回填为非空（见本文件 ~310-319），
         // 故旧代码 `hasGetsPermanent.HasValue` 恒真、下面的 else-if 是死分支。改用 StateOf 判"用户是否真的动过"，
-        // 未动过时走统一分支（因子按 ApplyV 自我门控），灰度关时与旧版终态一致。
+        // 未动过时走统一分支（因子按 ApplyV 自我门控）。
         void ApplyBecomePermanentFactor() => ApplyV<float>(nameof(becomePermanentChanceFactor), v =>
         {
             if (def.CompProps<HediffCompProperties_GetsPermanent>() is HediffCompProperties_GetsPermanent gp)
