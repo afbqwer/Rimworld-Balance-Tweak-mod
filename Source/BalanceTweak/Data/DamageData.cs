@@ -177,49 +177,49 @@ class DamageData : TweakData<DamageData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defaultDamage.HasValue) { def.defaultDamage = defaultDamage.Value; }
-        if (defaultArmorPenetration.HasValue) { def.defaultArmorPenetration = defaultArmorPenetration.Value; }
-        if (defaultStoppingPower.HasValue) { def.defaultStoppingPower = defaultStoppingPower.Value; }
-        if (minDamageToFragment.HasValue) { def.minDamageToFragment = minDamageToFragment.Value; }
-        if (scaleDamageToBuildingsBasedOnFlammability.HasValue) { def.scaleDamageToBuildingsBasedOnFlammability = scaleDamageToBuildingsBasedOnFlammability.Value; }
-        if (buildingDamageFactor.HasValue) { def.buildingDamageFactor = buildingDamageFactor.Value; }
-        if (buildingDamageFactorPassable.HasValue) { def.buildingDamageFactorPassable = buildingDamageFactorPassable.Value; }
-        if (buildingDamageFactorImpassable.HasValue) { def.buildingDamageFactorImpassable = buildingDamageFactorImpassable.Value; }
-        if (plantDamageFactor.HasValue) { def.plantDamageFactor = plantDamageFactor.Value; }
-        if (corpseDamageFactor.HasValue) { def.corpseDamageFactor = corpseDamageFactor.Value; }
-        if (harmsHealth.HasValue) { def.harmsHealth = harmsHealth.Value; }
-        if (makesBlood.HasValue) { def.makesBlood = makesBlood.Value; }
-        if (isRanged.HasValue) { def.isRanged = isRanged.Value; }
-        if (execution.HasValue) { def.execution = execution.Value; }
-        if (ignoreShields.HasValue) { def.ignoreShields = ignoreShields.Value; }
-        if (harmAllLayersUntilOutside.HasValue) { def.harmAllLayersUntilOutside = harmAllLayersUntilOutside.Value; }
-        if (overkillPctToDestroyPart.HasValue) { def.overkillPctToDestroyPart = overkillPctToDestroyPart.Value; }
-        if (causeStun.HasValue) { def.causeStun = causeStun.Value; }
-        if (stunAdaptationTicks.HasValue) { def.stunAdaptationTicks = stunAdaptationTicks.Value; }
-        if (constantStunDurationTicks.HasValue) { def.constantStunDurationTicks = constantStunDurationTicks.Value; }
-        if (stunResistStat != null) { def.stunResistStat = stunResistStat; }
-        if (bluntStunDuration.HasValue) { def.bluntStunDuration = bluntStunDuration.Value; }
-        if (armorCategory != null) { def.armorCategory = armorCategory; }
-        if (hediff != null) { def.hediff = hediff; }
-        if (hediffSkin != null) { def.hediffSkin = hediffSkin; }
-        if (hediffSolid != null) { def.hediffSolid = hediffSolid; }
-        if (cutExtraTargetsCurve != null) { def.cutExtraTargetsCurve = cutExtraTargetsCurve; }
-        if (bluntStunChancePerDamagePctOfCorePartToHeadCurve != null) { def.bluntStunChancePerDamagePctOfCorePartToHeadCurve = bluntStunChancePerDamagePctOfCorePartToHeadCurve; }
-        if (bluntStunChancePerDamagePctOfCorePartToBodyCurve != null) { def.bluntStunChancePerDamagePctOfCorePartToBodyCurve = bluntStunChancePerDamagePctOfCorePartToBodyCurve; }
-        if (stabChanceOfForcedInternal.HasValue) { def.stabChanceOfForcedInternal = stabChanceOfForcedInternal.Value; }
-        if (cutCleaveBonus.HasValue) { def.cutCleaveBonus = cutCleaveBonus.Value; }
-        if (bluntInnerHitChance.HasValue) { def.bluntInnerHitChance = bluntInnerHitChance.Value; }
-        if (bluntInnerHitDamageFractionToConvert.HasValue) { def.bluntInnerHitDamageFractionToConvert = bluntInnerHitDamageFractionToConvert.Value; }
-        if (bluntInnerHitDamageFractionToAdd.HasValue) { def.bluntInnerHitDamageFractionToAdd = bluntInnerHitDamageFractionToAdd.Value; }
-        if (scratchSplitPercentage.HasValue) { def.scratchSplitPercentage = scratchSplitPercentage.Value; }
-        if (isExplosive.HasValue) { def.isExplosive = isExplosive.Value; }
-        if (explosionAffectOutsidePartsOnly.HasValue) { def.explosionAffectOutsidePartsOnly = explosionAffectOutsidePartsOnly.Value; }
-        if (explosionHeatEnergyPerCell.HasValue) { def.explosionHeatEnergyPerCell = explosionHeatEnergyPerCell.Value; }
-        if (expolosionPropagationSpeed.HasValue) { def.expolosionPropagationSpeed = expolosionPropagationSpeed.Value; }
-        if (explosionInteriorCellCountMultiplier.HasValue) { def.explosionInteriorCellCountMultiplier = explosionInteriorCellCountMultiplier.Value; }
-        if (explosionInteriorCellDistanceMultiplier.HasValue) { def.explosionInteriorCellDistanceMultiplier = explosionInteriorCellDistanceMultiplier.Value; }
-        if (igniteChanceByTargetFlammability != null) { def.igniteChanceByTargetFlammability = igniteChanceByTargetFlammability; }
-        if (igniteCellChance.HasValue) { def.igniteCellChance = igniteCellChance.Value; }
+        ApplyV<int>(nameof(defaultDamage), v => def.defaultDamage = v);
+        ApplyV<float>(nameof(defaultArmorPenetration), v => def.defaultArmorPenetration = v);
+        ApplyV<float>(nameof(defaultStoppingPower), v => def.defaultStoppingPower = v);
+        ApplyV<int>(nameof(minDamageToFragment), v => def.minDamageToFragment = v);
+        ApplyV<bool>(nameof(scaleDamageToBuildingsBasedOnFlammability), v => def.scaleDamageToBuildingsBasedOnFlammability = v);
+        ApplyV<float>(nameof(buildingDamageFactor), v => def.buildingDamageFactor = v);
+        ApplyV<float>(nameof(buildingDamageFactorPassable), v => def.buildingDamageFactorPassable = v);
+        ApplyV<float>(nameof(buildingDamageFactorImpassable), v => def.buildingDamageFactorImpassable = v);
+        ApplyV<float>(nameof(plantDamageFactor), v => def.plantDamageFactor = v);
+        ApplyV<float>(nameof(corpseDamageFactor), v => def.corpseDamageFactor = v);
+        ApplyV<bool>(nameof(harmsHealth), v => def.harmsHealth = v);
+        ApplyV<bool>(nameof(makesBlood), v => def.makesBlood = v);
+        ApplyV<bool>(nameof(isRanged), v => def.isRanged = v);
+        ApplyV<bool>(nameof(execution), v => def.execution = v);
+        ApplyV<bool>(nameof(ignoreShields), v => def.ignoreShields = v);
+        ApplyV<bool>(nameof(harmAllLayersUntilOutside), v => def.harmAllLayersUntilOutside = v);
+        ApplyV<FloatRange>(nameof(overkillPctToDestroyPart), v => def.overkillPctToDestroyPart = v);
+        ApplyV<bool>(nameof(causeStun), v => def.causeStun = v);
+        ApplyV<int>(nameof(stunAdaptationTicks), v => def.stunAdaptationTicks = v);
+        ApplyV<int>(nameof(constantStunDurationTicks), v => def.constantStunDurationTicks = v);
+        ApplyD<StatDef>(nameof(stunResistStat), v => def.stunResistStat = v);
+        ApplyV<float>(nameof(bluntStunDuration), v => def.bluntStunDuration = v);
+        ApplyD<DamageArmorCategoryDef>(nameof(armorCategory), v => def.armorCategory = v);
+        ApplyD<HediffDef>(nameof(hediff), v => def.hediff = v);
+        ApplyD<HediffDef>(nameof(hediffSkin), v => def.hediffSkin = v);
+        ApplyD<HediffDef>(nameof(hediffSolid), v => def.hediffSolid = v);
+        ApplyV<SimpleCurve>(nameof(cutExtraTargetsCurve), v => def.cutExtraTargetsCurve = v);
+        ApplyV<SimpleCurve>(nameof(bluntStunChancePerDamagePctOfCorePartToHeadCurve), v => def.bluntStunChancePerDamagePctOfCorePartToHeadCurve = v);
+        ApplyV<SimpleCurve>(nameof(bluntStunChancePerDamagePctOfCorePartToBodyCurve), v => def.bluntStunChancePerDamagePctOfCorePartToBodyCurve = v);
+        ApplyV<float>(nameof(stabChanceOfForcedInternal), v => def.stabChanceOfForcedInternal = v);
+        ApplyV<float>(nameof(cutCleaveBonus), v => def.cutCleaveBonus = v);
+        ApplyV<float>(nameof(bluntInnerHitChance), v => def.bluntInnerHitChance = v);
+        ApplyV<FloatRange>(nameof(bluntInnerHitDamageFractionToConvert), v => def.bluntInnerHitDamageFractionToConvert = v);
+        ApplyV<FloatRange>(nameof(bluntInnerHitDamageFractionToAdd), v => def.bluntInnerHitDamageFractionToAdd = v);
+        ApplyV<float>(nameof(scratchSplitPercentage), v => def.scratchSplitPercentage = v);
+        ApplyV<bool>(nameof(isExplosive), v => def.isExplosive = v);
+        ApplyV<bool>(nameof(explosionAffectOutsidePartsOnly), v => def.explosionAffectOutsidePartsOnly = v);
+        ApplyV<float>(nameof(explosionHeatEnergyPerCell), v => def.explosionHeatEnergyPerCell = v);
+        ApplyV<float>(nameof(expolosionPropagationSpeed), v => def.expolosionPropagationSpeed = v);
+        ApplyV<float>(nameof(explosionInteriorCellCountMultiplier), v => def.explosionInteriorCellCountMultiplier = v);
+        ApplyV<float>(nameof(explosionInteriorCellDistanceMultiplier), v => def.explosionInteriorCellDistanceMultiplier = v);
+        ApplyV<SimpleCurve>(nameof(igniteChanceByTargetFlammability), v => def.igniteChanceByTargetFlammability = v);
+        ApplyV<float>(nameof(igniteCellChance), v => def.igniteCellChance = v);
     }
 
     // 类型枚举和类型字符串

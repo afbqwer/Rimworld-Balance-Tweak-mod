@@ -101,8 +101,8 @@ public class RecipeProcessHelper
                 dst.countNeeded = src.countNeeded;
             }
         }
-        if (data.ticks.HasValue) { pd.ticks = data.ticks.Value; }
-        if (data.ticksQuality != null) { pd.ticksQuality = data.ticksQuality; }
+        data.ApplyV<int>(nameof(data.ticks), v => pd.ticks = v);
+        data.ApplyL<int>(nameof(data.ticksQuality), v => pd.ticksQuality = v);
         if (data.processResults != null && pd.results != null)
         {
             int count = Math.Min(data.processResults.Count, pd.results.Count);
@@ -114,13 +114,13 @@ public class RecipeProcessHelper
                 dst.count = src.count;
             }
         }
-        if (data.isLightDependingProcess.HasValue) { pd.isLightDependingProcess = data.isLightDependingProcess.Value; }
-        if (data.minLight.HasValue) { pd.minLight = data.minLight.Value; }
-        if (data.maxLight.HasValue) { pd.maxLight = data.maxLight.Value; }
-        if (data.temperatureRuinable.HasValue) { pd.temperatureRuinable = data.temperatureRuinable.Value; }
-        if (data.minSafeTemperature.HasValue) { pd.minSafeTemperature = data.minSafeTemperature.Value; }
-        if (data.maxSafeTemperature.HasValue) { pd.maxSafeTemperature = data.maxSafeTemperature.Value; }
-        if (data.maxOutputCount.HasValue) { pd.maxOutputCount = data.maxOutputCount.Value; }
+        data.ApplyV<bool>(nameof(data.isLightDependingProcess), v => pd.isLightDependingProcess = v);
+        data.ApplyV<float>(nameof(data.minLight), v => pd.minLight = v);
+        data.ApplyV<float>(nameof(data.maxLight), v => pd.maxLight = v);
+        data.ApplyV<bool>(nameof(data.temperatureRuinable), v => pd.temperatureRuinable = v);
+        data.ApplyV<float>(nameof(data.minSafeTemperature), v => pd.minSafeTemperature = v);
+        data.ApplyV<float>(nameof(data.maxSafeTemperature), v => pd.maxSafeTemperature = v);
+        data.ApplyV<float>(nameof(data.maxOutputCount), v => pd.maxOutputCount = v);
         return true;
     }
 

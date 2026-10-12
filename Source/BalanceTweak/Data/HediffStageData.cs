@@ -234,13 +234,13 @@ class HediffStageData : TweakData<HediffStageData>
             statOffsetEffectMultiplier ??= stage.statOffsetEffectMultiplier;
             statFactorEffectMultiplier ??= stage.statFactorEffectMultiplier;
             capacityFactorEffectMultiplier ??= stage.capacityFactorEffectMultiplier;
-            statOffsets ??= stage.statOffsets;
-            statFactors ??= stage.statFactors;
-            capMods ??= stage.capMods;
-            damageFactors ??= stage.damageFactors;
-            enablesNeeds ??= stage.enablesNeeds;
-            disablesNeeds ??= stage.disablesNeeds;
-            makeImmuneTo ??= stage.makeImmuneTo;
+            if (!IsFieldModified(nameof(statOffsets))) statOffsets ??= stage.statOffsets;
+            if (!IsFieldModified(nameof(statFactors))) statFactors ??= stage.statFactors;
+            if (!IsFieldModified(nameof(capMods))) capMods ??= stage.capMods;
+            if (!IsFieldModified(nameof(damageFactors))) damageFactors ??= stage.damageFactors;
+            if (!IsFieldModified(nameof(enablesNeeds))) enablesNeeds ??= stage.enablesNeeds;
+            if (!IsFieldModified(nameof(disablesNeeds))) disablesNeeds ??= stage.disablesNeeds;
+            if (!IsFieldModified(nameof(makeImmuneTo))) makeImmuneTo ??= stage.makeImmuneTo;
 
             if (_hediffGiverRefs != null)
             {
@@ -250,7 +250,7 @@ class HediffStageData : TweakData<HediffStageData>
             }
             else
             {
-                hediffGivers ??= stage.hediffGivers?.ToList();
+                if (!IsFieldModified(nameof(hediffGivers))) hediffGivers ??= stage.hediffGivers?.ToList();
             }
 
             if (_mentalStateGiverRefs != null)
@@ -279,7 +279,7 @@ class HediffStageData : TweakData<HediffStageData>
             }
             else
             {
-                mentalStateGivers ??= stage.mentalStateGivers?.Select(m => new MentalStateGiver
+                if (!IsFieldModified(nameof(mentalStateGivers))) mentalStateGivers ??= stage.mentalStateGivers?.Select(m => new MentalStateGiver
                 {
                     mentalState = m.mentalState,
                     mtbDays = m.mtbDays
@@ -296,48 +296,48 @@ class HediffStageData : TweakData<HediffStageData>
             Log.Error($"[BalanceTweak]{this}的stage为{this.stage}!");
             return;
         }
-        if (subdefLabel != null) stage.label = subdefLabel;
-        if (subdefOverrideLabel != null) stage.overrideLabel = subdefOverrideLabel;
+        ApplyS(nameof(subdefLabel), v => stage.label = v);
+        ApplyS(nameof(subdefOverrideLabel), v => stage.overrideLabel = v);
         if (stage != null)
         {
-            if (becomeVisible.HasValue) { stage.becomeVisible = becomeVisible.Value; }
-            if (lifeThreatening.HasValue) { stage.lifeThreatening = lifeThreatening.Value; }
-            if (painFactor.HasValue) { stage.painFactor = painFactor.Value; }
-            if (painOffset.HasValue) { stage.painOffset = painOffset.Value; }
-            if (totalBleedFactor.HasValue) { stage.totalBleedFactor = totalBleedFactor.Value; }
-            if (naturalHealingFactor.HasValue) { stage.naturalHealingFactor = naturalHealingFactor.Value; }
-            if (vomitMtbDays.HasValue) { stage.vomitMtbDays = vomitMtbDays.Value; }
-            if (deathMtbDays.HasValue) { stage.deathMtbDays = deathMtbDays.Value; }
-            if (hungerRateFactor.HasValue) { stage.hungerRateFactor = hungerRateFactor.Value; }
-            if (hungerRateFactorOffset.HasValue) { stage.hungerRateFactorOffset = hungerRateFactorOffset.Value; }
-            if (restFallFactor.HasValue) { stage.restFallFactor = restFallFactor.Value; }
-            if (restFallFactorOffset.HasValue) { stage.restFallFactorOffset = restFallFactorOffset.Value; }
-            if (fertilityFactor.HasValue) { stage.fertilityFactor = fertilityFactor.Value; }
-            if (severityGainFactor.HasValue) { stage.severityGainFactor = severityGainFactor.Value; }
-            if (partEfficiencyOffset.HasValue) { stage.partEfficiencyOffset = partEfficiencyOffset.Value; }
-            if (mentalBreakMtbDays.HasValue) { stage.mentalBreakMtbDays = mentalBreakMtbDays.Value; }
-            if (blocksMentalBreaks.HasValue) { stage.blocksMentalBreaks = blocksMentalBreaks.Value; }
-            if (blocksInspirations.HasValue) { stage.blocksInspirations = blocksInspirations.Value; }
-            if (overrideMoodBase.HasValue) { stage.overrideMoodBase = overrideMoodBase.Value; }
-            if (opinionOfOthersFactor.HasValue) { stage.opinionOfOthersFactor = opinionOfOthersFactor.Value; }
-            if (forgetMemoryThoughtMtbDays.HasValue) { stage.forgetMemoryThoughtMtbDays = forgetMemoryThoughtMtbDays.Value; }
-            if (blocksSleeping.HasValue) { stage.blocksSleeping = blocksSleeping.Value; }
-            if (preventVacuumBurns.HasValue) { stage.preventVacuumBurns = preventVacuumBurns.Value; }
-            if (regeneration.HasValue) { stage.regeneration = regeneration.Value; }
-            if (showRegenerationStat.HasValue) { stage.showRegenerationStat = showRegenerationStat.Value; }
-            if (multiplyStatChangesBySeverity.HasValue) { stage.multiplyStatChangesBySeverity = multiplyStatChangesBySeverity.Value; }
-            if (statOffsetEffectMultiplier != null) { stage.statOffsetEffectMultiplier = statOffsetEffectMultiplier; }
-            if (statFactorEffectMultiplier != null) { stage.statFactorEffectMultiplier = statFactorEffectMultiplier; }
-            if (capacityFactorEffectMultiplier != null) { stage.capacityFactorEffectMultiplier = capacityFactorEffectMultiplier; }
-            if (statOffsets != null) { stage.statOffsets = statOffsets; }
-            if (statFactors != null) { stage.statFactors = statFactors; }
-            if (capMods != null) { stage.capMods = capMods; }
-            if (damageFactors != null) { stage.damageFactors = damageFactors; }
-            if (enablesNeeds != null) { stage.enablesNeeds = enablesNeeds; }
-            if (disablesNeeds != null) { stage.disablesNeeds = disablesNeeds; }
-            if (makeImmuneTo != null) { stage.makeImmuneTo = makeImmuneTo; }
-            if (hediffGivers != null) { stage.hediffGivers = hediffGivers; }
-            if (mentalStateGivers != null) { stage.mentalStateGivers = mentalStateGivers; }
+            ApplyV<bool>(nameof(becomeVisible), v => stage.becomeVisible = v);
+            ApplyV<bool>(nameof(lifeThreatening), v => stage.lifeThreatening = v);
+            ApplyV<float>(nameof(painFactor), v => stage.painFactor = v);
+            ApplyV<float>(nameof(painOffset), v => stage.painOffset = v);
+            ApplyV<float>(nameof(totalBleedFactor), v => stage.totalBleedFactor = v);
+            ApplyV<float>(nameof(naturalHealingFactor), v => stage.naturalHealingFactor = v);
+            ApplyV<float>(nameof(vomitMtbDays), v => stage.vomitMtbDays = v);
+            ApplyV<float>(nameof(deathMtbDays), v => stage.deathMtbDays = v);
+            ApplyV<float>(nameof(hungerRateFactor), v => stage.hungerRateFactor = v);
+            ApplyV<float>(nameof(hungerRateFactorOffset), v => stage.hungerRateFactorOffset = v);
+            ApplyV<float>(nameof(restFallFactor), v => stage.restFallFactor = v);
+            ApplyV<float>(nameof(restFallFactorOffset), v => stage.restFallFactorOffset = v);
+            ApplyV<float>(nameof(fertilityFactor), v => stage.fertilityFactor = v);
+            ApplyV<float>(nameof(severityGainFactor), v => stage.severityGainFactor = v);
+            ApplyV<float>(nameof(partEfficiencyOffset), v => stage.partEfficiencyOffset = v);
+            ApplyV<float>(nameof(mentalBreakMtbDays), v => stage.mentalBreakMtbDays = v);
+            ApplyV<bool>(nameof(blocksMentalBreaks), v => stage.blocksMentalBreaks = v);
+            ApplyV<bool>(nameof(blocksInspirations), v => stage.blocksInspirations = v);
+            ApplyV<float>(nameof(overrideMoodBase), v => stage.overrideMoodBase = v);
+            ApplyV<float>(nameof(opinionOfOthersFactor), v => stage.opinionOfOthersFactor = v);
+            ApplyV<float>(nameof(forgetMemoryThoughtMtbDays), v => stage.forgetMemoryThoughtMtbDays = v);
+            ApplyV<bool>(nameof(blocksSleeping), v => stage.blocksSleeping = v);
+            ApplyV<bool>(nameof(preventVacuumBurns), v => stage.preventVacuumBurns = v);
+            ApplyV<float>(nameof(regeneration), v => stage.regeneration = v);
+            ApplyV<bool>(nameof(showRegenerationStat), v => stage.showRegenerationStat = v);
+            ApplyV<bool>(nameof(multiplyStatChangesBySeverity), v => stage.multiplyStatChangesBySeverity = v);
+            ApplyD<StatDef>(nameof(statOffsetEffectMultiplier), v => stage.statOffsetEffectMultiplier = v);
+            ApplyD<StatDef>(nameof(statFactorEffectMultiplier), v => stage.statFactorEffectMultiplier = v);
+            ApplyD<StatDef>(nameof(capacityFactorEffectMultiplier), v => stage.capacityFactorEffectMultiplier = v);
+            ApplyL<StatModifier>(nameof(statOffsets), v => stage.statOffsets = v);
+            ApplyL<StatModifier>(nameof(statFactors), v => stage.statFactors = v);
+            ApplyL<PawnCapacityModifier>(nameof(capMods), v => stage.capMods = v);
+            ApplyL<DamageFactor>(nameof(damageFactors), v => stage.damageFactors = v);
+            ApplyL<NeedDef>(nameof(enablesNeeds), v => stage.enablesNeeds = v);
+            ApplyL<NeedDef>(nameof(disablesNeeds), v => stage.disablesNeeds = v);
+            ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
+            ApplyL<HediffGiver>(nameof(hediffGivers), v => stage.hediffGivers = v);
+            ApplyL<MentalStateGiver>(nameof(mentalStateGivers), v => stage.mentalStateGivers = v);
         }
     }
 

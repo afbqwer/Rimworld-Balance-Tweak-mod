@@ -206,25 +206,25 @@ class ToolData : TweakData<ToolData>
             Log.Error($"[BalanceTweak]{this}的tool为{this.tool}!");
             return;
         }
-        if (damageAmountBase.HasValue) tool.power = damageAmountBase.Value;
-        if (armorPenetrationBase.HasValue) tool.armorPenetration = armorPenetrationBase.Value;
-        if (cooldownTime.HasValue) tool.cooldownTime = cooldownTime.Value;
-        if (tool.capacities?.FirstOrDefault() is ToolCapacityDef tc2 && TweakDatabase.allMeleeVerb.TryGetValue(tc2, out var verb) && damageType != null)
-            verb.meleeDamageDef = damageType;
+        ApplyV<float>(nameof(damageAmountBase), v => tool.power = v);
+        ApplyV<float>(nameof(armorPenetrationBase), v => tool.armorPenetration = v);
+        ApplyV<float>(nameof(cooldownTime), v => tool.cooldownTime = v);
+        if (tool.capacities?.FirstOrDefault() is ToolCapacityDef tc2 && TweakDatabase.allMeleeVerb.TryGetValue(tc2, out var verb))
+            ApplyD<DamageDef>(nameof(damageType), v => verb.meleeDamageDef = v);
         var ex = tool.extraMeleeDamages;
         if (ex != null && ex.Count > 0)
         {
-            if (EXdamageAmountBase.HasValue) { ex[0].amount = EXdamageAmountBase.Value; }
-            if (EXarmorPenetrationBase.HasValue) { ex[0].armorPenetration = EXarmorPenetrationBase.Value; }
-            if (EXchance.HasValue) { ex[0].chance = EXchance.Value; }
-            if (EXdamageType != null) { ex[0].def = EXdamageType; }
+            ApplyV<float>(nameof(EXdamageAmountBase), v => ex[0].amount = v);
+            ApplyV<float>(nameof(EXarmorPenetrationBase), v => ex[0].armorPenetration = v);
+            ApplyV<float>(nameof(EXchance), v => ex[0].chance = v);
+            ApplyD<DamageDef>(nameof(EXdamageType), v => ex[0].def = v);
         }
         if (ex != null && ex.Count > 1)
         {
-            if (EX2damageAmountBase.HasValue) { ex[1].amount = EX2damageAmountBase.Value; }
-            if (EX2armorPenetrationBase.HasValue) { ex[1].armorPenetration = EX2armorPenetrationBase.Value; }
-            if (EX2chance.HasValue) { ex[1].chance = EX2chance.Value; }
-            if (EX2damageType != null) { ex[1].def = EX2damageType; }
+            ApplyV<float>(nameof(EX2damageAmountBase), v => ex[1].amount = v);
+            ApplyV<float>(nameof(EX2armorPenetrationBase), v => ex[1].armorPenetration = v);
+            ApplyV<float>(nameof(EX2chance), v => ex[1].chance = v);
+            ApplyD<DamageDef>(nameof(EX2damageType), v => ex[1].def = v);
         }
         normalarmorPenetrationBase = tool.armorPenetration == -1 ? tool.power * 0.015f : tool.armorPenetration;
         DPS = damageAmountBase / cooldownTime;

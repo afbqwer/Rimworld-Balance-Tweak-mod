@@ -152,11 +152,11 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
 
     private void ApplyWeaponProp(ThingDef def)
     {
-        if (techLevel.HasValue) { def.techLevel = techLevel.Value; }
+        ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
         bool costChanged = false;
-        if (costStuffCount.HasValue) { def.costStuffCount = costStuffCount.Value; costChanged = true; }
-        if (costList != null) { def.costList = costList?.ToList(); costChanged = true; }
-        if (stuffCategories != null) { def.stuffCategories = stuffCategories.ToList(); costChanged = true; }
+        ApplyV<int>(nameof(costStuffCount), v => { def.costStuffCount = v; costChanged = true; });
+        ApplyL<ThingDefCountClass>(nameof(costList), v => { def.costList = v?.ToList(); costChanged = true; });
+        ApplyL<StuffCategoryDef>(nameof(stuffCategories), v => { def.stuffCategories = v?.ToList(); costChanged = true; });
 
         if (costChanged)
         {
@@ -168,22 +168,20 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             CostListCalculator.Reset();
         }
 
-        if (isCompQuality.HasValue)
+        ApplyV<bool>(nameof(isCompQuality), v =>
         {
-            if (isCompQuality.Value == false)
+            if (!v)
             {
                 def.comps.RemoveWhere(c => c.compClass == typeof(CompQuality));
             }
-            else
+            else if (!def.comps.Any(c => c.compClass == typeof(CompQuality)))
             {
-                if (!def.comps.Any(c => c.compClass == typeof(CompQuality)))
-                {
-                    var c = new CompProperties(typeof(CompQuality));
-                    def.comps.Add(c);
-                }
+                def.comps.Add(new CompProperties(typeof(CompQuality)));
             }
-        }
-        if (removeReloadableComp.HasValue && removeReloadableComp.Value)
+        });
+
+        // 移除可重装组件：仅当用户显式设 true（Set 且值为 true）。判据用 StateOf 而非裸 HasValue。
+        if (StateOf(nameof(removeReloadableComp)) == FieldState.Set && (bool)RawVal(nameof(removeReloadableComp))!)
         {
             def.comps.RemoveWhere(c => c is CompProperties_ApparelReloadable);
         }
@@ -192,22 +190,22 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             var reloadable = def.GetCompProperties<CompProperties_ApparelReloadable>();
             if (reloadable != null)
             {
-                if (reloadableAmmoDef != null) reloadable.ammoDef = reloadableAmmoDef;
-                if (reloadableAmmoCountToRefill.HasValue) reloadable.ammoCountToRefill = reloadableAmmoCountToRefill.Value;
-                if (reloadableAmmoCountPerCharge.HasValue) reloadable.ammoCountPerCharge = reloadableAmmoCountPerCharge.Value;
-                if (reloadableBaseReloadTicks.HasValue) reloadable.baseReloadTicks = reloadableBaseReloadTicks.Value;
-                if (reloadableReplenishAfterCooldown.HasValue) reloadable.replenishAfterCooldown = reloadableReplenishAfterCooldown.Value;
-                if (reloadableMaxCharges.HasValue) reloadable.maxCharges = reloadableMaxCharges.Value;
+                ApplyD<ThingDef>(nameof(reloadableAmmoDef), v => reloadable.ammoDef = v);
+                ApplyV<int>(nameof(reloadableAmmoCountToRefill), v => reloadable.ammoCountToRefill = v);
+                ApplyV<int>(nameof(reloadableAmmoCountPerCharge), v => reloadable.ammoCountPerCharge = v);
+                ApplyV<int>(nameof(reloadableBaseReloadTicks), v => reloadable.baseReloadTicks = v);
+                ApplyV<bool>(nameof(reloadableReplenishAfterCooldown), v => reloadable.replenishAfterCooldown = v);
+                ApplyV<int>(nameof(reloadableMaxCharges), v => reloadable.maxCharges = v);
             }
         }
         if (verb != null)
         {
-            if (maxRange.HasValue) { verb.range = maxRange.Value; }
-            if (minRange.HasValue) { verb.minRange = minRange.Value; }
-            if (warmup.HasValue) { verb.warmupTime = warmup.Value; }
-            if (ticksBetweenBurstShots.HasValue) { verb.ticksBetweenBurstShots = ticksBetweenBurstShots.Value; }
-            if (burstShotCount.HasValue) { verb.burstShotCount = burstShotCount.Value; }
-            if (forcedMissRadius.HasValue) { ForcedMissRadius.SetValue(verb, forcedMissRadius.Value); }
+            ApplyV<float>(nameof(maxRange), v => verb.range = v);
+            ApplyV<float>(nameof(minRange), v => verb.minRange = v);
+            ApplyV<float>(nameof(warmup), v => verb.warmupTime = v);
+            ApplyV<int>(nameof(ticksBetweenBurstShots), v => verb.ticksBetweenBurstShots = v);
+            ApplyV<int>(nameof(burstShotCount), v => verb.burstShotCount = v);
+            ApplyV<float>(nameof(forcedMissRadius), v => ForcedMissRadius.SetValue(verb, v));
             var p = (ProjectileData?)GetData(Projectile);
             if (p != null && p.def is ThingDef pdef)
             {
@@ -367,10 +365,10 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         costStuffCount ??= (int?)GetCostStuffCount(this);
         if (def is ThingDef td)
         {
-            costList ??= td.costList;
-            stuffCategories ??= td.stuffCategories;
-            statBases ??= td.statBases;
-            equippedStatOffsets ??= td.equippedStatOffsets;
+            if (!IsFieldModified(nameof(costList))) costList ??= td.costList;
+            if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= td.stuffCategories;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= td.statBases;
+            if (!IsFieldModified(nameof(equippedStatOffsets))) equippedStatOffsets ??= td.equippedStatOffsets;
             var reloadable = td.GetCompProperties<CompProperties_ApparelReloadable>();
             if (reloadable != null)
             {
@@ -392,7 +390,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyDefStats(def);
         ApplyWeaponProp(def);
         GenValues();

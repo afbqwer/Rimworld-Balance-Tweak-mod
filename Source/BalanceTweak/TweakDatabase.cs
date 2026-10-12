@@ -8,6 +8,7 @@ using HarmonyLib;
 using RimWorld;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
+using static BalanceTweak.StatColumnConfig;
 using static BalanceTweak.TweakData;
 
 namespace BalanceTweak;
@@ -320,6 +321,12 @@ public static partial class TweakDatabase
             Log.Warning($"[BalanceTweak] 有 {nullEntryCount} 条已存数据的类型无法识别（数据类被改名或删除？），已跳过。");
         Mark($"已存数据 ResolveDefs ({resolvedCount} 解析/{skipResolveCount} 未解析)");
 
+        // C2：代际识别 + dry-run（只读的"意图预览"）。
+        // 必须在 ResolveDefs 之后、Apply 之前：列表/Def 字段的真实值要等 ResolveDefs 才落到字段上，
+        // 而 Apply 之后它们可能被 SetDef/GenValues 覆盖，那时就不再是"将执行什么"的预览了。
+        bool loadFailed = nullEntryCount > 0 || skipResolveCount > 0;
+        RunMigrationAndDryRun(loadFailed);
+
         var lazy = new List<TweakData>();
         int appliedModified = 0;
         int notFoundCount = 0;
@@ -430,6 +437,99 @@ public static partial class TweakDatabase
 
         var report = string.Join("\n", timings);
         Log.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {elapsedMs:F1}ms");
+
+        // C1：只有全流程无失败才推进版本戳；失败保持 0（迁移幂等、磁盘零改动，下次启动重试）。
+        if (!loadFailed)
+            formatVersion = L0FormatVersion;
+        else
+            Log.Warning($"[BalanceTweak] 本次加载/迁移有失败项，formatVersion 保持 {formatVersion}（下次启动重试迁移）。");
+
+        // C3：运行期自检（SC1–SC6）。灰度期在 Debug 构建里强制开启；发布版默认关闭（零开销）。
+        TweakSelfCheck.RunAll();
+    }
+
+    /// <summary>L0 落盘格式版本（C1）：与 <see cref="BalanceTweakSettings.formatVersion"/> 同步。</summary>
+    public const int L0FormatVersion = 1;
+
+    /// <summary>
+    /// C2 迁移器 + dry-run：识别存档"代际"并打印将受 L0 语义影响的字段清单（<b>只读</b>，不改任何数据）。
+    ///
+    /// 代际判定不看 formatVersion，而看每条已存数据是否走过 backcompat 启发式
+    /// （<see cref="TweakData._backCompatResolved"/>，运行期标志，不序列化）：
+    /// <list type="bullet">
+    /// <item>走过（true）= <b>代际 A</b>：存档没有 <c>modifiedFieldNames</c> 节点，
+    ///   <c>_modifiedFieldNames</c> 由 A1 收紧后的启发式重建（只认非空值，故未动过的列表字段不会被误标）。</item>
+    /// <item>没走过（false）= <b>代际 B</b>：存档自带 <c>modifiedFieldNames</c> 节点，按 L0 新语义加载。</item>
+    /// </list>
+    /// formatVersion 只用来记录"本档是否已被 L0 代码成功处理过一次"。
+    ///
+    /// dry-run 报的是"<b>将</b>执行什么"（意图预览），与 TweakSelfCheck 报的"跑完<b>实际</b>是什么"
+    /// 互为对照（见 Docs/NullSemantics_L0_Plan.md §4.5）。必须在 ResolveDefs 之后调用。
+    /// </summary>
+    internal static void RunMigrationAndDryRun(bool loadFailed)
+    {
+        int genA = 0, genB = 0;
+        foreach (var data in tweakDatas.Values)
+        {
+            if (data == null) continue;
+            if (data._backCompatResolved) genA++;
+            else genB++;
+        }
+        Log.Message($"[BT/MIGRATE] 存档代际：A(无 modifiedFieldNames 节点)={genA} 条，B(有该节点)={genB} 条；"
+                  + $"formatVersion={formatVersion} → {(loadFailed ? "保持 0" : L0FormatVersion.ToString())}");
+
+        int clearCount = 0, revertCount = 0, printed = 0;
+        const int maxPrint = 50;
+        foreach (var data in tweakDatas.Values.Where(d => d != null).OrderBy(d => d!.id.ToString()))
+        {
+            foreach (var col in data!.AllColumn)
+            {
+                if (col.columnDataType != ColumnDataType.Field) continue;
+                string f = col.fieldName;
+                // 只报"已改且为空"——这才是 L0 会动手（清空 / 还原）的字段；判据同样是 _modifiedFieldNames，不是"值 == null"。
+                if (!data.IsFieldModified(f)) continue;
+                if (!IsEmptyValue(col.GetRawValue(data))) continue;
+
+                bool isClear = IsCollectionColumn(col);
+                if (isClear) clearCount++; else revertCount++;
+                if (printed < maxPrint)
+                {
+                    printed++;
+                    Log.Message($"[BT/MIGRATE]   {data.GetType().Name}({data.id.defName}): {f} → "
+                              + $"{(isClear ? "清空" : "还原")}（原 {DescribeOriginal(data, col)}）");
+                }
+            }
+        }
+        Log.Message($"[BT/MIGRATE] dry-run（意图预览，未改动任何数据）：将清空 {clearCount} 项 / 还原 {revertCount} 项"
+                  + $"{(clearCount + revertCount > printed ? $"（仅列出前 {printed} 项）" : "")}");
+        if (!clearedSemanticsEnabled && clearCount + revertCount > 0)
+            Log.Message("[BT/MIGRATE] 灰度开关当前关闭 —— 以上仅为预览；人工核对无误后可在「总体设置」里打开 L0 clear 语义。");
+    }
+
+    /// <summary>集合类字段（List&lt;&gt; / ThingFilter）：Cleared 的语义是"清空"；其余是"还原原值"。</summary>
+    internal static bool IsCollectionColumn(StatColumnConfig col)
+        => col.isListStyle || col.columnType == ColumnStyle.IngredientFilter;
+
+    /// <summary>dry-run 里的"原值"摘要：集合给条数，其余给截断的 ToString。</summary>
+    private static string DescribeOriginal(TweakData data, StatColumnConfig col)
+    {
+        var orig = GetOriginal(data.id);
+        if (orig == null) return "无原值";
+        var v = col.GetRawValue(orig);
+        return v switch
+        {
+            null => "null",
+            // ThingFilter 不是 ICollection，必须排在前面（与 IsEmptyValue 的规则一致）。
+            ThingFilter tf => $"{tf.AllowedDefCount} 项",
+            ICollection c => $"{c.Count} 项",
+            _ => Truncate(v.ToString()),
+        };
+    }
+
+    private static string Truncate(string? s, int max = 20)
+    {
+        if (s == null) return "null";
+        return s.Length > max ? s[..max] + "…" : s;
     }
 
     public static ApparelData? GetApparelDataFromName(string defName)

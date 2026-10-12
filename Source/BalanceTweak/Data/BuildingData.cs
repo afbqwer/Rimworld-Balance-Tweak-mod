@@ -233,12 +233,12 @@ class BuildingData : TweakData<BuildingData>
             fillPercent = d.fillPercent;
             pathCost ??= d.pathCost;
             costStuffCount ??= d.costStuffCount;
-            costList ??= d.costList;
-            stuffCategories ??= d.stuffCategories;
-            researchPrerequisites ??= d.researchPrerequisites;
+            if (!IsFieldModified(nameof(costList))) costList ??= d.costList;
+            if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= d.stuffCategories;
+            if (!IsFieldModified(nameof(researchPrerequisites))) researchPrerequisites ??= d.researchPrerequisites;
             normalMarketValue ??= (float?)GetNormalMarketValue(this);
-            statBases ??= d.statBases;
-            replaceTags ??= d.replaceTags;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(replaceTags))) replaceTags ??= d.replaceTags;
             // 新增 ThingDef 字段
             //passability ??= d.passability;
             constructionSkillPrerequisite ??= d.constructionSkillPrerequisite;
@@ -279,7 +279,7 @@ class BuildingData : TweakData<BuildingData>
                 allowWireConnection ??= d.building.allowWireConnection;
             }
             // ThingDef 直接列表字段
-            recipes ??= d.recipes;
+            if (!IsFieldModified(nameof(recipes))) recipes ??= d.recipes;
 
             foreach (var cp in d.comps)
             {
@@ -362,111 +362,109 @@ class BuildingData : TweakData<BuildingData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyBuildingProp(def);
         ApplyDefStats(def);
     }
 
     private void ApplyBuildingProp(ThingDef def)
     {
-        if (fillPercent.HasValue) { def.fillPercent = fillPercent.Value; }
-        if (costStuffCount.HasValue) { def.costStuffCount = costStuffCount.Value; }
-        if (costList != null) { def.costList = costList; }
-        if (stuffCategories != null) { def.stuffCategories = stuffCategories; }
+        ApplyV<float>(nameof(fillPercent), v => def.fillPercent = v);
+        ApplyV<int>(nameof(costStuffCount), v => def.costStuffCount = v);
+        ApplyL<ThingDefCountClass>(nameof(costList), v => def.costList = v);
+        ApplyL<StuffCategoryDef>(nameof(stuffCategories), v => def.stuffCategories = v);
 
-        if (researchPrerequisites != null) def.researchPrerequisites = researchPrerequisites;
-        if (pathCost.HasValue) def.pathCost = pathCost.Value;
+        ApplyL<ResearchProjectDef>(nameof(researchPrerequisites), v => def.researchPrerequisites = v);
+        ApplyV<int>(nameof(pathCost), v => def.pathCost = v);
         // ThingDef 直接字段写回
         //if (passability.HasValue) def.passability = passability.Value;
-        if (constructionSkillPrerequisite.HasValue) def.constructionSkillPrerequisite = constructionSkillPrerequisite.Value;
-        if (holdsRoof.HasValue) def.holdsRoof = holdsRoof.Value;
-        if (blockLight.HasValue) def.blockLight = blockLight.Value;
-        if (blockWind.HasValue) def.blockWind = blockWind.Value;
-        if (destroyable.HasValue) def.destroyable = destroyable.Value;
-        if (selectable.HasValue) def.selectable = selectable.Value;
-        if (fertility.HasValue) def.fertility = fertility.Value;
-        if (replaceTags != null) def.replaceTags = replaceTags;
+        ApplyV<int>(nameof(constructionSkillPrerequisite), v => def.constructionSkillPrerequisite = v);
+        ApplyV<bool>(nameof(holdsRoof), v => def.holdsRoof = v);
+        ApplyV<bool>(nameof(blockLight), v => def.blockLight = v);
+        ApplyV<bool>(nameof(blockWind), v => def.blockWind = v);
+        ApplyV<bool>(nameof(destroyable), v => def.destroyable = v);
+        ApplyV<bool>(nameof(selectable), v => def.selectable = v);
+        ApplyV<float>(nameof(fertility), v => def.fertility = v);
+        ApplyL<string>(nameof(replaceTags), v => def.replaceTags = v);
         if (def.building != null)
         {
-            if (isTargetable.HasValue) def.building.isTargetable = isTargetable.Value;
-            if (alwaysDeconstructible.HasValue) def.building.alwaysDeconstructible = alwaysDeconstructible.Value;
-            if (alwaysUninstallable.HasValue) def.building.alwaysUninstallable = alwaysUninstallable.Value;
-            if (uninstallWork.HasValue) def.building.uninstallWork = uninstallWork.Value;
-            if (claimable.HasValue) def.building.claimable = claimable.Value;
-            if (repairable.HasValue) def.building.repairable = repairable.Value;
-            if (isAirtight.HasValue) def.building.isAirtight = isAirtight.Value;
-            if (workTableRoomRole != null) def.building.workTableRoomRole = workTableRoomRole;
-            if (workTableNotInRoomRoleFactor.HasValue) def.building.workTableNotInRoomRoleFactor = workTableNotInRoomRoleFactor.Value;
-            if (unpoweredWorkTableWorkSpeedFactor.HasValue) def.building.unpoweredWorkTableWorkSpeedFactor = unpoweredWorkTableWorkSpeedFactor.Value;
+            ApplyV<bool>(nameof(isTargetable), v => def.building.isTargetable = v);
+            ApplyV<bool>(nameof(alwaysDeconstructible), v => def.building.alwaysDeconstructible = v);
+            ApplyV<bool>(nameof(alwaysUninstallable), v => def.building.alwaysUninstallable = v);
+            ApplyV<float>(nameof(uninstallWork), v => def.building.uninstallWork = v);
+            ApplyV<bool>(nameof(claimable), v => def.building.claimable = v);
+            ApplyV<bool>(nameof(repairable), v => def.building.repairable = v);
+            ApplyV<bool>(nameof(isAirtight), v => def.building.isAirtight = v);
+            ApplyD<RoomRoleDef>(nameof(workTableRoomRole), v => def.building.workTableRoomRole = v);
+            ApplyV<float>(nameof(workTableNotInRoomRoleFactor), v => def.building.workTableNotInRoomRoleFactor = v);
+            ApplyV<float>(nameof(unpoweredWorkTableWorkSpeedFactor), v => def.building.unpoweredWorkTableWorkSpeedFactor = v);
             // Door
-            if (canExchangeVacuum.HasValue) def.building.canExchangeVacuum = canExchangeVacuum.Value;
-            if (poweredDoorOpenSpeedFactor.HasValue) def.building.poweredDoorOpenSpeedFactor = poweredDoorOpenSpeedFactor.Value;
-            if (poweredDoorCloseSpeedFactor.HasValue) def.building.poweredDoorCloseSpeedFactor = poweredDoorCloseSpeedFactor.Value;
-            if (unpoweredDoorOpenSpeedFactor.HasValue) def.building.unpoweredDoorOpenSpeedFactor = unpoweredDoorOpenSpeedFactor.Value;
-            if (unpoweredDoorCloseSpeedFactor.HasValue) def.building.unpoweredDoorCloseSpeedFactor = unpoweredDoorCloseSpeedFactor.Value;
+            ApplyV<bool>(nameof(canExchangeVacuum), v => def.building.canExchangeVacuum = v);
+            ApplyV<float>(nameof(poweredDoorOpenSpeedFactor), v => def.building.poweredDoorOpenSpeedFactor = v);
+            ApplyV<float>(nameof(poweredDoorCloseSpeedFactor), v => def.building.poweredDoorCloseSpeedFactor = v);
+            ApplyV<float>(nameof(unpoweredDoorOpenSpeedFactor), v => def.building.unpoweredDoorOpenSpeedFactor = v);
+            ApplyV<float>(nameof(unpoweredDoorCloseSpeedFactor), v => def.building.unpoweredDoorCloseSpeedFactor = v);
             // Bed
-            if (bed_healPerDay.HasValue) def.building.bed_healPerDay = bed_healPerDay.Value;
-            if (bed_maxBodySize.HasValue) def.building.bed_maxBodySize = bed_maxBodySize.Value;
-            if (bed_caravansCanUse.HasValue) def.building.bed_caravansCanUse = bed_caravansCanUse.Value;
+            ApplyV<float>(nameof(bed_healPerDay), v => def.building.bed_healPerDay = v);
+            ApplyV<float>(nameof(bed_maxBodySize), v => def.building.bed_maxBodySize = v);
+            ApplyV<bool>(nameof(bed_caravansCanUse), v => def.building.bed_caravansCanUse = v);
             // Turret
-            if (turretBurstCooldownTime.HasValue) def.building.turretBurstCooldownTime = turretBurstCooldownTime.Value;
-            if (turretInitialCooldownTime.HasValue) def.building.turretInitialCooldownTime = turretInitialCooldownTime.Value;
-            if (combatPower.HasValue) def.building.combatPower = combatPower.Value;
+            ApplyV<float>(nameof(turretBurstCooldownTime), v => def.building.turretBurstCooldownTime = v);
+            ApplyV<float>(nameof(turretInitialCooldownTime), v => def.building.turretInitialCooldownTime = v);
+            ApplyV<float>(nameof(combatPower), v => def.building.combatPower = v);
 
             // Production / Refuelable / Power
-            if (allowWireConnection.HasValue) def.building.allowWireConnection = allowWireConnection.Value;
+            ApplyV<bool>(nameof(allowWireConnection), v => def.building.allowWireConnection = v);
 
             // --- Mineable 字段写入 ---
-            if (mineableThing != null) def.building.mineableThing = mineableThing;
-            if (mineableYield.HasValue) def.building.mineableYield = mineableYield.Value;
-            if (veinMineable.HasValue) def.building.veinMineable = veinMineable.Value;
-            if (mineableNonMinedEfficiency.HasValue) def.building.mineableNonMinedEfficiency = mineableNonMinedEfficiency.Value;
-            if (mineableDropChance.HasValue) def.building.mineableDropChance = mineableDropChance.Value;
-            if (mineableYieldWasteable.HasValue) def.building.mineableYieldWasteable = mineableYieldWasteable.Value;
-            if (mineableScatterCommonality.HasValue) def.building.mineableScatterCommonality = mineableScatterCommonality.Value;
-            if (mineablePreventMeteorite.HasValue) def.building.mineablePreventMeteorite = mineablePreventMeteorite.Value;
-            if (mineablePreventNaturalRockOnSurface.HasValue) def.building.mineablePreventNaturalRockOnSurface = mineablePreventNaturalRockOnSurface.Value;
-            if (isNaturalRock.HasValue) def.building.isNaturalRock = isNaturalRock.Value;
-            if (isResourceRock.HasValue) def.building.isResourceRock = isResourceRock.Value;
+            ApplyD<ThingDef>(nameof(mineableThing), v => def.building.mineableThing = v);
+            ApplyV<int>(nameof(mineableYield), v => def.building.mineableYield = v);
+            ApplyV<bool>(nameof(veinMineable), v => def.building.veinMineable = v);
+            ApplyV<float>(nameof(mineableNonMinedEfficiency), v => def.building.mineableNonMinedEfficiency = v);
+            ApplyV<float>(nameof(mineableDropChance), v => def.building.mineableDropChance = v);
+            ApplyV<bool>(nameof(mineableYieldWasteable), v => def.building.mineableYieldWasteable = v);
+            ApplyV<float>(nameof(mineableScatterCommonality), v => def.building.mineableScatterCommonality = v);
+            ApplyV<bool>(nameof(mineablePreventMeteorite), v => def.building.mineablePreventMeteorite = v);
+            ApplyV<bool>(nameof(mineablePreventNaturalRockOnSurface), v => def.building.mineablePreventNaturalRockOnSurface = v);
+            ApplyV<bool>(nameof(isNaturalRock), v => def.building.isNaturalRock = v);
+            ApplyV<bool>(nameof(isResourceRock), v => def.building.isResourceRock = v);
         }
         // ThingDef 非 building 字段写回
 
-        if (recipes != null) def.recipes = recipes;
+        ApplyL<RecipeDef>(nameof(recipes), v => def.recipes = v);
         if (def is ThingDef d)
         {
             foreach (var cp in d.comps)
             {
                 if (cp is CompProperties_Power cpp)
                 {
-                    if (basePowerConsumption.HasValue) CompPropertiesBasePowerConsumption.SetValue(cpp, basePowerConsumption.Value);
-                    if (shortCircuitInRain.HasValue) cpp.shortCircuitInRain = shortCircuitInRain.Value;
-                    if (transmitsPower.HasValue) cpp.transmitsPower = transmitsPower.Value;
+                    ApplyV<float>(nameof(basePowerConsumption), v => CompPropertiesBasePowerConsumption.SetValue(cpp, v));
+                    ApplyV<bool>(nameof(shortCircuitInRain), v => cpp.shortCircuitInRain = v);
+                    ApplyV<bool>(nameof(transmitsPower), v => cpp.transmitsPower = v);
                 }
                 else if (cp is CompProperties_Explosive ce)
                 {
-                    if (explosionRadius.HasValue) ce.explosiveRadius = explosionRadius.Value;
+                    ApplyV<float>(nameof(explosionRadius), v => ce.explosiveRadius = v);
                 }
                 else if (cp is CompProperties_Refuelable cr)
                 {
-                    if (fuelCapacity.HasValue) cr.fuelCapacity = fuelCapacity.Value;
-                    if (fuelConsumptionRate.HasValue) cr.fuelConsumptionRate = fuelConsumptionRate.Value;
-                    if (fuelMultiplier.HasValue) CompPropertiesfuelMultiplier.SetValue(cr, fuelMultiplier.Value);
+                    ApplyV<float>(nameof(fuelCapacity), v => cr.fuelCapacity = v);
+                    ApplyV<float>(nameof(fuelConsumptionRate), v => cr.fuelConsumptionRate = v);
+                    ApplyV<float>(nameof(fuelMultiplier), v => CompPropertiesfuelMultiplier.SetValue(cr, v));
                 }
                 else if (cp is CompProperties_Studiable studiable)
                 {
-                    if (studiableFrequencyTicks.HasValue) studiable.frequencyTicks = studiableFrequencyTicks.Value;
-                    if (anomalyKnowledge.HasValue) CompPropertiesStudiableAnomalyKnowledge.SetValue(studiable, anomalyKnowledge.Value);
+                    ApplyV<int>(nameof(studiableFrequencyTicks), v => studiable.frequencyTicks = v);
+                    ApplyN<float>(nameof(anomalyKnowledge), v => CompPropertiesStudiableAnomalyKnowledge.SetValue(studiable, v));
                 }
                 else if (cp is CompProperties_Activity activity)
                 {
-                    if (activityStartingRangeMin.HasValue || activityStartingRangeMax.HasValue)
-                    {
-                        activity.startingRange = new FloatRange(
-                            activityStartingRangeMin ?? activity.startingRange.min,
-                            activityStartingRangeMax ?? activity.startingRange.max);
-                    }
-                    if (changePerDayBase.HasValue) activity.changePerDayBase = changePerDayBase.Value;
-                    if (changePerDamage.HasValue) activity.changePerDamage = changePerDamage.Value;
+                    ApplyV<float>(nameof(activityStartingRangeMin),
+                        v => activity.startingRange = new FloatRange(v, activityStartingRangeMax ?? activity.startingRange.max));
+                    ApplyV<float>(nameof(activityStartingRangeMax),
+                        v => activity.startingRange = new FloatRange(activityStartingRangeMin ?? activity.startingRange.min, v));
+                    ApplyV<float>(nameof(changePerDayBase), v => activity.changePerDayBase = v);
+                    ApplyV<float>(nameof(changePerDamage), v => activity.changePerDamage = v);
                 }
                 //else if (cp is CompProperties_HeatPusher chp)
                 //{
@@ -476,20 +474,20 @@ class BuildingData : TweakData<BuildingData>
                 //}
                 else if (cp is CompProperties_Glower glower)
                 {
-                    if (glowRadius.HasValue) glower.glowRadius = glowRadius.Value;
-                    if (overlightRadius.HasValue) glower.overlightRadius = overlightRadius.Value;
+                    ApplyV<float>(nameof(glowRadius), v => glower.glowRadius = v);
+                    ApplyV<float>(nameof(overlightRadius), v => glower.overlightRadius = v);
                 }
                 else if (cp is CompProperties_TempControl temp)
                 {
-                    if (energyPerSecond.HasValue) temp.energyPerSecond = energyPerSecond.Value;
-                    if (defaultTargetTemperature.HasValue) temp.defaultTargetTemperature = defaultTargetTemperature.Value;
-                    if (minTargetTemperature.HasValue) temp.minTargetTemperature = minTargetTemperature.Value;
-                    if (maxTargetTemperature.HasValue) temp.maxTargetTemperature = maxTargetTemperature.Value;
+                    ApplyV<float>(nameof(energyPerSecond), v => temp.energyPerSecond = v);
+                    ApplyV<float>(nameof(defaultTargetTemperature), v => temp.defaultTargetTemperature = v);
+                    ApplyV<float>(nameof(minTargetTemperature), v => temp.minTargetTemperature = v);
+                    ApplyV<float>(nameof(maxTargetTemperature), v => temp.maxTargetTemperature = v);
                 }
                 else if (cp is CompProperties_Schedule schedule)
                 {
-                    if (scheduleStartTime.HasValue) schedule.startTime = scheduleStartTime.Value;
-                    if (scheduleEndTime.HasValue) schedule.endTime = scheduleEndTime.Value;
+                    ApplyV<float>(nameof(scheduleStartTime), v => schedule.startTime = v);
+                    ApplyV<float>(nameof(scheduleEndTime), v => schedule.endTime = v);
                 }
             }
         }

@@ -92,7 +92,7 @@ class BodyPartData : TweakData<BodyPartData>
             if (desc.NullOrEmpty()) { desc = d.defName; }
             searchString = label + d.defName;
             hitPoints ??= d.hitPoints;
-            tags ??= d.tags;
+            if (!IsFieldModified(nameof(tags))) tags ??= d.tags;
             permanentInjuryChanceFactor ??= d.permanentInjuryChanceFactor;
             bleedRate ??= d.bleedRate;
             frostbiteVulnerability ??= d.frostbiteVulnerability;
@@ -109,7 +109,7 @@ class BodyPartData : TweakData<BodyPartData>
             pawnGeneratorCanAmputate ??= d.pawnGeneratorCanAmputate;
             canSuggestAmputation ??= d.canSuggestAmputation;
             forceAlwaysRemovable ??= d.forceAlwaysRemovable;
-            hitChanceFactors ??= d.hitChanceFactors?
+            if (!IsFieldModified(nameof(hitChanceFactors))) hitChanceFactors ??= d.hitChanceFactors?
                 .Select(kv => new DamageFactor { damageDef = kv.Key, factor = kv.Value })
                 .ToList();
         }
@@ -122,32 +122,35 @@ class BodyPartData : TweakData<BodyPartData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) { def.label = defLabel; }
-        if (hitPoints.HasValue) { def.hitPoints = hitPoints.Value; }
-        if (tags != null) { def.tags = tags; }
-        if (permanentInjuryChanceFactor.HasValue) { def.permanentInjuryChanceFactor = permanentInjuryChanceFactor.Value; }
-        if (bleedRate.HasValue) { def.bleedRate = bleedRate.Value; }
-        if (frostbiteVulnerability.HasValue) { def.frostbiteVulnerability = frostbiteVulnerability.Value; }
-        if (skinCovered.HasValue) { SkinCoveredField.SetValue(def, skinCovered.Value); }
-        if (solid.HasValue) { SolidField.SetValue(def, solid.Value); }
-        if (alive.HasValue) { def.alive = alive.Value; }
-        if (delicate.HasValue) { def.delicate = delicate.Value; }
-        if (beautyRelated.HasValue) { def.beautyRelated = beautyRelated.Value; }
-        if (conceptual.HasValue) { def.conceptual = conceptual.Value; }
-        if (socketed.HasValue) { def.socketed = socketed.Value; }
-        if (destroyableByDamage.HasValue) { def.destroyableByDamage = destroyableByDamage.Value; }
-        if (canBeVacuumBurnt.HasValue) { def.canBeVacuumBurnt = canBeVacuumBurnt.Value; }
-        if (canScarify.HasValue) { def.canScarify = canScarify.Value; }
-        if (pawnGeneratorCanAmputate.HasValue) { def.pawnGeneratorCanAmputate = pawnGeneratorCanAmputate.Value; }
-        if (canSuggestAmputation.HasValue) { def.canSuggestAmputation = canSuggestAmputation.Value; }
-        if (forceAlwaysRemovable.HasValue) { def.forceAlwaysRemovable = forceAlwaysRemovable.Value; }
-        if (hitChanceFactors != null)
+        ApplyS(nameof(defLabel), v => def.label = v);
+        ApplyV<int>(nameof(hitPoints), v => def.hitPoints = v);
+        ApplyL<BodyPartTagDef>(nameof(tags), v => def.tags = v);
+        ApplyV<float>(nameof(permanentInjuryChanceFactor), v => def.permanentInjuryChanceFactor = v);
+        ApplyV<float>(nameof(bleedRate), v => def.bleedRate = v);
+        ApplyV<float>(nameof(frostbiteVulnerability), v => def.frostbiteVulnerability = v);
+        ApplyV<bool>(nameof(skinCovered), v => SkinCoveredField.SetValue(def, v));
+        ApplyV<bool>(nameof(solid), v => SolidField.SetValue(def, v));
+        ApplyV<bool>(nameof(alive), v => def.alive = v);
+        ApplyV<bool>(nameof(delicate), v => def.delicate = v);
+        ApplyV<bool>(nameof(beautyRelated), v => def.beautyRelated = v);
+        ApplyV<bool>(nameof(conceptual), v => def.conceptual = v);
+        ApplyV<bool>(nameof(socketed), v => def.socketed = v);
+        ApplyV<bool>(nameof(destroyableByDamage), v => def.destroyableByDamage = v);
+        ApplyV<bool>(nameof(canBeVacuumBurnt), v => def.canBeVacuumBurnt = v);
+        ApplyV<bool>(nameof(canScarify), v => def.canScarify = v);
+        ApplyV<bool>(nameof(pawnGeneratorCanAmputate), v => def.pawnGeneratorCanAmputate = v);
+        ApplyV<bool>(nameof(canSuggestAmputation), v => def.canSuggestAmputation = v);
+        ApplyV<bool>(nameof(forceAlwaysRemovable), v => def.forceAlwaysRemovable = v);
+        ApplyL<DamageFactor>(nameof(hitChanceFactors), v =>
         {
             var dict = new Dictionary<DamageDef, float>();
-            foreach (var f in hitChanceFactors)
-                if (f.damageDef != null) dict[f.damageDef] = f.factor;
+            if (v != null)
+            {
+                foreach (var f in v)
+                    if (f.damageDef != null) dict[f.damageDef] = f.factor;
+            }
             def.hitChanceFactors = dict;
-        }
+        });
     }
 
     public override List<string> TypeStrings => typeStrings;

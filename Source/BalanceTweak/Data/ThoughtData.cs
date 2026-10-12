@@ -171,17 +171,17 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
             minExpectationForNegativeThought ??= d.minExpectationForNegativeThought;
             chemicalDef ??= d.chemicalDef;
             taleDef ??= d.taleDef;
-            replaceThoughts ??= d.replaceThoughts;
-            nullifyingTraits ??= d.nullifyingTraits;
-            neverNullifyIfAnyTrait ??= d.neverNullifyIfAnyTrait;
-            nullifyingTraitDegrees ??= d.nullifyingTraitDegrees;
-            requiredTraits ??= d.requiredTraits;
-            nullifyingGenes ??= d.nullifyingGenes;
-            requiredGenes ??= d.requiredGenes;
-            nullifyingHediffs ??= d.nullifyingHediffs;
-            requiredHediffs ??= d.requiredHediffs;
-            nullifyingPrecepts ??= d.nullifyingPrecepts;
-            nullifyingOwnTales ??= d.nullifyingOwnTales;
+            if (!IsFieldModified(nameof(replaceThoughts))) replaceThoughts ??= d.replaceThoughts;
+            if (!IsFieldModified(nameof(nullifyingTraits))) nullifyingTraits ??= d.nullifyingTraits;
+            if (!IsFieldModified(nameof(neverNullifyIfAnyTrait))) neverNullifyIfAnyTrait ??= d.neverNullifyIfAnyTrait;
+            if (!IsFieldModified(nameof(nullifyingTraitDegrees))) nullifyingTraitDegrees ??= d.nullifyingTraitDegrees;
+            if (!IsFieldModified(nameof(requiredTraits))) requiredTraits ??= d.requiredTraits;
+            if (!IsFieldModified(nameof(nullifyingGenes))) nullifyingGenes ??= d.nullifyingGenes;
+            if (!IsFieldModified(nameof(requiredGenes))) requiredGenes ??= d.requiredGenes;
+            if (!IsFieldModified(nameof(nullifyingHediffs))) nullifyingHediffs ??= d.nullifyingHediffs;
+            if (!IsFieldModified(nameof(requiredHediffs))) requiredHediffs ??= d.requiredHediffs;
+            if (!IsFieldModified(nameof(nullifyingPrecepts))) nullifyingPrecepts ??= d.nullifyingPrecepts;
+            if (!IsFieldModified(nameof(nullifyingOwnTales))) nullifyingOwnTales ??= d.nullifyingOwnTales;
         }
     }
 
@@ -192,48 +192,48 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
-        if (stackLimit.HasValue) { def.stackLimit = stackLimit.Value; }
-        if (stackedEffectMultiplier.HasValue) { def.stackedEffectMultiplier = stackedEffectMultiplier.Value; }
-        if (durationDays.HasValue) { def.durationDays = durationDays.Value; }
-        if (stackLimitForSameOtherPawn.HasValue) { def.stackLimitForSameOtherPawn = stackLimitForSameOtherPawn.Value; }
-        if (lerpMoodToZero.HasValue) { def.lerpMoodToZero = lerpMoodToZero.Value; }
-        if (stagesStack.HasValue) { def.stagesStack = stagesStack.Value; }
-        if (invert.HasValue) { def.invert = invert.Value; }
-        if (validWhileDespawned.HasValue) { def.validWhileDespawned = validWhileDespawned.Value; }
-        if (nullifiedIfNotColonist.HasValue) { def.nullifiedIfNotColonist = nullifiedIfNotColonist.Value; }
-        if (showBubble.HasValue) { def.showBubble = showBubble.Value; }
-        if (ignoreSubhumans.HasValue) { def.ignoreSubhumans = ignoreSubhumans.Value; }
-        if (doNotApplyToQuestLodgers.HasValue) { def.doNotApplyToQuestLodgers = doNotApplyToQuestLodgers.Value; }
-        if (lerpOpinionToZeroAfterDurationPct.HasValue) { def.lerpOpinionToZeroAfterDurationPct = lerpOpinionToZeroAfterDurationPct.Value; }
-        if (maxCumulatedOpinionOffset.HasValue) { def.maxCumulatedOpinionOffset = maxCumulatedOpinionOffset.Value; }
-        if (requiredTraitsDegree.HasValue) { def.requiredTraitsDegree = requiredTraitsDegree.Value; }
-        if (gender.HasValue) { def.gender = gender.Value; }
-        if (developmentalStageFilter.HasValue) { def.developmentalStageFilter = developmentalStageFilter.Value; }
-        if (socialTargetDevelopmentalStageFilter.HasValue) { def.socialTargetDevelopmentalStageFilter = socialTargetDevelopmentalStageFilter.Value; }
-        if (nextThought != null) def.nextThought = nextThought;
-        if (producesMemoryThought != null) def.producesMemoryThought = producesMemoryThought;
-        if (thoughtToMake != null) def.thoughtToMake = thoughtToMake;
-        if (hediff != null) def.hediff = hediff;
-        if (mentalState != null) def.mentalState = mentalState;
-        if (gameCondition != null) def.gameCondition = gameCondition;
-        if (effectMultiplyingStat != null) def.effectMultiplyingStat = effectMultiplyingStat;
-        if (effectMultiplyingStatCurve != null) def.effectMultiplyingStatCurve = effectMultiplyingStatCurve;
-        if (minExpectation != null) def.minExpectation = minExpectation;
-        if (minExpectationForNegativeThought != null) def.minExpectationForNegativeThought = minExpectationForNegativeThought;
-        if (chemicalDef != null) def.chemicalDef = chemicalDef;
-        if (taleDef != null) def.taleDef = taleDef;
-        if (replaceThoughts != null) def.replaceThoughts = replaceThoughts;
-        if (nullifyingTraits != null) def.nullifyingTraits = nullifyingTraits;
-        if (neverNullifyIfAnyTrait != null) def.neverNullifyIfAnyTrait = neverNullifyIfAnyTrait;
-        if (nullifyingTraitDegrees != null) def.nullifyingTraitDegrees = nullifyingTraitDegrees;
-        if (requiredTraits != null) def.requiredTraits = requiredTraits;
-        if (nullifyingGenes != null) def.nullifyingGenes = nullifyingGenes;
-        if (requiredGenes != null) def.requiredGenes = requiredGenes;
-        if (nullifyingHediffs != null) def.nullifyingHediffs = nullifyingHediffs;
-        if (requiredHediffs != null) def.requiredHediffs = requiredHediffs;
-        if (nullifyingPrecepts != null) def.nullifyingPrecepts = nullifyingPrecepts;
-        if (nullifyingOwnTales != null) def.nullifyingOwnTales = nullifyingOwnTales;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyV<int>(nameof(stackLimit), v => def.stackLimit = v);
+        ApplyV<float>(nameof(stackedEffectMultiplier), v => def.stackedEffectMultiplier = v);
+        ApplyV<float>(nameof(durationDays), v => def.durationDays = v);
+        ApplyV<int>(nameof(stackLimitForSameOtherPawn), v => def.stackLimitForSameOtherPawn = v);
+        ApplyV<bool>(nameof(lerpMoodToZero), v => def.lerpMoodToZero = v);
+        ApplyV<bool>(nameof(stagesStack), v => def.stagesStack = v);
+        ApplyV<bool>(nameof(invert), v => def.invert = v);
+        ApplyV<bool>(nameof(validWhileDespawned), v => def.validWhileDespawned = v);
+        ApplyV<bool>(nameof(nullifiedIfNotColonist), v => def.nullifiedIfNotColonist = v);
+        ApplyV<bool>(nameof(showBubble), v => def.showBubble = v);
+        ApplyV<bool>(nameof(ignoreSubhumans), v => def.ignoreSubhumans = v);
+        ApplyV<bool>(nameof(doNotApplyToQuestLodgers), v => def.doNotApplyToQuestLodgers = v);
+        ApplyV<float>(nameof(lerpOpinionToZeroAfterDurationPct), v => def.lerpOpinionToZeroAfterDurationPct = v);
+        ApplyV<float>(nameof(maxCumulatedOpinionOffset), v => def.maxCumulatedOpinionOffset = v);
+        ApplyV<int>(nameof(requiredTraitsDegree), v => def.requiredTraitsDegree = v);
+        ApplyV<Gender>(nameof(gender), v => def.gender = v);
+        ApplyV<DevelopmentalStage>(nameof(developmentalStageFilter), v => def.developmentalStageFilter = v);
+        ApplyV<DevelopmentalStage>(nameof(socialTargetDevelopmentalStageFilter), v => def.socialTargetDevelopmentalStageFilter = v);
+        ApplyD<ThoughtDef>(nameof(nextThought), v => def.nextThought = v);
+        ApplyD<ThoughtDef>(nameof(producesMemoryThought), v => def.producesMemoryThought = v);
+        ApplyD<ThoughtDef>(nameof(thoughtToMake), v => def.thoughtToMake = v);
+        ApplyD<HediffDef>(nameof(hediff), v => def.hediff = v);
+        ApplyD<MentalStateDef>(nameof(mentalState), v => def.mentalState = v);
+        ApplyD<GameConditionDef>(nameof(gameCondition), v => def.gameCondition = v);
+        ApplyD<StatDef>(nameof(effectMultiplyingStat), v => def.effectMultiplyingStat = v);
+        ApplyV<SimpleCurve>(nameof(effectMultiplyingStatCurve), v => def.effectMultiplyingStatCurve = v);
+        ApplyD<ExpectationDef>(nameof(minExpectation), v => def.minExpectation = v);
+        ApplyD<ExpectationDef>(nameof(minExpectationForNegativeThought), v => def.minExpectationForNegativeThought = v);
+        ApplyD<ChemicalDef>(nameof(chemicalDef), v => def.chemicalDef = v);
+        ApplyD<TaleDef>(nameof(taleDef), v => def.taleDef = v);
+        ApplyL<ThoughtDef>(nameof(replaceThoughts), v => def.replaceThoughts = v);
+        ApplyL<TraitDef>(nameof(nullifyingTraits), v => def.nullifyingTraits = v);
+        ApplyL<TraitDef>(nameof(neverNullifyIfAnyTrait), v => def.neverNullifyIfAnyTrait = v);
+        ApplyL<TraitRequirement>(nameof(nullifyingTraitDegrees), v => def.nullifyingTraitDegrees = v);
+        ApplyL<TraitDef>(nameof(requiredTraits), v => def.requiredTraits = v);
+        ApplyL<GeneDef>(nameof(nullifyingGenes), v => def.nullifyingGenes = v);
+        ApplyL<GeneDef>(nameof(requiredGenes), v => def.requiredGenes = v);
+        ApplyL<HediffDef>(nameof(nullifyingHediffs), v => def.nullifyingHediffs = v);
+        ApplyL<HediffDef>(nameof(requiredHediffs), v => def.requiredHediffs = v);
+        ApplyL<PreceptDef>(nameof(nullifyingPrecepts), v => def.nullifyingPrecepts = v);
+        ApplyL<TaleDef>(nameof(nullifyingOwnTales), v => def.nullifyingOwnTales = v);
     }
 
 

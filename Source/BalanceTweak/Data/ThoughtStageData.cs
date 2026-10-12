@@ -76,12 +76,12 @@ class ThoughtStageData : TweakData<ThoughtStageData>
             Log.Error($"[BalanceTweak]{this}的stage为{this.stage}!");
             return;
         }
-        if (subdefLabel != null) stage.label = subdefLabel;
+        ApplyS(nameof(subdefLabel), v => stage.label = v);
         if (stage != null)
         {
-            if (baseMoodEffect.HasValue) { stage.baseMoodEffect = baseMoodEffect.Value; }
-            if (baseOpinionOffset.HasValue) { stage.baseOpinionOffset = baseOpinionOffset.Value; }
-            if (visible.HasValue) { stage.visible = visible.Value; }
+            ApplyV<float>(nameof(baseMoodEffect), v => stage.baseMoodEffect = v);
+            ApplyV<float>(nameof(baseOpinionOffset), v => stage.baseOpinionOffset = v);
+            ApplyV<bool>(nameof(visible), v => stage.visible = v);
         }
     }
 

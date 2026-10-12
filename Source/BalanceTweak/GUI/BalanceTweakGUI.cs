@@ -31,6 +31,22 @@ public partial class BalanceTweakSettings : ModSettings
     #region 数据与状态
     // 静态数据
     public static Dictionary<TweakID, TweakData> tweakDatas = new();
+
+    /// <summary>
+    /// L0 三态语义灰度开关（已接到「总体设置」窗口）。
+    /// false（默认）= 旧行为：空值视同"未设置"，Def 上的原值不动（Cleared 退化为 Unset）。
+    /// true        = 新语义：已改且为空 = Cleared，集合清空 Def、标量/Def 引用还原原值。
+    /// 不参与序列化 —— 每次启动都从默认值（关）开始，需人工在核对 dry-run 报告后打开。
+    /// </summary>
+    public static bool clearedSemanticsEnabled = false;
+
+    /// <summary>
+    /// L0 落盘版本戳（见 Docs/NullSemantics_L0_Plan.md §3 C1）。
+    /// 0 = 尚未被 L0 代码成功处理过（旧档 / 本次加载或迁移失败）；
+    /// 1 = 加载 + 迁移 + 应用全流程无失败。
+    /// 仅"全流程成功"后置 1；失败保持 0，下次启动重试（迁移是幂等的，磁盘零改动）。
+    /// </summary>
+    public static int formatVersion = 0;
     public static Dictionary<SettingType, Dictionary<TweakID, TweakData>> cachedData = new();
     public static HashSet<TweakID> pinnedIds = new();
 
@@ -173,6 +189,9 @@ public partial class BalanceTweakSettings : ModSettings
     #region 数据存储
     public override void ExposeData()
     {
+        // C1：版本戳必须最先读写 —— 迁移器靠它区分"本档是否已被 L0 代码处理过"。
+        // 旧档没有这个节点，读到默认值 0（见 Docs/NullSemantics_L0_Plan.md §3 C1）。
+        Scribe_Values.Look(ref formatVersion, "formatVersion", 0);
         Scribe_Collections.Look(ref tweakDatas, "tweakDatas", LookMode.Deep);
         // 序列化 hiddenColumnIds (按 SettingType 分组)
         List<string>? hiddenColumnIdsFlat = null;

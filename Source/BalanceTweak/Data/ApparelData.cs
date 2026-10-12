@@ -211,17 +211,17 @@ public class ApparelData : TweakData<ApparelData>
         equipPower = (float?)GetEquipPower(this, isCompQuality);
         if (def is ThingDef d)
         {
-            costList ??= d.costList?.ToList();
-            stuffCategories ??= d.stuffCategories?.ToList();
+            if (!IsFieldModified(nameof(costList))) costList ??= d.costList?.ToList();
+            if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= d.stuffCategories?.ToList();
             techLevel ??= d.techLevel;
-            bodyPartGroups ??= d.apparel.bodyPartGroups;
-            layers ??= d.apparel.layers;
+            if (!IsFieldModified(nameof(bodyPartGroups))) bodyPartGroups ??= d.apparel.bodyPartGroups;
+            if (!IsFieldModified(nameof(layers))) layers ??= d.apparel.layers;
             careIfWornByCorpse ??= d.apparel.careIfWornByCorpse;
             careIfDamaged ??= d.apparel.careIfDamaged;
             gender ??= d.apparel.gender;
             developmentalStageFilter ??= d.apparel.developmentalStageFilter;
-            statBases ??= d.statBases;
-            equippedStatOffsets ??= d.equippedStatOffsets;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(equippedStatOffsets))) equippedStatOffsets ??= d.equippedStatOffsets;
             var shield = d.GetCompProperties<CompProperties_Shield>();
             if (shield != null)
             {
@@ -278,7 +278,7 @@ public class ApparelData : TweakData<ApparelData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyApparelProp(def);
         ApplyDefStats(def);
         OnChangeStuffEffectMultiplierArmor(this);
@@ -289,11 +289,11 @@ public class ApparelData : TweakData<ApparelData>
     }
     private void ApplyApparelProp(ThingDef def)
     {
-        if (techLevel.HasValue) { def.techLevel = techLevel.Value; }
+        ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
         bool costChanged = false;
-        if (costStuffCount.HasValue) { def.costStuffCount = costStuffCount.Value; costChanged = true; }
-        if (costList != null) { def.costList = costList; costChanged = true; }
-        if (stuffCategories != null) { def.stuffCategories = stuffCategories; costChanged = true; }
+        ApplyV<int>(nameof(costStuffCount), v => { def.costStuffCount = v; costChanged = true; });
+        ApplyL<ThingDefCountClass>(nameof(costList), v => { def.costList = v; costChanged = true; });
+        ApplyL<StuffCategoryDef>(nameof(stuffCategories), v => { def.stuffCategories = v; costChanged = true; });
 
         if (costChanged)
         {
@@ -305,9 +305,9 @@ public class ApparelData : TweakData<ApparelData>
             CostListCalculator.Reset();
         }
 
-        if (isCompQuality.HasValue)
+        ApplyV<bool>(nameof(isCompQuality), v =>
         {
-            if (isCompQuality.Value == false)
+            if (!v)
             {
                 def.comps.RemoveWhere(c => c.compClass == typeof(CompQuality));
             }
@@ -319,16 +319,16 @@ public class ApparelData : TweakData<ApparelData>
                     def.comps.Add(c);
                 }
             }
-        }
-        if (blocksRangedWeapons.HasValue)
+        });
+        ApplyV<bool>(nameof(blocksRangedWeapons), v =>
         {
             var shield = def.GetCompProperties<CompProperties_Shield>();
             if (shield != null)
             {
-                shield.blocksRangedWeapons = blocksRangedWeapons.Value;
+                shield.blocksRangedWeapons = v;
             }
-        }
-        if (removeReloadableComp.HasValue && removeReloadableComp.Value)
+        });
+        if (StateOf(nameof(removeReloadableComp)) == FieldState.Set && (bool)RawVal(nameof(removeReloadableComp))!)
         {
             def.comps.RemoveWhere(c => c is CompProperties_ApparelReloadable);
         }
@@ -337,22 +337,22 @@ public class ApparelData : TweakData<ApparelData>
             var reloadable = def.GetCompProperties<CompProperties_ApparelReloadable>();
             if (reloadable != null)
             {
-                if (reloadableAmmoDef != null) reloadable.ammoDef = reloadableAmmoDef;
-                if (reloadableAmmoCountToRefill.HasValue) reloadable.ammoCountToRefill = reloadableAmmoCountToRefill.Value;
-                if (reloadableAmmoCountPerCharge.HasValue) reloadable.ammoCountPerCharge = reloadableAmmoCountPerCharge.Value;
-                if (reloadableBaseReloadTicks.HasValue) reloadable.baseReloadTicks = reloadableBaseReloadTicks.Value;
-                if (reloadableReplenishAfterCooldown.HasValue) reloadable.replenishAfterCooldown = reloadableReplenishAfterCooldown.Value;
-                if (reloadableMaxCharges.HasValue) reloadable.maxCharges = reloadableMaxCharges.Value;
+                ApplyD<ThingDef>(nameof(reloadableAmmoDef), v => reloadable.ammoDef = v);
+                ApplyV<int>(nameof(reloadableAmmoCountToRefill), v => reloadable.ammoCountToRefill = v);
+                ApplyV<int>(nameof(reloadableAmmoCountPerCharge), v => reloadable.ammoCountPerCharge = v);
+                ApplyV<int>(nameof(reloadableBaseReloadTicks), v => reloadable.baseReloadTicks = v);
+                ApplyV<bool>(nameof(reloadableReplenishAfterCooldown), v => reloadable.replenishAfterCooldown = v);
+                ApplyV<int>(nameof(reloadableMaxCharges), v => reloadable.maxCharges = v);
             }
         }
-        if (bodyPartGroups != null) def.apparel.bodyPartGroups = bodyPartGroups;
-        if (layers != null) def.apparel.layers = layers;
-        if (careIfWornByCorpse.HasValue) def.apparel.careIfWornByCorpse = careIfWornByCorpse.Value;
-        if (careIfDamaged.HasValue) def.apparel.careIfDamaged = careIfDamaged.Value;
-        if (gender.HasValue) def.apparel.gender = gender.Value;
-        if (developmentalStageFilter.HasValue) def.apparel.developmentalStageFilter = developmentalStageFilter.Value;
-        if (statBases != null) def.statBases = statBases;
-        if (equippedStatOffsets != null) def.equippedStatOffsets = equippedStatOffsets;
+        ApplyL<BodyPartGroupDef>(nameof(bodyPartGroups), v => def.apparel.bodyPartGroups = v);
+        ApplyL<ApparelLayerDef>(nameof(layers), v => def.apparel.layers = v);
+        ApplyV<bool>(nameof(careIfWornByCorpse), v => def.apparel.careIfWornByCorpse = v);
+        ApplyV<bool>(nameof(careIfDamaged), v => def.apparel.careIfDamaged = v);
+        ApplyV<Gender>(nameof(gender), v => def.apparel.gender = v);
+        ApplyV<DevelopmentalStage>(nameof(developmentalStageFilter), v => def.apparel.developmentalStageFilter = v);
+        ApplyL<StatModifier>(nameof(statBases), v => def.statBases = v);
+        ApplyL<StatModifier>(nameof(equippedStatOffsets), v => def.equippedStatOffsets = v);
     }
     public static bool AvailableIfUtility(TweakData data) => data.propType switch
     {

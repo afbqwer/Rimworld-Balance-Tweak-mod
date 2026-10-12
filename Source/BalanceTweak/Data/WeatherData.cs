@@ -46,10 +46,10 @@ class WeatherData : TweakData<WeatherData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (accuracyMultiplier.HasValue) { def.accuracyMultiplier = accuracyMultiplier.Value; }
-        if (moveSpeedMultiplier.HasValue) { def.moveSpeedMultiplier = moveSpeedMultiplier.Value; }
-        if (windSpeedFactor.HasValue) { def.windSpeedFactor = windSpeedFactor.Value; }
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyV<float>(nameof(accuracyMultiplier), v => def.accuracyMultiplier = v);
+        ApplyV<float>(nameof(moveSpeedMultiplier), v => def.moveSpeedMultiplier = v);
+        ApplyV<float>(nameof(windSpeedFactor), v => def.windSpeedFactor = v);
+        ApplyS(nameof(defLabel), v => this.def.label = v);
     }
 
     public override List<string> TypeStrings => typeStrings;

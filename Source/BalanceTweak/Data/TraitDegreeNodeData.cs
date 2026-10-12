@@ -144,20 +144,20 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
             mentalBreakInspirationGainChance ??= degreeData.mentalBreakInspirationGainChance;
             randomMentalState ??= degreeData.randomMentalState;
             forcedMentalState ??= degreeData.forcedMentalState;
-            statOffsets ??= degreeData.statOffsets;
-            statFactors ??= degreeData.statFactors;
-            disallowedMentalStates ??= degreeData.disallowedMentalStates;
-            disallowedThoughts ??= degreeData.disallowedThoughts;
-            disallowedInspirations ??= degreeData.disallowedInspirations;
-            mentalBreakInspirationGainSet ??= degreeData.mentalBreakInspirationGainSet;
-            allowedMeditationFocusTypes ??= degreeData.allowedMeditationFocusTypes;
-            disallowedMeditationFocusTypes ??= degreeData.disallowedMeditationFocusTypes;
-            theOnlyAllowedMentalBreaks ??= degreeData.theOnlyAllowedMentalBreaks;
-            abilities ??= degreeData.abilities;
-            enablesNeeds ??= degreeData.enablesNeeds;
-            disablesNeeds ??= degreeData.disablesNeeds;
-            skillGains ??= degreeData.skillGains;
-            aptitudes ??= degreeData.aptitudes;
+            if (!IsFieldModified(nameof(statOffsets))) statOffsets ??= degreeData.statOffsets;
+            if (!IsFieldModified(nameof(statFactors))) statFactors ??= degreeData.statFactors;
+            if (!IsFieldModified(nameof(disallowedMentalStates))) disallowedMentalStates ??= degreeData.disallowedMentalStates;
+            if (!IsFieldModified(nameof(disallowedThoughts))) disallowedThoughts ??= degreeData.disallowedThoughts;
+            if (!IsFieldModified(nameof(disallowedInspirations))) disallowedInspirations ??= degreeData.disallowedInspirations;
+            if (!IsFieldModified(nameof(mentalBreakInspirationGainSet))) mentalBreakInspirationGainSet ??= degreeData.mentalBreakInspirationGainSet;
+            if (!IsFieldModified(nameof(allowedMeditationFocusTypes))) allowedMeditationFocusTypes ??= degreeData.allowedMeditationFocusTypes;
+            if (!IsFieldModified(nameof(disallowedMeditationFocusTypes))) disallowedMeditationFocusTypes ??= degreeData.disallowedMeditationFocusTypes;
+            if (!IsFieldModified(nameof(theOnlyAllowedMentalBreaks))) theOnlyAllowedMentalBreaks ??= degreeData.theOnlyAllowedMentalBreaks;
+            if (!IsFieldModified(nameof(abilities))) abilities ??= degreeData.abilities;
+            if (!IsFieldModified(nameof(enablesNeeds))) enablesNeeds ??= degreeData.enablesNeeds;
+            if (!IsFieldModified(nameof(disablesNeeds))) disablesNeeds ??= degreeData.disablesNeeds;
+            if (!IsFieldModified(nameof(skillGains))) skillGains ??= degreeData.skillGains;
+            if (!IsFieldModified(nameof(aptitudes))) aptitudes ??= degreeData.aptitudes;
         }
         return true;
     }
@@ -169,35 +169,35 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
             Log.Error($"[BalanceTweak]{this}的degreeData为{this.degreeData}!");
             return;
         }
-        if (subdefLabel != null) dd.label = subdefLabel;
+        ApplyS(nameof(subdefLabel), v => dd.label = v);
         if (dd != null)
         {
-            if (degree.HasValue) { dd.degree = degree.Value; }
-            if (commonality.HasValue) { dd.commonality = commonality.Value; }
-            if (socialFightChanceFactor.HasValue) { dd.socialFightChanceFactor = socialFightChanceFactor.Value; }
-            if (marketValueFactorOffset.HasValue) { dd.marketValueFactorOffset = marketValueFactorOffset.Value; }
-            if (randomDiseaseMtbDays.HasValue) { dd.randomDiseaseMtbDays = randomDiseaseMtbDays.Value; }
-            if (hungerRateFactor.HasValue) { dd.hungerRateFactor = hungerRateFactor.Value; }
-            if (painOffset.HasValue) { dd.painOffset = painOffset.Value; }
-            if (painFactor.HasValue) { dd.painFactor = painFactor.Value; }
-            if (forcedMentalStateMtbDays.HasValue) { dd.forcedMentalStateMtbDays = forcedMentalStateMtbDays.Value; }
-            if (mentalBreakInspirationGainChance.HasValue) { dd.mentalBreakInspirationGainChance = mentalBreakInspirationGainChance.Value; }
-            if (randomMentalState != null) { dd.randomMentalState = randomMentalState; }
-            if (forcedMentalState != null) { dd.forcedMentalState = forcedMentalState; }
-            if (statOffsets != null) { dd.statOffsets = statOffsets; }
-            if (statFactors != null) { dd.statFactors = statFactors; }
-            if (disallowedMentalStates != null) { dd.disallowedMentalStates = disallowedMentalStates; }
-            if (disallowedThoughts != null) { dd.disallowedThoughts = disallowedThoughts; }
-            if (disallowedInspirations != null) { dd.disallowedInspirations = disallowedInspirations; }
-            if (mentalBreakInspirationGainSet != null) { dd.mentalBreakInspirationGainSet = mentalBreakInspirationGainSet; }
-            if (allowedMeditationFocusTypes != null) { dd.allowedMeditationFocusTypes = allowedMeditationFocusTypes; }
-            if (disallowedMeditationFocusTypes != null) { dd.disallowedMeditationFocusTypes = disallowedMeditationFocusTypes; }
-            if (theOnlyAllowedMentalBreaks != null) { dd.theOnlyAllowedMentalBreaks = theOnlyAllowedMentalBreaks; }
-            if (abilities != null) { dd.abilities = abilities; }
-            if (enablesNeeds != null) { dd.enablesNeeds = enablesNeeds; }
-            if (disablesNeeds != null) { dd.disablesNeeds = disablesNeeds; }
-            if (skillGains != null) { dd.skillGains = skillGains; }
-            if (aptitudes != null) { dd.aptitudes = aptitudes; }
+            ApplyV<int>(nameof(degree), v => dd.degree = v);
+            ApplyV<float>(nameof(commonality), v => dd.commonality = v);
+            ApplyV<float>(nameof(socialFightChanceFactor), v => dd.socialFightChanceFactor = v);
+            ApplyV<float>(nameof(marketValueFactorOffset), v => dd.marketValueFactorOffset = v);
+            ApplyV<float>(nameof(randomDiseaseMtbDays), v => dd.randomDiseaseMtbDays = v);
+            ApplyV<float>(nameof(hungerRateFactor), v => dd.hungerRateFactor = v);
+            ApplyV<float>(nameof(painOffset), v => dd.painOffset = v);
+            ApplyV<float>(nameof(painFactor), v => dd.painFactor = v);
+            ApplyV<float>(nameof(forcedMentalStateMtbDays), v => dd.forcedMentalStateMtbDays = v);
+            ApplyV<float>(nameof(mentalBreakInspirationGainChance), v => dd.mentalBreakInspirationGainChance = v);
+            ApplyD<MentalStateDef>(nameof(randomMentalState), v => dd.randomMentalState = v);
+            ApplyD<MentalStateDef>(nameof(forcedMentalState), v => dd.forcedMentalState = v);
+            ApplyL<StatModifier>(nameof(statOffsets), v => dd.statOffsets = v);
+            ApplyL<StatModifier>(nameof(statFactors), v => dd.statFactors = v);
+            ApplyL<MentalStateDef>(nameof(disallowedMentalStates), v => dd.disallowedMentalStates = v);
+            ApplyL<ThoughtDef>(nameof(disallowedThoughts), v => dd.disallowedThoughts = v);
+            ApplyL<InspirationDef>(nameof(disallowedInspirations), v => dd.disallowedInspirations = v);
+            ApplyL<InspirationDef>(nameof(mentalBreakInspirationGainSet), v => dd.mentalBreakInspirationGainSet = v);
+            ApplyL<MeditationFocusDef>(nameof(allowedMeditationFocusTypes), v => dd.allowedMeditationFocusTypes = v);
+            ApplyL<MeditationFocusDef>(nameof(disallowedMeditationFocusTypes), v => dd.disallowedMeditationFocusTypes = v);
+            ApplyL<MentalBreakDef>(nameof(theOnlyAllowedMentalBreaks), v => dd.theOnlyAllowedMentalBreaks = v);
+            ApplyL<AbilityDef>(nameof(abilities), v => dd.abilities = v);
+            ApplyL<NeedDef>(nameof(enablesNeeds), v => dd.enablesNeeds = v);
+            ApplyL<NeedDef>(nameof(disablesNeeds), v => dd.disablesNeeds = v);
+            ApplyL<SkillGain>(nameof(skillGains), v => dd.skillGains = v);
+            ApplyL<Aptitude>(nameof(aptitudes), v => dd.aptitudes = v);
         }
     }
 

@@ -105,9 +105,15 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
                 var list = (List<StatModifier>?)meta.Field.GetValue(this);
                 if (list == null)
                 {
-                    if (forceResetStats)
+                    // 字段已改但空有两种来源：
+                    //   ① forceResetStats：一次重置，需清掉 def 上的脏数据，防 Phase 3 把脏值回读进字段；
+                    //   ② L0 Cleared：用户主动清空该列表，语义即为"把 def 上的对应列表也清掉"
+                    //      —— 与 Phase 2 对单个 StatDef 字段的"value==null ⇒ 移除"对齐。
+                    // 判据用 StateOf(f)==Cleared 而非裸 IsFieldModified：灰度关闭时 Cleared 退化为
+                    // Unset，本分支不触发，行为与旧版逐字段一致（红线 #1 / #11）。
+                    if (forceResetStats || StateOf(meta.Field.Name) == FieldState.Cleared)
                     {
-                        // 重置时清除 def 上的脏数据，防止 Phase 3 将脏值回读到字段
+                        anyWrite = true;
                         switch (def)
                         {
                             case ThingDef td:
@@ -271,6 +277,9 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     private static List<StatFieldMeta>? _fields;
     public static List<StatFieldMeta> Fields => _fields ??= InitStaticFields();
 
+    /// <summary>字段名 → 元数据 的索引，随 <see cref="Fields"/> 的惰性初始化一起建（供 RawVal 用）。</summary>
+    private static Dictionary<string, StatFieldMeta>? _fieldIndex;
+
     private static List<StatColumnConfig>? _allColumn;
     public override List<StatColumnConfig> AllColumn => _allColumn ??= Fields
             .Select(f => new StatColumnConfig(f.Field,
@@ -288,14 +297,160 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     private static List<StatFieldMeta> InitStaticFields()
     {
         _fields = new List<StatFieldMeta>();
+        _fieldIndex ??= new Dictionary<string, StatFieldMeta>();
         foreach (var field in typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance))
         {
             var attr = field.GetCustomAttribute<TweakFieldAttribute>();
             if (attr == null || !DataUtility.MayRequire(attr.MayRequire)) continue;
-            _fields.Add(new StatFieldMeta(typeof(T), field, attr));
+            var meta = new StatFieldMeta(typeof(T), field, attr);
+            _fields.Add(meta);
+            _fieldIndex[field.Name] = meta;
         }
         return _fields;
     }
+
+    #region L0 三态内核（Unset / Set / Cleared）
+
+    /// <summary>
+    /// 运行期自检用（不序列化）：ResolveDefs 末尾记录"当前 modified ∧ 空"的字段名，
+    /// 供 Apply 之后校验是否被 SetDef / GenValues 回填复活（见 Docs/NullSemantics_L0_Plan.md §4.2）。
+    /// </summary>
+    protected HashSet<string>? _clearedSnapshot;
+
+    /// <summary>已经告警过的字段（每字段每局只 Log 一次，避免日志刷屏）。</summary>
+    private HashSet<string>? _revertWarned;
+
+    /// <summary>
+    /// 读字段的原始值，不做任何解释、不做回填。
+    /// 与 <c>meta.Field.GetValue(this)</c> 等价，只是走 <see cref="_fieldIndex"/> 的 O(1) 查表，
+    /// 免得 B 组的 1000 处替换都要现场遍历 <see cref="Fields"/>。
+    /// </summary>
+    protected object? RawVal(string f)
+    {
+        _ = Fields; // 保险：确保 _fieldIndex 已随 Fields 初始化
+        return _fieldIndex![f].Field.GetValue(this);
+    }
+
+    /// <summary>
+    /// 字段三态。判据只有 <see cref="_modifiedFieldNames"/>，绝不用"值 == null"反推。
+    /// 灰度关闭时 Cleared 退化为 Unset —— 与旧行为逐字段一致。
+    /// </summary>
+    protected FieldState StateOf(string f)
+    {
+        if (!clearedSemanticsEnabled) // 灰度关：旧行为
+            return _modifiedFieldNames.Contains(f) && !IsEmptyValue(RawVal(f))
+                ? FieldState.Set : FieldState.Unset;
+
+        return !_modifiedFieldNames.Contains(f) ? FieldState.Unset
+             : IsEmptyValue(RawVal(f))          ? FieldState.Cleared
+             :                                    FieldState.Set;
+    }
+
+    /// <summary>跨类型只读入口（供 TweakDatabase 的 dry-run 与 TweakSelfCheck 用）。</summary>
+    internal override FieldState StateOfField(string f) => StateOf(f);
+
+    /// <summary>
+    /// SC2（复活检测）：检查 <see cref="_clearedSnapshot"/> 里的字段在 Apply 之后是否仍为空。
+    /// 被 SetDef / GenValues 的 <c>??=</c> 回填 = 复活（漏了 <c>!IsFieldModified</c> 守卫）。
+    /// 见 Docs/NullSemantics_L0_Plan.md §4.2。
+    /// </summary>
+    internal override List<string> DetectRevivedFields()
+    {
+        if (_clearedSnapshot == null || _clearedSnapshot.Count == 0) return new List<string>();
+        var revived = new List<string>();
+        foreach (var f in _clearedSnapshot)
+        {
+            if (!_fieldIndex!.TryGetValue(f, out var meta)) continue;
+            if (!IsEmptyValue(meta.Field.GetValue(this))) revived.Add(f);
+        }
+        return revived;
+    }
+
+    /// <summary>
+    /// L0 三态 helper 的访问级别为 <c>protected internal</c>（原计划为 <c>protected</c>）：
+    /// 同程序集的静态辅助类 <see cref="RecipeProcessHelper.ApplyProcessDef"/> 需要统一走这几个入口，
+    /// 否则 ProcessDef 的字段写入会绕过门控（B 组执行记录里有说明）。
+    /// </summary>
+    protected internal void ApplyV<TV>(string f, Action<TV> set)
+    {
+        switch (StateOf(f))
+        {
+            case FieldState.Set: set((TV)RawVal(f)!); break;
+            case FieldState.Cleared: Revert(f, set); break;
+        }
+    }
+
+    /// <summary>目标可空（<c>float?</c> / <c>IntRange?</c> / <c>QualityCategory?</c> 等）：Cleared = 置 null。</summary>
+    protected internal void ApplyN<TV>(string f, Action<TV?> set) where TV : struct
+    {
+        switch (StateOf(f))
+        {
+            case FieldState.Set: set((TV?)RawVal(f)); break;
+            case FieldState.Cleared: set(null); break;
+        }
+    }
+
+    /// <summary>集合（<c>List&lt;T&gt;</c> / ThingFilter）：Cleared = 清空。</summary>
+    protected internal void ApplyL<TV>(string f, Action<List<TV>?> set)
+    {
+        switch (StateOf(f))
+        {
+            case FieldState.Set: set((List<TV>)RawVal(f)!); break;
+            case FieldState.Cleared: set(null); break;
+        }
+    }
+
+    /// <summary>Def 引用：Cleared = 还原原引用。</summary>
+    protected internal void ApplyD<TV>(string f, Action<TV?> set) where TV : Def
+    {
+        switch (StateOf(f))
+        {
+            case FieldState.Set: set((TV?)RawVal(f)); break;
+            case FieldState.Cleared: Revert(f, set); break;
+        }
+    }
+
+    /// <summary>
+    /// string 目标。注意与 <see cref="ApplyV{TV}"/> 的区别：字符串的"空"在旧版里是<b>非 null 的空串</b>，
+    /// 旧代码判据是 <c>!= null</c>（空串照样写）⇒ 灰度关时必须照写，否则与旧版不逐字段一致（红线 #11）。
+    /// 灰度开且"已改且值为空串"时按 <see cref="FieldState.Cleared"/> 处理（还原原值）。
+    /// </summary>
+    protected internal void ApplyS(string f, Action<string> set)
+    {
+        if (RawVal(f) is not string s) return;
+        if (clearedSemanticsEnabled && s.Length == 0 && IsFieldModified(f)) { Revert(f, set); return; }
+        set(s);
+    }
+
+    /// <summary>
+    /// ThingFilter 目标。<see cref="GUI.Editor.IngredientFilterEditorWindow"/> 的产物恒为非 null 过滤器，
+    /// 旧版判据 <c>!= null</c> 恒真 ⇒ 非 null 即写入。空过滤器（AllowedDefCount == 0）在 RimWorld 里是
+    /// "允许项为空"的有效值（＝清空该过滤器的允许项），不是 null 语义的 Clear，故不做 Cleared 分支。
+    /// </summary>
+    protected internal void ApplyF(string f, Action<ThingFilter> set)
+    {
+        if (RawVal(f) is ThingFilter tf) set(tf);
+    }
+
+    /// <summary>
+    /// 还原：从 <c>GetOriginal(id)</c> 取同字段的原值写回。
+    /// 原值缺席（老档 / 原始数据被换掉）时不抛异常、不写坏值 —— 保持现状 + 每字段告警一次。
+    /// </summary>
+    private void Revert<TV>(string f, Action<TV> set)
+    {
+        if (TweakDatabase.GetOriginal(id) is not TweakData<T> orig) { WarnRevertOnce(f); return; }
+        if (orig.RawVal(f) is not TV v) { WarnRevertOnce(f); return; } // 原值缺席：保持现状
+        set(v);
+    }
+
+    private void WarnRevertOnce(string f)
+    {
+        _revertWarned ??= new HashSet<string>();
+        if (_revertWarned.Add(f))
+            Log.Warning($"[BalanceTweak] {id} 的字段 {f} 无法还原（原值缺席），保持当前值。");
+    }
+
+    #endregion
 
     public override TweakData Clone()
     {

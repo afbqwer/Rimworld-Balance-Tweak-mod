@@ -175,23 +175,23 @@ class BiomeData : TweakData<BiomeData>
             wildPlantsCareAboutLocalFertility ??= d.wildPlantsCareAboutLocalFertility;
             impassable ??= d.impassable;
             foragedFood ??= d.foragedFood;
-            wildPlants ??= d.wildPlants;
-            wildAnimals ??= wildAnimalsField?.GetValue(d) as List<BiomeAnimalRecord>;
-            coastalWildAnimals ??= coastalWildAnimalsField?.GetValue(d) as List<BiomeAnimalRecord>;
-            pollutionWildAnimals ??= pollutionWildAnimalsField?.GetValue(d) as List<BiomeAnimalRecord>;
-            allowedPackAnimals ??= allowedPackAnimalsField?.GetValue(d) as List<ThingDef>;
-            diseases ??= diseasesField?.GetValue(d) as List<BiomeDiseaseRecord>;
-            baseWeatherCommonalities ??= d.baseWeatherCommonalities;
-            freshwaterCommon ??= d.fishTypes?.freshwater_Common;
-            freshwaterUncommon ??= d.fishTypes?.freshwater_Uncommon;
-            saltwaterCommon ??= d.fishTypes?.saltwater_Common;
-            saltwaterUncommon ??= d.fishTypes?.saltwater_Uncommon;
+            if (!IsFieldModified(nameof(wildPlants))) wildPlants ??= d.wildPlants;
+            if (!IsFieldModified(nameof(wildAnimals))) wildAnimals ??= wildAnimalsField?.GetValue(d) as List<BiomeAnimalRecord>;
+            if (!IsFieldModified(nameof(coastalWildAnimals))) coastalWildAnimals ??= coastalWildAnimalsField?.GetValue(d) as List<BiomeAnimalRecord>;
+            if (!IsFieldModified(nameof(pollutionWildAnimals))) pollutionWildAnimals ??= pollutionWildAnimalsField?.GetValue(d) as List<BiomeAnimalRecord>;
+            if (!IsFieldModified(nameof(allowedPackAnimals))) allowedPackAnimals ??= allowedPackAnimalsField?.GetValue(d) as List<ThingDef>;
+            if (!IsFieldModified(nameof(diseases))) diseases ??= diseasesField?.GetValue(d) as List<BiomeDiseaseRecord>;
+            if (!IsFieldModified(nameof(baseWeatherCommonalities))) baseWeatherCommonalities ??= d.baseWeatherCommonalities;
+            if (!IsFieldModified(nameof(freshwaterCommon))) freshwaterCommon ??= d.fishTypes?.freshwater_Common;
+            if (!IsFieldModified(nameof(freshwaterUncommon))) freshwaterUncommon ??= d.fishTypes?.freshwater_Uncommon;
+            if (!IsFieldModified(nameof(saltwaterCommon))) saltwaterCommon ??= d.fishTypes?.saltwater_Common;
+            if (!IsFieldModified(nameof(saltwaterUncommon))) saltwaterUncommon ??= d.fishTypes?.saltwater_Uncommon;
             rareCatchesSetMaker ??= d.fishTypes?.rareCatchesSetMaker;
-            terrainsByFertility ??= d.terrainsByFertility;
+            if (!IsFieldModified(nameof(terrainsByFertility))) terrainsByFertility ??= d.terrainsByFertility;
             gravelTerrain ??= d.gravelTerrain;
             noGravel ??= d.noGravel;
-            extraRockTypes ??= d.extraRockTypes;
-            forceRockTypes ??= d.forceRockTypes;
+            if (!IsFieldModified(nameof(extraRockTypes))) extraRockTypes ??= d.extraRockTypes;
+            if (!IsFieldModified(nameof(forceRockTypes))) forceRockTypes ??= d.forceRockTypes;
             waterShallowTerrain ??= d.waterShallowTerrain;
             waterDeepTerrain ??= d.waterDeepTerrain;
             waterMovingShallowTerrain ??= d.waterMovingShallowTerrain;
@@ -213,65 +213,65 @@ class BiomeData : TweakData<BiomeData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (animalDensity.HasValue) { def.animalDensity = animalDensity.Value; }
-        if (plantDensity.HasValue) { def.plantDensity = plantDensity.Value; }
-        if (wildPlantRegrowDays.HasValue) { def.wildPlantRegrowDays = wildPlantRegrowDays.Value; }
-        if (diseaseMtbDays.HasValue) { def.diseaseMtbDays = diseaseMtbDays.Value; }
-        if (movementDifficulty.HasValue) { def.movementDifficulty = movementDifficulty.Value; }
-        if (forageability.HasValue) { def.forageability = forageability.Value; }
-        if (settlementSelectionWeight.HasValue) { def.settlementSelectionWeight = settlementSelectionWeight.Value; }
-        if (campSelectionWeight.HasValue) { def.campSelectionWeight = campSelectionWeight.Value; }
-        if (pollutionOffset.HasValue) { def.pollutionOffset = pollutionOffset.Value; }
-        if (wildAnimalScariaChance.HasValue) { def.wildAnimalScariaChance = wildAnimalScariaChance.Value; }
-        if (geyserCountFactor.HasValue) { def.geyserCountFactor = geyserCountFactor.Value; }
-        if (maxFishPopulation.HasValue) { def.maxFishPopulation = maxFishPopulation.Value; }
-        if (canBuildBase.HasValue) { def.canBuildBase = canBuildBase.Value; }
-        if (canAutoChoose.HasValue) { def.canAutoChoose = canAutoChoose.Value; }
-        if (allowRoads.HasValue) { def.allowRoads = allowRoads.Value; }
-        if (allowRivers.HasValue) { def.allowRivers = allowRivers.Value; }
-        if (allowPollution.HasValue) { def.allowPollution = allowPollution.Value; }
-        if (allowFarmingCamps.HasValue) { def.allowFarmingCamps = allowFarmingCamps.Value; }
-        if (wildAnimalsCanWanderInto.HasValue) { def.wildAnimalsCanWanderInto = wildAnimalsCanWanderInto.Value; }
-        if (wildPlantsCareAboutLocalFertility.HasValue) { def.wildPlantsCareAboutLocalFertility = wildPlantsCareAboutLocalFertility.Value; }
-        if (impassable.HasValue) { def.impassable = impassable.Value; }
-        if (foragedFood != null) { def.foragedFood = foragedFood; }
+        ApplyV<float>(nameof(animalDensity), v => def.animalDensity = v);
+        ApplyV<float>(nameof(plantDensity), v => def.plantDensity = v);
+        ApplyV<float>(nameof(wildPlantRegrowDays), v => def.wildPlantRegrowDays = v);
+        ApplyV<float>(nameof(diseaseMtbDays), v => def.diseaseMtbDays = v);
+        ApplyV<float>(nameof(movementDifficulty), v => def.movementDifficulty = v);
+        ApplyV<float>(nameof(forageability), v => def.forageability = v);
+        ApplyV<float>(nameof(settlementSelectionWeight), v => def.settlementSelectionWeight = v);
+        ApplyV<float>(nameof(campSelectionWeight), v => def.campSelectionWeight = v);
+        ApplyV<float>(nameof(pollutionOffset), v => def.pollutionOffset = v);
+        ApplyV<float>(nameof(wildAnimalScariaChance), v => def.wildAnimalScariaChance = v);
+        ApplyV<float>(nameof(geyserCountFactor), v => def.geyserCountFactor = v);
+        ApplyV<float>(nameof(maxFishPopulation), v => def.maxFishPopulation = v);
+        ApplyV<bool>(nameof(canBuildBase), v => def.canBuildBase = v);
+        ApplyV<bool>(nameof(canAutoChoose), v => def.canAutoChoose = v);
+        ApplyV<bool>(nameof(allowRoads), v => def.allowRoads = v);
+        ApplyV<bool>(nameof(allowRivers), v => def.allowRivers = v);
+        ApplyV<bool>(nameof(allowPollution), v => def.allowPollution = v);
+        ApplyV<bool>(nameof(allowFarmingCamps), v => def.allowFarmingCamps = v);
+        ApplyV<bool>(nameof(wildAnimalsCanWanderInto), v => def.wildAnimalsCanWanderInto = v);
+        ApplyV<bool>(nameof(wildPlantsCareAboutLocalFertility), v => def.wildPlantsCareAboutLocalFertility = v);
+        ApplyV<bool>(nameof(impassable), v => def.impassable = v);
+        ApplyD<ThingDef>(nameof(foragedFood), v => def.foragedFood = v);
 
-        if (wildPlants != null) { def.wildPlants = wildPlants; }
-        if (wildAnimals != null && wildAnimalsField != null) { wildAnimalsField.SetValue(def, wildAnimals); }
-        if (coastalWildAnimals != null && coastalWildAnimalsField != null) { coastalWildAnimalsField.SetValue(def, coastalWildAnimals); }
-        if (pollutionWildAnimals != null && pollutionWildAnimalsField != null) { pollutionWildAnimalsField.SetValue(def, pollutionWildAnimals); }
-        if (allowedPackAnimals != null && allowedPackAnimalsField != null) { allowedPackAnimalsField.SetValue(def, allowedPackAnimals); }
-        if (diseases != null && diseasesField != null) { diseasesField.SetValue(def, diseases); }
-        if (baseWeatherCommonalities != null) { def.baseWeatherCommonalities = baseWeatherCommonalities; }
+        ApplyL<BiomePlantRecord>(nameof(wildPlants), v => def.wildPlants = v);
+        ApplyL<BiomeAnimalRecord>(nameof(wildAnimals), v => { if (wildAnimalsField != null) wildAnimalsField.SetValue(def, v); });
+        ApplyL<BiomeAnimalRecord>(nameof(coastalWildAnimals), v => { if (coastalWildAnimalsField != null) coastalWildAnimalsField.SetValue(def, v); });
+        ApplyL<BiomeAnimalRecord>(nameof(pollutionWildAnimals), v => { if (pollutionWildAnimalsField != null) pollutionWildAnimalsField.SetValue(def, v); });
+        ApplyL<ThingDef>(nameof(allowedPackAnimals), v => { if (allowedPackAnimalsField != null) allowedPackAnimalsField.SetValue(def, v); });
+        ApplyL<BiomeDiseaseRecord>(nameof(diseases), v => { if (diseasesField != null) diseasesField.SetValue(def, v); });
+        ApplyL<WeatherCommonalityRecord>(nameof(baseWeatherCommonalities), v => def.baseWeatherCommonalities = v);
 
         bool fishTouched = freshwaterCommon != null || freshwaterUncommon != null
             || saltwaterCommon != null || saltwaterUncommon != null || rareCatchesSetMaker != null;
         if (fishTouched)
         {
             def.fishTypes ??= new BiomeFishTypes();
-            if (freshwaterCommon != null) { def.fishTypes.freshwater_Common = freshwaterCommon; }
-            if (freshwaterUncommon != null) { def.fishTypes.freshwater_Uncommon = freshwaterUncommon; }
-            if (saltwaterCommon != null) { def.fishTypes.saltwater_Common = saltwaterCommon; }
-            if (saltwaterUncommon != null) { def.fishTypes.saltwater_Uncommon = saltwaterUncommon; }
-            if (rareCatchesSetMaker != null) { def.fishTypes.rareCatchesSetMaker = rareCatchesSetMaker; }
+            ApplyL<FishChance>(nameof(freshwaterCommon), v => def.fishTypes.freshwater_Common = v);
+            ApplyL<FishChance>(nameof(freshwaterUncommon), v => def.fishTypes.freshwater_Uncommon = v);
+            ApplyL<FishChance>(nameof(saltwaterCommon), v => def.fishTypes.saltwater_Common = v);
+            ApplyL<FishChance>(nameof(saltwaterUncommon), v => def.fishTypes.saltwater_Uncommon = v);
+            ApplyD<ThingSetMakerDef>(nameof(rareCatchesSetMaker), v => def.fishTypes.rareCatchesSetMaker = v);
         }
 
-        if (terrainsByFertility != null) { def.terrainsByFertility = terrainsByFertility; }
-        if (gravelTerrain != null) { def.gravelTerrain = gravelTerrain; }
-        if (noGravel.HasValue) { def.noGravel = noGravel.Value; }
-        if (extraRockTypes != null) { def.extraRockTypes = extraRockTypes; }
-        if (forceRockTypes != null) { def.forceRockTypes = forceRockTypes; }
-        if (waterShallowTerrain != null) { def.waterShallowTerrain = waterShallowTerrain; }
-        if (waterDeepTerrain != null) { def.waterDeepTerrain = waterDeepTerrain; }
-        if (waterMovingShallowTerrain != null) { def.waterMovingShallowTerrain = waterMovingShallowTerrain; }
-        if (waterMovingChestDeepTerrain != null) { def.waterMovingChestDeepTerrain = waterMovingChestDeepTerrain; }
-        if (oceanShallowTerrain != null) { def.oceanShallowTerrain = oceanShallowTerrain; }
-        if (oceanDeepTerrain != null) { def.oceanDeepTerrain = oceanDeepTerrain; }
-        if (riverbankTerrain != null) { def.riverbankTerrain = riverbankTerrain; }
-        if (riverbankSizeRange.HasValue) { def.riverbankSizeRange = riverbankSizeRange.Value; }
-        if (mudTerrain != null) { def.mudTerrain = mudTerrain; }
-        if (coastalBeachTerrain != null) { def.coastalBeachTerrain = coastalBeachTerrain; }
-        if (lakeBeachTerrain != null) { def.lakeBeachTerrain = lakeBeachTerrain; }
+        ApplyL<TerrainThreshold>(nameof(terrainsByFertility), v => def.terrainsByFertility = v);
+        ApplyD<TerrainDef>(nameof(gravelTerrain), v => def.gravelTerrain = v);
+        ApplyV<bool>(nameof(noGravel), v => def.noGravel = v);
+        ApplyL<ThingDef>(nameof(extraRockTypes), v => def.extraRockTypes = v);
+        ApplyL<ThingDef>(nameof(forceRockTypes), v => def.forceRockTypes = v);
+        ApplyD<TerrainDef>(nameof(waterShallowTerrain), v => def.waterShallowTerrain = v);
+        ApplyD<TerrainDef>(nameof(waterDeepTerrain), v => def.waterDeepTerrain = v);
+        ApplyD<TerrainDef>(nameof(waterMovingShallowTerrain), v => def.waterMovingShallowTerrain = v);
+        ApplyD<TerrainDef>(nameof(waterMovingChestDeepTerrain), v => def.waterMovingChestDeepTerrain = v);
+        ApplyD<TerrainDef>(nameof(oceanShallowTerrain), v => def.oceanShallowTerrain = v);
+        ApplyD<TerrainDef>(nameof(oceanDeepTerrain), v => def.oceanDeepTerrain = v);
+        ApplyD<TerrainDef>(nameof(riverbankTerrain), v => def.riverbankTerrain = v);
+        ApplyV<IntRange>(nameof(riverbankSizeRange), v => def.riverbankSizeRange = v);
+        ApplyD<TerrainDef>(nameof(mudTerrain), v => def.mudTerrain = v);
+        ApplyD<TerrainDef>(nameof(coastalBeachTerrain), v => def.coastalBeachTerrain = v);
+        ApplyD<TerrainDef>(nameof(lakeBeachTerrain), v => def.lakeBeachTerrain = v);
 
         if (wildPlants != null || wildAnimals != null || coastalWildAnimals != null || pollutionWildAnimals != null
             || diseases != null || fishTouched)
@@ -279,7 +279,7 @@ class BiomeData : TweakData<BiomeData>
             InvalidateBiomeCaches(def);
         }
 
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
     }
 
     private static void InvalidateBiomeCaches(BiomeDef def)

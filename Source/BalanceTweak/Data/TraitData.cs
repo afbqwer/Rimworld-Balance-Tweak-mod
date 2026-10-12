@@ -85,12 +85,12 @@ class TraitData : TweakData<TraitData>, ISubItemHost
             allowOnHostileSpawn ??= d.allowOnHostileSpawn;
             disableHostilityFromFaction ??= d.disableHostilityFromFaction;
             disableHostilityFromAnimalType ??= d.disableHostilityFromAnimalType;
-            conflictingTraits ??= d.conflictingTraits;
-            exclusionTags ??= d.exclusionTags;
-            conflictingPassions ??= d.conflictingPassions;
-            forcedPassions ??= d.forcedPassions;
-            requiredWorkTypes ??= d.requiredWorkTypes;
-            disabledWorkTypes ??= d.disabledWorkTypes;
+            if (!IsFieldModified(nameof(conflictingTraits))) conflictingTraits ??= d.conflictingTraits;
+            if (!IsFieldModified(nameof(exclusionTags))) exclusionTags ??= d.exclusionTags;
+            if (!IsFieldModified(nameof(conflictingPassions))) conflictingPassions ??= d.conflictingPassions;
+            if (!IsFieldModified(nameof(forcedPassions))) forcedPassions ??= d.forcedPassions;
+            if (!IsFieldModified(nameof(requiredWorkTypes))) requiredWorkTypes ??= d.requiredWorkTypes;
+            if (!IsFieldModified(nameof(disabledWorkTypes))) disabledWorkTypes ??= d.disabledWorkTypes;
             requiredWorkTags ??= d.requiredWorkTags;
             disabledWorkTags ??= d.disabledWorkTags;
         }
@@ -103,21 +103,21 @@ class TraitData : TweakData<TraitData>, ISubItemHost
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
-        if (commonality.HasValue) CommonalityField.SetValue(def, commonality.Value);
-        if (commonalityFemale.HasValue) CommonalityFemaleField.SetValue(def, commonalityFemale.Value);
-        if (canBeSuppressed.HasValue) def.canBeSuppressed = canBeSuppressed.Value;
-        if (allowOnHostileSpawn.HasValue) def.allowOnHostileSpawn = allowOnHostileSpawn.Value;
-        if (disableHostilityFromFaction != null) def.disableHostilityFromFaction = disableHostilityFromFaction;
-        if (disableHostilityFromAnimalType.HasValue) def.disableHostilityFromAnimalType = disableHostilityFromAnimalType.Value;
-        if (conflictingTraits != null) def.conflictingTraits = conflictingTraits;
-        if (exclusionTags != null) def.exclusionTags = exclusionTags;
-        if (conflictingPassions != null) def.conflictingPassions = conflictingPassions;
-        if (forcedPassions != null) def.forcedPassions = forcedPassions;
-        if (requiredWorkTypes != null) def.requiredWorkTypes = requiredWorkTypes;
-        if (disabledWorkTypes != null) def.disabledWorkTypes = disabledWorkTypes;
-        if (requiredWorkTags.HasValue) def.requiredWorkTags = requiredWorkTags.Value;
-        if (disabledWorkTags.HasValue) def.disabledWorkTags = disabledWorkTags.Value;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyV<float>(nameof(commonality), v => CommonalityField.SetValue(def, v));
+        ApplyV<float>(nameof(commonalityFemale), v => CommonalityFemaleField.SetValue(def, v));
+        ApplyV<bool>(nameof(canBeSuppressed), v => def.canBeSuppressed = v);
+        ApplyV<bool>(nameof(allowOnHostileSpawn), v => def.allowOnHostileSpawn = v);
+        ApplyD<FactionDef>(nameof(disableHostilityFromFaction), v => def.disableHostilityFromFaction = v);
+        ApplyN<AnimalType>(nameof(disableHostilityFromAnimalType), v => def.disableHostilityFromAnimalType = v);
+        ApplyL<TraitDef>(nameof(conflictingTraits), v => def.conflictingTraits = v);
+        ApplyL<string>(nameof(exclusionTags), v => def.exclusionTags = v);
+        ApplyL<SkillDef>(nameof(conflictingPassions), v => def.conflictingPassions = v);
+        ApplyL<SkillDef>(nameof(forcedPassions), v => def.forcedPassions = v);
+        ApplyL<WorkTypeDef>(nameof(requiredWorkTypes), v => def.requiredWorkTypes = v);
+        ApplyL<WorkTypeDef>(nameof(disabledWorkTypes), v => def.disabledWorkTypes = v);
+        ApplyV<WorkTags>(nameof(requiredWorkTags), v => def.requiredWorkTags = v);
+        ApplyV<WorkTags>(nameof(disabledWorkTags), v => def.disabledWorkTags = v);
     }
 
 

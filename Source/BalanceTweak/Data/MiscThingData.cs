@@ -50,7 +50,7 @@ class MiscThingData : TweakData<MiscThingData>
             if (desc.NullOrEmpty()) { desc = d.defName; }
             searchString = label + d.defName;
             stackLimit ??= d.stackLimit;
-            statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
             pathCost ??= d.pathCost;
             useHitPoints ??= d.useHitPoints;
             destroyable ??= d.destroyable;
@@ -64,12 +64,12 @@ class MiscThingData : TweakData<MiscThingData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyDefStats(def);
-        if (stackLimit.HasValue) { def.stackLimit = stackLimit.Value; }
-        if (pathCost.HasValue) { def.pathCost = pathCost.Value; }
-        if (useHitPoints.HasValue) { def.useHitPoints = useHitPoints.Value; }
-        if (destroyable.HasValue) { def.destroyable = destroyable.Value; }
+        ApplyV<int>(nameof(stackLimit), v => def.stackLimit = v);
+        ApplyV<int>(nameof(pathCost), v => def.pathCost = v);
+        ApplyV<bool>(nameof(useHitPoints), v => def.useHitPoints = v);
+        ApplyV<bool>(nameof(destroyable), v => def.destroyable = v);
     }
 
     public override List<string> TypeStrings => typeStrings;

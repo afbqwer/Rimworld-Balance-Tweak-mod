@@ -40,7 +40,7 @@ class BodyData : TweakData<BodyData>
             desc = d.description;
             if (desc.NullOrEmpty()) { desc = d.defName; }
             searchString = label + d.defName;
-            parts ??= BodyPartTreeCodec.Encode(d.corePart);
+            if (!IsFieldModified(nameof(parts))) parts ??= BodyPartTreeCodec.Encode(d.corePart);
         }
     }
 
@@ -51,7 +51,7 @@ class BodyData : TweakData<BodyData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (parts != null) { BodyPartTreeCodec.SetCorePart(def, parts); }
+        ApplyV<List<string>>(nameof(parts), v => BodyPartTreeCodec.SetCorePart(def, v));
     }
 
     public override List<string> TypeStrings => typeStrings;
