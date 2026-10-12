@@ -43,9 +43,10 @@ public partial class BalanceTweakSettings : ModSettings
 
     /// <summary>
     /// L0 落盘版本戳（见 Docs/NullSemantics_L0_Plan.md §3 C1）。
-    /// 0 = 尚未被 L0 代码成功处理过（旧档 / 本次加载或迁移失败）；
-    /// 1 = 加载 + 迁移 + 应用全流程无失败。
-    /// 仅"全流程成功"后置 1；失败保持 0，下次启动重试（迁移是幂等的，磁盘零改动）。
+    /// 0 = 尚未被 L0 代码处理过（旧档 / 本次存在结构性问题）；
+    /// 1 = 加载 + 迁移 + 应用走完，且没有结构性问题。
+    /// 判据在 TweakDatabase.InitAll：只有"条目无法物化"（数据类被改名/删除）才扣住；
+    /// 单条数据引用缺失的 Def（相关 Mod 被移除）属于预期情况，不扣（否则装了被删 Mod 的档会永远停在 0）。
     /// </summary>
     public static int formatVersion = 0;
     public static Dictionary<SettingType, Dictionary<TweakID, TweakData>> cachedData = new();

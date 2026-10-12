@@ -319,12 +319,18 @@ public static partial class TweakDatabase
         }
         if (nullEntryCount > 0)
             Log.Warning($"[BalanceTweak] 有 {nullEntryCount} 条已存数据的类型无法识别（数据类被改名或删除？），已跳过。");
+        if (skipResolveCount > 0)
+            Log.Message($"[BalanceTweak] 有 {skipResolveCount} 条已存数据含无法解析的引用（相关 Mod 可能已移除），已保留原值待日后重试："
+                      + string.Join(", ", failedResolveItems.Take(20).Select(d => d.id.ToString())));
         Mark($"已存数据 ResolveDefs ({resolvedCount} 解析/{skipResolveCount} 未解析)");
 
         // C2：代际识别 + dry-run（只读的"意图预览"）。
         // 必须在 ResolveDefs 之后、Apply 之前：列表/Def 字段的真实值要等 ResolveDefs 才落到字段上，
         // 而 Apply 之后它们可能被 SetDef/GenValues 覆盖，那时就不再是"将执行什么"的预览了。
-        bool loadFailed = nullEntryCount > 0 || skipResolveCount > 0;
+        // 只有"结构性"问题才扣住版本戳：条目因数据类被改名/删除而无法物化（nullEntryCount）。
+        // Def 引用缺失（skipResolveCount）是"相关 Mod 被移除"的预期情况（LogMissingDef 本就是 info 级），
+        // 与 L0 语义无关，且重试不会自愈 —— 若也算失败，装了被删 Mod 的档会永远停在 0。
+        bool loadFailed = nullEntryCount > 0;
         RunMigrationAndDryRun(loadFailed);
 
         var lazy = new List<TweakData>();
@@ -438,11 +444,11 @@ public static partial class TweakDatabase
         var report = string.Join("\n", timings);
         Log.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {elapsedMs:F1}ms");
 
-        // C1：只有全流程无失败才推进版本戳；失败保持 0（迁移幂等、磁盘零改动，下次启动重试）。
+        // C1：只有无结构性问题才推进版本戳；否则保持 0。
         if (!loadFailed)
             formatVersion = L0FormatVersion;
         else
-            Log.Warning($"[BalanceTweak] 本次加载/迁移有失败项，formatVersion 保持 {formatVersion}（下次启动重试迁移）。");
+            Log.Warning($"[BalanceTweak] 本次加载存在结构性问题（{nullEntryCount} 条数据无法物化），formatVersion 保持 {formatVersion}。");
 
         // C3：运行期自检（SC1–SC6）。灰度期在 Debug 构建里强制开启；发布版默认关闭（零开销）。
         TweakSelfCheck.RunAll();
