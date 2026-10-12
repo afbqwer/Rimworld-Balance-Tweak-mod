@@ -24,5 +24,5 @@ Edit game Def data in a datatable within Mod Settings. Supports 20+ Def types in
     <li>vanillaexpanded.vpsycastse</li>
     <li>assssssqwww.ModResearchTweak</li>
   </loadAfter>
-  <modVersion IgnoreIfNoMatchingField="True">1.7.0</modVersion>
+  <modVersion IgnoreIfNoMatchingField="True">1.8.0</modVersion>
 </ModMetaData>

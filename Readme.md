@@ -18,6 +18,46 @@
 
 安全的改动：末尾追加枚举成员、新增 `[TweakField]` 字段、调整 `MatchMethod` 判定与 `Priority`（分类漂移会被自动检测并重新归类）、修改 `Apply` 逻辑。
 
+## Apply 门控与可选 Mod 反射 helper 索引
+
+### A. Apply 系列（`TweakData.Typed.cs`，访问级别 `protected internal`）
+
+三态门控的**唯一写入入口**：按 `StateOf(f)` 决定写不写、怎么写，**绝不用 `!= null` / `HasValue` 短路**（硬约束表第 5 行）。
+`Set` → 写字段当前值；`Unset` → 什么都不做；`Cleared` → 按下面最后一列处理。
+
+| helper | 目标 | 签名 | `Cleared` 的动作 |
+| ------ | ---- | ---- | ---------------- |
+| `ApplyV<TV>` | 非空目标 / 标量（`Action<float>`、`Action<int>`、`Action<FloatRange>`…） | `ApplyV<TV>(string f, Action<TV> set)` | 还原原值（`Revert`） |
+| `ApplyN<TV>` `where TV:struct` | 可空目标（`float?` / `int?` / `IntRange?` / `QualityCategory?`…） | `ApplyN<TV>(string f, Action<TV?> set)` | 置 `null` |
+| `ApplyL<TV>` | 集合（`List<T>`） | `ApplyL<TV>(string f, Action<List<TV>?> set)` | 置 `null`（清空） |
+| `ApplyD<TV>` `where TV:Def` | Def 引用 | `ApplyD<TV>(string f, Action<TV?> set)` | 还原原引用（`Revert`） |
+| `ApplyS` | `string` | `ApplyS(string f, Action<string> set)` | 还原原字符串（`Revert`） |
+| `ApplyF` | `ThingFilter` | `ApplyF(string f, Action<ThingFilter> set)` | 无 Cleared 分支（空过滤器是有效值） |
+
+- `f` 一律写 `nameof(字段名)`；setter 里直接赋给目标：`ApplyV<float>(nameof(workAmount), v => def.workAmount = v)`。
+- **标量选 `ApplyV` 还是 `ApplyN`**：取决于"清空"语义 —— 想要还原原值用 `ApplyV`，想要写成 `null` 用 `ApplyN`。
+- `Revert` 原值取自 `TweakDatabase.GetOriginal(id)`；原值缺席时**保持现状 + 每字段告警一次，不抛异常**。
+- `StatDef` 字段**不要**用这些 helper，改用 `ApplyDefStats(def)`（见 §7.2）。
+- 字符串列不开放清空，故 `ApplyS` 的 Cleared 分支平时不走。
+
+### B. 可选 Mod 反射系列（`DataUtility`，全名反射，严禁静态引用）
+
+未加载可选 Mod 时不得出现跨程序集 typeref（硬约束表最后两行）。跨 Mod 兼容一律按**字符串全名**访问，命名空间 `using` 与 csproj `<Reference>` 都**不要**加。
+
+| helper | 用途 |
+| ------ | ---- |
+| `IsTypeOrSubclassOfName(Type?, string fullName)` | 类型或其基类是否等于某全名（替代 `is` / `typeof(...) ==` 判断） |
+| `FindMember(Type?, string name)` | 沿继承链找 `MemberInfo`（字段或属性，含非公开，`DeclaredOnly`）。返回可空 |
+| `GetMember(object?, MemberInfo?)` / `SetMember(object?, MemberInfo?, object?)` | 用已缓存的 `MemberInfo` 读 / 写 |
+| `GetByName(object?, string)` / `SetByName(object?, string, object?)` | 一步式（内部 `FindMember`）。**高频访问请先缓存 `MemberInfo`** |
+| `AsFloat` / `AsInt` / `AsBool` / `AsIntList(object?)` | 把反射取回的 `object` 安全转成目标类型（失败返回 `null` / `false`） |
+| `FindModExtension(Def?, string fullTypeName)` | 按全名找 `DefModExtension` |
+| `MayRequire(string? packageId)` | 判断某 Mod 是否加载（`[TweakFor(MayRequire = ...)]` 也用它） |
+
+约定：
+- **lambda 只许捕获 `object` / `MemberInfo`**，绝不能把可选 Mod 类型的变量捕获进闭包 —— C# 会把它编成闭包类的公共字段，未装该 Mod 的玩家启动期 `GetFields()` 直接 `TypeLoadException`。
+- 引用实现：`Data/AbilityData.cs`（VEF / VanillaPsycastsExpanded）、`Data/ProcessItems/RecipeProcessHelper.cs`（PipeSystem）。
+
 ## 新增可编辑 Def 类型的工作流程
 
 ### 1. 查 RimWorld 源码
@@ -231,8 +271,8 @@ public List<HediffDef>? makeImmuneTo = null;
 // 2. 初始化（SetDef / SetParentTweak 中从 def 读取默认值）
 makeImmuneTo ??= stage.makeImmuneTo;
 
-// 3. 写入（Apply 中写回 def）
-if (makeImmuneTo != null) { stage.makeImmuneTo = makeImmuneTo; }
+// 3. 写入（Apply 中写回 def）—— 用三态门控 helper，不要手写 `if`
+ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 ```
 
 **初始化规则：**
@@ -240,10 +280,12 @@ if (makeImmuneTo != null) { stage.makeImmuneTo = makeImmuneTo; }
 - 引用类型（`string?`、Def 引用）：`field ??= def.fieldName;`
 - 列表类型（`List<T>?`）：`field ??= def.fieldName;`
 
-**写入规则：**
-- 值类型：`if (field.HasValue) { def.fieldName = field.Value; }`
-- 引用类型：`if (field != null) { def.fieldName = field; }`
-- 列表类型：`if (field != null) { def.fieldName = field; }`
+**写入规则：** 一律走 **Apply 门控 helper**（见文首《Apply 门控与可选 Mod 反射 helper 索引》），**不要手写 `if (field != null)`** —— 那会绕过 `Set`/`Cleared` 判定（硬约束表第 5 行），把用户的清空意图吃掉。按目标选 helper：
+- 标量（非空目标）：`ApplyV<float>(nameof(f), v => def.f = v);`
+- 可空目标：`ApplyN<float>(nameof(f), v => def.f = v);`（也可用 `ApplyV`，见索引中的取舍说明）
+- 引用 / Def 引用：`ApplyD<SkillDef>(nameof(f), v => def.f = v);`
+- 列表：`ApplyL<HediffDef>(nameof(f), v => def.list = v);`
+- 字符串：`ApplyS(nameof(f), v => def.f = v);`
 
 > **对于 `[TweakField(StatDef = "...")]` 标记的 StatDef 字段**，写入步骤**不要手写 `if` 块**，而是在 `Apply()` 中**直接调用基类方法**一行完成：
 > - `ApplyThingDefStats(def)` — ThingDef 及其子类（Race、Apparel、Weapon、Building、Food、Stuff 等）
