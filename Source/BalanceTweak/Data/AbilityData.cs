@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
-using VanillaPsycastsExpanded;
+using UnityEngine;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
 using static BalanceTweak.StatColumnConfig;
@@ -98,27 +98,38 @@ class AbilityData : TweakData<AbilityData>
         }
     }
 
+    // 可选 Mod 类型一律按全名反射访问：静态引用（含 typeof / 泛型参数 / 捕获进闭包）会让
+    // 未加载该 Mod 的玩家在启动期 TypeLoadException（详见 Docs 与 DataUtility 顶部注释）。
+    private const string VefAbilityDefType = "VEF.Abilities.AbilityDef";
+    private const string PsycastExtensionType = "VanillaPsycastsExpanded.AbilityExtension_Psycast";
+
     private void GetVEP()
     {
-        if (this.def is VEF.Abilities.AbilityDef va)
+        var def = this.def;
+        if (def == null || !DataUtility.IsTypeOrSubclassOfName(def.GetType(), VefAbilityDefType)) return;
+
+        if (DataUtility.GetByName(def, "icon") is Texture2D ic && ic != BaseContent.BadTex) uiIcon = ic;
+        desc = DataUtility.GetByName(def, "description") as string ?? "";
+        cooldownTime = DataUtility.AsInt(DataUtility.GetByName(def, "cooldownTime"));
+        distanceToTarget = DataUtility.AsFloat(DataUtility.GetByName(def, "distanceToTarget"));
+        castTime = DataUtility.AsInt(DataUtility.GetByName(def, "castTime"));
+        durationTime = DataUtility.AsInt(DataUtility.GetByName(def, "durationTime"));
+        radius = DataUtility.AsFloat(DataUtility.GetByName(def, "radius"));
+
+        var m = DataUtility.FindModExtension(def, PsycastExtensionType);
+        if (m != null)
         {
-            if (va.icon != null && va.icon != BaseContent.BadTex)
-            {
-                uiIcon = va.icon;
-            }
-            desc = va.description != null ? va.description : "";
-            cooldownTime = va.cooldownTime;
-            distanceToTarget = va.distanceToTarget;
-            castTime = va.castTime;
-            durationTime = va.durationTime;
-            radius = va.radius;
-            var m = va.GetModExtension<AbilityExtension_Psycast>();
-            if (m != null)
-            {
-                psyfocusCost = m.psyfocusCost;
-                entropyGain = m.entropyGain;
-            }
+            psyfocusCost = DataUtility.AsFloat(DataUtility.GetByName(m, "psyfocusCost"));
+            entropyGain = DataUtility.AsFloat(DataUtility.GetByName(m, "entropyGain"));
         }
+    }
+
+    /// <summary>走 ApplyV 门控 + 反射写入；闭包只捕获 object 与 MemberInfo，不引入可选 Mod 类型。</summary>
+    private void ApplyMember<TV>(object target, string memberName, string tweakField) where TV : struct
+    {
+        var member = DataUtility.FindMember(target.GetType(), memberName);
+        if (member == null) return;
+        ApplyV<TV>(tweakField, v => DataUtility.SetMember(target, member, v));
     }
 
     public override void Apply()
@@ -166,20 +177,20 @@ class AbilityData : TweakData<AbilityData>
 
     private void SetVEP()
     {
-        if (this.def is VEF.Abilities.AbilityDef va)
+        var def = this.def;
+        if (def == null || !DataUtility.IsTypeOrSubclassOfName(def.GetType(), VefAbilityDefType)) return;
+
+        ApplyMember<int>(def, "cooldownTime", nameof(cooldownTime));
+        ApplyMember<float>(def, "distanceToTarget", nameof(distanceToTarget));
+        ApplyMember<int>(def, "castTime", nameof(castTime));
+        ApplyMember<int>(def, "durationTime", nameof(durationTime));
+        ApplyMember<float>(def, "radius", nameof(radius));
+
+        var m = DataUtility.FindModExtension(def, PsycastExtensionType);
+        if (m != null)
         {
-            ApplyV<int>(nameof(cooldownTime), v => va.cooldownTime = v);
-            ApplyV<float>(nameof(distanceToTarget), v => va.distanceToTarget = v);
-            ApplyV<int>(nameof(castTime), v => va.castTime = v);
-            ApplyV<int>(nameof(durationTime), v => va.durationTime = v);
-            ApplyV<float>(nameof(radius), v => va.radius = v);
-            // VanillaPsycastsExpanded.AbilityExtension_Psycast
-            var m = va.GetModExtension<AbilityExtension_Psycast>();
-            if (m != null)
-            {
-                ApplyV<float>(nameof(psyfocusCost), v => m.psyfocusCost = v);
-                ApplyV<float>(nameof(entropyGain), v => m.entropyGain = v);
-            }
+            ApplyMember<float>(m, "psyfocusCost", nameof(psyfocusCost));
+            ApplyMember<float>(m, "entropyGain", nameof(entropyGain));
         }
     }
 

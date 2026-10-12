@@ -27,18 +27,7 @@
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>
 	</ItemGroup>
-	<ItemGroup>
-		<Reference Include="PipeSystem">
-			<HintPath>..\..\..\..\..\..\workshop\content\294100\2023507013\1.6\Assemblies\PipeSystem.dll</HintPath>
-			<Private>false</Private>
-		</Reference>
-		<Reference Include="VanillaPsycastsExpanded">
-			<HintPath>..\..\..\..\..\..\workshop\content\294100\2842502659\1.6\Assemblies\VanillaPsycastsExpanded.dll</HintPath>
-			<Private>false</Private>
-		</Reference>
-		<Reference Include="VEF">
-			<HintPath>..\..\..\..\..\..\workshop\content\294100\2023507013\1.6\Assemblies\VEF.dll</HintPath>
-			<Private>false</Private>
-		</Reference>
-	</ItemGroup>
+	<!-- 可选 Mod（PipeSystem / VEF / VanillaPsycastsExpanded）不在此引用：
+	     一旦引用，编译器就可能把它们的类型编进类型/闭包字段，未加载该 Mod 的玩家会在
+	     启动期 TypeLoadException。这些 Mod 的类型一律按全名反射访问（见 DataUtility）。 -->
 </Project>

@@ -1,85 +1,110 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using PipeSystem;
-using Verse;
 using UnityEngine;
-using HarmonyLib;
+using Verse;
 using static BalanceTweak.BalanceTweakSettings;
 using static BalanceTweak.TweakData;
 namespace BalanceTweak;
 
 /// <summary>
 /// 辅助类，隔离所有 PipeSystem.ProcessDef 相关逻辑。
-/// 仅在此类中引用 PipeSystem 类型，避免 RecipeData 在 PipeSystem 未加载时因类型解析失败而崩溃。
+///
+/// PipeSystem 是**可选 Mod**：这里一律按全名反射访问其类型与成员，绝不静态引用
+/// （包括 <c>typeof</c> / 泛型参数 / 把该类型的变量捕获进 lambda 闭包 —— 后者会把类型
+/// 编成闭包类的公共字段，未加载时启动期 <c>GetFields()</c> 直接 TypeLoadException，
+/// 见 <see cref="DataUtility"/> 顶部注释）。
+/// 闭包里只允许出现 <c>object</c> / <c>MemberInfo</c> 这类 BCL 类型。
 /// </summary>
 public class RecipeProcessHelper
 {
+    private const string ProcessDefType = "PipeSystem.ProcessDef";
+    private const string AdvancedProcessorCompType = "PipeSystem.CompProperties_AdvancedResourceProcessor";
+
+    private static bool IsProcessDef(Def? def) => def != null && DataUtility.IsTypeOrSubclassOfName(def.GetType(), ProcessDefType);
+
+    private static object? G(object? o, string name) => DataUtility.GetByName(o, name);
+    private static void S(object? o, string name, object? v) => DataUtility.SetByName(o, name, v);
+
+    private static object? FirstItem(object? collection)
+    {
+        if (collection is IEnumerable e)
+            foreach (var o in e) return o;
+        return null;
+    }
+
+    private static int CountOf(object? collection)
+        => collection is ICollection c ? c.Count : collection is IEnumerable e ? e.Cast<object>().Count() : 0;
+
+    /// <summary>走 ApplyV 门控 + 反射写入；闭包只捕获 object 与 MemberInfo，不引入 PipeSystem 类型。</summary>
+    private static void ApplyMember<TV>(RecipeData data, object target, string memberName, string tweakField) where TV : struct
+    {
+        var member = DataUtility.FindMember(target.GetType(), memberName);
+        if (member == null) return;
+        data.ApplyV<TV>(tweakField, v => DataUtility.SetMember(target, member, v));
+    }
+
     public static bool SetProcessDef(Def def, RecipeData data)
     {
-        if (def is not ProcessDef pd) return false;
-        data.generated = pd.generated;
+        if (!IsProcessDef(def)) return false;
+        object pd = def!;
+
+        data.generated = DataUtility.AsBool(G(pd, "generated"));
         data.isProcess = true;
-        data.uiIcon = AccessTools.Field(typeof(ProcessDef), "uiIcon")?.GetValue(pd) as Texture2D;
-        if(data.uiIcon == null){
-            var t = pd.results.FirstOrDefault()?.thing;
+        data.uiIcon = G(pd, "uiIcon") as Texture2D;
+        if (data.uiIcon == null)
+        {
+            var t = G(FirstItem(G(pd, "results")), "thing") as ThingDef;
             data.uiIcon = t?.uiIcon;
         }
-        data.label = pd.LabelCap;
-        data.desc = $"{pd.defName}\n{pd.description}";
-        if (data.desc.NullOrEmpty()) { data.desc = pd.defName; }
+        data.label = def.LabelCap;
+        data.desc = $"{def.defName}\n{def.description}";
+        if (data.desc.NullOrEmpty()) { data.desc = def.defName; }
         data.searchString = data.label + def.defName;
-        data.ticks ??= pd.ticks;
-        data.ticksQuality ??= pd.ticksQuality;
-        data.isLightDependingProcess ??= pd.isLightDependingProcess;
-        data.minLight ??= pd.minLight;
-        data.maxLight ??= pd.maxLight;
-        data.temperatureRuinable ??= pd.temperatureRuinable;
-        data.minSafeTemperature ??= pd.minSafeTemperature;
-        data.maxSafeTemperature ??= pd.maxSafeTemperature;
-        data.maxOutputCount ??= pd.maxOutputCount;
+        data.ticks ??= DataUtility.AsInt(G(pd, "ticks"));
+        data.ticksQuality ??= DataUtility.AsIntList(G(pd, "ticksQuality"));
+        data.isLightDependingProcess ??= DataUtility.AsBool(G(pd, "isLightDependingProcess"));
+        data.minLight ??= DataUtility.AsFloat(G(pd, "minLight"));
+        data.maxLight ??= DataUtility.AsFloat(G(pd, "maxLight"));
+        data.temperatureRuinable ??= DataUtility.AsBool(G(pd, "temperatureRuinable"));
+        data.minSafeTemperature ??= DataUtility.AsFloat(G(pd, "minSafeTemperature"));
+        data.maxSafeTemperature ??= DataUtility.AsFloat(G(pd, "maxSafeTemperature"));
+        data.maxOutputCount ??= DataUtility.AsFloat(G(pd, "maxOutputCount"));
 
         // 验证：如果原数据变更导致 ingredient/result 项数不匹配，清除所有修改，重新从 ProcessDef 加载
-        bool ingredientMismatch = data.processIngredients != null
-            && (pd.ingredients == null || data.processIngredients.Count != pd.ingredients.Count);
-        bool resultMismatch = data.processResults != null
-            && (pd.results == null || data.processResults.Count != pd.results.Count);
+        bool ingredientMismatch = data.processIngredients != null && CountOf(G(pd, "ingredients")) != data.processIngredients.Count;
+        bool resultMismatch = data.processResults != null && CountOf(G(pd, "results")) != data.processResults.Count;
         if (ingredientMismatch || resultMismatch)
         {
             data.processIngredients = null;
             data.processResults = null;
         }
 
-        if (pd.ingredients != null)
+        if (data.processIngredients == null && G(pd, "ingredients") is IEnumerable ingredients)
         {
-            if (data.processIngredients == null)
+            data.processIngredients = new List<ProcessIngredientItem>();
+            foreach (var i in ingredients.Cast<object>())
             {
-                data.processIngredients = new List<ProcessIngredientItem>(pd.ingredients.Count);
-                foreach (var i in pd.ingredients)
+                data.processIngredients.Add(new ProcessIngredientItem
                 {
-                    data.processIngredients.Add(new ProcessIngredientItem
-                    {
-                        thing = i.thing,
-                        thingCategory = i.thingCategory,
-                        disallowedThingDefs = i.disallowedThingDefs?.ToList(),
-                        countNeeded = i.countNeeded,
-                    });
-                }
+                    thing = G(i, "thing") as ThingDef,
+                    thingCategory = G(i, "thingCategory") as ThingCategoryDef,
+                    disallowedThingDefs = (G(i, "disallowedThingDefs") as IEnumerable)?.Cast<ThingDef>().ToList(),
+                    countNeeded = DataUtility.AsFloat(G(i, "countNeeded")) ?? 0f,
+                });
             }
         }
-        if (pd.results != null)
+        if (data.processResults == null && G(pd, "results") is IEnumerable results)
         {
-            if (data.processResults == null)
+            data.processResults = new List<ProcessResultItem>();
+            foreach (var r in results.Cast<object>())
             {
-                data.processResults = new List<ProcessResultItem>(pd.results.Count);
-                foreach (var r in pd.results)
+                data.processResults.Add(new ProcessResultItem
                 {
-                    data.processResults.Add(new ProcessResultItem
-                    {
-                        thing = r.thing,
-                        count = r.count,
-                    });
-                }
+                    thing = G(r, "thing") as ThingDef,
+                    count = DataUtility.AsInt(G(r, "count")) ?? 0,
+                });
             }
         }
         return true;
@@ -87,52 +112,53 @@ public class RecipeProcessHelper
 
     public static bool ApplyProcessDef(Def def, RecipeData data)
     {
-        if (def is not ProcessDef pd) return false;
-        if (data.processIngredients != null && pd.ingredients != null)
+        if (!IsProcessDef(def)) return false;
+        object pd = def!;
+
+        if (data.processIngredients != null && G(pd, "ingredients") is IEnumerable pdIngredients)
         {
-            int count = Math.Min(data.processIngredients.Count, pd.ingredients.Count);
+            var list = pdIngredients.Cast<object>().ToList();
+            int count = Math.Min(data.processIngredients.Count, list.Count);
             for (int i = 0; i < count; i++)
             {
                 var src = data.processIngredients[i];
-                var dst = pd.ingredients[i];
-                dst.thing = src.thing;
-                dst.thingCategory = src.thingCategory;
-                dst.disallowedThingDefs = src.disallowedThingDefs?.ToList();
-                dst.countNeeded = src.countNeeded;
+                var dst = list[i];
+                S(dst, "thing", src.thing);
+                S(dst, "thingCategory", src.thingCategory);
+                S(dst, "disallowedThingDefs", src.disallowedThingDefs?.ToList());
+                S(dst, "countNeeded", src.countNeeded);
             }
         }
-        data.ApplyV<int>(nameof(data.ticks), v => pd.ticks = v);
-        data.ApplyL<int>(nameof(data.ticksQuality), v => pd.ticksQuality = v);
-        if (data.processResults != null && pd.results != null)
+        ApplyMember<int>(data, pd, "ticks", nameof(data.ticks));
+        data.ApplyL<int>(nameof(data.ticksQuality), v => S(pd, "ticksQuality", v));
+        if (data.processResults != null && G(pd, "results") is IEnumerable pdResults)
         {
-            int count = Math.Min(data.processResults.Count, pd.results.Count);
+            var list = pdResults.Cast<object>().ToList();
+            int count = Math.Min(data.processResults.Count, list.Count);
             for (int i = 0; i < count; i++)
             {
                 var src = data.processResults[i];
-                var dst = pd.results[i];
-                dst.thing = src.thing;
-                dst.count = src.count;
+                var dst = list[i];
+                S(dst, "thing", src.thing);
+                S(dst, "count", src.count);
             }
         }
-        data.ApplyV<bool>(nameof(data.isLightDependingProcess), v => pd.isLightDependingProcess = v);
-        data.ApplyV<float>(nameof(data.minLight), v => pd.minLight = v);
-        data.ApplyV<float>(nameof(data.maxLight), v => pd.maxLight = v);
-        data.ApplyV<bool>(nameof(data.temperatureRuinable), v => pd.temperatureRuinable = v);
-        data.ApplyV<float>(nameof(data.minSafeTemperature), v => pd.minSafeTemperature = v);
-        data.ApplyV<float>(nameof(data.maxSafeTemperature), v => pd.maxSafeTemperature = v);
-        data.ApplyV<float>(nameof(data.maxOutputCount), v => pd.maxOutputCount = v);
+        ApplyMember<bool>(data, pd, "isLightDependingProcess", nameof(data.isLightDependingProcess));
+        ApplyMember<float>(data, pd, "minLight", nameof(data.minLight));
+        ApplyMember<float>(data, pd, "maxLight", nameof(data.maxLight));
+        ApplyMember<bool>(data, pd, "temperatureRuinable", nameof(data.temperatureRuinable));
+        ApplyMember<float>(data, pd, "minSafeTemperature", nameof(data.minSafeTemperature));
+        ApplyMember<float>(data, pd, "maxSafeTemperature", nameof(data.maxSafeTemperature));
+        ApplyMember<float>(data, pd, "maxOutputCount", nameof(data.maxOutputCount));
         return true;
     }
 
     public static int GetProcessDefPropType(Def def)
     {
-        if (def is ProcessDef pd)
-        {
-            return pd.isFactoryProcess
-                ? (int)RecipeData.RecipeCategory.Factory
-                : (int)RecipeData.RecipeCategory.Process;
-        }
-        return -1;
+        if (!IsProcessDef(def)) return -1;
+        return DataUtility.AsBool(G(def, "isFactoryProcess"))
+            ? (int)RecipeData.RecipeCategory.Factory
+            : (int)RecipeData.RecipeCategory.Process;
     }
 
     /// <summary>
@@ -148,21 +174,25 @@ public class RecipeProcessHelper
         {
             if (thingDef.category != ThingCategory.Building) continue;
 
-            var comp = thingDef.GetCompProperties<CompProperties_AdvancedResourceProcessor>();
+            var comp = FindAdvancedProcessorComp(thingDef);
             if (comp == null) continue;
+            if (G(comp, "processes") is not IEnumerable processes) continue;
 
-            foreach (var processDef in comp.processes)
+            foreach (var processDef in processes.Cast<object>())
             {
+                string defName = processDef is Def d ? d.defName : DataUtility.GetByName(processDef, "defName") as string ?? "";
+                if (defName.Length == 0) continue;
+
                 // 填充缓存
-                if (!_processOriginalCache.TryGetValue(processDef.defName, out var origList))
+                if (!_processOriginalCache.TryGetValue(defName, out var origList))
                 {
                     origList = new List<ThingDef>();
-                    _processOriginalCache[processDef.defName] = origList;
+                    _processOriginalCache[defName] = origList;
                 }
                 origList.Add(thingDef);
 
                 // 填充 RecipeData 的 display 字段
-                var id = new TweakID(processDef.defName, SettingType.Recipe);
+                var id = new TweakID(defName, SettingType.Recipe);
                 if (TweakDatabase.TryGetOriginal(id, out var data) && data is RecipeData rd)
                 {
                     rd.processUser = origList.Count == 1
@@ -192,34 +222,26 @@ public class RecipeProcessHelper
     /// </summary>
     public static void ApplyProcessHidden(Def def, bool hidden)
     {
-        if (def is not ProcessDef pd) return;
-        if (_processOriginalCache == null) return;
+        if (!IsProcessDef(def) || _processOriginalCache == null) return;
+        object pd = def!;
+        if (!_processOriginalCache.TryGetValue(def.defName, out var originalBuildings)) return;
 
-        if (hidden)
+        foreach (var thingDef in originalBuildings)
         {
-            // 移除：从所有原建筑中删除此 process
-            if (_processOriginalCache.TryGetValue(pd.defName, out var originalBuildings))
+            var comp = FindAdvancedProcessorComp(thingDef);
+            if (G(comp, "processes") is not IList processes) continue;
+
+            if (hidden)
             {
-                foreach (var thingDef in originalBuildings)
-                {
-                    var comp = thingDef.GetCompProperties<CompProperties_AdvancedResourceProcessor>();
-                    if (comp != null && comp.processes.Contains(pd))
-                        comp.processes.Remove(pd);
-                }
+                if (processes.Contains(pd)) processes.Remove(pd);
             }
-        }
-        else
-        {
-            // 还原：恢复到所有原建筑
-            if (_processOriginalCache.TryGetValue(pd.defName, out var originalBuildings))
+            else
             {
-                foreach (var thingDef in originalBuildings)
-                {
-                    var comp = thingDef.GetCompProperties<CompProperties_AdvancedResourceProcessor>();
-                    if (comp != null && !comp.processes.Contains(pd))
-                        comp.processes.Add(pd);
-                }
+                if (!processes.Contains(pd)) processes.Add(pd);
             }
         }
     }
+
+    private static object? FindAdvancedProcessorComp(ThingDef thingDef)
+        => thingDef.comps?.FirstOrDefault(c => c != null && DataUtility.IsTypeOrSubclassOfName(c.GetType(), AdvancedProcessorCompType));
 }

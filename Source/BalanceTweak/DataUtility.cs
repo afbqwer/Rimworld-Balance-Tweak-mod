@@ -26,6 +26,61 @@ public static class DataUtility
         }
     }
 
+    #region 可选 Mod 兼容（只走反射，绝不静态引用其类型）
+
+    // 背景：C# 会把 lambda 捕获的变量编成闭包类的**公共字段**。若该变量类型来自可选 Mod，
+    // 未加载该 Mod 时，RimWorld 启动期对全部类型调用 GetFields()（StaticConstructorOnStartupUtility
+    // .ReportProbablyMissingAttributes）会抛 TypeLoadException（Could not load type of field ...）。
+    // 因此凡涉及可选 Mod 类型之处，一律"按名字反射"，并把结果装进 object / MemberInfo 再交给闭包 ——
+    // 这样闭包字段只会是 object，绝不出现可选 Mod 类型。**也不得使用 typeof/泛型参数引用这些类型。**
+
+    /// <summary>类型自身或其继承链上是否有某个全名。</summary>
+    public static bool IsTypeOrSubclassOfName(Type? type, string fullName)
+    {
+        for (var t = type; t != null; t = t.BaseType)
+            if (t.FullName == fullName) return true;
+        return false;
+    }
+
+    /// <summary>按名字找字段或属性（含继承链）；找不到返回 null。</summary>
+    public static MemberInfo? FindMember(Type? type, string name)
+    {
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+        for (var t = type; t != null; t = t.BaseType)
+        {
+            if (t.GetField(name, flags) is FieldInfo f) return f;
+            if (t.GetProperty(name, flags) is PropertyInfo p) return p;
+        }
+        return null;
+    }
+
+    public static object? GetMember(object? target, MemberInfo? member)
+        => target == null || member == null ? null
+         : member is FieldInfo f ? f.GetValue(target)
+         : ((PropertyInfo)member).GetValue(target);
+
+    public static void SetMember(object? target, MemberInfo? member, object? value)
+    {
+        if (target == null || member == null) return;
+        if (member is FieldInfo f) f.SetValue(target, value);
+        else ((PropertyInfo)member).SetValue(target, value);
+    }
+
+    /// <summary>按名字直读直写（便捷版）。</summary>
+    public static object? GetByName(object? target, string name) => GetMember(target, FindMember(target?.GetType(), name));
+    public static void SetByName(object? target, string name, object? value) => SetMember(target, FindMember(target?.GetType(), name), value);
+
+    public static float? AsFloat(object? v) => v switch { float f => f, int i => i, double d => (float)d, _ => null };
+    public static int? AsInt(object? v) => v switch { int i => i, float f => (int)f, double d => (int)d, _ => null };
+    public static bool AsBool(object? v) => v is bool b && b;
+    public static List<int>? AsIntList(object? v) => v is System.Collections.IEnumerable e && v is not string ? e.Cast<int>().ToList() : null;
+
+    /// <summary>在 <c>def.modExtensions</c> 里按类型全名找可选 Mod 的 <see cref="DefModExtension"/>（返回基类，调用方再反射取成员）。</summary>
+    public static DefModExtension? FindModExtension(Def? def, string fullTypeName)
+        => def?.modExtensions?.FirstOrDefault(e => e != null && e.GetType().FullName == fullTypeName);
+
+    #endregion
+
     #region ThingDef 分类谓词
 
     // 由各 Data 类上的 [TweakFor(Match = nameof(...))] 引用。
