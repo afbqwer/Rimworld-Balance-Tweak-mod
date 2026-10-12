@@ -502,8 +502,10 @@ public static partial class TweakDatabase
         }
         Log.Message($"[BT/MIGRATE] dry-run（意图预览，未改动任何数据）：将清空 {clearCount} 项 / 还原 {revertCount} 项"
                   + $"{(clearCount + revertCount > printed ? $"（仅列出前 {printed} 项）" : "")}");
-        if (!clearedSemanticsEnabled && clearCount + revertCount > 0)
-            Log.Message("[BT/MIGRATE] 灰度开关当前关闭 —— 以上仅为预览；人工核对无误后可在「总体设置」里打开 L0 clear 语义。");
+        if (clearedSemanticsEnabled)
+            Log.Message("[BT/MIGRATE] 灰度开关已开启 —— 以上即本次**实际执行**的清空/还原清单（由随后的 Apply 阶段执行）。");
+        else if (clearCount + revertCount > 0)
+            Log.Message("[BT/MIGRATE] 灰度开关当前关闭 —— 以上仅为预览；人工核对无误后可在「总体设置」里打开 L0 clear 语义（勾选后关闭设置窗口保存，再重启）。");
     }
 
     /// <summary>集合类字段（List&lt;&gt; / ThingFilter）：Cleared 的语义是"清空"；其余是"还原原值"。</summary>
