@@ -86,12 +86,12 @@ class StuffData : TweakData<StuffData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyDefStats(def);
-        if (deepCommonality.HasValue) { def.deepCommonality = deepCommonality.Value; }
-        if (deepCountPerPortion.HasValue) { def.deepCountPerPortion = deepCountPerPortion.Value; }
-        if (deepCountPerCell.HasValue) { def.deepCountPerCell = deepCountPerCell.Value; }
-        if (deepLumpSizeRange.HasValue) { def.deepLumpSizeRange = deepLumpSizeRange.Value; }
+        ApplyV<float>(nameof(deepCommonality), v => def.deepCommonality = v);
+        ApplyV<int>(nameof(deepCountPerPortion), v => def.deepCountPerPortion = v);
+        ApplyV<int>(nameof(deepCountPerCell), v => def.deepCountPerCell = v);
+        ApplyV<IntRange>(nameof(deepLumpSizeRange), v => def.deepLumpSizeRange = v);
     }
 
 

@@ -69,17 +69,17 @@ class ResearchData : TweakData<ResearchData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (baseCost.HasValue) { def.baseCost = baseCost.Value; }
-        if (researchViewX.HasValue) { def.researchViewX = researchViewX.Value; }
-        if (researchViewY.HasValue) { def.researchViewY = researchViewY.Value; }
-        if (techLevel.HasValue) { def.techLevel = techLevel.Value; }
-        if (researchTab != null) { def.tab = researchTab; }
-        if (knowledgeCost.HasValue) { def.knowledgeCost = knowledgeCost.Value; }
-        if (knowledgeCategory != null) { def.knowledgeCategory = knowledgeCategory; }
-        if (techprintCount.HasValue) { def.techprintCount = techprintCount.Value; }
-        if (techprintCommonality.HasValue) { def.techprintCommonality = techprintCommonality.Value; }
-        if (techprintMarketValue.HasValue) { def.techprintMarketValue = techprintMarketValue.Value; }
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyV<float>(nameof(baseCost), v => def.baseCost = v);
+        ApplyV<float>(nameof(researchViewX), v => def.researchViewX = v);
+        ApplyV<float>(nameof(researchViewY), v => def.researchViewY = v);
+        ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
+        ApplyD<ResearchTabDef>(nameof(researchTab), v => def.tab = v);
+        ApplyV<float>(nameof(knowledgeCost), v => def.knowledgeCost = v);
+        ApplyD<KnowledgeCategoryDef>(nameof(knowledgeCategory), v => def.knowledgeCategory = v);
+        ApplyV<int>(nameof(techprintCount), v => def.techprintCount = v);
+        ApplyV<float>(nameof(techprintCommonality), v => def.techprintCommonality = v);
+        ApplyV<float>(nameof(techprintMarketValue), v => def.techprintMarketValue = v);
+        ApplyS(nameof(defLabel), v => this.def.label = v);
     }
 
     public override List<string> TypeStrings => typeStrings;

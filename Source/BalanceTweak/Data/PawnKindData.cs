@@ -368,120 +368,120 @@ class PawnKindData : TweakData<PawnKindData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
-        if (combatPower.HasValue) def.combatPower = combatPower.Value;
-        if (allowInMechClusters.HasValue) def.allowInMechClusters = allowInMechClusters.Value;
-        if (collidesWithPawns.HasValue) def.collidesWithPawns = collidesWithPawns.Value;
-        if (initialWillRange.HasValue) def.initialWillRange = initialWillRange.Value;
-        if (initialResistanceRange.HasValue) def.initialResistanceRange = initialResistanceRange.Value;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyV<float>(nameof(combatPower), v => def.combatPower = v);
+        ApplyV<bool>(nameof(allowInMechClusters), v => def.allowInMechClusters = v);
+        ApplyV<bool>(nameof(collidesWithPawns), v => def.collidesWithPawns = v);
+        ApplyN<FloatRange>(nameof(initialWillRange), v => def.initialWillRange = v);
+        ApplyN<FloatRange>(nameof(initialResistanceRange), v => def.initialResistanceRange = v);
 
-        if (weaponMoney.HasValue) def.weaponMoney = weaponMoney.Value;
-        if (apparelMoney.HasValue) def.apparelMoney = apparelMoney.Value;
-        if (gearHealthRange.HasValue) def.gearHealthRange = gearHealthRange.Value;
-        if (itemQuality.HasValue) def.itemQuality = itemQuality.Value;
-        if (forceWeaponQuality.HasValue) def.forceWeaponQuality = forceWeaponQuality.Value;
-        if (minApparelQuality.HasValue) def.minApparelQuality = minApparelQuality.Value;
-        if (maxApparelQuality.HasValue) def.maxApparelQuality = maxApparelQuality.Value;
-        if (forceNormalGearQuality.HasValue) def.forceNormalGearQuality = forceNormalGearQuality.Value;
-        if (nakedChance.HasValue) def.nakedChance = nakedChance.Value;
-        if (biocodeWeaponChance.HasValue) def.biocodeWeaponChance = biocodeWeaponChance.Value;
-        if (destroyGearOnDrop.HasValue) def.destroyGearOnDrop = destroyGearOnDrop.Value;
-        if (canStrip.HasValue) def.canStrip = canStrip.Value;
-        if (apparelAllowHeadgearChance.HasValue) def.apparelAllowHeadgearChance = apparelAllowHeadgearChance.Value;
-        if (ignoreApparelAllowChance.HasValue) def.ignoreApparelAllowChance = ignoreApparelAllowChance.Value;
+        ApplyV<FloatRange>(nameof(weaponMoney), v => def.weaponMoney = v);
+        ApplyV<FloatRange>(nameof(apparelMoney), v => def.apparelMoney = v);
+        ApplyV<FloatRange>(nameof(gearHealthRange), v => def.gearHealthRange = v);
+        ApplyV<QualityCategory>(nameof(itemQuality), v => def.itemQuality = v);
+        ApplyN<QualityCategory>(nameof(forceWeaponQuality), v => def.forceWeaponQuality = v);
+        ApplyV<QualityCategory>(nameof(minApparelQuality), v => def.minApparelQuality = v);
+        ApplyV<QualityCategory>(nameof(maxApparelQuality), v => def.maxApparelQuality = v);
+        ApplyV<bool>(nameof(forceNormalGearQuality), v => def.forceNormalGearQuality = v);
+        ApplyV<float>(nameof(nakedChance), v => def.nakedChance = v);
+        ApplyV<float>(nameof(biocodeWeaponChance), v => def.biocodeWeaponChance = v);
+        ApplyV<bool>(nameof(destroyGearOnDrop), v => def.destroyGearOnDrop = v);
+        ApplyV<bool>(nameof(canStrip), v => def.canStrip = v);
+        ApplyV<float>(nameof(apparelAllowHeadgearChance), v => def.apparelAllowHeadgearChance = v);
+        ApplyV<bool>(nameof(ignoreApparelAllowChance), v => def.ignoreApparelAllowChance = v);
 
-        if (maxPerGroup.HasValue) def.maxPerGroup = maxPerGroup.Value;
-        if (canBeScattered.HasValue) def.canBeScattered = canBeScattered.Value;
-        if (appearsRandomlyInCombatGroups.HasValue) def.appearsRandomlyInCombatGroups = appearsRandomlyInCombatGroups.Value;
-        if (wildGroupSize.HasValue) def.wildGroupSize = wildGroupSize.Value;
-        if (ecoSystemWeight.HasValue) def.ecoSystemWeight = ecoSystemWeight.Value;
+        ApplyV<int>(nameof(maxPerGroup), v => def.maxPerGroup = v);
+        ApplyV<bool>(nameof(canBeScattered), v => def.canBeScattered = v);
+        ApplyV<bool>(nameof(appearsRandomlyInCombatGroups), v => def.appearsRandomlyInCombatGroups = v);
+        ApplyV<IntRange>(nameof(wildGroupSize), v => def.wildGroupSize = v);
+        ApplyV<float>(nameof(ecoSystemWeight), v => def.ecoSystemWeight = v);
 
-        if (fixedGender.HasValue) def.fixedGender = fixedGender.Value;
-        if (chronologicalAgeRange.HasValue) def.chronologicalAgeRange = chronologicalAgeRange.Value;
-        if (minGenerationAge.HasValue) def.minGenerationAge = minGenerationAge.Value;
-        if (maxGenerationAge.HasValue) def.maxGenerationAge = maxGenerationAge.Value;
-        if (canOpenAnyDoor.HasValue) def.canOpenAnyDoor = canOpenAnyDoor.Value;
-        if (canOpenDoors.HasValue) def.canOpenDoors = canOpenDoors.Value;
-        if (isBoss.HasValue) def.isBoss = isBoss.Value;
-        if (preventIdeo.HasValue) def.preventIdeo = preventIdeo.Value;
-        if (humanPregnancyChance.HasValue) def.humanPregnancyChance = humanPregnancyChance.Value;
-        if (allowOldAgeInjuries.HasValue) def.allowOldAgeInjuries = allowOldAgeInjuries.Value;
-        if (forceNoDeathNotification.HasValue) def.forceNoDeathNotification = forceNoDeathNotification.Value;
-        if (controlGroupPortraitZoom.HasValue) def.controlGroupPortraitZoom = controlGroupPortraitZoom.Value;
-        if (showInDebugSpawner.HasValue) def.showInDebugSpawner = showInDebugSpawner.Value;
-        if (royalTitleChance.HasValue) def.royalTitleChance = royalTitleChance.Value;
-        if (useFactionXenotypes.HasValue) def.useFactionXenotypes = useFactionXenotypes.Value;
-        if (allowRoyalRoomRequirements.HasValue) def.allowRoyalRoomRequirements = allowRoyalRoomRequirements.Value;
-        if (allowRoyalApparelRequirements.HasValue) def.allowRoyalApparelRequirements = allowRoyalApparelRequirements.Value;
+        ApplyN<Gender>(nameof(fixedGender), v => def.fixedGender = v);
+        ApplyN<FloatRange>(nameof(chronologicalAgeRange), v => def.chronologicalAgeRange = v);
+        ApplyV<int>(nameof(minGenerationAge), v => def.minGenerationAge = v);
+        ApplyV<int>(nameof(maxGenerationAge), v => def.maxGenerationAge = v);
+        ApplyV<bool>(nameof(canOpenAnyDoor), v => def.canOpenAnyDoor = v);
+        ApplyV<bool>(nameof(canOpenDoors), v => def.canOpenDoors = v);
+        ApplyV<bool>(nameof(isBoss), v => def.isBoss = v);
+        ApplyV<bool>(nameof(preventIdeo), v => def.preventIdeo = v);
+        ApplyV<float>(nameof(humanPregnancyChance), v => def.humanPregnancyChance = v);
+        ApplyV<bool>(nameof(allowOldAgeInjuries), v => def.allowOldAgeInjuries = v);
+        ApplyV<bool>(nameof(forceNoDeathNotification), v => def.forceNoDeathNotification = v);
+        ApplyV<float>(nameof(controlGroupPortraitZoom), v => def.controlGroupPortraitZoom = v);
+        ApplyV<bool>(nameof(showInDebugSpawner), v => def.showInDebugSpawner = v);
+        ApplyV<float>(nameof(royalTitleChance), v => def.royalTitleChance = v);
+        ApplyV<bool>(nameof(useFactionXenotypes), v => def.useFactionXenotypes = v);
+        ApplyV<bool>(nameof(allowRoyalRoomRequirements), v => def.allowRoyalRoomRequirements = v);
+        ApplyV<bool>(nameof(allowRoyalApparelRequirements), v => def.allowRoyalApparelRequirements = v);
 
         // Second Priority: Combat & AI
-        if (isFighter.HasValue) def.isFighter = isFighter.Value;
-        if (forceDeathOnDowned.HasValue) def.forceDeathOnDowned = forceDeathOnDowned.Value;
-        if (overrideDeathOnDownedChance.HasValue) def.overrideDeathOnDownedChance = overrideDeathOnDownedChance.Value;
-        if (fleeHealthThresholdRange.HasValue) def.fleeHealthThresholdRange = fleeHealthThresholdRange.Value;
-        if (ignoresPainShock.HasValue) def.ignoresPainShock = ignoresPainShock.Value;
-        if (canMeleeAttack.HasValue) def.canMeleeAttack = canMeleeAttack.Value;
-        if (aiAvoidCover.HasValue) def.aiAvoidCover = aiAvoidCover.Value;
-        if (canBeSapper.HasValue) def.canBeSapper = canBeSapper.Value;
-        if (isGoodBreacher.HasValue) def.isGoodBreacher = isGoodBreacher.Value;
-        if (defendPointRadius.HasValue) def.defendPointRadius = defendPointRadius.Value;
-        if (canArriveManhunter.HasValue) def.canArriveManhunter = canArriveManhunter.Value;
-        if (immuneToTraps.HasValue) def.immuneToTraps = immuneToTraps.Value;
-        if (immuneToGameConditionEffects.HasValue) def.immuneToGameConditionEffects = immuneToGameConditionEffects.Value;
+        ApplyV<bool>(nameof(isFighter), v => def.isFighter = v);
+        ApplyV<bool>(nameof(forceDeathOnDowned), v => def.forceDeathOnDowned = v);
+        ApplyN<float>(nameof(overrideDeathOnDownedChance), v => def.overrideDeathOnDownedChance = v);
+        ApplyV<FloatRange>(nameof(fleeHealthThresholdRange), v => def.fleeHealthThresholdRange = v);
+        ApplyV<bool>(nameof(ignoresPainShock), v => def.ignoresPainShock = v);
+        ApplyV<bool>(nameof(canMeleeAttack), v => def.canMeleeAttack = v);
+        ApplyV<bool>(nameof(aiAvoidCover), v => def.aiAvoidCover = v);
+        ApplyV<bool>(nameof(canBeSapper), v => def.canBeSapper = v);
+        ApplyV<bool>(nameof(isGoodBreacher), v => def.isGoodBreacher = v);
+        ApplyV<float>(nameof(defendPointRadius), v => def.defendPointRadius = v);
+        ApplyV<bool>(nameof(canArriveManhunter), v => def.canArriveManhunter = v);
+        ApplyV<bool>(nameof(immuneToTraps), v => def.immuneToTraps = v);
+        ApplyV<bool>(nameof(immuneToGameConditionEffects), v => def.immuneToGameConditionEffects = v);
 
         // Second Priority: Capture & Prison
-        if (basePrisonBreakMtbDays.HasValue) def.basePrisonBreakMtbDays = basePrisonBreakMtbDays.Value;
-        if (acceptArrestChanceFactor.HasValue) def.acceptArrestChanceFactor = acceptArrestChanceFactor.Value;
-        if (skipResistant.HasValue) def.skipResistant = skipResistant.Value;
+        ApplyV<float>(nameof(basePrisonBreakMtbDays), v => def.basePrisonBreakMtbDays = v);
+        ApplyV<float>(nameof(acceptArrestChanceFactor), v => def.acceptArrestChanceFactor = v);
+        ApplyV<bool>(nameof(skipResistant), v => def.skipResistant = v);
 
         // Second Priority: Faction & Hostility
-        if (factionHostileOnKill.HasValue) def.factionHostileOnKill = factionHostileOnKill.Value;
-        if (factionHostileOnDeath.HasValue) def.factionHostileOnDeath = factionHostileOnDeath.Value;
-        if (hostileToAll.HasValue) def.hostileToAll = hostileToAll.Value;
-        if (factionLeader.HasValue) def.factionLeader = factionLeader.Value;
+        ApplyV<bool>(nameof(factionHostileOnKill), v => def.factionHostileOnKill = v);
+        ApplyV<bool>(nameof(factionHostileOnDeath), v => def.factionHostileOnDeath = v);
+        ApplyV<bool>(nameof(hostileToAll), v => def.hostileToAll = v);
+        ApplyV<bool>(nameof(factionLeader), v => def.factionLeader = v);
 
         // Second Priority: List<string>
-        if (weaponTags != null) def.weaponTags = weaponTags;
-        if (apparelTags != null) def.apparelTags = apparelTags;
-        if (apparelDisallowTags != null) def.apparelDisallowTags = apparelDisallowTags;
-        if (techHediffsTags != null) def.techHediffsTags = techHediffsTags;
-        if (techHediffsDisallowTags != null) def.techHediffsDisallowTags = techHediffsDisallowTags;
+        ApplyL<string>(nameof(weaponTags), v => def.weaponTags = v);
+        ApplyL<string>(nameof(apparelTags), v => def.apparelTags = v);
+        ApplyL<string>(nameof(apparelDisallowTags), v => def.apparelDisallowTags = v);
+        ApplyL<string>(nameof(techHediffsTags), v => def.techHediffsTags = v);
+        ApplyL<string>(nameof(techHediffsDisallowTags), v => def.techHediffsDisallowTags = v);
 
         // Second Priority: List<Def>
-        if (apparelRequired != null) def.apparelRequired = apparelRequired;
-        if (abilities != null) def.abilities = abilities;
-        if (disallowedTraits != null) def.disallowedTraits = disallowedTraits;
-        if (forcedAddictions != null) def.forcedAddictions = forcedAddictions;
-        if (techHediffsRequired != null) def.techHediffsRequired = techHediffsRequired;
-        if (titleSelectOne != null) def.titleSelectOne = titleSelectOne;
+        ApplyL<ThingDef>(nameof(apparelRequired), v => def.apparelRequired = v);
+        ApplyL<AbilityDef>(nameof(abilities), v => def.abilities = v);
+        ApplyL<TraitDef>(nameof(disallowedTraits), v => def.disallowedTraits = v);
+        ApplyL<ChemicalDef>(nameof(forcedAddictions), v => def.forcedAddictions = v);
+        ApplyL<ThingDef>(nameof(techHediffsRequired), v => def.techHediffsRequired = v);
+        ApplyL<RoyalTitleDef>(nameof(titleSelectOne), v => def.titleSelectOne = v);
 
         // Second Priority: Def Selector
-        if (defaultFactionDef != null) def.defaultFactionDef = defaultFactionDef;
-        if (weaponStuffOverride != null) def.weaponStuffOverride = weaponStuffOverride;
-        if (invFoodDef != null) def.invFoodDef = invFoodDef;
-        if (titleRequired != null) def.titleRequired = titleRequired;
-        if (minTitleRequired != null) def.minTitleRequired = minTitleRequired;
-        if (mutant != null) def.mutant = mutant;
-        if (favoriteColor != null) def.favoriteColor = favoriteColor;
+        ApplyD<FactionDef>(nameof(defaultFactionDef), v => def.defaultFactionDef = v);
+        ApplyD<ThingDef>(nameof(weaponStuffOverride), v => def.weaponStuffOverride = v);
+        ApplyD<ThingDef>(nameof(invFoodDef), v => def.invFoodDef = v);
+        ApplyD<RoyalTitleDef>(nameof(titleRequired), v => def.titleRequired = v);
+        ApplyD<RoyalTitleDef>(nameof(minTitleRequired), v => def.minTitleRequired = v);
+        ApplyD<MutantDef>(nameof(mutant), v => def.mutant = v);
+        ApplyD<ColorDef>(nameof(favoriteColor), v => def.favoriteColor = v);
 
         // Second Priority: Numeric
-        if (techHediffsMoney.HasValue) def.techHediffsMoney = techHediffsMoney.Value;
-        if (techHediffsChance.HasValue) def.techHediffsChance = techHediffsChance.Value;
-        if (techHediffsMaxAmount.HasValue) def.techHediffsMaxAmount = techHediffsMaxAmount.Value;
-        if (invNutrition.HasValue) def.invNutrition = invNutrition.Value;
-        if (chemicalAddictionChance.HasValue) def.chemicalAddictionChance = chemicalAddictionChance.Value;
-        if (combatEnhancingDrugsChance.HasValue) def.combatEnhancingDrugsChance = combatEnhancingDrugsChance.Value;
-        if (combatEnhancingDrugsCount.HasValue) def.combatEnhancingDrugsCount = combatEnhancingDrugsCount.Value;
-        if (extraSkillLevels.HasValue) def.extraSkillLevels = extraSkillLevels.Value;
-        if (minTotalSkillLevels.HasValue) def.minTotalSkillLevels = minTotalSkillLevels.Value;
-        if (minBestSkillLevel.HasValue) def.minBestSkillLevel = minBestSkillLevel.Value;
-        if (isGoodPsychicRitualInvoker.HasValue) def.isGoodPsychicRitualInvoker = isGoodPsychicRitualInvoker.Value;
-        if (apparelIgnoreSeasons.HasValue) def.apparelIgnoreSeasons = apparelIgnoreSeasons.Value;
-        if (apparelIgnorePollution.HasValue) def.apparelIgnorePollution = apparelIgnorePollution.Value;
-        if (ignoreFactionApparelStuffRequirements.HasValue) def.ignoreFactionApparelStuffRequirements = ignoreFactionApparelStuffRequirements.Value;
-        if (ignoreIdeoApparelColors.HasValue) def.ignoreIdeoApparelColors = ignoreIdeoApparelColors.Value;
-        if (trader.HasValue) def.trader = trader.Value;
-        if (generateInitialNonFamilyRelations.HasValue) def.generateInitialNonFamilyRelations = generateInitialNonFamilyRelations.Value;
+        ApplyV<FloatRange>(nameof(techHediffsMoney), v => def.techHediffsMoney = v);
+        ApplyV<float>(nameof(techHediffsChance), v => def.techHediffsChance = v);
+        ApplyV<int>(nameof(techHediffsMaxAmount), v => def.techHediffsMaxAmount = v);
+        ApplyV<float>(nameof(invNutrition), v => def.invNutrition = v);
+        ApplyV<float>(nameof(chemicalAddictionChance), v => def.chemicalAddictionChance = v);
+        ApplyV<float>(nameof(combatEnhancingDrugsChance), v => def.combatEnhancingDrugsChance = v);
+        ApplyV<IntRange>(nameof(combatEnhancingDrugsCount), v => def.combatEnhancingDrugsCount = v);
+        ApplyV<int>(nameof(extraSkillLevels), v => def.extraSkillLevels = v);
+        ApplyV<int>(nameof(minTotalSkillLevels), v => def.minTotalSkillLevels = v);
+        ApplyV<int>(nameof(minBestSkillLevel), v => def.minBestSkillLevel = v);
+        ApplyV<bool>(nameof(isGoodPsychicRitualInvoker), v => def.isGoodPsychicRitualInvoker = v);
+        ApplyV<bool>(nameof(apparelIgnoreSeasons), v => def.apparelIgnoreSeasons = v);
+        ApplyV<bool>(nameof(apparelIgnorePollution), v => def.apparelIgnorePollution = v);
+        ApplyV<bool>(nameof(ignoreFactionApparelStuffRequirements), v => def.ignoreFactionApparelStuffRequirements = v);
+        ApplyV<bool>(nameof(ignoreIdeoApparelColors), v => def.ignoreIdeoApparelColors = v);
+        ApplyV<bool>(nameof(trader), v => def.trader = v);
+        ApplyV<bool>(nameof(generateInitialNonFamilyRelations), v => def.generateInitialNonFamilyRelations = v);
     }
 
     public static bool AvailableIfHuman(TweakData data) => data.propType switch

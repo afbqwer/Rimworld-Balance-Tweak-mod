@@ -365,71 +365,79 @@ class HediffData : TweakData<HediffData>, ISubItemHost
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
-        if (initialSeverity.HasValue) { def.initialSeverity = initialSeverity.Value; }
-        if (lethalSeverity.HasValue) { def.lethalSeverity = lethalSeverity.Value; }
-        if (minSeverity.HasValue) { def.minSeverity = minSeverity.Value; }
-        if (maxSeverity.HasValue) { def.maxSeverity = maxSeverity.Value; }
-        if (tendable.HasValue) { def.tendable = tendable.Value; }
-        if (isBad.HasValue) { def.isBad = isBad.Value; }
-        if (makesSickThought.HasValue) { def.makesSickThought = makesSickThought.Value; }
-        if (makesAlert.HasValue) { def.makesAlert = makesAlert.Value; }
-        if (everCurableByItem.HasValue) { def.everCurableByItem = everCurableByItem.Value; }
-        if (keepOnBodyPartRestoration.HasValue) { def.keepOnBodyPartRestoration = keepOnBodyPartRestoration.Value; }
-        if (blocksSocialInteraction.HasValue) { def.blocksSocialInteraction = blocksSocialInteraction.Value; }
-        if (forceRemoveOnResurrection.HasValue) { def.forceRemoveOnResurrection = forceRemoveOnResurrection.Value; }
-        if (preventsDeath.HasValue) { def.preventsDeath = preventsDeath.Value; }
-        if (duplicationAllowed.HasValue) { def.duplicationAllowed = duplicationAllowed.Value; }
-        if (canAffectBionicOrImplant.HasValue) { def.canAffectBionicOrImplant = canAffectBionicOrImplant.Value; }
-        if (alwaysShowSeverity.HasValue) { def.alwaysShowSeverity = alwaysShowSeverity.Value; }
-        if (organicAddedBodypart.HasValue) { def.organicAddedBodypart = organicAddedBodypart.Value; }
+        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyV<float>(nameof(initialSeverity), v => def.initialSeverity = v);
+        ApplyV<float>(nameof(lethalSeverity), v => def.lethalSeverity = v);
+        ApplyV<float>(nameof(minSeverity), v => def.minSeverity = v);
+        ApplyV<float>(nameof(maxSeverity), v => def.maxSeverity = v);
+        ApplyV<bool>(nameof(tendable), v => def.tendable = v);
+        ApplyV<bool>(nameof(isBad), v => def.isBad = v);
+        ApplyV<bool>(nameof(makesSickThought), v => def.makesSickThought = v);
+        ApplyV<bool>(nameof(makesAlert), v => def.makesAlert = v);
+        ApplyV<bool>(nameof(everCurableByItem), v => def.everCurableByItem = v);
+        ApplyV<bool>(nameof(keepOnBodyPartRestoration), v => def.keepOnBodyPartRestoration = v);
+        ApplyV<bool>(nameof(blocksSocialInteraction), v => def.blocksSocialInteraction = v);
+        ApplyV<bool>(nameof(forceRemoveOnResurrection), v => def.forceRemoveOnResurrection = v);
+        ApplyV<bool>(nameof(preventsDeath), v => def.preventsDeath = v);
+        ApplyV<bool>(nameof(duplicationAllowed), v => def.duplicationAllowed = v);
+        ApplyV<bool>(nameof(canAffectBionicOrImplant), v => def.canAffectBionicOrImplant = v);
+        ApplyV<bool>(nameof(alwaysShowSeverity), v => def.alwaysShowSeverity = v);
+        ApplyV<bool>(nameof(organicAddedBodypart), v => def.organicAddedBodypart = v);
         if (def.injuryProps != null)
         {
-            if (painPerSeverity.HasValue) def.injuryProps.painPerSeverity = painPerSeverity.Value;
-            if (averagePainPerSeverityPermanent.HasValue) def.injuryProps.averagePainPerSeverityPermanent = averagePainPerSeverityPermanent.Value;
-            if (bleedRate.HasValue) def.injuryProps.bleedRate = bleedRate.Value;
-            if (canMerge.HasValue) def.injuryProps.canMerge = canMerge.Value;
+            ApplyV<float>(nameof(painPerSeverity), v => def.injuryProps.painPerSeverity = v);
+            ApplyV<float>(nameof(averagePainPerSeverityPermanent), v => def.injuryProps.averagePainPerSeverityPermanent = v);
+            ApplyV<float>(nameof(bleedRate), v => def.injuryProps.bleedRate = v);
+            ApplyV<bool>(nameof(canMerge), v => def.injuryProps.canMerge = v);
         }
         if (def.addedPartProps != null)
         {
-            if (partEfficiency.HasValue) def.addedPartProps.partEfficiency = partEfficiency.Value;
-            if (solid.HasValue) def.addedPartProps.solid = solid.Value;
-            if (isGoodWeapon.HasValue) def.addedPartProps.isGoodWeapon = isGoodWeapon.Value;
-            if (betterThanNatural.HasValue) def.addedPartProps.betterThanNatural = betterThanNatural.Value;
+            ApplyV<float>(nameof(partEfficiency), v => def.addedPartProps.partEfficiency = v);
+            ApplyV<bool>(nameof(solid), v => def.addedPartProps.solid = v);
+            ApplyV<bool>(nameof(isGoodWeapon), v => def.addedPartProps.isGoodWeapon = v);
+            ApplyV<bool>(nameof(betterThanNatural), v => def.addedPartProps.betterThanNatural = v);
         }
 
         // Comp props writing
         if (def.CompProps<HediffCompProperties_TendDuration>() is HediffCompProperties_TendDuration tend)
         {
-            if (tendDurationHours.HasValue) TendDurationBaseHours.SetValue(tend, tendDurationHours.Value);
-            if (severityPerDayTended.HasValue) tend.severityPerDayTended = severityPerDayTended.Value;
-            if (tendAllAtOnce.HasValue) tend.tendAllAtOnce = tendAllAtOnce.Value;
-            if (disappearsAtTotalTendQuality.HasValue) tend.disappearsAtTotalTendQuality = disappearsAtTotalTendQuality.Value;
+            ApplyV<float>(nameof(tendDurationHours), v => TendDurationBaseHours.SetValue(tend, v));
+            ApplyV<float>(nameof(severityPerDayTended), v => tend.severityPerDayTended = v);
+            ApplyV<bool>(nameof(tendAllAtOnce), v => tend.tendAllAtOnce = v);
+            ApplyV<int>(nameof(disappearsAtTotalTendQuality), v => tend.disappearsAtTotalTendQuality = v);
         }
         if (def.CompProps<HediffCompProperties_Disappears>() is HediffCompProperties_Disappears dis)
         {
-            if (disappearsAfterTicks.HasValue) dis.disappearsAfterTicks = disappearsAfterTicks.Value;
+            ApplyV<IntRange>(nameof(disappearsAfterTicks), v => dis.disappearsAfterTicks = v);
         }
         if (def.CompProps<HediffCompProperties_SeverityPerDay>() is HediffCompProperties_SeverityPerDay spd)
         {
-            if (severityPerDay.HasValue) spd.severityPerDay = severityPerDay.Value;
-            if (severityPerDayRange.HasValue) spd.severityPerDayRange = severityPerDayRange.Value;
+            ApplyV<float>(nameof(severityPerDay), v => spd.severityPerDay = v);
+            ApplyV<FloatRange>(nameof(severityPerDayRange), v => spd.severityPerDayRange = v);
         }
         if (def.CompProps<HediffCompProperties_Immunizable>() is HediffCompProperties_Immunizable imm)
         {
-            if (immunityPerDaySick.HasValue) imm.immunityPerDaySick = immunityPerDaySick.Value;
-            if (severityPerDayImmune.HasValue) imm.severityPerDayImmune = severityPerDayImmune.Value;
-            if (severityPerDayNotImmune.HasValue) imm.severityPerDayNotImmune = severityPerDayNotImmune.Value;
+            ApplyV<float>(nameof(immunityPerDaySick), v => imm.immunityPerDaySick = v);
+            ApplyV<float>(nameof(severityPerDayImmune), v => imm.severityPerDayImmune = v);
+            ApplyV<float>(nameof(severityPerDayNotImmune), v => imm.severityPerDayNotImmune = v);
         }
         if (def.CompProps<HediffCompProperties_Infecter>() is HediffCompProperties_Infecter inf)
         {
-            if (infectionChance.HasValue) inf.infectionChance = infectionChance.Value;
+            ApplyV<float>(nameof(infectionChance), v => inf.infectionChance = v);
         }
 
         // GetsPermanent Comp toggle
-        if (hasGetsPermanent.HasValue)
+        // 注意：hasGetsPermanent / becomePermanentChanceFactor 在 SetDef 里恒被回填为非空（见本文件 ~310-319），
+        // 故旧代码 `hasGetsPermanent.HasValue` 恒真、下面的 else-if 是死分支。改用 StateOf 判"用户是否真的动过"，
+        // 未动过时走统一分支（因子按 ApplyV 自我门控），灰度关时与旧版终态一致。
+        void ApplyBecomePermanentFactor() => ApplyV<float>(nameof(becomePermanentChanceFactor), v =>
         {
-            if (hasGetsPermanent.Value == false)
+            if (def.CompProps<HediffCompProperties_GetsPermanent>() is HediffCompProperties_GetsPermanent gp)
+                gp.becomePermanentChanceFactor = v;
+        });
+        if (StateOf(nameof(hasGetsPermanent)) == FieldState.Set)
+        {
+            if (!(bool)RawVal(nameof(hasGetsPermanent))!)
             {
                 def.comps?.RemoveWhere(c => c is HediffCompProperties_GetsPermanent);
             }
@@ -440,21 +448,23 @@ class HediffData : TweakData<HediffData>, ISubItemHost
                     def.comps ??= new List<HediffCompProperties>();
                     def.comps.Add(new HediffCompProperties_GetsPermanent());
                 }
-                if (def.CompProps<HediffCompProperties_GetsPermanent>() is HediffCompProperties_GetsPermanent gp)
-                {
-                    if (becomePermanentChanceFactor.HasValue) gp.becomePermanentChanceFactor = becomePermanentChanceFactor.Value;
-                }
+                ApplyBecomePermanentFactor();
             }
         }
-        else if (becomePermanentChanceFactor.HasValue && def.CompProps<HediffCompProperties_GetsPermanent>() is HediffCompProperties_GetsPermanent gp)
+        else
         {
-            gp.becomePermanentChanceFactor = becomePermanentChanceFactor.Value;
+            ApplyBecomePermanentFactor();
         }
 
         // GiveHediff Comp toggle
-        if (hasGiveHediff.HasValue)
+        void ApplyGiveHediffSeverity() => ApplyV<float>(nameof(giveHediffAtSeverity), v =>
         {
-            if (hasGiveHediff.Value == false)
+            if (def.CompProps<HediffCompProperties_GiveHediff>() is HediffCompProperties_GiveHediff gh)
+                gh.atSeverity = v;
+        });
+        if (StateOf(nameof(hasGiveHediff)) == FieldState.Set)
+        {
+            if (!(bool)RawVal(nameof(hasGiveHediff))!)
             {
                 def.comps?.RemoveWhere(c => c is HediffCompProperties_GiveHediff);
             }
@@ -465,37 +475,43 @@ class HediffData : TweakData<HediffData>, ISubItemHost
                     def.comps ??= new List<HediffCompProperties>();
                     def.comps.Add(new HediffCompProperties_GiveHediff());
                 }
-                if (def.CompProps<HediffCompProperties_GiveHediff>() is HediffCompProperties_GiveHediff gh)
-                {
-                    if (giveHediffAtSeverity.HasValue) gh.atSeverity = giveHediffAtSeverity.Value;
-                }
+                ApplyGiveHediffSeverity();
             }
         }
-        else if (giveHediffAtSeverity.HasValue && def.CompProps<HediffCompProperties_GiveHediff>() is HediffCompProperties_GiveHediff gh)
+        else
         {
-            gh.atSeverity = giveHediffAtSeverity.Value;
+            ApplyGiveHediffSeverity();
         }
 
         // ReactOnDamage Comp toggle
-        if (hasReactOnDamage.HasValue)
+        // 同 GetsPermanent：hasReactOnDamage 在 SetDef 里恒被回填为非空（~332-340），旧代码 `HasValue` 恒真。
+        // 若把内层 reactOnDamageCreateHediff 包进外层 ApplyV 的 lambda，则外层"未改"(Unset) 时会连内层一起吞掉，
+        // 导致"只改 createHediff、没动开关"失效 ⇒ 必须用 StateOf 判开关，并给未改情况保留独立兜底分支。
+        void ApplyReactOnDamageHediff() => ApplyD<HediffDef>(nameof(reactOnDamageCreateHediff), sv =>
         {
-            if (hasReactOnDamage.Value == false)
+            if (def.CompProps<HediffCompProperties_ReactOnDamage>() is HediffCompProperties_ReactOnDamage rod)
+                rod.createHediff = sv;
+        });
+        if (StateOf(nameof(hasReactOnDamage)) == FieldState.Set)
+        {
+            if (!(bool)RawVal(nameof(hasReactOnDamage))!)
             {
                 def.comps?.RemoveWhere(c => c is HediffCompProperties_ReactOnDamage);
             }
             else
             {
-                if (def.CompProps<HediffCompProperties_ReactOnDamage>() is HediffCompProperties_ReactOnDamage rod)
-                {
-                    if (reactOnDamageCreateHediff != null) rod.createHediff = reactOnDamageCreateHediff;
-                }
+                ApplyReactOnDamageHediff();
             }
+        }
+        else
+        {
+            ApplyReactOnDamageHediff();
         }
 
         // Phase 5: Extension fields
-        if (abilities != null) { def.abilities = abilities; }
-        if (hediffGivers != null) { def.hediffGivers = hediffGivers; }
-        if (removeOnRedressChanceByDaysCurve != null) { def.removeOnRedressChanceByDaysCurve = removeOnRedressChanceByDaysCurve; }
+        ApplyL<AbilityDef>(nameof(abilities), v => def.abilities = v);
+        ApplyL<HediffGiver>(nameof(hediffGivers), v => def.hediffGivers = v);
+        ApplyV<SimpleCurve>(nameof(removeOnRedressChanceByDaysCurve), v => def.removeOnRedressChanceByDaysCurve = v);
     }
 
     public override void ExposeData()

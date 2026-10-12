@@ -76,7 +76,7 @@ class ProjectileData : TweakData<ProjectileData>
     //}
     public override void Apply()
     {
-        if (defLabel != null && this.def != null) this.def.label = defLabel;
+        if (this.def != null) ApplyS(nameof(defLabel), v => this.def.label = v);
         SetProjectileProp(def);
         if (def is ThingDef d)
         {
@@ -122,12 +122,12 @@ class ProjectileData : TweakData<ProjectileData>
     {
         if (def is ThingDef d && d.projectile is ProjectileProperties p)
         {
-            if (projectileSpeed.HasValue) p.speed = projectileSpeed.Value;
-            if (stoppingPower.HasValue) p.stoppingPower = stoppingPower.Value;
-            if (explosionRadius.HasValue) p.explosionRadius = explosionRadius.Value;
-            if (damageAmountBase.HasValue) { damageAmountBaseField.SetValue(p, damageAmountBase.Value); }
-            if (armorPenetrationBase.HasValue) { armorPenetrationBaseField.SetValue(p, armorPenetrationBase.Value); }
-            if (damageType != null) { p.damageDef = damageType; }
+            ApplyV<float>(nameof(projectileSpeed), v => p.speed = v);
+            ApplyV<float>(nameof(stoppingPower), v => p.stoppingPower = v);
+            ApplyV<float>(nameof(explosionRadius), v => p.explosionRadius = v);
+            ApplyV<int>(nameof(damageAmountBase), v => damageAmountBaseField.SetValue(p, v));
+            ApplyV<float>(nameof(armorPenetrationBase), v => armorPenetrationBaseField.SetValue(p, v));
+            ApplyD<DamageDef>(nameof(damageType), v => p.damageDef = v);
             if (RangedWeapon != null)
             {
                 var w = (WeaponData?)GetData(RangedWeapon);

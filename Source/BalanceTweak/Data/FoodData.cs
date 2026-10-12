@@ -186,51 +186,51 @@ class FoodData : TweakData<FoodData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyDefStats(def);
         if (def.ingestible != null)
         {
-            if (baseIngestTicks.HasValue) { def.ingestible.baseIngestTicks = baseIngestTicks.Value; }
-            if (joy.HasValue) { def.ingestible.joy = joy.Value; }
-            if (preferability.HasValue) { def.ingestible.preferability = preferability.Value; }
+            ApplyV<int>(nameof(baseIngestTicks), v => def.ingestible.baseIngestTicks = v);
+            ApplyV<float>(nameof(joy), v => def.ingestible.joy = v);
+            ApplyV<FoodPreferability>(nameof(preferability), v => def.ingestible.preferability = v);
         }
         foreach (var cp in def.comps)
         {
             if (cp is CompProperties_Rottable cr)
             {
-                if (daysToRotStart.HasValue) { cr.daysToRotStart = daysToRotStart.Value; }
-                if (rotDestroys.HasValue) { cr.rotDestroys = rotDestroys.Value; }
-                if (rotDamagePerDay.HasValue) { cr.rotDamagePerDay = rotDamagePerDay.Value; }
-                if (daysToDessicated.HasValue) { cr.daysToDessicated = daysToDessicated.Value; }
-                if (dessicatedDamagePerDay.HasValue) { cr.dessicatedDamagePerDay = dessicatedDamagePerDay.Value; }
+                ApplyV<float>(nameof(daysToRotStart), v => cr.daysToRotStart = v);
+                ApplyV<bool>(nameof(rotDestroys), v => cr.rotDestroys = v);
+                ApplyV<float>(nameof(rotDamagePerDay), v => cr.rotDamagePerDay = v);
+                ApplyV<float>(nameof(daysToDessicated), v => cr.daysToDessicated = v);
+                ApplyV<float>(nameof(dessicatedDamagePerDay), v => cr.dessicatedDamagePerDay = v);
             }
         }
         if (def.plant != null)
         {
-            if (growDays.HasValue) { def.plant.growDays = growDays.Value; }
-            if (harvestYield.HasValue) { def.plant.harvestYield = harvestYield.Value; }
-            if (sowWork.HasValue) { def.plant.sowWork = sowWork.Value; }
-            if (harvestWork.HasValue) { def.plant.harvestWork = harvestWork.Value; }
-            if (sowMinSkill.HasValue) { def.plant.sowMinSkill = sowMinSkill.Value; }
-            if (harvestMinGrowth.HasValue) { def.plant.harvestMinGrowth = harvestMinGrowth.Value; }
-            if (harvestAfterGrowth.HasValue) { def.plant.harvestAfterGrowth = harvestAfterGrowth.Value; }
-            if (fertilityMin.HasValue) { def.plant.fertilityMin = fertilityMin.Value; }
-            if (fertilitySensitivity.HasValue) { def.plant.fertilitySensitivity = fertilitySensitivity.Value; }
-            if (minGrowthTemperature.HasValue) { def.plant.minGrowthTemperature = minGrowthTemperature.Value; }
-            if (maxGrowthTemperature.HasValue) { def.plant.maxGrowthTemperature = maxGrowthTemperature.Value; }
-            if (growMinGlow.HasValue) { def.plant.growMinGlow = growMinGlow.Value; }
-            if (growOptimalGlow.HasValue) { def.plant.growOptimalGlow = growOptimalGlow.Value; }
-            if (lifespanDaysPerGrowDays.HasValue) { def.plant.lifespanDaysPerGrowDays = lifespanDaysPerGrowDays.Value; }
-            if (completelyIgnoreFertility.HasValue) { def.plant.completelyIgnoreFertility = completelyIgnoreFertility.Value; }
-            if (blockAdjacentSow.HasValue) { def.plant.blockAdjacentSow = blockAdjacentSow.Value; }
-            if (harvestFailable.HasValue) { def.plant.harvestFailable = harvestFailable.Value; }
-            if (autoHarvestable.HasValue) { def.plant.autoHarvestable = autoHarvestable.Value; }
-            if (neverBlightable.HasValue) { def.plant.neverBlightable = neverBlightable.Value; }
-            if (dieIfNoSunlight.HasValue) { def.plant.dieIfNoSunlight = dieIfNoSunlight.Value; }
-            if (minSpacingBetweenSamePlant.HasValue) { def.plant.minSpacingBetweenSamePlant = minSpacingBetweenSamePlant.Value; }
-            if (sowTags != null) { def.plant.sowTags = sowTags; }
-            if (sowResearchPrerequisites != null) { def.plant.sowResearchPrerequisites = sowResearchPrerequisites; }
-            if (pollution.HasValue) { def.plant.pollution = pollution.Value; }
+            ApplyV<float>(nameof(growDays), v => def.plant.growDays = v);
+            ApplyV<float>(nameof(harvestYield), v => def.plant.harvestYield = v);
+            ApplyV<float>(nameof(sowWork), v => def.plant.sowWork = v);
+            ApplyV<float>(nameof(harvestWork), v => def.plant.harvestWork = v);
+            ApplyV<int>(nameof(sowMinSkill), v => def.plant.sowMinSkill = v);
+            ApplyV<float>(nameof(harvestMinGrowth), v => def.plant.harvestMinGrowth = v);
+            ApplyV<float>(nameof(harvestAfterGrowth), v => def.plant.harvestAfterGrowth = v);
+            ApplyV<float>(nameof(fertilityMin), v => def.plant.fertilityMin = v);
+            ApplyV<float>(nameof(fertilitySensitivity), v => def.plant.fertilitySensitivity = v);
+            ApplyV<float>(nameof(minGrowthTemperature), v => def.plant.minGrowthTemperature = v);
+            ApplyV<float>(nameof(maxGrowthTemperature), v => def.plant.maxGrowthTemperature = v);
+            ApplyV<float>(nameof(growMinGlow), v => def.plant.growMinGlow = v);
+            ApplyV<float>(nameof(growOptimalGlow), v => def.plant.growOptimalGlow = v);
+            ApplyV<float>(nameof(lifespanDaysPerGrowDays), v => def.plant.lifespanDaysPerGrowDays = v);
+            ApplyV<bool>(nameof(completelyIgnoreFertility), v => def.plant.completelyIgnoreFertility = v);
+            ApplyV<bool>(nameof(blockAdjacentSow), v => def.plant.blockAdjacentSow = v);
+            ApplyV<bool>(nameof(harvestFailable), v => def.plant.harvestFailable = v);
+            ApplyV<bool>(nameof(autoHarvestable), v => def.plant.autoHarvestable = v);
+            ApplyV<bool>(nameof(neverBlightable), v => def.plant.neverBlightable = v);
+            ApplyV<bool>(nameof(dieIfNoSunlight), v => def.plant.dieIfNoSunlight = v);
+            ApplyV<float>(nameof(minSpacingBetweenSamePlant), v => def.plant.minSpacingBetweenSamePlant = v);
+            ApplyL<string>(nameof(sowTags), v => def.plant.sowTags = v);
+            ApplyL<ResearchProjectDef>(nameof(sowResearchPrerequisites), v => def.plant.sowResearchPrerequisites = v);
+            ApplyV<Pollution>(nameof(pollution), v => def.plant.pollution = v);
         }
     }
     private static void EnsureHarvestedByMap()

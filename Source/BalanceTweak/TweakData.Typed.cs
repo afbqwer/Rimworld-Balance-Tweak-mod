@@ -105,9 +105,15 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
                 var list = (List<StatModifier>?)meta.Field.GetValue(this);
                 if (list == null)
                 {
-                    if (forceResetStats)
+                    // 字段已改但空有两种来源：
+                    //   ① forceResetStats：一次重置，需清掉 def 上的脏数据，防 Phase 3 把脏值回读进字段；
+                    //   ② L0 Cleared：用户主动清空该列表，语义即为"把 def 上的对应列表也清掉"
+                    //      —— 与 Phase 2 对单个 StatDef 字段的"value==null ⇒ 移除"对齐。
+                    // 判据用 StateOf(f)==Cleared 而非裸 IsFieldModified：灰度关闭时 Cleared 退化为
+                    // Unset，本分支不触发，行为与旧版逐字段一致（红线 #1 / #11）。
+                    if (forceResetStats || StateOf(meta.Field.Name) == FieldState.Cleared)
                     {
-                        // 重置时清除 def 上的脏数据，防止 Phase 3 将脏值回读到字段
+                        anyWrite = true;
                         switch (def)
                         {
                             case ThingDef td:
@@ -340,8 +346,12 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
              :                                    FieldState.Set;
     }
 
-    /// <summary>目标是非空类型（枚举 / 非空结构体等）：Cleared = 还原原值。</summary>
-    protected void ApplyV<TV>(string f, Action<TV> set)
+    /// <summary>
+    /// L0 三态 helper 的访问级别为 <c>protected internal</c>（原计划为 <c>protected</c>）：
+    /// 同程序集的静态辅助类 <see cref="RecipeProcessHelper.ApplyProcessDef"/> 需要统一走这几个入口，
+    /// 否则 ProcessDef 的字段写入会绕过门控（B 组执行记录里有说明）。
+    /// </summary>
+    protected internal void ApplyV<TV>(string f, Action<TV> set)
     {
         switch (StateOf(f))
         {
@@ -351,7 +361,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     }
 
     /// <summary>目标可空（<c>float?</c> / <c>IntRange?</c> / <c>QualityCategory?</c> 等）：Cleared = 置 null。</summary>
-    protected void ApplyN<TV>(string f, Action<TV?> set) where TV : struct
+    protected internal void ApplyN<TV>(string f, Action<TV?> set) where TV : struct
     {
         switch (StateOf(f))
         {
@@ -361,7 +371,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     }
 
     /// <summary>集合（<c>List&lt;T&gt;</c> / ThingFilter）：Cleared = 清空。</summary>
-    protected void ApplyL<TV>(string f, Action<List<TV>?> set)
+    protected internal void ApplyL<TV>(string f, Action<List<TV>?> set)
     {
         switch (StateOf(f))
         {
@@ -371,13 +381,35 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     }
 
     /// <summary>Def 引用：Cleared = 还原原引用。</summary>
-    protected void ApplyD<TV>(string f, Action<TV?> set) where TV : Def
+    protected internal void ApplyD<TV>(string f, Action<TV?> set) where TV : Def
     {
         switch (StateOf(f))
         {
             case FieldState.Set: set((TV?)RawVal(f)); break;
             case FieldState.Cleared: Revert(f, set); break;
         }
+    }
+
+    /// <summary>
+    /// string 目标。注意与 <see cref="ApplyV{TV}"/> 的区别：字符串的"空"在旧版里是<b>非 null 的空串</b>，
+    /// 旧代码判据是 <c>!= null</c>（空串照样写）⇒ 灰度关时必须照写，否则与旧版不逐字段一致（红线 #11）。
+    /// 灰度开且"已改且值为空串"时按 <see cref="FieldState.Cleared"/> 处理（还原原值）。
+    /// </summary>
+    protected internal void ApplyS(string f, Action<string> set)
+    {
+        if (RawVal(f) is not string s) return;
+        if (clearedSemanticsEnabled && s.Length == 0 && IsFieldModified(f)) { Revert(f, set); return; }
+        set(s);
+    }
+
+    /// <summary>
+    /// ThingFilter 目标。<see cref="GUI.Editor.IngredientFilterEditorWindow"/> 的产物恒为非 null 过滤器，
+    /// 旧版判据 <c>!= null</c> 恒真 ⇒ 非 null 即写入。空过滤器（AllowedDefCount == 0）在 RimWorld 里是
+    /// "允许项为空"的有效值（＝清空该过滤器的允许项），不是 null 语义的 Clear，故不做 Cleared 分支。
+    /// </summary>
+    protected internal void ApplyF(string f, Action<ThingFilter> set)
+    {
+        if (RawVal(f) is ThingFilter tf) set(tf);
     }
 
     /// <summary>

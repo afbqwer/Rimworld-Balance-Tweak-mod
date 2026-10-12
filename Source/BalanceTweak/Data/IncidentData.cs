@@ -144,16 +144,16 @@ class IncidentData : TweakData<IncidentData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
-        if (baseChance.HasValue) { def.baseChance = baseChance.Value; }
-        if (earliestDay.HasValue) { def.earliestDay = earliestDay.Value; }
-        if (minPopulation.HasValue) { def.minPopulation = minPopulation.Value; }
-        if (minGreatestPopulation.HasValue) { def.minGreatestPopulation = minGreatestPopulation.Value; }
-        if (minAnomalyThreatLevel.HasValue) { def.minAnomalyThreatLevel = minAnomalyThreatLevel.Value; }
-        if (minThreatPoints.HasValue) { def.minThreatPoints = minThreatPoints.Value; }
-        if (maxThreatPoints.HasValue) { def.maxThreatPoints = maxThreatPoints.Value; }
-        if (baseChanceWithRoyalty.HasValue) { def.baseChanceWithRoyalty = baseChanceWithRoyalty.Value; }
-        if (diseaseVictimFractionRange.HasValue) { def.diseaseVictimFractionRange = diseaseVictimFractionRange.Value; }
+        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyV<float>(nameof(baseChance), v => def.baseChance = v);
+        ApplyV<int>(nameof(earliestDay), v => def.earliestDay = v);
+        ApplyV<int>(nameof(minPopulation), v => def.minPopulation = v);
+        ApplyV<int>(nameof(minGreatestPopulation), v => def.minGreatestPopulation = v);
+        ApplyV<int>(nameof(minAnomalyThreatLevel), v => def.minAnomalyThreatLevel = v);
+        ApplyV<float>(nameof(minThreatPoints), v => def.minThreatPoints = v);
+        ApplyV<float>(nameof(maxThreatPoints), v => def.maxThreatPoints = v);
+        ApplyV<float>(nameof(baseChanceWithRoyalty), v => def.baseChanceWithRoyalty = v);
+        ApplyV<FloatRange>(nameof(diseaseVictimFractionRange), v => def.diseaseVictimFractionRange = v);
         RecalculateFromOriginals();
     }
 

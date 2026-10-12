@@ -167,46 +167,43 @@ public class RecipeData : TweakData<RecipeData>
     {
         if (this.def is RecipeDef def)
         {
-            if (defLabel != null) this.def.label = defLabel;
-            if (workAmount.HasValue) { def.workAmount = workAmount.Value; }
-            if (workSpeedStat != null) { def.workSpeedStat = workSpeedStat; }
-            if (targetCountAdjustment.HasValue) { def.targetCountAdjustment = targetCountAdjustment.Value; }
-            if (unfinishedThingDef != null) { def.unfinishedThingDef = unfinishedThingDef; }
-            if (workSkill != null) { def.workSkill = workSkill; }
-            if (workSkillLearnFactor.HasValue) { def.workSkillLearnFactor = workSkillLearnFactor.Value; }
-            if (products != null) { def.products = products; }
-            if (recipeUsers != null)
+            ApplyS(nameof(defLabel), v => this.def.label = v);
+            ApplyV<float>(nameof(workAmount), v => def.workAmount = v);
+            ApplyD<StatDef>(nameof(workSpeedStat), v => def.workSpeedStat = v);
+            ApplyV<int>(nameof(targetCountAdjustment), v => def.targetCountAdjustment = v);
+            ApplyD<ThingDef>(nameof(unfinishedThingDef), v => def.unfinishedThingDef = v);
+            ApplyD<SkillDef>(nameof(workSkill), v => def.workSkill = v);
+            ApplyV<float>(nameof(workSkillLearnFactor), v => def.workSkillLearnFactor = v);
+            ApplyL<ThingDefCountClass>(nameof(products), v => def.products = v);
+            ApplyL<ThingDef>(nameof(recipeUsers), v =>
             {
                 var oldUsers = def.recipeUsers?.ToList();
-                def.recipeUsers = recipeUsers;
-                InvalidateCaches(def, oldUsers, recipeUsers);
-            }
-            if (researchPrerequisite != null) { def.researchPrerequisite = researchPrerequisite; }
-            if (researchPrerequisites != null) { def.researchPrerequisites = researchPrerequisites; }
-            if (mechanitorOnlyRecipe.HasValue) { def.mechanitorOnlyRecipe = mechanitorOnlyRecipe.Value; }
-            if (isViolation.HasValue) { def.isViolation = isViolation.Value; }
-            if (anesthetize.HasValue) { def.anesthetize = anesthetize.Value; }
-            if (surgerySuccessChanceFactor.HasValue) { def.surgerySuccessChanceFactor = surgerySuccessChanceFactor.Value; }
-            if (deathOnFailedSurgeryChance.HasValue) { def.deathOnFailedSurgeryChance = deathOnFailedSurgeryChance.Value; }
-            if (formingTicks.HasValue) { def.formingTicks = formingTicks.Value; }
-            if (gestationCycles.HasValue) { def.gestationCycles = gestationCycles.Value; }
-            if (mechResurrection.HasValue) { def.mechResurrection = mechResurrection.Value; }
-            if (ingredients != null) { def.ingredients = ingredients?.ToList(); }
-            if (fixedIngredientFilter != null) { def.fixedIngredientFilter = fixedIngredientFilter; }
-            if (defaultIngredientFilter != null) { def.defaultIngredientFilter = defaultIngredientFilter; }
-            if (addsHediff != null) { def.addsHediff = addsHediff; }
-            if (appliedOnFixedBodyParts != null) { def.appliedOnFixedBodyParts = appliedOnFixedBodyParts; }
+                def.recipeUsers = v;
+                InvalidateCaches(def, oldUsers, v);
+            });
+            ApplyD<ResearchProjectDef>(nameof(researchPrerequisite), v => def.researchPrerequisite = v);
+            ApplyL<ResearchProjectDef>(nameof(researchPrerequisites), v => def.researchPrerequisites = v);
+            ApplyV<bool>(nameof(mechanitorOnlyRecipe), v => def.mechanitorOnlyRecipe = v);
+            ApplyV<bool>(nameof(isViolation), v => def.isViolation = v);
+            ApplyV<bool>(nameof(anesthetize), v => def.anesthetize = v);
+            ApplyV<float>(nameof(surgerySuccessChanceFactor), v => def.surgerySuccessChanceFactor = v);
+            ApplyV<float>(nameof(deathOnFailedSurgeryChance), v => def.deathOnFailedSurgeryChance = v);
+            ApplyV<int>(nameof(formingTicks), v => def.formingTicks = v);
+            ApplyV<int>(nameof(gestationCycles), v => def.gestationCycles = v);
+            ApplyV<bool>(nameof(mechResurrection), v => def.mechResurrection = v);
+            ApplyL<IngredientCount>(nameof(ingredients), v => def.ingredients = v?.ToList());
+            ApplyF(nameof(fixedIngredientFilter), v => def.fixedIngredientFilter = v);
+            ApplyF(nameof(defaultIngredientFilter), v => def.defaultIngredientFilter = v);
+            ApplyD<HediffDef>(nameof(addsHediff), v => def.addsHediff = v);
+            ApplyL<BodyPartDef>(nameof(appliedOnFixedBodyParts), v => def.appliedOnFixedBodyParts = v);
 
-            if (skillRequirements != null) { def.skillRequirements = skillRequirements; }
+            ApplyL<SkillRequirement>(nameof(skillRequirements), v => def.skillRequirements = v);
         }
 
         if (this.def != null && DataUtility.MayRequire(TweakDatabase.VEF))
         {
             RecipeProcessHelper.ApplyProcessDef(this.def, this);
-            if (hidden.HasValue)
-            {
-                RecipeProcessHelper.ApplyProcessHidden(this.def, hidden.Value);
-            }
+            ApplyV<bool>(nameof(hidden), v => RecipeProcessHelper.ApplyProcessHidden(this.def, v));
             return;
         }
 

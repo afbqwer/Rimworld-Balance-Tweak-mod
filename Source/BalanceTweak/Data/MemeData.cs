@@ -48,9 +48,9 @@ class MemeData : TweakData<MemeData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
-        if (selectionWeightFactor.HasValue) { def.randomizationSelectionWeightFactor = selectionWeightFactor.Value; }
-        if (impact.HasValue) { def.impact = impact.Value; }
+        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyV<float>(nameof(selectionWeightFactor), v => def.randomizationSelectionWeightFactor = v);
+        ApplyV<int>(nameof(impact), v => def.impact = v);
     }
 
 

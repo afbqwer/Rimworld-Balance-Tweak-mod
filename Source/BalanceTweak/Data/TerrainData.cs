@@ -89,22 +89,22 @@ class TerrainData : TweakData<TerrainData>
             return;
         }
         ApplyDefStats(def);
-        if (pathCost.HasValue) def.pathCost = pathCost.Value;
-        if (destroyOnBombDamageThreshold.HasValue) def.destroyOnBombDamageThreshold = destroyOnBombDamageThreshold.Value;
-        if (fertility.HasValue) def.fertility = fertility.Value;
-        if (extraDeteriorationFactor.HasValue) def.extraDeteriorationFactor = extraDeteriorationFactor.Value;
-        if (toxicBuildupFactor.HasValue) def.toxicBuildupFactor = toxicBuildupFactor.Value;
-        if (changeable.HasValue) def.changeable = changeable.Value;
-        if (holdSnowOrSand.HasValue) def.holdSnowOrSand = holdSnowOrSand.Value;
-        if (layerable.HasValue) def.layerable = layerable.Value;
-        if (canEverTerraform.HasValue) def.canEverTerraform = canEverTerraform.Value;
-        if (extinguishesFire.HasValue) def.extinguishesFire = extinguishesFire.Value;
+        ApplyV<int>(nameof(pathCost), v => def.pathCost = v);
+        ApplyV<float>(nameof(destroyOnBombDamageThreshold), v => def.destroyOnBombDamageThreshold = v);
+        ApplyV<float>(nameof(fertility), v => def.fertility = v);
+        ApplyV<float>(nameof(extraDeteriorationFactor), v => def.extraDeteriorationFactor = v);
+        ApplyV<float>(nameof(toxicBuildupFactor), v => def.toxicBuildupFactor = v);
+        ApplyV<bool>(nameof(changeable), v => def.changeable = v);
+        ApplyV<bool>(nameof(holdSnowOrSand), v => def.holdSnowOrSand = v);
+        ApplyV<bool>(nameof(layerable), v => def.layerable = v);
+        ApplyV<bool>(nameof(canEverTerraform), v => def.canEverTerraform = v);
+        ApplyV<bool>(nameof(extinguishesFire), v => def.extinguishesFire = v);
 
-        if (tags != null) def.tags = tags;
-        if (affordances != null) def.affordances = affordances;
-        if (researchPrerequisites != null) def.researchPrerequisites = researchPrerequisites;
-        if (costList != null) def.costList = costList;
-        if (stuffCategories != null) def.stuffCategories = stuffCategories;
+        ApplyL<string>(nameof(tags), v => def.tags = v);
+        ApplyL<TerrainAffordanceDef>(nameof(affordances), v => def.affordances = v);
+        ApplyL<ResearchProjectDef>(nameof(researchPrerequisites), v => def.researchPrerequisites = v);
+        ApplyL<ThingDefCountClass>(nameof(costList), v => def.costList = v);
+        ApplyL<StuffCategoryDef>(nameof(stuffCategories), v => def.stuffCategories = v);
     }
 
     public override List<string> TypeStrings => typeStrings;

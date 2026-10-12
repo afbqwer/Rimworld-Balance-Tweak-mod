@@ -63,13 +63,13 @@ class FactionData : TweakData<FactionData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
-        if (raidCommonalityFromPointsCurve != null) { def.raidCommonalityFromPointsCurve = raidCommonalityFromPointsCurve; }
-        if (maxPawnCostPerTotalPointsCurve != null) { def.maxPawnCostPerTotalPointsCurve = maxPawnCostPerTotalPointsCurve; }
-        if (techLevel.HasValue) { def.techLevel = techLevel.Value; }
-        if (settlementGenerationWeight.HasValue) { def.settlementGenerationWeight = settlementGenerationWeight.Value; }
-        if (naturalEnemy.HasValue) { def.naturalEnemy = naturalEnemy.Value; }
-        if (permanentEnemy.HasValue) { def.permanentEnemy = permanentEnemy.Value; }
+        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyV<SimpleCurve>(nameof(raidCommonalityFromPointsCurve), v => def.raidCommonalityFromPointsCurve = v);
+        ApplyV<SimpleCurve>(nameof(maxPawnCostPerTotalPointsCurve), v => def.maxPawnCostPerTotalPointsCurve = v);
+        ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
+        ApplyV<float>(nameof(settlementGenerationWeight), v => def.settlementGenerationWeight = v);
+        ApplyV<bool>(nameof(naturalEnemy), v => def.naturalEnemy = v);
+        ApplyV<bool>(nameof(permanentEnemy), v => def.permanentEnemy = v);
     }
 
     public override List<string> TypeStrings => typeStrings;

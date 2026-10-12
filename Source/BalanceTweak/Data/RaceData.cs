@@ -244,7 +244,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
+        ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyRaceProp(def);
         ApplyDefStats(def);
         ApplyEntityCompProps(def);
@@ -253,15 +253,15 @@ class RaceData : TweakData<RaceData>, ISubItemHost
 
     private void ApplyRaceProp(ThingDef def)
     {
-        if (mechFixedSkillLevel.HasValue) { def.race.mechFixedSkillLevel = mechFixedSkillLevel.Value; }
-        if (baseHealthScale.HasValue)
+        ApplyV<int>(nameof(mechFixedSkillLevel), v => def.race.mechFixedSkillLevel = v);
+        ApplyV<float>(nameof(baseHealthScale), v =>
         {
-            def.race.baseHealthScale = baseHealthScale.Value;
+            def.race.baseHealthScale = v;
             corepartHP = (float?)GetCorepartHP(this);
-        }
-        if (baseBodySize.HasValue) { def.race.baseBodySize = baseBodySize.Value; }
-        if (baseHungerRate.HasValue) { def.race.baseHungerRate = baseHungerRate.Value; }
-        if (lifeExpectancy.HasValue) { def.race.lifeExpectancy = lifeExpectancy.Value; }
+        });
+        ApplyV<float>(nameof(baseBodySize), v => def.race.baseBodySize = v);
+        ApplyV<float>(nameof(baseHungerRate), v => def.race.baseHungerRate = v);
+        ApplyV<float>(nameof(lifeExpectancy), v => def.race.lifeExpectancy = v);
     }
 
     private void ApplyEntityCompProps(ThingDef def)
@@ -270,31 +270,29 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         {
             if (cp is CompProperties_ProducesBioferrite bioferrite)
             {
-                if (bioferriteDensity.HasValue) bioferrite.bioferriteDensity = bioferriteDensity.Value;
+                ApplyV<float>(nameof(bioferriteDensity), v => bioferrite.bioferriteDensity = v);
             }
             else if (cp is CompProperties_Studiable studiable)
             {
-                if (studiableFrequencyTicks.HasValue) studiable.frequencyTicks = studiableFrequencyTicks.Value;
-                if (anomalyKnowledge.HasValue) CompPropertiesStudiableAnomalyKnowledge.SetValue(studiable, anomalyKnowledge.Value);
+                ApplyV<int>(nameof(studiableFrequencyTicks), v => studiable.frequencyTicks = v);
+                ApplyN<float>(nameof(anomalyKnowledge), v => CompPropertiesStudiableAnomalyKnowledge.SetValue(studiable, v));
             }
             else if (cp is CompProperties_Activity activity)
             {
-                if (activityStartingRangeMin.HasValue || activityStartingRangeMax.HasValue)
-                {
-                    activity.startingRange = new FloatRange(
-                        activityStartingRangeMin ?? activity.startingRange.min,
-                        activityStartingRangeMax ?? activity.startingRange.max);
-                }
-                if (changePerDayBase.HasValue) activity.changePerDayBase = changePerDayBase.Value;
-                if (changePerDamage.HasValue) activity.changePerDamage = changePerDamage.Value;
+                ApplyV<float>(nameof(activityStartingRangeMin),
+                    v => activity.startingRange = new FloatRange(v, activityStartingRangeMax ?? activity.startingRange.max));
+                ApplyV<float>(nameof(activityStartingRangeMax),
+                    v => activity.startingRange = new FloatRange(activityStartingRangeMin ?? activity.startingRange.min, v));
+                ApplyV<float>(nameof(changePerDayBase), v => activity.changePerDayBase = v);
+                ApplyV<float>(nameof(changePerDamage), v => activity.changePerDamage = v);
             }
             else if (cp is CompProperties_ProjectileInterceptor interceptor)
             {
-                if (projectileInterceptorRadius.HasValue) interceptor.radius = projectileInterceptorRadius.Value;
-                if (projectileInterceptorHitPoints.HasValue) interceptor.hitPoints = projectileInterceptorHitPoints.Value;
-                if (projectileInterceptorChargeDurationTicks.HasValue) interceptor.chargeDurationTicks = projectileInterceptorChargeDurationTicks.Value;
-                if (projectileInterceptorRechargeHitPointsIntervalTicks.HasValue) interceptor.rechargeHitPointsIntervalTicks = projectileInterceptorRechargeHitPointsIntervalTicks.Value;
-                if (projectileInterceptorDisarmedByEmpForTicks.HasValue) interceptor.disarmedByEmpForTicks = projectileInterceptorDisarmedByEmpForTicks.Value;
+                ApplyV<float>(nameof(projectileInterceptorRadius), v => interceptor.radius = v);
+                ApplyV<int>(nameof(projectileInterceptorHitPoints), v => interceptor.hitPoints = v);
+                ApplyV<int>(nameof(projectileInterceptorChargeDurationTicks), v => interceptor.chargeDurationTicks = v);
+                ApplyV<int>(nameof(projectileInterceptorRechargeHitPointsIntervalTicks), v => interceptor.rechargeHitPointsIntervalTicks = v);
+                ApplyV<int>(nameof(projectileInterceptorDisarmedByEmpForTicks), v => interceptor.disarmedByEmpForTicks = v);
             }
         }
     }
@@ -305,27 +303,25 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         {
             if (cp is CompProperties_EggLayer eggLayer)
             {
-                if (eggLayIntervalDays.HasValue) eggLayer.eggLayIntervalDays = eggLayIntervalDays.Value;
-                if (eggCountRangeMin.HasValue || eggCountRangeMax.HasValue)
-                {
-                    eggLayer.eggCountRange = new IntRange(
-                        eggCountRangeMin ?? eggLayer.eggCountRange.min,
-                        eggCountRangeMax ?? eggLayer.eggCountRange.max);
-                }
-                if (eggFertilizationCountMax.HasValue) eggLayer.eggFertilizationCountMax = eggFertilizationCountMax.Value;
-                if (eggLayFemaleOnly.HasValue) eggLayer.eggLayFemaleOnly = eggLayFemaleOnly.Value;
-                if (eggProgressUnfertilizedMax.HasValue) eggLayer.eggProgressUnfertilizedMax = eggProgressUnfertilizedMax.Value;
+                ApplyV<float>(nameof(eggLayIntervalDays), v => eggLayer.eggLayIntervalDays = v);
+                ApplyV<int>(nameof(eggCountRangeMin),
+                    v => eggLayer.eggCountRange = new IntRange(v, eggCountRangeMax ?? eggLayer.eggCountRange.max));
+                ApplyV<int>(nameof(eggCountRangeMax),
+                    v => eggLayer.eggCountRange = new IntRange(eggCountRangeMin ?? eggLayer.eggCountRange.min, v));
+                ApplyV<int>(nameof(eggFertilizationCountMax), v => eggLayer.eggFertilizationCountMax = v);
+                ApplyV<bool>(nameof(eggLayFemaleOnly), v => eggLayer.eggLayFemaleOnly = v);
+                ApplyV<float>(nameof(eggProgressUnfertilizedMax), v => eggLayer.eggProgressUnfertilizedMax = v);
             }
             else if (cp is CompProperties_Milkable milkable)
             {
-                if (milkIntervalDays.HasValue) milkable.milkIntervalDays = milkIntervalDays.Value;
-                if (milkAmount.HasValue) milkable.milkAmount = milkAmount.Value;
-                if (milkFemaleOnly.HasValue) milkable.milkFemaleOnly = milkFemaleOnly.Value;
+                ApplyV<int>(nameof(milkIntervalDays), v => milkable.milkIntervalDays = v);
+                ApplyV<int>(nameof(milkAmount), v => milkable.milkAmount = v);
+                ApplyV<bool>(nameof(milkFemaleOnly), v => milkable.milkFemaleOnly = v);
             }
             else if (cp is CompProperties_Shearable shearable)
             {
-                if (shearIntervalDays.HasValue) shearable.shearIntervalDays = shearIntervalDays.Value;
-                if (woolAmount.HasValue) shearable.woolAmount = woolAmount.Value;
+                ApplyV<int>(nameof(shearIntervalDays), v => shearable.shearIntervalDays = v);
+                ApplyV<int>(nameof(woolAmount), v => shearable.woolAmount = v);
             }
         }
     }

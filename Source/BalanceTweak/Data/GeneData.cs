@@ -135,41 +135,43 @@ class GeneData : TweakData<GeneData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        if (defLabel != null) this.def.label = defLabel;
-        if (biostatMet.HasValue) { def.biostatMet = biostatMet.Value; }
-        if (biostatArc.HasValue) { def.biostatArc = biostatArc.Value; }
-        if (biostatCpx.HasValue) { def.biostatCpx = biostatCpx.Value; }
+        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyV<int>(nameof(biostatMet), v => def.biostatMet = v);
+        ApplyV<int>(nameof(biostatArc), v => def.biostatArc = v);
+        ApplyV<int>(nameof(biostatCpx), v => def.biostatCpx = v);
 
-        if (selectionWeight.HasValue) { def.selectionWeight = selectionWeight.Value; }
-        if (canGenerateInGeneSet.HasValue) { def.canGenerateInGeneSet = canGenerateInGeneSet.Value; }
-        if (marketValueFactor.HasValue) { def.marketValueFactor = marketValueFactor.Value; }
-        if (minAgeActive.HasValue) { def.minAgeActive = minAgeActive.Value; }
-        if (randomChosen.HasValue) { def.randomChosen = randomChosen.Value; }
-        if (passOnDirectly.HasValue) { def.passOnDirectly = passOnDirectly.Value; }
-        if (removeOnRedress.HasValue) { def.removeOnRedress = removeOnRedress.Value; }
+        ApplyV<float>(nameof(selectionWeight), v => def.selectionWeight = v);
+        ApplyV<bool>(nameof(canGenerateInGeneSet), v => def.canGenerateInGeneSet = v);
+        ApplyV<float>(nameof(marketValueFactor), v => def.marketValueFactor = v);
+        ApplyV<float>(nameof(minAgeActive), v => def.minAgeActive = v);
+        ApplyV<bool>(nameof(randomChosen), v => def.randomChosen = v);
+        ApplyV<bool>(nameof(passOnDirectly), v => def.passOnDirectly = v);
+        ApplyV<bool>(nameof(removeOnRedress), v => def.removeOnRedress = v);
 
-        if (statOffsets != null) { def.statOffsets = statOffsets; }
-        if (statFactors != null) { def.statFactors = statFactors; }
-        if (capMods != null) { def.capMods = capMods; }
-        if (damageFactors != null) { def.damageFactors = damageFactors; }
+        ApplyL<StatModifier>(nameof(statOffsets), v => def.statOffsets = v);
+        ApplyL<StatModifier>(nameof(statFactors), v => def.statFactors = v);
+        ApplyL<PawnCapacityModifier>(nameof(capMods), v => def.capMods = v);
+        ApplyL<DamageFactor>(nameof(damageFactors), v => def.damageFactors = v);
 
-        if (abilities != null) { def.abilities = abilities; }
-        if (forcedTraits != null) { def.forcedTraits = forcedTraits; }
-        if (suppressedTraits != null) { def.suppressedTraits = suppressedTraits; }
-        if (aptitudes != null) { def.aptitudes = aptitudes; }
-        if (enablesNeeds != null) { def.enablesNeeds = enablesNeeds; }
-        if (disablesNeeds != null) { def.disablesNeeds = disablesNeeds; }
-        if (disabledWorkTags.HasValue) { def.disabledWorkTags = disabledWorkTags.Value; }
-        if (makeImmuneTo != null) { def.makeImmuneTo = makeImmuneTo; }
-        if (hediffGiversCannotGive != null) { def.hediffGiversCannotGive = hediffGiversCannotGive; }
-        if (passionModSkill != null || passionModType != null)
+        ApplyL<AbilityDef>(nameof(abilities), v => def.abilities = v);
+        ApplyL<GeneticTraitData>(nameof(forcedTraits), v => def.forcedTraits = v);
+        ApplyL<GeneticTraitData>(nameof(suppressedTraits), v => def.suppressedTraits = v);
+        ApplyL<Aptitude>(nameof(aptitudes), v => def.aptitudes = v);
+        ApplyL<NeedDef>(nameof(enablesNeeds), v => def.enablesNeeds = v);
+        ApplyL<NeedDef>(nameof(disablesNeeds), v => def.disablesNeeds = v);
+        ApplyV<WorkTags>(nameof(disabledWorkTags), v => def.disabledWorkTags = v);
+        ApplyL<HediffDef>(nameof(makeImmuneTo), v => def.makeImmuneTo = v);
+        ApplyL<HediffDef>(nameof(hediffGiversCannotGive), v => def.hediffGiversCannotGive = v);
+        ApplyD<SkillDef>(nameof(passionModSkill), v => def.passionMod = new PassionMod
         {
-            def.passionMod = new PassionMod
-            {
-                skill = passionModSkill ?? def.passionMod?.skill,
-                modType = passionModType ?? def.passionMod?.modType ?? PassionMod.PassionModType.None,
-            };
-        }
+            skill = v,
+            modType = passionModType ?? def.passionMod?.modType ?? PassionMod.PassionModType.None,
+        });
+        ApplyV<PassionMod.PassionModType>(nameof(passionModType), v => def.passionMod = new PassionMod
+        {
+            skill = passionModSkill ?? def.passionMod?.skill,
+            modType = v,
+        });
     }
 
 

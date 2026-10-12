@@ -125,28 +125,28 @@ class AbilityData : TweakData<AbilityData>
     {
         if (this.def is AbilityDef def)
         {
-            if (defLabel != null) this.def.label = defLabel;
+            ApplyS(nameof(defLabel), v => this.def.label = v);
             ApplyDefStats(def);
             desc = def.GetTooltip() ?? "";
             // 应用基础属性
-            if (psylevel.HasValue) def.level = psylevel.Value;
-            if (aiCanUse.HasValue) def.aiCanUse = aiCanUse.Value;
-            if (cooldownTicksRange.HasValue) def.cooldownTicksRange = cooldownTicksRange.Value;
+            ApplyV<int>(nameof(psylevel), v => def.level = v);
+            ApplyV<bool>(nameof(aiCanUse), v => def.aiCanUse = v);
+            ApplyV<IntRange>(nameof(cooldownTicksRange), v => def.cooldownTicksRange = v);
 
             // 应用Verb属性
             if (Verb != null)
             {
-                if (warmup.HasValue) Verb.warmupTime = warmup.Value;
-                if (minRange.HasValue) Verb.minRange = minRange.Value;
-                if (maxRange.HasValue) Verb.range = maxRange.Value;
-                if (requireLineOfSight.HasValue) Verb.requireLineOfSight = requireLineOfSight.Value;
+                ApplyV<float>(nameof(warmup), v => Verb.warmupTime = v);
+                ApplyV<float>(nameof(minRange), v => Verb.minRange = v);
+                ApplyV<float>(nameof(maxRange), v => Verb.range = v);
+                ApplyV<bool>(nameof(requireLineOfSight), v => Verb.requireLineOfSight = v);
             }
 
 
             //应用能力组冷却时间
-            if (AbilityGroupIns != null && abilityGroupCooldownTicks.HasValue)
+            if (AbilityGroupIns != null)
             {
-                AbilityGroupIns.cooldownTicks = abilityGroupCooldownTicks.Value;
+                ApplyV<int>(nameof(abilityGroupCooldownTicks), v => AbilityGroupIns.cooldownTicks = v);
             }
         }
         else
@@ -168,17 +168,17 @@ class AbilityData : TweakData<AbilityData>
     {
         if (this.def is VEF.Abilities.AbilityDef va)
         {
-            if (cooldownTime.HasValue) va.cooldownTime = cooldownTime.Value;
-            if (distanceToTarget.HasValue) va.distanceToTarget = distanceToTarget.Value;
-            if (castTime.HasValue) va.castTime = castTime.Value;
-            if (durationTime.HasValue) va.durationTime = durationTime.Value;
-            if (radius.HasValue) va.radius = radius.Value;
+            ApplyV<int>(nameof(cooldownTime), v => va.cooldownTime = v);
+            ApplyV<float>(nameof(distanceToTarget), v => va.distanceToTarget = v);
+            ApplyV<int>(nameof(castTime), v => va.castTime = v);
+            ApplyV<int>(nameof(durationTime), v => va.durationTime = v);
+            ApplyV<float>(nameof(radius), v => va.radius = v);
             // VanillaPsycastsExpanded.AbilityExtension_Psycast
             var m = va.GetModExtension<AbilityExtension_Psycast>();
             if (m != null)
             {
-                if (psyfocusCost.HasValue) m.psyfocusCost = psyfocusCost.Value;
-                if (entropyGain.HasValue) m.entropyGain = entropyGain.Value;
+                ApplyV<float>(nameof(psyfocusCost), v => m.psyfocusCost = v);
+                ApplyV<float>(nameof(entropyGain), v => m.entropyGain = v);
             }
         }
     }

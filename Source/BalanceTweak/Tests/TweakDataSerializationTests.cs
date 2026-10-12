@@ -105,6 +105,13 @@ public static class TweakDataSerializationTests
         // ─── L0 三态内核判据 ───
         RunTest("IsEmptyValue 空值判定（ThingFilter 优先于 ICollection）", () => testIsEmptyValue_EmptyRules(), ref passed, ref failed);
 
+        // ─── B 组：Resolve 显式置空 + Apply 门控 ───
+        RunTest("★B1 已改但空 → ResolveList 显式置空（Cleared）", () => testB1_ResolveList_ExplicitClear(), ref passed, ref failed);
+        RunTest("B 灰度关 = 旧行为（未改字段不触发 setter）", () => testB_GrayOff_OldBehavior(), ref passed, ref failed);
+        RunTest("B 列表/可空 Cleared → setter 收到 null", () => testB_GrayOn_ClearedSetsNull(), ref passed, ref failed);
+        RunTest("B 标量/Def/string Cleared → 还原原值", () => testB_GrayOn_ClearedReverts(), ref passed, ref failed);
+        RunTest("B 原值缺席 → 保持现状 + 不抛异常（Revert 兜底）", () => testB_RevertFallback(), ref passed, ref failed);
+
         Log.Message("[BalanceTweak 测试] 完成.");
         if (failed > 0)
             Log.Warning($"[BalanceTweak 测试] 通过: {passed}, 失败: {failed}");
@@ -1019,6 +1026,143 @@ public static class TweakDataSerializationTests
         Assert(!TweakData.IsEmptyValue(tf), "有允许项的 ThingFilter 不判空");
         Assert(!TweakData.IsEmptyValue(1f), "值类型不判空");
         Assert(!TweakData.IsEmptyValue(false), "false 不判空");
+    }
+
+    // ═══════════════════════ B 组：Resolve 显式置空 + Apply 门控 ═══════════════════════
+
+    /// <summary>
+    /// ★B1：已改但空的列表字段，ResolveList 必须显式置空（否则字段会残留 SetDef 回填值，
+    /// StateOf 会把它误判为 Set 而不是 Cleared）。
+    /// </summary>
+    private static void testB1_ResolveList_ExplicitClear()
+    {
+        var gene = new GeneData();
+        gene.statOffsets = new List<StatModifier> { new StatModifier { stat = StatDefOf.MoveSpeed, value = 1f } };
+        gene.MarkFieldModified("statOffsets");
+        // 模拟读档：ExposeList 对空/null 列表不写 key，加载后 _savedLoadData 里该字段值为 null
+        SetSavedLoadData(gene, new Dictionary<string, object?> { ["statOffsets"] = null });
+
+        bool ok = gene.ResolveDefs();
+        Assert(ok, "ResolveDefs 应返回 true");
+        Assert(gene.statOffsets == null, "B1：已改但空的列表字段应被显式置空（Cleared）");
+    }
+
+    /// <summary>
+    /// 灰度关闭 = 旧行为：未改字段不触发 setter；已改非空 → 写入；已改但空 → Cleared 退化为 Unset（不写）。
+    /// </summary>
+    private static void testB_GrayOff_OldBehavior()
+    {
+        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
+        BalanceTweakSettings.clearedSemanticsEnabled = false;
+        try
+        {
+            var g1 = new GeneData();
+            bool called = false, listCalled = false;
+            g1.ApplyV<float>("selectionWeight", v => called = true);
+            g1.ApplyL<StatModifier>("statOffsets", v => listCalled = true);
+            Assert(!called && !listCalled, "灰度关：未改字段不应触发 setter（旧行为）");
+
+            var g2 = new GeneData { selectionWeight = 3f };
+            g2.MarkFieldModified("selectionWeight");
+            float captured = 0f;
+            g2.ApplyV<float>("selectionWeight", v => captured = v);
+            Assert(Math.Abs(captured - 3f) < 0.001f, "灰度关：已改非空字段应写入");
+
+            var g3 = new GeneData { selectionWeight = null };
+            g3.MarkFieldModified("selectionWeight");
+            bool called3 = false;
+            g3.ApplyV<float>("selectionWeight", v => called3 = true);
+            Assert(!called3, "灰度关：已改但空 ⇒ Cleared 退化为 Unset，不写（旧行为）");
+
+            // ApplyS 兼容红线 #11：空串在灰度关时仍照写（旧代码判据是 != null）
+            var g4 = new GeneData { defLabel = "" };
+            g4.MarkFieldModified("defLabel");
+            string? capS = null; bool calledS = false;
+            g4.ApplyS("defLabel", v => { capS = v; calledS = true; });
+            Assert(calledS && capS == "", "灰度关：空串仍照写（与旧版 != null 一致）");
+        }
+        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+    }
+
+    /// <summary>灰度开启：集合 / 可空目标 Cleared ⇒ setter 收到 null（清空）。</summary>
+    private static void testB_GrayOn_ClearedSetsNull()
+    {
+        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
+        BalanceTweakSettings.clearedSemanticsEnabled = true;
+        try
+        {
+            var g1 = new GeneData();
+            g1.statOffsets = new List<StatModifier> { new StatModifier { stat = StatDefOf.MoveSpeed, value = 1f } };
+            g1.MarkFieldModified("statOffsets");
+            g1.statOffsets = null; // 用户清空
+            List<StatModifier>? capL = new(); bool calledL = false;
+            g1.ApplyL<StatModifier>("statOffsets", v => { capL = v; calledL = true; });
+            Assert(calledL && capL == null, "灰度开：列表 Cleared ⇒ setter 收到 null（清空）");
+
+            var g2 = new GeneData { selectionWeight = null };
+            g2.MarkFieldModified("selectionWeight");
+            float? capN = 1f; bool calledN = false;
+            g2.ApplyN<float>("selectionWeight", v => { capN = v; calledN = true; });
+            Assert(calledN && capN == null, "灰度开：可空目标 Cleared ⇒ setter 收到 null");
+        }
+        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+    }
+
+    /// <summary>灰度开启：标量 / Def 引用 / string 的 Cleared ⇒ 还原 GetOriginal(id) 的同字段原值。</summary>
+    private static void testB_GrayOn_ClearedReverts()
+    {
+        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
+        BalanceTweakSettings.clearedSemanticsEnabled = true;
+        var id = new TweakData.TweakID("__BT_Test_Original__", BalanceTweakSettings.SettingType.Gene);
+        try
+        {
+            var orig = new GeneData { id = id };
+            orig.passionModSkill = DefDatabase<SkillDef>.GetNamed("Shooting");
+            orig.selectionWeight = 7f;
+            orig.defLabel = "OrigLabel";
+            TweakDatabase.AllOriginals[id] = orig;
+
+            var g1 = new GeneData { id = id, passionModSkill = null };
+            g1.MarkFieldModified("passionModSkill");
+            SkillDef? capD = null; bool calledD = false;
+            g1.ApplyD<SkillDef>("passionModSkill", v => { capD = v; calledD = true; });
+            Assert(calledD && capD == orig.passionModSkill, "灰度开：Def 引用 Cleared ⇒ 还原原引用");
+
+            var g2 = new GeneData { id = id, selectionWeight = null };
+            g2.MarkFieldModified("selectionWeight");
+            float capV = 0f; bool calledV = false;
+            g2.ApplyV<float>("selectionWeight", v => { capV = v; calledV = true; });
+            Assert(calledV && Math.Abs(capV - 7f) < 0.001f, "灰度开：标量 Cleared ⇒ 还原原值");
+
+            var g3 = new GeneData { id = id, defLabel = "" };
+            g3.MarkFieldModified("defLabel");
+            string? capS = null; bool calledS = false;
+            g3.ApplyS("defLabel", v => { capS = v; calledS = true; });
+            Assert(calledS && capS == "OrigLabel", "灰度开：空串 Cleared ⇒ 还原原字符串");
+        }
+        finally
+        {
+            TweakDatabase.AllOriginals.Remove(id);
+            BalanceTweakSettings.clearedSemanticsEnabled = origin;
+        }
+    }
+
+    /// <summary>原值缺席（老档 / 原始数据被换掉）：保持现状、不抛异常、不写坏值（Revert 兜底）。</summary>
+    private static void testB_RevertFallback()
+    {
+        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
+        BalanceTweakSettings.clearedSemanticsEnabled = true;
+        var id = new TweakData.TweakID("__BT_Test_NoOriginal__", BalanceTweakSettings.SettingType.Gene);
+        try
+        {
+            TweakDatabase.AllOriginals.Remove(id); // 确保无原值
+            var g = new GeneData { id = id, selectionWeight = null };
+            g.MarkFieldModified("selectionWeight");
+            bool called = false;
+            g.ApplyV<float>("selectionWeight", v => called = true); // 不应抛异常
+            Assert(!called, "原值缺席：保持现状、不写、不抛异常");
+        }
+        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
     }
 
     /// <summary>
