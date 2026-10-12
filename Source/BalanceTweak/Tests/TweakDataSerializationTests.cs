@@ -112,13 +112,11 @@ public static class TweakDataSerializationTests
         RunTest("B 标量/Def/string Cleared → 还原原值", () => testB_GrayOn_ClearedReverts(), ref passed, ref failed);
         RunTest("B 原值缺席 → 保持现状 + 不抛异常（Revert 兜底）", () => testB_RevertFallback(), ref passed, ref failed);
 
-        // ─── C 组：版本戳 / 迁移 dry-run / 三态接线 / 自检 ───
+        // ─── C 组：三态接线 / 自检 ───
         RunTest("C 跨类型三态入口 StateOfField（灰度关/开）", () => testC_StateOfField_CrossType(), ref passed, ref failed);
         RunTest("★T8 EqualsData 三态（灰度关比旧行为一致，灰度开保护意图）", () => testC_EqualsData_ThreeState(), ref passed, ref failed);
-        RunTest("★T8 迁移 dry-run 只读且幂等", () => testC_Migration_DryRun_ReadOnly(), ref passed, ref failed);
         RunTest("★SC2 复活检测判据（未回填不报，回填必报）", () => testC_SC2_RevivedDetection(), ref passed, ref failed);
         RunTest("★T11 自检 RunAll 不抛异常", () => testC_SelfCheck_RunAll_NoThrow(), ref passed, ref failed);
-        RunTest("C 版本戳常量与默认值", () => testC_FormatVersion(), ref passed, ref failed);
 
         Log.Message("[BalanceTweak 测试] 完成.");
         if (failed > 0)
@@ -1232,32 +1230,6 @@ public static class TweakDataSerializationTests
     }
 
     /// <summary>
-    /// ★T8：迁移 dry-run 是只读的意图预览，且幂等（连跑两次不改数据、不改字典）。
-    /// </summary>
-    private static void testC_Migration_DryRun_ReadOnly()
-    {
-        var id = new TweakData.TweakID("__BT_Test_DryRun__", BalanceTweakSettings.SettingType.Gene);
-        try
-        {
-            var g = new GeneData { id = id };
-            g.MarkFieldCleared("statOffsets");
-            g.statOffsets = null; // 显式清空 ⇒ dry-run 应报"清空"
-            BalanceTweakSettings.tweakDatas[id] = g;
-
-            int modifiedBefore = g.CountFieldModified();
-            TweakDatabase.RunMigrationAndDryRun(false);
-            TweakDatabase.RunMigrationAndDryRun(false); // 幂等：二次调用同样不得改动任何数据
-
-            Assert(g.CountFieldModified() == modifiedBefore, "dry-run 不得改动 _modifiedFieldNames");
-            Assert(g.statOffsets == null, "dry-run 不得改动字段值");
-            Assert(BalanceTweakSettings.tweakDatas.ContainsKey(id), "dry-run 不得改动 tweakDatas");
-            Assert(BalanceTweakSettings.formatVersion != TweakDatabase.L0FormatVersion,
-                "dry-run 自身不得推进版本戳（只有 Init 全流程成功才推进）");
-        }
-        finally { BalanceTweakSettings.tweakDatas.Remove(id); }
-    }
-
-    /// <summary>
     /// ★SC2 判据：ResolveDefs 末尾记录的"modified ∧ 空"字段，回填前不报复活、被回填后必报。
     /// </summary>
     private static void testC_SC2_RevivedDetection()
@@ -1295,13 +1267,6 @@ public static class TweakDataSerializationTests
             finally { BalanceTweakSettings.tweakDatas.Remove(id); }
         }
         finally { TweakSelfCheck.selfCheckEnabled = origin; }
-    }
-
-    /// <summary>C1：版本戳常量 = 1；静态字段默认值 0（Init 成功后才推进）。</summary>
-    private static void testC_FormatVersion()
-    {
-        Assert(TweakDatabase.L0FormatVersion == 1, "L0 落盘版本应为 1");
-        Assert(BalanceTweakSettings.formatVersion >= 0, "版本戳不得为负");
     }
 
     /// <summary>

@@ -307,8 +307,7 @@ public static class TweakSelfCheck
     /// <list type="number">
     /// <item><b>旧版本</b>跑一次 → A；</item>
     /// <item><b>新版本（关闭灰度）</b>跑一次 → B；<b>A 与 B 必须逐行一致</b>（回归基线，验证无回归）；</item>
-    /// <item><b>新版本（开启灰度）</b>跑一次 → C；B vs C 的差异 = 本次升级的<b>实际影响面</b>，
-    ///   与 <c>[BT/MIGRATE]</c> dry-run 报告逐条对照。</item>
+    /// <item><b>新版本（开启灰度）</b>跑一次 → C；B vs C 的差异 = 本次升级的<b>实际影响面</b>。</item>
     /// </list>
     /// 跨运行比较用 <see cref="DiffSnapshots"/>。
     ///
@@ -347,7 +346,7 @@ public static class TweakSelfCheck
 
         string text = string.Join("\n", lines);
         string file = Path.Combine(GenFilePaths.ConfigFolderPath,
-            $"BalanceTweak_Snapshot_v{formatVersion}_{DateTime.Now:yyyyMMdd_HHmmss}"
+            $"BalanceTweak_Snapshot_{DateTime.Now:yyyyMMdd_HHmmss}"
             + $"{(clearedSemanticsEnabled ? "_grayOn" : "_grayOff")}.txt");
         try { File.WriteAllText(file, text); }
         catch (Exception e) { Log.Error($"{SnapTag} 写盘失败：{file}: {e.Message}"); }

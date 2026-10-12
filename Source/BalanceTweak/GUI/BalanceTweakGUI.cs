@@ -41,14 +41,6 @@ public partial class BalanceTweakSettings : ModSettings
     /// </summary>
     public static bool clearedSemanticsEnabled = false;
 
-    /// <summary>
-    /// L0 落盘版本戳（见 Docs/NullSemantics_L0_Plan.md §3 C1）。
-    /// 0 = 尚未被 L0 代码处理过（旧档 / 本次存在结构性问题）；
-    /// 1 = 加载 + 迁移 + 应用走完，且没有结构性问题。
-    /// 判据在 TweakDatabase.InitAll：只有"条目无法物化"（数据类被改名/删除）才扣住；
-    /// 单条数据引用缺失的 Def（相关 Mod 被移除）属于预期情况，不扣（否则装了被删 Mod 的档会永远停在 0）。
-    /// </summary>
-    public static int formatVersion = 0;
     public static Dictionary<SettingType, Dictionary<TweakID, TweakData>> cachedData = new();
     public static HashSet<TweakID> pinnedIds = new();
 
@@ -191,9 +183,6 @@ public partial class BalanceTweakSettings : ModSettings
     #region 数据存储
     public override void ExposeData()
     {
-        // C1：版本戳必须最先读写 —— 迁移器靠它区分"本档是否已被 L0 代码处理过"。
-        // 旧档没有这个节点，读到默认值 0（见 Docs/NullSemantics_L0_Plan.md §3 C1）。
-        Scribe_Values.Look(ref formatVersion, "formatVersion", 0);
         // 灰度开关必须落盘：Init() 在启动时就跑完，勾选后要重启才生效 ——
         // 不落盘的话重启又回到默认 false，开关形同虚设。
         // 同样靠"旧版 mod 读到未知节点会忽略"成立（对红线 #7 的有意偏离，见 §10.5 偏差 #11）。
