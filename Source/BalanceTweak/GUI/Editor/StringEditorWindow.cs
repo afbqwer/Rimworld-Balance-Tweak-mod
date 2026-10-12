@@ -116,7 +116,12 @@ public class StringEditorWindow : EditorWindowBase
         }
         else
         {
-            config!.ApplyValue(data!, workingValue);
+            // 严格判据：文本没被编辑过就不留下「已修改」痕迹（打开即保存的 null 字段尤甚）。
+            var current = (string?)config!.GetRawValue(data!);
+            bool unchanged = string.IsNullOrEmpty(workingValue)
+                ? string.IsNullOrEmpty(current)
+                : workingValue == current;
+            if (!unchanged) config!.ApplyValue(data!, workingValue);
         }
         Close();
     }

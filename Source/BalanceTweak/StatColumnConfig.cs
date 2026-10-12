@@ -292,6 +292,12 @@ public class StatColumnConfig
     {
         if (field == null) return;
 
+        // 严格判据：文本与当前显示值逐字相同 ⇒ 用户没有编辑 ⇒ 不产生任何状态变化。
+        // 编辑缓冲以显示文本为种子，因此「聚焦后原样失焦」必然命中这里。
+        // 这一步专治：原本就是 Null/空的字段，只因点了一下输入框就被记为已修改/已清空。
+        // 注意此时不能依赖下面各分支的 changed：它们的 old==null 判据会把「无 → 无」误判为变化。
+        if (string.Equals(newText, GetString(data), StringComparison.Ordinal)) return;
+
         object? newValue = null;
         bool changed = false;
         // 非 String 列：输入 null 关键字 = 显式清空（唯一入口，不再靠"已改且空"反推）。
@@ -300,6 +306,7 @@ public class StatColumnConfig
             && columnType != ColumnStyle.String && cachedFieldType != FieldType.String)
         {
             if (data.IsFieldCleared(field.Name)) return; // 幂等
+            if (GetRawValue(data) == null) return; // 本就没有值，无物可清 ⇒ 不该留下任何状态
             SetRawValue(data, null, isModified: false);
             data.MarkFieldCleared(field.Name);
             data.Apply();
