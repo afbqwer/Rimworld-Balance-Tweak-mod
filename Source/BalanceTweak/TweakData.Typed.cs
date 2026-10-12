@@ -81,7 +81,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     {
         foreach (var meta in Fields)
         {
-            if (meta.Field.GetValue(this) == null && !_modifiedFieldNames.Contains(meta.Field.Name))
+            // 用 IsFieldModified（Set ∪ Cleared）：已清空的字段（值为 null）不得被默认值回填复活。
+            if (meta.Field.GetValue(this) == null && !IsFieldModified(meta.Field.Name))
                 meta.Field.SetValue(this, meta.DefaultGetter?.Invoke(this));
         }
     }
@@ -332,18 +333,17 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     }
 
     /// <summary>
-    /// 字段三态。判据只有 <see cref="_modifiedFieldNames"/>，绝不用"值 == null"反推。
-    /// 灰度关闭时 Cleared 退化为 Unset —— 与旧行为逐字段一致。
+    /// 字段三态。判据是两个显式集合（Set=<see cref="_modifiedFieldNames"/>，Cleared=<see cref="_clearedFieldNames"/>），
+    /// <b>绝不用"值 == null / 值为空"反推</b> —— 迁移期被批量标记的空值字段不能再被误判成清空。
+    /// 灰度关闭时 Cleared 退化为 Unset（开关关 = 不启用清空语义）。
     /// </summary>
     protected FieldState StateOf(string f)
     {
-        if (!clearedSemanticsEnabled) // 灰度关：旧行为
-            return _modifiedFieldNames.Contains(f) && !IsEmptyValue(RawVal(f))
-                ? FieldState.Set : FieldState.Unset;
+        if (_clearedFieldNames.Contains(f))
+            return clearedSemanticsEnabled ? FieldState.Cleared : FieldState.Unset;
 
-        return !_modifiedFieldNames.Contains(f) ? FieldState.Unset
-             : IsEmptyValue(RawVal(f))          ? FieldState.Cleared
-             :                                    FieldState.Set;
+        return _modifiedFieldNames.Contains(f) && !IsEmptyValue(RawVal(f))
+            ? FieldState.Set : FieldState.Unset;
     }
 
     /// <summary>跨类型只读入口（供 TweakDatabase 的 dry-run 与 TweakSelfCheck 用）。</summary>

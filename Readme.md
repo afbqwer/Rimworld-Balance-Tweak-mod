@@ -10,7 +10,8 @@
 | 重命名 / 删除 `SettingType` 枚举成员 | 存档按**名称**写入，解析失败退化为 `None` 并失效。**重排序号是安全的** |
 | 重命名 `[TweakField]` 字段 | 字段名 = XML 元素名，改名即丢该字段的修改（新增字段安全） |
 | 直接删除还在使用的 `[TweakFor]` 规则 | 先确认没有已存数据落在该页签；确需删除时保留一个继承它的空壳子类 |
-| 用「值 == null」反推"用户清空了该字段" | L0 三态只认 `_modifiedFieldNames`（`TweakData.StateOf`）。判定不清空/不写入一律走 `ApplyV/ApplyN/ApplyL/ApplyD/ApplyS/ApplyF` 门控 |
+| 用「值 == null / 值为空」反推"用户清空了该字段" | L0 三态只认两个**显式**集合（`TweakData.StateOf`）：`_modifiedFieldNames`（Set）与 `_clearedFieldNames`（Cleared）。清空**只能**由编辑器的清空动作（`MarkFieldCleared`）写入；判定不清空/不写入一律走 `ApplyV/ApplyN/ApplyL/ApplyD/ApplyS/ApplyF` 门控 |
+| 绕过 `MarkFieldCleared` 直接改 `_clearedFieldNames`，或让同一字段同时出现在两个集合里 | 两集合互斥是 Set/Cleared 的唯一判据；破坏互斥会让 `StateOf` 二义、`IsFieldModified` 回填守卫与 `Apply` 门控错乱 |
 | 给 `List<>` / `ThingFilter` 字段加 `??=` 回填点却不带 `!IsFieldModified(...)` 守卫 | Cleared 字段读档后会被 Def 回填"复活"，清空意图重启即失效。运行期自检 SC2 会报 `[BT/SELFCHECK] 复活:` |
 | 移除 / 改名存档根节点的 `formatVersion` 版本戳 | 迁移器靠它区分存档代际（`TweakDatabase.RunMigrationAndDryRun`）。旧版本 mod 读到未知节点会忽略；删掉会让已迁移的档无法被识别 |
 

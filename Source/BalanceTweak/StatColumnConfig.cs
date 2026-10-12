@@ -294,13 +294,15 @@ public class StatColumnConfig
 
         object? newValue = null;
         bool changed = false;
-        if (newText.IndexOf("null", StringComparison.OrdinalIgnoreCase) > -1)
+        // 非 String 列：输入 null 关键字 = 显式清空（唯一入口，不再靠"已改且空"反推）。
+        // String 列不参与清空 —— 对字符串而言 "null" 就是普通文本，走下方常规解析，按字面量 "null" 赋值。
+        if (newText.IndexOf("null", StringComparison.OrdinalIgnoreCase) > -1
+            && columnType != ColumnStyle.String && cachedFieldType != FieldType.String)
         {
-            if (GetRawValue(data) == null)
-            {
-                return;
-            }
-            ApplyValue(data, null);
+            if (data.IsFieldCleared(field.Name)) return; // 幂等
+            SetRawValue(data, null, isModified: false);
+            data.MarkFieldCleared(field.Name);
+            data.Apply();
             return;
         }
         if (showChanged && selectedCol == this)

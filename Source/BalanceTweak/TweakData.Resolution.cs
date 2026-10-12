@@ -57,20 +57,15 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     }
 
     /// <summary>
-    /// L0 自检用（运行期字段，不序列化）：ResolveDefs 末尾记下"当前 modified ∧ 空"的字段名。
+    /// L0 自检用（运行期字段，不序列化）：ResolveDefs 末尾记下当前显式清空的字段名。
     /// 这些字段的语义是 Cleared，Apply 之后必须仍为空 —— 若被 SetDef / GenValues 的 <c>??=</c>
-    /// 回填了，就是 A3 漏加守卫（见 Docs/NullSemantics_L0_Plan.md §4.2，由 SC2 校验）。
+    /// 回填了，就是漏加守卫（见 Docs/NullSemantics_L0_Plan.md §4.2，由 SC2 校验）。
     /// 判据不依赖灰度开关：与灰度无关地、这些字段本来就该保持空。
     /// </summary>
     private void RecordClearedSnapshot()
     {
         _ = Fields; // 保险：确保 _fieldIndex 已随 Fields 初始化
-        _clearedSnapshot = new HashSet<string>();
-        foreach (var f in _modifiedFieldNames)
-        {
-            if (_fieldIndex!.TryGetValue(f, out var meta) && IsEmptyValue(meta.Field.GetValue(this)))
-                _clearedSnapshot.Add(f);
-        }
+        _clearedSnapshot = new HashSet<string>(_clearedFieldNames);
     }
 
     private bool TryResolveField(StatFieldMeta meta)
@@ -109,8 +104,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     {
         if (_savedLoadData == null || !_savedLoadData.TryGetValue(meta.Field.Name, out var saved) || saved is not List<string> strList || strList.Count == 0)
         {
-            // B1：已改但空（存档无 key / 值为 null / 空列表）⇒ 显式置空，标记为 Cleared。
-            // 旧实现直接 return（no-op），会让字段残留 SetDef 回填值，StateOf 误判为 Set。
+            // 已动过但存档无可解析值（无 key / null / 空列表）⇒ 把实例值显式置空，
+            // 免得残留 SetDef 回填值；是否 Cleared 由 _clearedFieldNames 判定，此处只保证值为空。
             if (IsFieldModified(meta.Field.Name)) meta.Field.SetValue(this, null);
             return true;
         }
@@ -296,7 +291,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     {
         if (_savedLoadData == null || !_savedLoadData.TryGetValue(meta.Field.Name, out var saved) || saved is not string str || str.NullOrEmpty())
         {
-            // B1：已改但空（无 key / 非字符串 / 空串）⇒ 显式置空（Cleared）。
+            // 已动过但空（无 key / 非字符串 / 空串）⇒ 把实例值显式置空（是否 Cleared 由 _clearedFieldNames 判定）。
             if (IsFieldModified(meta.Field.Name)) meta.Field.SetValue(this, null);
             return true;
         }
@@ -441,7 +436,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         if (list is { Count: > 0 })
             meta.Field.SetValue(this, list);
         else if (IsFieldModified(meta.Field.Name))
-            meta.Field.SetValue(this, null); // B1：已改但空 ⇒ 显式置空（Cleared）
+            meta.Field.SetValue(this, null); // 已动过但空 ⇒ 显式置空（值必须为空）
         return true;
     }
 
@@ -453,7 +448,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         if (list is { Count: > 0 })
             meta.Field.SetValue(this, list);
         else if (IsFieldModified(meta.Field.Name))
-            meta.Field.SetValue(this, null); // B1：已改但空 ⇒ 显式置空（Cleared）
+            meta.Field.SetValue(this, null); // 已动过但空 ⇒ 显式置空（值必须为空）
         return true;
     }
 }

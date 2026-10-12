@@ -16,7 +16,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         // Backward compatibility: if _modifiedFieldNames is empty and _backCompatResolved
         // is false, it might be an old save from before the field tracking was introduced.
         // Load all fields and record which ones are non-null.
-        if (!_backCompatResolved && _modifiedFieldNames.Count == 0 &&
+        if (!_backCompatResolved && _modifiedFieldNames.Count == 0 && _clearedFieldNames.Count == 0 &&
             Scribe.mode is LoadSaveMode.LoadingVars or LoadSaveMode.PostLoadInit)
         {
             LoadAllFieldsForBackCompat();

@@ -13,11 +13,14 @@ namespace BalanceTweak;
 /// <summary>
 /// [TweakField] 字段的三态（L0 语义）。
 /// Unset   —— 用户没动过，Apply 时不得写 Def。
-/// Set     —— 用户改过且值为非空，Apply 时写入 Def。
-/// Cleared —— 用户改过但值为空（列表空/过滤器空/字段为 null），Apply 时按字段类别
+/// Set     —— 用户显式赋过值，Apply 时写入 Def。
+/// Cleared —— 用户显式清空（见 <see cref="TweakData{T}._clearedFieldNames"/>），Apply 时按字段类别
 ///            "清空 Def"（集合）或"还原原值"（标量 / Def 引用）。
 ///
-/// 判据只有 <see cref="TweakData{T}._modifiedFieldNames"/> —— 绝不用"值 == null"反推。
+/// 判据是两个显式集合：<see cref="TweakData{T}._modifiedFieldNames"/>（Set）
+/// 与 <see cref="TweakData{T}._clearedFieldNames"/>（Cleared），互斥。
+/// <b>绝不用"值 == null / 值为空"反推</b> —— 否则迁移期被批量标记为"已改"的空值字段
+/// 会在灰度开启后被整片误清空（见 Docs/NullSemantics_L0_Plan.md）。
 /// </summary>
 public enum FieldState { Unset, Set, Cleared }
 
@@ -41,6 +44,12 @@ public abstract partial class TweakData : IExposable
     protected Dictionary<string, object?>? _savedLoadData;
     public bool _backCompatResolved;
     protected HashSet<string> _modifiedFieldNames = new();
+    /// <summary>
+    /// 显式清空的字段（<see cref="FieldState.Cleared"/> 的唯一来源）。
+    /// 由编辑器的"清空"动作写入（单元格输入 <c>null</c>），与 <see cref="_modifiedFieldNames"/> 互斥。
+    /// <b>不再由"已改且值为空"反推</b> —— 这条反推会把迁移期批量标记的空值字段误判成清空。
+    /// </summary>
+    protected HashSet<string> _clearedFieldNames = new();
     protected HashSet<string> _corruptedFieldNames = new();
     /// <summary>
     /// 一次性的"强制重写 stat"开关（由各重置流程设置）。
@@ -79,6 +88,15 @@ public abstract partial class TweakData : IExposable
             Scribe_Collections.Look(ref modifiedList, "modifiedFieldNames", LookMode.Value);
             if (Scribe.mode == LoadSaveMode.LoadingVars && modifiedList != null)
                 _modifiedFieldNames = new HashSet<string>(modifiedList);
+        }
+        // Serialize explicitly-cleared field names（L0 显式清空）
+        {
+            List<string>? clearedList = null;
+            if (Scribe.mode == LoadSaveMode.Saving)
+                clearedList = _clearedFieldNames.ToList();
+            Scribe_Collections.Look(ref clearedList, "clearedFieldNames", LookMode.Value);
+            if (Scribe.mode == LoadSaveMode.LoadingVars && clearedList != null)
+                _clearedFieldNames = new HashSet<string>(clearedList);
         }
         // Note: _backCompatResolved is intentionally NOT serialized.
         // It is a runtime-only flag used during loading for backward compatibility
@@ -203,6 +221,7 @@ public abstract partial class TweakData : IExposable
     {
         var clone = (TweakData)MemberwiseClone();
         clone._modifiedFieldNames = new HashSet<string>(_modifiedFieldNames);
+        clone._clearedFieldNames = new HashSet<string>(_clearedFieldNames);
         clone._corruptedFieldNames = new HashSet<string>(_corruptedFieldNames);
         clone._savedLoadData = _savedLoadData != null
             ? new Dictionary<string, object?>(_savedLoadData)
@@ -225,16 +244,40 @@ public abstract partial class TweakData : IExposable
         return true;
     }
 
+    /// <summary>显式赋值（Set）。与"清空"互斥。</summary>
     public void MarkFieldModified(string fieldName)
     {
         _modifiedFieldNames.Add(fieldName);
+        _clearedFieldNames.Remove(fieldName);
         _corruptedFieldNames.Remove(fieldName);
         tweaked = true;
     }
-    public void RemoveFieldModified(string fieldName) => _modifiedFieldNames.Remove(fieldName);
-    public int CountFieldModified() => _modifiedFieldNames.Count;
-    public bool IsFieldModified(string fieldName) => _modifiedFieldNames.Contains(fieldName);
-    public void ClearModifiedFields() => _modifiedFieldNames.Clear();
+
+    /// <summary>显式清空（Cleared）。由编辑器"清空"动作写入，与"赋值"互斥。</summary>
+    public void MarkFieldCleared(string fieldName)
+    {
+        _clearedFieldNames.Add(fieldName);
+        _modifiedFieldNames.Remove(fieldName);
+        _corruptedFieldNames.Remove(fieldName);
+        tweaked = true;
+    }
+
+    /// <summary>回到"未动过"：两个显式集合都清掉。</summary>
+    public void RemoveFieldModified(string fieldName)
+    {
+        _modifiedFieldNames.Remove(fieldName);
+        _clearedFieldNames.Remove(fieldName);
+    }
+    /// <summary>Set ∪ Cleared 的字段数（<c>tweaked</c> 的判据）。</summary>
+    public int CountFieldModified() => _modifiedFieldNames.Count + _clearedFieldNames.Count;
+    /// <summary>是否被用户动过（Set 或 Cleared 皆算）。回填守卫必须用它 —— 否则已清空字段会被 <c>??=</c> 复活。</summary>
+    public bool IsFieldModified(string fieldName) => _modifiedFieldNames.Contains(fieldName) || _clearedFieldNames.Contains(fieldName);
+    public bool IsFieldCleared(string fieldName) => _clearedFieldNames.Contains(fieldName);
+    public void ClearModifiedFields()
+    {
+        _modifiedFieldNames.Clear();
+        _clearedFieldNames.Clear();
+    }
 
     public void MarkFieldCorrupted(string fieldName) => _corruptedFieldNames.Add(fieldName);
     public void RemoveFieldCorrupted(string fieldName) => _corruptedFieldNames.Remove(fieldName);

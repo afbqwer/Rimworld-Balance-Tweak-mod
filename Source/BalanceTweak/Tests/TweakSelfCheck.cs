@@ -87,7 +87,7 @@ public static class TweakSelfCheck
     // ─────────────────────────── SC1 三态一致性 ───────────────────────────
 
     /// <summary>
-    /// 判据：<c>f ∉ modified ⇒ Unset</c>；<c>modified ∧ 非空 ⇒ Set</c>；<c>modified ∧ 空 ⇒ Cleared</c>（开关开时）。
+    /// 判据：<c>f ∈ cleared</c> ⇒ Cleared（开关关时退化为 Unset）；<c>f ∈ modified ∧ 非空</c> ⇒ Set；否则 Unset。
     /// 顺带抓"字段名已改名/删除"这种陈留（取状态会抛 KeyNotFound）。
     /// </summary>
     private static R SC1_States()
@@ -107,15 +107,16 @@ public static class TweakSelfCheck
                     Warn("SC1", $"{data.id} 字段 {f} 无法取三态（字段已改名/删除？）：{e.Message}", ref issues, printed++);
                     continue;
                 }
+                bool cleared = data.IsFieldCleared(f);
                 bool mod = data.IsFieldModified(f);
                 bool empty = IsEmptyValue(col.GetRawValue(data));
-                FieldState expected = clearedSemanticsEnabled
-                    ? (!mod ? FieldState.Unset : empty ? FieldState.Cleared : FieldState.Set)
+                FieldState expected = cleared
+                    ? (clearedSemanticsEnabled ? FieldState.Cleared : FieldState.Unset)
                     : (mod && !empty ? FieldState.Set : FieldState.Unset);
                 if (actual != expected)
                 {
                     Warn("SC1", $"{data.id} 字段 {f}: 实际 {actual}，期望 {expected}"
-                             + $"（modified={mod}, empty={empty}, gray={clearedSemanticsEnabled}）", ref issues, printed++);
+                             + $"（cleared={cleared}, modified={mod}, empty={empty}, gray={clearedSemanticsEnabled}）", ref issues, printed++);
                 }
             }
         }

@@ -486,9 +486,8 @@ public static partial class TweakDatabase
             {
                 if (col.columnDataType != ColumnDataType.Field) continue;
                 string f = col.fieldName;
-                // 只报"已改且为空"——这才是 L0 会动手（清空 / 还原）的字段；判据同样是 _modifiedFieldNames，不是"值 == null"。
-                if (!data.IsFieldModified(f)) continue;
-                if (!IsEmptyValue(col.GetRawValue(data))) continue;
+                // 只报"显式清空"的字段 —— 才是 L0 会动手（清空 / 还原）的集合；判据是 _clearedFieldNames，不是"值 == null"。
+                if (!data.IsFieldCleared(f)) continue;
 
                 bool isClear = IsCollectionColumn(col);
                 if (isClear) clearCount++; else revertCount++;

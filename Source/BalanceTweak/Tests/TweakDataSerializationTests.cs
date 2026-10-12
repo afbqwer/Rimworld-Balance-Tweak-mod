@@ -1039,14 +1039,14 @@ public static class TweakDataSerializationTests
     // ═══════════════════════ B 组：Resolve 显式置空 + Apply 门控 ═══════════════════════
 
     /// <summary>
-    /// ★B1：已改但空的列表字段，ResolveList 必须显式置空（否则字段会残留 SetDef 回填值，
-    /// StateOf 会把它误判为 Set 而不是 Cleared）。
+    /// ★B1：显式清空（Cleared）的列表字段，ResolveList 必须显式置空 —— 否则字段会残留
+    /// SetDef 回填值（Cleared 的实例值必须是空）。
     /// </summary>
     private static void testB1_ResolveList_ExplicitClear()
     {
         var gene = new GeneData();
-        gene.statOffsets = new List<StatModifier> { new StatModifier { stat = StatDefOf.MoveSpeed, value = 1f } };
-        gene.MarkFieldModified("statOffsets");
+        gene.statOffsets = null; // 用户清空
+        gene.MarkFieldCleared("statOffsets");
         // 模拟读档：ExposeList 对空/null 列表不写 key，加载后 _savedLoadData 里该字段值为 null
         SetSavedLoadData(gene, new Dictionary<string, object?> { ["statOffsets"] = null });
 
@@ -1100,15 +1100,14 @@ public static class TweakDataSerializationTests
         try
         {
             var g1 = new GeneData();
-            g1.statOffsets = new List<StatModifier> { new StatModifier { stat = StatDefOf.MoveSpeed, value = 1f } };
-            g1.MarkFieldModified("statOffsets");
             g1.statOffsets = null; // 用户清空
+            g1.MarkFieldCleared("statOffsets");
             List<StatModifier>? capL = new(); bool calledL = false;
             g1.ApplyL<StatModifier>("statOffsets", v => { capL = v; calledL = true; });
             Assert(calledL && capL == null, "灰度开：列表 Cleared ⇒ setter 收到 null（清空）");
 
             var g2 = new GeneData { selectionWeight = null };
-            g2.MarkFieldModified("selectionWeight");
+            g2.MarkFieldCleared("selectionWeight");
             float? capN = 1f; bool calledN = false;
             g2.ApplyN<float>("selectionWeight", v => { capN = v; calledN = true; });
             Assert(calledN && capN == null, "灰度开：可空目标 Cleared ⇒ setter 收到 null");
@@ -1131,19 +1130,19 @@ public static class TweakDataSerializationTests
             TweakDatabase.AllOriginals[id] = orig;
 
             var g1 = new GeneData { id = id, passionModSkill = null };
-            g1.MarkFieldModified("passionModSkill");
+            g1.MarkFieldCleared("passionModSkill");
             SkillDef? capD = null; bool calledD = false;
             g1.ApplyD<SkillDef>("passionModSkill", v => { capD = v; calledD = true; });
             Assert(calledD && capD == orig.passionModSkill, "灰度开：Def 引用 Cleared ⇒ 还原原引用");
 
             var g2 = new GeneData { id = id, selectionWeight = null };
-            g2.MarkFieldModified("selectionWeight");
+            g2.MarkFieldCleared("selectionWeight");
             float capV = 0f; bool calledV = false;
             g2.ApplyV<float>("selectionWeight", v => { capV = v; calledV = true; });
             Assert(calledV && Math.Abs(capV - 7f) < 0.001f, "灰度开：标量 Cleared ⇒ 还原原值");
 
             var g3 = new GeneData { id = id, defLabel = "" };
-            g3.MarkFieldModified("defLabel");
+            g3.MarkFieldCleared("defLabel");
             string? capS = null; bool calledS = false;
             g3.ApplyS("defLabel", v => { capS = v; calledS = true; });
             Assert(calledS && capS == "OrigLabel", "灰度开：空串 Cleared ⇒ 还原原字符串");
@@ -1165,7 +1164,7 @@ public static class TweakDataSerializationTests
         {
             TweakDatabase.AllOriginals.Remove(id); // 确保无原值
             var g = new GeneData { id = id, selectionWeight = null };
-            g.MarkFieldModified("selectionWeight");
+            g.MarkFieldCleared("selectionWeight");
             bool called = false;
             g.ApplyV<float>("selectionWeight", v => called = true); // 不应抛异常
             Assert(!called, "原值缺席：保持现状、不写、不抛异常");
@@ -1177,7 +1176,7 @@ public static class TweakDataSerializationTests
 
     /// <summary>
     /// 跨类型只读入口 StateOfField（dry-run 与自检都走它）：
-    /// 灰度关时"已改但空"退化为 Unset（旧行为）；灰度开时才是 Cleared。
+    /// Cleared 只来自显式清空集合；灰度关退化为 Unset，灰度开才是 Cleared。
     /// </summary>
     private static void testC_StateOfField_CrossType()
     {
@@ -1185,7 +1184,7 @@ public static class TweakDataSerializationTests
         try
         {
             var g = new GeneData { selectionWeight = null };
-            g.MarkFieldModified("selectionWeight");
+            g.MarkFieldCleared("selectionWeight");
 
             BalanceTweakSettings.clearedSemanticsEnabled = false;
             Assert(g.StateOfField("selectionWeight") == FieldState.Unset,
@@ -1241,8 +1240,8 @@ public static class TweakDataSerializationTests
         try
         {
             var g = new GeneData { id = id };
-            g.MarkFieldModified("statOffsets");
-            g.statOffsets = null; // 已改且空 ⇒ dry-run 应报"清空"
+            g.MarkFieldCleared("statOffsets");
+            g.statOffsets = null; // 显式清空 ⇒ dry-run 应报"清空"
             BalanceTweakSettings.tweakDatas[id] = g;
 
             int modifiedBefore = g.CountFieldModified();
@@ -1264,7 +1263,7 @@ public static class TweakDataSerializationTests
     private static void testC_SC2_RevivedDetection()
     {
         var gene = new GeneData();
-        gene.MarkFieldModified("statOffsets");
+        gene.MarkFieldCleared("statOffsets");
         SetSavedLoadData(gene, new Dictionary<string, object?> { ["statOffsets"] = null });
         bool ok = gene.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -1288,7 +1287,7 @@ public static class TweakDataSerializationTests
             try
             {
                 var g = new GeneData { id = id };
-                g.MarkFieldModified("statOffsets");
+                g.MarkFieldCleared("statOffsets");
                 g.statOffsets = null;
                 BalanceTweakSettings.tweakDatas[id] = g;
                 TweakSelfCheck.RunAll(); // 有数据（含 Cleared）也不得抛
