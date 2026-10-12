@@ -42,6 +42,11 @@ public abstract partial class TweakData : IExposable
     public bool _backCompatResolved;
     protected HashSet<string> _modifiedFieldNames = new();
     protected HashSet<string> _corruptedFieldNames = new();
+    /// <summary>
+    /// 一次性的"强制重写 stat"开关（由各重置流程设置）。
+    /// <para>已弃用（L0 起）：它在语义上等价于"把全部 stat 字段标为 Cleared"，而 L0 三态已能表达该意图。
+    /// 暂保留以兼容既有重置路径（TweakUtility 的 4 处赋值），待 L0 稳定后另开提交删除。</para>
+    /// </summary>
     public bool forceResetStats;
     protected string? _idTag; // 缓存 id.ToString()
 
@@ -208,6 +213,12 @@ public abstract partial class TweakData : IExposable
     {
         foreach (var c in AllColumn)
         {
+            // L0 三态：灰度开启时先比状态、再比值。
+            // 否则"Cleared 字段的值恰好与原值相同"会被判成"未改"，
+            // 让 ResetSingleItem / ResetSelectedColumn 误删用户的清空意图。
+            // 灰度关闭时不比状态 —— 与旧实现逐字段一致（反破坏红线 #11）。
+            if (clearedSemanticsEnabled && StateOfField(c.fieldName) != other.StateOfField(c.fieldName))
+                return false;
             if (!ValuesEqual(c.GetRawValue(this), c.GetRawValue(other)))
                 return false;
         }
@@ -234,6 +245,20 @@ public abstract partial class TweakData : IExposable
     #endregion
 
     #region 可继承
+
+    /// <summary>
+    /// L0 自检 / 迁移报告用的只读入口：字段三态（见 Docs/NullSemantics_L0_Plan.md §4）。
+    /// 实现在 <see cref="TweakData{T}"/>（<c>Fields</c> 在泛型侧），基类只给签名 ——
+    /// 这样"只持有 <c>TweakData</c> 引用"的调用方（TweakDatabase / TweakSelfCheck）也能取状态，
+    /// 而不必各自复制一份三态判据。
+    /// </summary>
+    internal virtual FieldState StateOfField(string fieldName) => FieldState.Unset;
+
+    /// <summary>
+    /// SC2（复活检测）：返回 Apply 之后被 SetDef / GenValues 回填复活的 Cleared 字段名（空 = 未复活）。
+    /// 见 Docs/NullSemantics_L0_Plan.md §4.2。
+    /// </summary>
+    internal virtual List<string> DetectRevivedFields() => new();
 
     public abstract List<StatColumnConfig> AllColumn { get; }
     public abstract List<string> TypeStrings { get; }

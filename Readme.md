@@ -10,6 +10,9 @@
 | 重命名 / 删除 `SettingType` 枚举成员 | 存档按**名称**写入，解析失败退化为 `None` 并失效。**重排序号是安全的** |
 | 重命名 `[TweakField]` 字段 | 字段名 = XML 元素名，改名即丢该字段的修改（新增字段安全） |
 | 直接删除还在使用的 `[TweakFor]` 规则 | 先确认没有已存数据落在该页签；确需删除时保留一个继承它的空壳子类 |
+| 用「值 == null」反推"用户清空了该字段" | L0 三态只认 `_modifiedFieldNames`（`TweakData.StateOf`）。判定不清空/不写入一律走 `ApplyV/ApplyN/ApplyL/ApplyD/ApplyS/ApplyF` 门控 |
+| 给 `List<>` / `ThingFilter` 字段加 `??=` 回填点却不带 `!IsFieldModified(...)` 守卫 | Cleared 字段读档后会被 Def 回填"复活"，清空意图重启即失效。运行期自检 SC2 会报 `[BT/SELFCHECK] 复活:` |
+| 移除 / 改名存档根节点的 `formatVersion` 版本戳 | 迁移器靠它区分存档代际（`TweakDatabase.RunMigrationAndDryRun`）。旧版本 mod 读到未知节点会忽略；删掉会让已迁移的档无法被识别 |
 
 安全的改动：末尾追加枚举成员、新增 `[TweakField]` 字段、调整 `MatchMethod` 判定与 `Priority`（分类漂移会被自动检测并重新归类）、修改 `Apply` 逻辑。
 

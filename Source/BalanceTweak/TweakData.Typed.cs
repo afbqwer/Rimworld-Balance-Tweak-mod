@@ -346,6 +346,26 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
              :                                    FieldState.Set;
     }
 
+    /// <summary>跨类型只读入口（供 TweakDatabase 的 dry-run 与 TweakSelfCheck 用）。</summary>
+    internal override FieldState StateOfField(string f) => StateOf(f);
+
+    /// <summary>
+    /// SC2（复活检测）：检查 <see cref="_clearedSnapshot"/> 里的字段在 Apply 之后是否仍为空。
+    /// 被 SetDef / GenValues 的 <c>??=</c> 回填 = 复活（漏了 <c>!IsFieldModified</c> 守卫）。
+    /// 见 Docs/NullSemantics_L0_Plan.md §4.2。
+    /// </summary>
+    internal override List<string> DetectRevivedFields()
+    {
+        if (_clearedSnapshot == null || _clearedSnapshot.Count == 0) return new List<string>();
+        var revived = new List<string>();
+        foreach (var f in _clearedSnapshot)
+        {
+            if (!_fieldIndex!.TryGetValue(f, out var meta)) continue;
+            if (!IsEmptyValue(meta.Field.GetValue(this))) revived.Add(f);
+        }
+        return revived;
+    }
+
     /// <summary>
     /// L0 三态 helper 的访问级别为 <c>protected internal</c>（原计划为 <c>protected</c>）：
     /// 同程序集的静态辅助类 <see cref="RecipeProcessHelper.ApplyProcessDef"/> 需要统一走这几个入口，

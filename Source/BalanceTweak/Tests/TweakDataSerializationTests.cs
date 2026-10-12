@@ -112,6 +112,14 @@ public static class TweakDataSerializationTests
         RunTest("B 标量/Def/string Cleared → 还原原值", () => testB_GrayOn_ClearedReverts(), ref passed, ref failed);
         RunTest("B 原值缺席 → 保持现状 + 不抛异常（Revert 兜底）", () => testB_RevertFallback(), ref passed, ref failed);
 
+        // ─── C 组：版本戳 / 迁移 dry-run / 三态接线 / 自检 ───
+        RunTest("C 跨类型三态入口 StateOfField（灰度关/开）", () => testC_StateOfField_CrossType(), ref passed, ref failed);
+        RunTest("★T8 EqualsData 三态（灰度关比旧行为一致，灰度开保护意图）", () => testC_EqualsData_ThreeState(), ref passed, ref failed);
+        RunTest("★T8 迁移 dry-run 只读且幂等", () => testC_Migration_DryRun_ReadOnly(), ref passed, ref failed);
+        RunTest("★SC2 复活检测判据（未回填不报，回填必报）", () => testC_SC2_RevivedDetection(), ref passed, ref failed);
+        RunTest("★T11 自检 RunAll 不抛异常", () => testC_SelfCheck_RunAll_NoThrow(), ref passed, ref failed);
+        RunTest("C 版本戳常量与默认值", () => testC_FormatVersion(), ref passed, ref failed);
+
         Log.Message("[BalanceTweak 测试] 完成.");
         if (failed > 0)
             Log.Warning($"[BalanceTweak 测试] 通过: {passed}, 失败: {failed}");
@@ -1163,6 +1171,138 @@ public static class TweakDataSerializationTests
             Assert(!called, "原值缺席：保持现状、不写、不抛异常");
         }
         finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+    }
+
+    // ═══════════════════════ C 组：版本戳 / 迁移 / 三态 / 自检 ═══════════════════════
+
+    /// <summary>
+    /// 跨类型只读入口 StateOfField（dry-run 与自检都走它）：
+    /// 灰度关时"已改但空"退化为 Unset（旧行为）；灰度开时才是 Cleared。
+    /// </summary>
+    private static void testC_StateOfField_CrossType()
+    {
+        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
+        try
+        {
+            var g = new GeneData { selectionWeight = null };
+            g.MarkFieldModified("selectionWeight");
+
+            BalanceTweakSettings.clearedSemanticsEnabled = false;
+            Assert(g.StateOfField("selectionWeight") == FieldState.Unset,
+                "灰度关：已改但空 ⇒ 退化为 Unset（旧行为）");
+            Assert(g.StateOfField("biostatMet") == FieldState.Unset,
+                "灰度关：未改字段 ⇒ Unset");
+
+            BalanceTweakSettings.clearedSemanticsEnabled = true;
+            Assert(g.StateOfField("selectionWeight") == FieldState.Cleared,
+                "灰度开：已改但空 ⇒ Cleared");
+            Assert(g.StateOfField("biostatMet") == FieldState.Unset,
+                "灰度开：未改字段仍为 Unset");
+
+            var g2 = new GeneData { selectionWeight = 2f };
+            g2.MarkFieldModified("selectionWeight");
+            Assert(g2.StateOfField("selectionWeight") == FieldState.Set,
+                "灰度开：已改且非空 ⇒ Set");
+        }
+        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+    }
+
+    /// <summary>
+    /// ★T8：EqualsData 的三态处理。
+    /// 灰度关：只比值 —— 与旧实现逐字段一致（值相同即视为"未改"，可被重置流程回收）。
+    /// 灰度开：先比状态 —— 状态不同（Set vs Unset）即视为"已改"，别把修改/清空意图误删。
+    /// </summary>
+    private static void testC_EqualsData_ThreeState()
+    {
+        bool origin = BalanceTweakSettings.clearedSemanticsEnabled;
+        try
+        {
+            var modified = new GeneData { selectionWeight = 1f };
+            modified.MarkFieldModified("selectionWeight");
+            var untouched = new GeneData { selectionWeight = 1f };
+
+            BalanceTweakSettings.clearedSemanticsEnabled = false;
+            Assert(modified.EqualsData(untouched),
+                "灰度关：值相同 ⇒ 视为未改（旧行为，重置流程可回收该条）");
+
+            BalanceTweakSettings.clearedSemanticsEnabled = true;
+            Assert(!modified.EqualsData(untouched),
+                "灰度开：Set vs Unset ⇒ 视为已改（保护用户的修改/清空意图不被误删）");
+        }
+        finally { BalanceTweakSettings.clearedSemanticsEnabled = origin; }
+    }
+
+    /// <summary>
+    /// ★T8：迁移 dry-run 是只读的意图预览，且幂等（连跑两次不改数据、不改字典）。
+    /// </summary>
+    private static void testC_Migration_DryRun_ReadOnly()
+    {
+        var id = new TweakData.TweakID("__BT_Test_DryRun__", BalanceTweakSettings.SettingType.Gene);
+        try
+        {
+            var g = new GeneData { id = id };
+            g.MarkFieldModified("statOffsets");
+            g.statOffsets = null; // 已改且空 ⇒ dry-run 应报"清空"
+            BalanceTweakSettings.tweakDatas[id] = g;
+
+            int modifiedBefore = g.CountFieldModified();
+            TweakDatabase.RunMigrationAndDryRun(false);
+            TweakDatabase.RunMigrationAndDryRun(false); // 幂等：二次调用同样不得改动任何数据
+
+            Assert(g.CountFieldModified() == modifiedBefore, "dry-run 不得改动 _modifiedFieldNames");
+            Assert(g.statOffsets == null, "dry-run 不得改动字段值");
+            Assert(BalanceTweakSettings.tweakDatas.ContainsKey(id), "dry-run 不得改动 tweakDatas");
+            Assert(BalanceTweakSettings.formatVersion != TweakDatabase.L0FormatVersion,
+                "dry-run 自身不得推进版本戳（只有 Init 全流程成功才推进）");
+        }
+        finally { BalanceTweakSettings.tweakDatas.Remove(id); }
+    }
+
+    /// <summary>
+    /// ★SC2 判据：ResolveDefs 末尾记录的"modified ∧ 空"字段，回填前不报复活、被回填后必报。
+    /// </summary>
+    private static void testC_SC2_RevivedDetection()
+    {
+        var gene = new GeneData();
+        gene.MarkFieldModified("statOffsets");
+        SetSavedLoadData(gene, new Dictionary<string, object?> { ["statOffsets"] = null });
+        bool ok = gene.ResolveDefs();
+        Assert(ok, "ResolveDefs 应返回 true");
+
+        Assert(gene.DetectRevivedFields().Count == 0, "未回填时不得报复活");
+
+        // 模拟 SetDef / GenValues 的 ??= 回填（漏了 !IsFieldModified 守卫的那种）
+        gene.statOffsets = new List<StatModifier> { new() { stat = StatDefOf.MoveSpeed, value = 1f } };
+        Assert(gene.DetectRevivedFields().Contains("statOffsets"), "被回填后必须报出复活字段");
+    }
+
+    /// <summary>★T11：运行期自检 RunAll 覆盖 SC1–SC6，必须不抛异常（异常由 Guard 记 error 但测试视为失败）。</summary>
+    private static void testC_SelfCheck_RunAll_NoThrow()
+    {
+        bool origin = TweakSelfCheck.selfCheckEnabled;
+        try
+        {
+            TweakSelfCheck.selfCheckEnabled = true;
+            TweakSelfCheck.RunAll(); // 空库也不得抛
+            var id = new TweakData.TweakID("__BT_Test_SelfCheck__", BalanceTweakSettings.SettingType.Gene);
+            try
+            {
+                var g = new GeneData { id = id };
+                g.MarkFieldModified("statOffsets");
+                g.statOffsets = null;
+                BalanceTweakSettings.tweakDatas[id] = g;
+                TweakSelfCheck.RunAll(); // 有数据（含 Cleared）也不得抛
+            }
+            finally { BalanceTweakSettings.tweakDatas.Remove(id); }
+        }
+        finally { TweakSelfCheck.selfCheckEnabled = origin; }
+    }
+
+    /// <summary>C1：版本戳常量 = 1；静态字段默认值 0（Init 成功后才推进）。</summary>
+    private static void testC_FormatVersion()
+    {
+        Assert(TweakDatabase.L0FormatVersion == 1, "L0 落盘版本应为 1");
+        Assert(BalanceTweakSettings.formatVersion >= 0, "版本戳不得为负");
     }
 
     /// <summary>

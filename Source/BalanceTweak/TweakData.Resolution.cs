@@ -10,7 +10,11 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
 {
     public override bool ResolveDefs()
     {
-        if (_savedLoadData == null) return true;
+        if (_savedLoadData == null)
+        {
+            RecordClearedSnapshot();
+            return true;
+        }
 
         // Backup current field values so we can restore on partial failure,
         // preventing inconsistent state where some fields are resolved and others aren't.
@@ -48,7 +52,25 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         {
             _savedLoadData = null;
         }
+        RecordClearedSnapshot();
         return _corruptedFieldNames.Count == 0;
+    }
+
+    /// <summary>
+    /// L0 自检用（运行期字段，不序列化）：ResolveDefs 末尾记下"当前 modified ∧ 空"的字段名。
+    /// 这些字段的语义是 Cleared，Apply 之后必须仍为空 —— 若被 SetDef / GenValues 的 <c>??=</c>
+    /// 回填了，就是 A3 漏加守卫（见 Docs/NullSemantics_L0_Plan.md §4.2，由 SC2 校验）。
+    /// 判据不依赖灰度开关：与灰度无关地、这些字段本来就该保持空。
+    /// </summary>
+    private void RecordClearedSnapshot()
+    {
+        _ = Fields; // 保险：确保 _fieldIndex 已随 Fields 初始化
+        _clearedSnapshot = new HashSet<string>();
+        foreach (var f in _modifiedFieldNames)
+        {
+            if (_fieldIndex!.TryGetValue(f, out var meta) && IsEmptyValue(meta.Field.GetValue(this)))
+                _clearedSnapshot.Add(f);
+        }
     }
 
     private bool TryResolveField(StatFieldMeta meta)

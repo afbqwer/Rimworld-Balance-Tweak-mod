@@ -189,6 +189,9 @@
     <MST.MainWindowSize>Main Window Size</MST.MainWindowSize>
     <MST.MainWindowWidth>Window Width</MST.MainWindowWidth>
     <MST.MainWindowHeight>Window Height</MST.MainWindowHeight>
+    <MST.ExperimentalSection>Experimental Semantics</MST.ExperimentalSection>
+    <MST.clearedSemantics>Enable L0 clear semantics</MST.clearedSemantics>
+    <MST.clearedSemanticsTip>Off (default) = legacy behavior: clearing a field does not touch the original value on the Def.\nOn = three-state semantics: modified-and-empty means "cleared" — lists/filters drop the Def's entries, scalars/Def refs revert to the original value.\nBefore enabling, check the [BT/MIGRATE] dry-run report in Player.log (it lists what will be cleared/reverted). Requires a restart.</MST.clearedSemanticsTip>
     <MST.abilities>Abilities</MST.abilities>
     <MST.abilitiesComment>Abilities granted by this def.</MST.abilitiesComment>
     <MST.activityStartingRangeMax>ActRngMax</MST.activityStartingRangeMax>
