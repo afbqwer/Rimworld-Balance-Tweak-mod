@@ -258,8 +258,13 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
                 {
                     projectile = (ProjectileData?)GetData(Projectile);
                 }
-                damageAmountBase ??= projectile?.damageAmountBase;
-                armorPenetrationBase ??= projectile?.armorPenetrationBase;
+                if (projectile != null)
+                {
+                    // 与关联弹丸保持同步：弹丸的伤害/穿透被编辑后，武器行需跟随刷新（DPS 由这两个字段算出）。
+                    // 不能用 ??=：武器在 SetDef 阶段已填过值，??= 会让弹丸改动永远刷不进来。
+                    damageAmountBase = projectile.damageAmountBase;
+                    armorPenetrationBase = projectile.armorPenetrationBase;
+                }
                 warmup ??= verb.warmupTime;
                 minRange ??= verb.minRange;
                 maxRange ??= verb.range;
