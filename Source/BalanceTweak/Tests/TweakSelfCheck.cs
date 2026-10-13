@@ -60,11 +60,12 @@ public static class TweakSelfCheck
         r += Guard("SC4", SC4_Revert);
         r += Guard("SC5", SC5_UnsetNotWritten);
         r += Guard("SC6", SC6_Snapshot);
+        r += Guard("SC9", SC9_LinkageRefresh);
 
         if (r.Issues == 0)
-            Log.Message($"{Tag} SC1–SC6 全部通过（共 {r.Checks} 项检查）。");
+            Log.Message($"{Tag} SC1–SC9 全部通过（共 {r.Checks} 项检查）。");
         else
-            Log.Warning($"{Tag} SC1–SC6 完成：检查 {r.Checks} 项，异常 {r.Issues} 项（详见上方 [BT/SELFCHECK] 警告）。");
+            Log.Warning($"{Tag} SC1–SC9 完成：检查 {r.Checks} 项，异常 {r.Issues} 项（详见上方 [BT/SELFCHECK] 警告）。");
     }
 
     /// <summary>自检本身绝不允许影响游戏：任何异常都吞掉并记 error。</summary>
@@ -404,6 +405,51 @@ public static class TweakSelfCheck
             dict[key] = value;
         }
         return dict;
+    }
+
+    // ─────────────────────────── SC9 联动覆盖（派生列自洽） ───────────────────────────
+
+    /// <summary>
+    /// 关联刷新缺口检测：对 <see cref="WeaponData"/> 的派生显示列，用克隆 <c>GenValues()</c> 重算一次
+    /// 再与运行实例比较。克隆的 <c>GenValues</c> 经 <c>GetData</c> 读到的是<b>运行中的依赖实例</b>
+    /// （弹丸 / 炮塔建筑），因此某次依赖编辑后若忘了刷新武器，运行实例的派生值会与重算值不一致。
+    ///
+    /// 只读：除克隆自身外不改任何实例，也不写 Def。仅在自检开启时运行。
+    /// 跳过 <c>Projectile == null</c> 的武器 —— 那会走 GenValues 里解析 defaultProjectile 的分支，
+    /// 该分支会写回 ProjectileData.RangedWeapon，属副作用，不适合放进自检。
+    /// </summary>
+    private static R SC9_LinkageRefresh()
+    {
+        int checks = 0, issues = 0, printed = 0;
+        foreach (var data in Loaded())
+        {
+            if (data is not WeaponData weapon || weapon.def == null) continue;
+            if (weapon.Projectile == null) continue;
+            checks++;
+
+            TweakData clone;
+            try
+            {
+                clone = weapon.Clone();
+                ((WeaponData)clone).GenValues();
+            }
+            catch (Exception e)
+            {
+                Warn("SC9", $"{weapon.id} 克隆重算抛异常：{e.Message}", ref issues, printed++);
+                continue;
+            }
+
+            foreach (var col in weapon.AllColumn)
+            {
+                if (col.columnDataType != ColumnDataType.Display) continue;
+                string now = col.GetString(weapon) ?? "";
+                string expect = col.GetString(clone) ?? "";
+                if (!string.Equals(now, expect, StringComparison.Ordinal))
+                    Warn("SC9", $"{weapon.id} 派生列 {col.fieldName} 与重算值不一致（{now} -> 重算 {expect}）"
+                              + " —— 检查关联项（弹丸 / 炮塔）改动后是否漏了刷新调用", ref issues, printed++);
+            }
+        }
+        return new R(checks, issues);
     }
 
     // ─────────────────────────── 小工具 ───────────────────────────
