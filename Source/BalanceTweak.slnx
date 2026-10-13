@@ -1,4 +1,8 @@
 <Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+  </Configurations>
   <Project Path="BalanceTweak/BalanceTweak.csproj" />
   <Project Path="CheckLoc/CheckLoc.csproj" />
 </Solution>

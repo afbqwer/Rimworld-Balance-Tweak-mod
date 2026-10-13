@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using RimWorld;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -61,8 +60,8 @@ class TraitData : TweakData<TraitData>, ISubItemHost
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
-    private static readonly FieldInfo CommonalityField = AccessTools.Field(typeof(TraitDef), "commonality");
-    private static readonly FieldInfo CommonalityFemaleField = AccessTools.Field(typeof(TraitDef), "commonalityFemale");
+    private static readonly FieldInfo CommonalityField = Reflect.Field(typeof(TraitDef), "commonality");
+    private static readonly FieldInfo CommonalityFemaleField = Reflect.Field(typeof(TraitDef), "commonalityFemale");
 
     public override int LoadingOrd => 100;
 

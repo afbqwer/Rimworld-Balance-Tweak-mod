@@ -125,14 +125,14 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
 
     private void ExposeString(StatFieldMeta meta)
     {
-        var value = (string)meta.Field.GetValue(this);
+        var value = (string?)meta.Field.GetValue(this);
         Scribe_Values.Look(ref value, meta.Field.Name);
         meta.Field.SetValue(this, value);
     }
 
     private void ExposeCurve(StatFieldMeta meta)
     {
-        var value = (SimpleCurve)meta.Field.GetValue(this);
+        var value = (SimpleCurve?)meta.Field.GetValue(this);
         Scribe_Deep.Look(ref value, meta.Field.Name);
         meta.Field.SetValue(this, value);
     }

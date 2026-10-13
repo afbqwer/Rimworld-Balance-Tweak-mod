@@ -180,7 +180,7 @@ public class StatColumnConfig
         if (field.DeclaringType != typeof(TweakData))
         {
             // 生成代码：((TweakData)data) 或 ((TweakData<Def>)data)
-            instanceExpr = Expression.Convert(paramData, field.DeclaringType);
+            instanceExpr = Expression.Convert(paramData, field.DeclaringType!);
         }
 
         // 生成代码：return (object)((DeclaringType)data).Field;
@@ -549,7 +549,7 @@ public class StatColumnConfig
             var list = (IList?)GetRawValue(data);
             if (list == null) return null;
             var elementType = field.FieldType.GetGenericArguments()[0];
-            var serializeMethod = typeof(SerializationHelper).GetMethod("SerializeDefList", BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(elementType);
+            var serializeMethod = typeof(SerializationHelper).GetMethod(nameof(SerializationHelper.SerializeDefList), BindingFlags.Public | BindingFlags.Static)!.MakeGenericMethod(elementType);
             return (string?)serializeMethod.Invoke(null, [list]);
         }
 
@@ -740,7 +740,7 @@ public class StatColumnConfig
             if (columnType == ColumnStyle.DefList)
             {
                 var elementType = field.FieldType.GetGenericArguments()[0];
-                var deserializeMethod = typeof(SerializationHelper).GetMethod("DeserializeDefList", BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(elementType);
+                var deserializeMethod = typeof(SerializationHelper).GetMethod(nameof(SerializationHelper.DeserializeDefList), BindingFlags.Public | BindingFlags.Static)!.MakeGenericMethod(elementType);
                 var list = deserializeMethod.Invoke(null, [clipboardData]);
                 if (list != null) { ApplyValue(data, list); return true; }
                 return false;
@@ -790,7 +790,7 @@ public class StatColumnConfig
             {
                 return new FloatRange((fr.Value.min + batchFlat) * batchPrec, (fr.Value.max + batchFlat) * batchPrec).ToString();
             }
-            return !fr.HasValue ? "Null" : fr.ToString();
+            return fr.HasValue ? fr.Value.ToString() : "Null";
         }
         if (cachedFieldType == FieldType.IntRange)
         {
@@ -799,7 +799,7 @@ public class StatColumnConfig
             {
                 return new IntRange((int)((ir.Value.min + batchFlat) * batchPrec), (int)((ir.Value.max + batchFlat) * batchPrec)).ToString();
             }
-            return ir.ToString();
+            return ir.HasValue ? ir.Value.ToString() : "";
         }
         if (columnType == ColumnStyle.String ||
             columnType == ColumnStyle.Link ||

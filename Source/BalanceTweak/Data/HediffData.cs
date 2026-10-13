@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using RimWorld;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -189,7 +188,7 @@ class HediffData : TweakData<HediffData>, ISubItemHost
 
     private List<string>? _hediffGiverRefs;
 
-    private static readonly FieldInfo TendDurationBaseHours = AccessTools.Field(typeof(HediffCompProperties_TendDuration), "baseTendDurationHours");
+    private static readonly FieldInfo TendDurationBaseHours = Reflect.Field(typeof(HediffCompProperties_TendDuration), "baseTendDurationHours");
 
     public override int LoadingOrd => 100;
 

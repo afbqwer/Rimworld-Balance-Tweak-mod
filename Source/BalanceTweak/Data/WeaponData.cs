@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -147,7 +146,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
 
     private float? LMAXRangedDPS = null;
     private VerbProperties? verb = null;
-    static FieldInfo ForcedMissRadius = AccessTools.Field(typeof(VerbProperties), "forcedMissRadius");
+    static FieldInfo ForcedMissRadius = Reflect.Field(typeof(VerbProperties), "forcedMissRadius");
     public override int LoadingOrd => 300;
 
     private void ApplyWeaponProp(ThingDef def)
@@ -436,7 +435,8 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
                 (var a, var b) = CalculateRangeDPS(reference, true);
                 if (a.HasValue && b.HasValue && reference != null)
                 {
-                    var ap = reference.Verbs.FirstOrDefault().defaultProjectile.projectile.GetArmorPenetration(null, null) * (APLMultiplier ?? 1f);
+                    var chargeProj = reference.Verbs.FirstOrDefault()?.defaultProjectile?.projectile;
+                    var ap = (chargeProj?.GetArmorPenetration(null, null) ?? 0f) * (APLMultiplier ?? 1f);
                     if (TweakDatabase.VCTAPDown && ap > 0.5f) { ap = 0.5f + Mathf.Log(ap + 0.5f, 5f); }
                     CRPower = Mathf.Sqrt(a.Value * b.Value) * Mathf.Pow(
                         1f + ap,

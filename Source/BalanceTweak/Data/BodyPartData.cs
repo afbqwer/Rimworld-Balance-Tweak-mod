@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using RimWorld;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -12,8 +11,8 @@ namespace BalanceTweak;
 class BodyPartData : TweakData<BodyPartData>
 {
     // skinCovered / solid 在 BodyPartDef 中是私有字段（无公开访问器），只能反射读写。
-    private static readonly FieldInfo SkinCoveredField = AccessTools.Field(typeof(BodyPartDef), "skinCovered");
-    private static readonly FieldInfo SolidField = AccessTools.Field(typeof(BodyPartDef), "solid");
+    private static readonly FieldInfo SkinCoveredField = Reflect.Field(typeof(BodyPartDef), "skinCovered");
+    private static readonly FieldInfo SolidField = Reflect.Field(typeof(BodyPartDef), "solid");
 
     /// <summary>
     /// 关联列：仅在 <see cref="SettingType.BodyPart"/> 页签提供“点击打开链接列表窗口”的入口，
@@ -96,8 +95,8 @@ class BodyPartData : TweakData<BodyPartData>
             permanentInjuryChanceFactor ??= d.permanentInjuryChanceFactor;
             bleedRate ??= d.bleedRate;
             frostbiteVulnerability ??= d.frostbiteVulnerability;
-            skinCovered ??= (bool)SkinCoveredField.GetValue(d);
-            solid ??= (bool)SolidField.GetValue(d);
+            skinCovered ??= SkinCoveredField.GetValue(d) is true;
+            solid ??= SolidField.GetValue(d) is true;
             alive ??= d.alive;
             delicate ??= d.delicate;
             beautyRelated ??= d.beautyRelated;
@@ -176,7 +175,7 @@ class BodyPartData : TweakData<BodyPartData>
             {
                 return (int)BodyPartCategory.Other;
             }
-            if ((bool)SkinCoveredField.GetValue(def))
+            if (SkinCoveredField.GetValue(def) is true)
             {
                 return (int)BodyPartCategory.Skin;
             }

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Reflection;
-using HarmonyLib;
 using RimWorld;
 using Verse;
 
@@ -31,7 +30,7 @@ public class BodyPartNode
 /// </summary>
 public static class BodyPartTreeCodec
 {
-    private static readonly FieldInfo? CachedAllPartsField = AccessTools.Field(typeof(BodyDef), "cachedAllParts");
+    private static readonly FieldInfo? CachedAllPartsField = Reflect.Field(typeof(BodyDef), "cachedAllParts");
 
     #region Record <-> Node
 

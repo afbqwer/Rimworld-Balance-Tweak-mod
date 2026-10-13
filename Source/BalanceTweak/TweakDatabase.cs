@@ -465,9 +465,9 @@ public static partial class TweakDatabase
         if (t != null)
         {
             var apn = AccessTools.Field(t, "APNerf");
-            if (apn != null) VCTAPDown = (bool)apn.GetValue(null);
+            if (apn?.GetValue(null) is bool apDown) VCTAPDown = apDown;
             var arn = AccessTools.Field(t, "ArmorUnlimitNerf");
-            if (arn != null) VCTAMDown = (bool)arn.GetValue(null);
+            if (arn?.GetValue(null) is bool amDown) VCTAMDown = amDown;
         }
         foreach (var m in DefDatabase<ManeuverDef>.AllDefsListForReading)
         {

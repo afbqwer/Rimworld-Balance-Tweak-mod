@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using RimWorld;
 using Verse;
 using static BalanceTweak.StatColumnConfig;
@@ -220,9 +219,9 @@ class BuildingData : TweakData<BuildingData>
     public string? defLabel = null;
 
     // ===== FieldInfo 反射 =====
-    static FieldInfo CompPropertiesBasePowerConsumption = AccessTools.Field(typeof(CompProperties_Power), "basePowerConsumption");
-    static FieldInfo CompPropertiesfuelMultiplier = AccessTools.Field(typeof(CompProperties_Refuelable), "fuelMultiplier");
-    static FieldInfo CompPropertiesStudiableAnomalyKnowledge = AccessTools.Field(typeof(CompProperties_Studiable), "anomalyKnowledge");
+    static FieldInfo CompPropertiesBasePowerConsumption = Reflect.Field(typeof(CompProperties_Power), "basePowerConsumption");
+    static FieldInfo CompPropertiesfuelMultiplier = Reflect.Field(typeof(CompProperties_Refuelable), "fuelMultiplier");
+    static FieldInfo CompPropertiesStudiableAnomalyKnowledge = Reflect.Field(typeof(CompProperties_Studiable), "anomalyKnowledge");
 
     public override void SetDef(Def def, BalanceTweakSettings.SettingType type, bool tweaked = false)
     {

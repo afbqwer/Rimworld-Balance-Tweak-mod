@@ -220,7 +220,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     {
         var defType = meta.Field.FieldType.GetGenericArguments()[0];
         var listType = typeof(List<>).MakeGenericType(defType);
-        var result = (System.Collections.IList)Activator.CreateInstance(listType);
+        var result = (System.Collections.IList)Activator.CreateInstance(listType)!;
         foreach (var str in strList)
         {
             var def = GenDefDatabase.GetDefSilentFail(defType, str);

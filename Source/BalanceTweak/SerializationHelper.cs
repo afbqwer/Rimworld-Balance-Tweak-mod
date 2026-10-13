@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using RimWorld;
 using Verse;
 
@@ -918,21 +917,21 @@ public static class SerializationHelper
         return ParseIngredientFilter(data);
     }
 
-    public static readonly FieldInfo TfCategoriesField = AccessTools.Field(typeof(ThingFilter), "categories");
-    public static readonly FieldInfo TfDisallowedCategoriesField = AccessTools.Field(typeof(ThingFilter), "disallowedCategories");
-    public static readonly FieldInfo TfThingDefsField = AccessTools.Field(typeof(ThingFilter), "thingDefs");
-    public static readonly FieldInfo TfSpecialFiltersToAllowField = AccessTools.Field(typeof(ThingFilter), "specialFiltersToAllow");
-    public static readonly FieldInfo TfSpecialFiltersToDisallowField = AccessTools.Field(typeof(ThingFilter), "specialFiltersToDisallow");
-    public static readonly FieldInfo TfStuffCategoriesToAllowField = AccessTools.Field(typeof(ThingFilter), "stuffCategoriesToAllow");
+    public static readonly FieldInfo TfCategoriesField = Reflect.Field(typeof(ThingFilter), "categories");
+    public static readonly FieldInfo TfDisallowedCategoriesField = Reflect.Field(typeof(ThingFilter), "disallowedCategories");
+    public static readonly FieldInfo TfThingDefsField = Reflect.Field(typeof(ThingFilter), "thingDefs");
+    public static readonly FieldInfo TfSpecialFiltersToAllowField = Reflect.Field(typeof(ThingFilter), "specialFiltersToAllow");
+    public static readonly FieldInfo TfSpecialFiltersToDisallowField = Reflect.Field(typeof(ThingFilter), "specialFiltersToDisallow");
+    public static readonly FieldInfo TfStuffCategoriesToAllowField = Reflect.Field(typeof(ThingFilter), "stuffCategoriesToAllow");
 
-    public static readonly FieldInfo TfTradeTagsToAllowField = AccessTools.Field(typeof(ThingFilter), "tradeTagsToAllow");
-    public static readonly FieldInfo TfTradeTagsToDisallowField = AccessTools.Field(typeof(ThingFilter), "tradeTagsToDisallow");
-    public static readonly FieldInfo TfThingSetMakerTagsToAllowField = AccessTools.Field(typeof(ThingFilter), "thingSetMakerTagsToAllow");
-    public static readonly FieldInfo TfThingSetMakerTagsToDisallowField = AccessTools.Field(typeof(ThingFilter), "thingSetMakerTagsToDisallow");
-    public static readonly FieldInfo TfAllowAllWhoCanMakeField = AccessTools.Field(typeof(ThingFilter), "allowAllWhoCanMake");
-    public static readonly FieldInfo TfDisallowedThingDefsField = AccessTools.Field(typeof(ThingFilter), "disallowedThingDefs");
+    public static readonly FieldInfo TfTradeTagsToAllowField = Reflect.Field(typeof(ThingFilter), "tradeTagsToAllow");
+    public static readonly FieldInfo TfTradeTagsToDisallowField = Reflect.Field(typeof(ThingFilter), "tradeTagsToDisallow");
+    public static readonly FieldInfo TfThingSetMakerTagsToAllowField = Reflect.Field(typeof(ThingFilter), "thingSetMakerTagsToAllow");
+    public static readonly FieldInfo TfThingSetMakerTagsToDisallowField = Reflect.Field(typeof(ThingFilter), "thingSetMakerTagsToDisallow");
+    public static readonly FieldInfo TfAllowAllWhoCanMakeField = Reflect.Field(typeof(ThingFilter), "allowAllWhoCanMake");
+    public static readonly FieldInfo TfDisallowedThingDefsField = Reflect.Field(typeof(ThingFilter), "disallowedThingDefs");
 
-    public static readonly FieldInfo TfAllowedDefsField = AccessTools.Field(typeof(ThingFilter), "allowedDefs");
+    public static readonly FieldInfo TfAllowedDefsField = Reflect.Field(typeof(ThingFilter), "allowedDefs");
 
     public static void CopyFieldsTo(ThingFilter source, ThingFilter target)
     {

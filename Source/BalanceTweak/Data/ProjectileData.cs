@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using RimWorld;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -62,8 +61,8 @@ class ProjectileData : TweakData<ProjectileData>
         _ => false,
     };
 
-    static FieldInfo damageAmountBaseField = AccessTools.Field(typeof(ProjectileProperties), "damageAmountBase");
-    static FieldInfo armorPenetrationBaseField = AccessTools.Field(typeof(ProjectileProperties), "armorPenetrationBase");
+    static FieldInfo damageAmountBaseField = Reflect.Field(typeof(ProjectileProperties), "damageAmountBase");
+    static FieldInfo armorPenetrationBaseField = Reflect.Field(typeof(ProjectileProperties), "armorPenetrationBase");
 
     //private static void OnChangeDamage(TweakData data)
     //{
@@ -107,8 +106,8 @@ class ProjectileData : TweakData<ProjectileData>
             stoppingPower ??= p.stoppingPower;
             explosionRadius ??= p.explosionRadius;
             //OnChangeDamage(this);
-            damageAmountBase ??= (int)damageAmountBaseField.GetValue(p);
-            armorPenetrationBase ??= (float)armorPenetrationBaseField.GetValue(p);
+            damageAmountBase ??= damageAmountBaseField.GetValue(p) as int?;
+            armorPenetrationBase ??= armorPenetrationBaseField.GetValue(p) as float?;
             damageType = p.damageDef;
         }
         else

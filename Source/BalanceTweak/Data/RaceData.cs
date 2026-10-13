@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using HarmonyLib;
 using RimWorld;
 using Verse;
 using static BalanceTweak.StatColumnConfig;
@@ -164,7 +163,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     [TweakField(Style = ColumnStyle.Int, Available = nameof(AvailableIfAnimal))]
     public int? woolAmount = null;
 
-    static System.Reflection.FieldInfo CompPropertiesStudiableAnomalyKnowledge = AccessTools.Field(typeof(CompProperties_Studiable), "anomalyKnowledge");
+    static System.Reflection.FieldInfo CompPropertiesStudiableAnomalyKnowledge = Reflect.Field(typeof(CompProperties_Studiable), "anomalyKnowledge");
 
     private static object? GetCorepartHP(TweakData data) =>
     (data.def is ThingDef d ? (d.race?.body?.corePart?.def?.hitPoints * d.race?.baseHealthScale) ?? null : null);

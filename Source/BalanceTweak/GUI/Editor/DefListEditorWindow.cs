@@ -32,7 +32,7 @@ public class DefListEditorWindow : EditorWindowBase
             defType = config.field.FieldType.GetGenericArguments()[0];
         }
 
-        originalList = (IList?)config.GetRawValue(data) ?? (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(defType));
+        originalList = (IList?)config.GetRawValue(data) ?? (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(defType))!;
         workingList = CloneList(originalList);
     }
 
@@ -49,7 +49,7 @@ public class DefListEditorWindow : EditorWindowBase
     private IList CloneList(IList source)
     {
         var listType = typeof(List<>).MakeGenericType(defType);
-        var clone = (IList)Activator.CreateInstance(listType);
+        var clone = (IList)Activator.CreateInstance(listType)!;
         foreach (var item in source)
         {
             clone.Add(item);
@@ -166,7 +166,7 @@ public class DefListEditorWindow : EditorWindowBase
     protected override bool OnPasteData(string data)
     {
         var defNames = data.Split(new[] { '\n', ',' }, StringSplitOptions.RemoveEmptyEntries);
-        var newList = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(defType));
+        var newList = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(defType))!;
         foreach (var defName in defNames)
         {
             var def = GenDefDatabase.GetDefSilentFail(defType, defName.Trim());
@@ -198,7 +198,7 @@ public class DefListEditorWindow : EditorWindowBase
     private void SaveAndClose()
     {
         var listType = typeof(List<>).MakeGenericType(defType);
-        var finalList = (IList)Activator.CreateInstance(listType);
+        var finalList = (IList)Activator.CreateInstance(listType)!;
         foreach (var item in workingList)
         {
             if (item != null)

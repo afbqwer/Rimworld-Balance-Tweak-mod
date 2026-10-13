@@ -369,3 +369,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 Docs/Todo.md
+
+# 游戏上传 mod 时自动生成的资产包，无需追踪
+Assets.zip*
+

@@ -490,7 +490,7 @@ public static class DataUtility
 
         if (_factorLegendaryField != null)
         {
-            object val = _factorLegendaryField.GetValue(part);
+            object? val = _factorLegendaryField.GetValue(part);
             if (val is float f)
             {
                 return f;

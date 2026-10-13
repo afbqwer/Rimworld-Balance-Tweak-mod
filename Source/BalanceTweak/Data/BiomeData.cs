@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using RimWorld;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -130,21 +129,21 @@ class BiomeData : TweakData<BiomeData>
     // BiomeDef 的 wildAnimals/coastalWildAnimals/pollutionWildAnimals/diseases/allowedPackAnimals
     // 是 private 字段，且动植物与疾病共性值缓存在私有字段里（懒加载、无失效机制），只能反射读写；
     // 写完列表后把缓存置 null 强制下次访问重建，否则运行中修改不生效。
-    private static readonly FieldInfo? wildAnimalsField = AccessTools.Field(typeof(BiomeDef), "wildAnimals");
-    private static readonly FieldInfo? coastalWildAnimalsField = AccessTools.Field(typeof(BiomeDef), "coastalWildAnimals");
-    private static readonly FieldInfo? pollutionWildAnimalsField = AccessTools.Field(typeof(BiomeDef), "pollutionWildAnimals");
-    private static readonly FieldInfo? diseasesField = AccessTools.Field(typeof(BiomeDef), "diseases");
-    private static readonly FieldInfo? allowedPackAnimalsField = AccessTools.Field(typeof(BiomeDef), "allowedPackAnimals");
+    private static readonly FieldInfo? wildAnimalsField = Reflect.Field(typeof(BiomeDef), "wildAnimals");
+    private static readonly FieldInfo? coastalWildAnimalsField = Reflect.Field(typeof(BiomeDef), "coastalWildAnimals");
+    private static readonly FieldInfo? pollutionWildAnimalsField = Reflect.Field(typeof(BiomeDef), "pollutionWildAnimals");
+    private static readonly FieldInfo? diseasesField = Reflect.Field(typeof(BiomeDef), "diseases");
+    private static readonly FieldInfo? allowedPackAnimalsField = Reflect.Field(typeof(BiomeDef), "allowedPackAnimals");
     private static readonly FieldInfo?[] biomeCacheFields =
     [
-        AccessTools.Field(typeof(BiomeDef), "cachedAnimalCommonalities"),
-        AccessTools.Field(typeof(BiomeDef), "cachedCoastalAnimalCommonalities"),
-        AccessTools.Field(typeof(BiomeDef), "cachedPollutionAnimalCommonalities"),
-        AccessTools.Field(typeof(BiomeDef), "cachedPlantCommonalities"),
-        AccessTools.Field(typeof(BiomeDef), "cachedWildPlants"),
-        AccessTools.Field(typeof(BiomeDef), "cachedLowestWildPlantOrder"),
-        AccessTools.Field(typeof(BiomeDef), "cachedMaxWildPlantsClusterRadius"),
-        AccessTools.Field(typeof(BiomeDef), "cachedDiseaseCommonalities"),
+        Reflect.Field(typeof(BiomeDef), "cachedAnimalCommonalities"),
+        Reflect.Field(typeof(BiomeDef), "cachedCoastalAnimalCommonalities"),
+        Reflect.Field(typeof(BiomeDef), "cachedPollutionAnimalCommonalities"),
+        Reflect.Field(typeof(BiomeDef), "cachedPlantCommonalities"),
+        Reflect.Field(typeof(BiomeDef), "cachedWildPlants"),
+        Reflect.Field(typeof(BiomeDef), "cachedLowestWildPlantOrder"),
+        Reflect.Field(typeof(BiomeDef), "cachedMaxWildPlantsClusterRadius"),
+        Reflect.Field(typeof(BiomeDef), "cachedDiseaseCommonalities"),
     ];
 
     public override void SetDef(Def def, SettingType type, bool tweaked = false)

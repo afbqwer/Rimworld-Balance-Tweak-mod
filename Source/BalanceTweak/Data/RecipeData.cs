@@ -3,7 +3,6 @@ using System.Linq;
 using System.Reflection;
 // PipeSystem types are accessed via RecipeProcessHelper to avoid load failures
 // when PipeSystem is not present.
-using HarmonyLib;
 using RimWorld;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -212,11 +211,11 @@ public class RecipeData : TweakData<RecipeData>
     private static void InvalidateCaches(RecipeDef def, List<ThingDef>? oldUsers, List<ThingDef>? newUsers)
     {
         // Reset RecipeDef.isSurgeryCached — IsSurgery iterates AllRecipeUsers (includes recipeUsers)
-        var surgeryField = AccessTools.Field(typeof(RecipeDef), "isSurgeryCached");
+        var surgeryField = Reflect.Field(typeof(RecipeDef), "isSurgeryCached");
         surgeryField?.SetValue(def, null);
 
         // Reset ThingDef.allRecipesCached for all affected recipe users
-        var recipesField = AccessTools.Field(typeof(ThingDef), "allRecipesCached");
+        var recipesField = Reflect.Field(typeof(ThingDef), "allRecipesCached");
         if (oldUsers != null)
             foreach (var thing in oldUsers)
                 recipesField?.SetValue(thing, null);
