@@ -268,6 +268,10 @@ public class StatColumnConfig
                 if (targetType == typeof(float) && value is int i) finalValue = (float)i;
                 else if (targetType == typeof(float) && value is bool b) finalValue = b ? 1f : 0f;
                 else if (targetType == typeof(bool) && value is float f) finalValue = f > 0.5f;
+                // 数值 -> 枚举：批量应用（ApplyBatchOperation）对枚举列会算出 float 值并走到这里，
+                // 缺此分支会让表达式编译的 Convert(object -> Enum) 拆箱 float 抛 InvalidCastException。
+                else if (targetType.IsEnum && value is float ef) finalValue = Enum.ToObject(targetType, (int)ef);
+                else if (targetType.IsEnum && value is int ei) finalValue = Enum.ToObject(targetType, ei);
             }
         }
 
