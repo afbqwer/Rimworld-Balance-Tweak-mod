@@ -10,7 +10,7 @@
 .vs
 .trae
 .workbuddy
-.zcode/
+.zcode
 .zcodeignore
 Thumbs.db
 obj
