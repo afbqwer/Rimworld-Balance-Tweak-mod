@@ -10,5 +10,31 @@
     <MST.techprintCount>TPCount</MST.techprintCount>
     <MST.techprintCommonality>TPCom</MST.techprintCommonality>
     <MST.techprintMarketValue>TPVal</MST.techprintMarketValue>
+    <MST.prerequisites>Prereq</MST.prerequisites>
+    <MST.prerequisitesComment>Research projects that must be finished first. Drawn as lines on the research tree.</MST.prerequisitesComment>
+    <MST.hiddenPrerequisites>HidPre</MST.hiddenPrerequisites>
+    <MST.hiddenPrerequisitesComment>Also a hard prerequisite, but no line is drawn on the research tree.</MST.hiddenPrerequisitesComment>
+    <MST.requiredResearchBuilding>Bench</MST.requiredResearchBuilding>
+    <MST.requiredResearchBuildingComment>Research bench needed to work on this project. Empty means any bench works.</MST.requiredResearchBuildingComment>
+    <MST.requiredResearchFacilities>Facility</MST.requiredResearchFacilities>
+    <MST.requiredResearchFacilitiesComment>Facilities that must be linked to the bench and active.</MST.requiredResearchFacilitiesComment>
+    <MST.requiredAnalyzed>Analyzed</MST.requiredAnalyzed>
+    <MST.requiredAnalyzedComment>Things that must be analyzed first (Biotech).</MST.requiredAnalyzedComment>
+    <MST.requiresMechanitor>Mechtr</MST.requiresMechanitor>
+    <MST.requiresMechanitorComment>A mechanitor must exist in the colony to start this project (Biotech).</MST.requiresMechanitorComment>
+    <MST.requireGravEngineInspected>GravInsp</MST.requireGravEngineInspected>
+    <MST.requireGravEngineInspectedComment>A grav engine must be inspected before this project can start (Odyssey).</MST.requireGravEngineInspectedComment>
+    <MST.recalculatePower>RecalcPwr</MST.recalculatePower>
+    <MST.recalculatePowerComment>Recalculate the power network when this project completes.</MST.recalculatePowerComment>
+    <MST.customUnlockTexts>UnlockTxt</MST.customUnlockTexts>
+    <MST.customUnlockTextsComment>Extra entries appended to the "unlocked" list in the research info card (Odyssey).</MST.customUnlockTextsComment>
+    <MST.heldByFactionCategoryTags>FactTags</MST.heldByFactionCategoryTags>
+    <MST.heldByFactionCategoryTagsComment>Faction categories that hold techprints of this project (Royalty). Must be non-empty whenever techprintCount is above 0.</MST.heldByFactionCategoryTagsComment>
+    <MST.teachConcept>Concept</MST.teachConcept>
+    <MST.teachConceptComment>Concept taught to the player when this project completes.</MST.teachConceptComment>
+    <MST.discoveredLetterTitle>DiscTitle</MST.discoveredLetterTitle>
+    <MST.discoveredLetterTitleComment>Title of the letter shown when this project is discovered.</MST.discoveredLetterTitleComment>
+    <MST.discoveredLetterText>DiscText</MST.discoveredLetterText>
+    <MST.discoveredLetterTextComment>Body of the letter shown when this project is discovered.</MST.discoveredLetterTextComment>
     <MST.Hidden>Hidden</MST.Hidden>
 </LanguageData>

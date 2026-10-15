@@ -32,6 +32,46 @@ class ResearchData : TweakData<ResearchData>
     [TweakField(MayRequire = "ludeon.rimworld.royalty", Available = nameof(AvailableIfNoAnomaly))]
     public float? techprintMarketValue = null;
 
+    // —— 研究树结构（原版 XML 的 prerequisites / hiddenPrerequisites / tags）——
+    // 三者都是「前置研究」：prerequisites 在树上显示连线，hiddenPrerequisites 只做硬性门禁不画线。
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<ResearchProjectDef>? prerequisites = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<ResearchProjectDef>? hiddenPrerequisites = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<ResearchProjectTagDef>? tags = null;
+
+    // —— 研究台要求 ——
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public ThingDef? requiredResearchBuilding = null;
+    [TweakField(Style = ColumnStyle.DefList)]
+    public List<ThingDef>? requiredResearchFacilities = null;
+
+    // —— DLC 专属门禁 ——
+    // requiredAnalyzed / requiresMechanitor：Biotech（无 Biotech 时原版 PostLoad 会把 requiredAnalyzed 置空）
+    [TweakField(Style = ColumnStyle.DefList, MayRequire = "ludeon.rimworld.biotech")]
+    public List<ThingDef>? requiredAnalyzed = null;
+    [TweakField(Style = ColumnStyle.Bool, MayRequire = "ludeon.rimworld.biotech")]
+    public bool? requiresMechanitor = null;
+    // requireGravEngineInspected / customUnlockTexts：Odyssey（重力引擎检视、自定义解锁文案）
+    [TweakField(Style = ColumnStyle.Bool, MayRequire = "ludeon.rimworld.odyssey")]
+    public bool? requireGravEngineInspected = null;
+    [TweakField(Style = ColumnStyle.StringList, MayRequire = "ludeon.rimworld.odyssey")]
+    public List<string>? customUnlockTexts = null;
+    // heldByFactionCategoryTags：Royalty（蓝图所属派系类别；凡 techprintCount > 0 的原版 def 都必须有）
+    [TweakField(Style = ColumnStyle.StringList, MayRequire = "ludeon.rimworld.royalty")]
+    public List<string>? heldByFactionCategoryTags = null;
+
+    // —— 其它 ——
+    [TweakField(Style = ColumnStyle.DefSelector)]
+    public ConceptDef? teachConcept = null;
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? recalculatePower = null;
+    [TweakField(Style = ColumnStyle.String)]
+    public string? discoveredLetterTitle = null;
+    [TweakField(Style = ColumnStyle.String)]
+    public string? discoveredLetterText = null;
+
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
@@ -59,6 +99,23 @@ class ResearchData : TweakData<ResearchData>
             techprintCount ??= d.techprintCount;
             techprintCommonality ??= d.techprintCommonality;
             techprintMarketValue ??= d.techprintMarketValue;
+
+            // 列表字段一律带 !IsFieldModified 守卫：已清空的字段不得被 ??= 复活（硬约束，SC2 自检）。
+            if (!IsFieldModified(nameof(prerequisites))) prerequisites ??= d.prerequisites;
+            if (!IsFieldModified(nameof(hiddenPrerequisites))) hiddenPrerequisites ??= d.hiddenPrerequisites;
+            if (!IsFieldModified(nameof(tags))) tags ??= d.tags;
+            if (!IsFieldModified(nameof(requiredResearchFacilities))) requiredResearchFacilities ??= d.requiredResearchFacilities;
+            if (!IsFieldModified(nameof(requiredAnalyzed))) requiredAnalyzed ??= d.requiredAnalyzed;
+            if (!IsFieldModified(nameof(customUnlockTexts))) customUnlockTexts ??= d.customUnlockTexts;
+            if (!IsFieldModified(nameof(heldByFactionCategoryTags))) heldByFactionCategoryTags ??= d.heldByFactionCategoryTags;
+
+            requiredResearchBuilding ??= d.requiredResearchBuilding;
+            teachConcept ??= d.teachConcept;
+            requiresMechanitor ??= d.requiresMechanitor;
+            requireGravEngineInspected ??= d.requireGravEngineInspected;
+            recalculatePower ??= d.recalculatePower;
+            discoveredLetterTitle ??= d.discoveredLetterTitle;
+            discoveredLetterText ??= d.discoveredLetterText;
         }
     }
 
@@ -79,6 +136,20 @@ class ResearchData : TweakData<ResearchData>
         ApplyV<int>(nameof(techprintCount), v => def.techprintCount = v);
         ApplyV<float>(nameof(techprintCommonality), v => def.techprintCommonality = v);
         ApplyV<float>(nameof(techprintMarketValue), v => def.techprintMarketValue = v);
+        ApplyL<ResearchProjectDef>(nameof(prerequisites), v => def.prerequisites = v);
+        ApplyL<ResearchProjectDef>(nameof(hiddenPrerequisites), v => def.hiddenPrerequisites = v);
+        ApplyL<ResearchProjectTagDef>(nameof(tags), v => def.tags = v);
+        ApplyD<ThingDef>(nameof(requiredResearchBuilding), v => def.requiredResearchBuilding = v);
+        ApplyL<ThingDef>(nameof(requiredResearchFacilities), v => def.requiredResearchFacilities = v);
+        ApplyL<ThingDef>(nameof(requiredAnalyzed), v => def.requiredAnalyzed = v);
+        ApplyV<bool>(nameof(requiresMechanitor), v => def.requiresMechanitor = v);
+        ApplyV<bool>(nameof(requireGravEngineInspected), v => def.requireGravEngineInspected = v);
+        ApplyV<bool>(nameof(recalculatePower), v => def.recalculatePower = v);
+        ApplyS(nameof(discoveredLetterTitle), v => def.discoveredLetterTitle = v);
+        ApplyS(nameof(discoveredLetterText), v => def.discoveredLetterText = v);
+        ApplyL<string>(nameof(customUnlockTexts), v => def.customUnlockTexts = v);
+        ApplyL<string>(nameof(heldByFactionCategoryTags), v => def.heldByFactionCategoryTags = v);
+        ApplyD<ConceptDef>(nameof(teachConcept), v => def.teachConcept = v);
         ApplyS(nameof(defLabel), v => this.def.label = v);
     }
 

@@ -10,5 +10,31 @@
     <MST.techprintCount>蓝图数量</MST.techprintCount>
     <MST.techprintCommonality>蓝图常见度</MST.techprintCommonality>
     <MST.techprintMarketValue>蓝图价值</MST.techprintMarketValue>
+    <MST.prerequisites>前置研究</MST.prerequisites>
+    <MST.prerequisitesComment>必须先完成的研究项目。在研究会话界面上会画出连线。</MST.prerequisitesComment>
+    <MST.hiddenPrerequisites>隐藏前置</MST.hiddenPrerequisites>
+    <MST.hiddenPrerequisitesComment>同样作为硬性前置，但不会在研究会话界面上画线。</MST.hiddenPrerequisitesComment>
+    <MST.requiredResearchBuilding>研究台</MST.requiredResearchBuilding>
+    <MST.requiredResearchBuildingComment>研究该项目必须使用的研究台。留空表示任意研究台皆可。</MST.requiredResearchBuildingComment>
+    <MST.requiredResearchFacilities>研究设施</MST.requiredResearchFacilities>
+    <MST.requiredResearchFacilitiesComment>必须与研究台连接并处于工作状态的研究设施。</MST.requiredResearchFacilitiesComment>
+    <MST.requiredAnalyzed>需分析</MST.requiredAnalyzed>
+    <MST.requiredAnalyzedComment>需要先完成分析的物品（生物科技）。</MST.requiredAnalyzedComment>
+    <MST.requiresMechanitor>需机械师</MST.requiresMechanitor>
+    <MST.requiresMechanitorComment>殖民地中必须存在机械师才能开始研究（生物科技）。</MST.requiresMechanitorComment>
+    <MST.requireGravEngineInspected>需重力检视</MST.requireGravEngineInspected>
+    <MST.requireGravEngineInspectedComment>需要先检视重力引擎才能开始研究（奥德赛）。</MST.requireGravEngineInspectedComment>
+    <MST.recalculatePower>重算电力</MST.recalculatePower>
+    <MST.recalculatePowerComment>该项目完成时重新计算电网状态。</MST.recalculatePowerComment>
+    <MST.customUnlockTexts>解锁文本</MST.customUnlockTexts>
+    <MST.customUnlockTextsComment>附加在研究会话信息卡「解锁」列表中的额外条目（奥德赛）。</MST.customUnlockTextsComment>
+    <MST.heldByFactionCategoryTags>派系标签</MST.heldByFactionCategoryTags>
+    <MST.heldByFactionCategoryTagsComment>持有该研究蓝图的派系类别（皇权）。techprintCount 大于 0 时必须非空。</MST.heldByFactionCategoryTagsComment>
+    <MST.teachConcept>教学概念</MST.teachConcept>
+    <MST.teachConceptComment>该项目完成时向玩家弹出的教学概念。</MST.teachConceptComment>
+    <MST.discoveredLetterTitle>发现信标题</MST.discoveredLetterTitle>
+    <MST.discoveredLetterTitleComment>该研究被发现时弹出的信件标题。</MST.discoveredLetterTitleComment>
+    <MST.discoveredLetterText>发现信正文</MST.discoveredLetterText>
+    <MST.discoveredLetterTextComment>该研究被发现时弹出的信件正文。</MST.discoveredLetterTextComment>
     <MST.Hidden>隐藏</MST.Hidden>
 </LanguageData>
