@@ -58,6 +58,7 @@
     <MST.showDisplayModeTooltip>Display all cells in read-only mode. Editing is disabled.</MST.showDisplayModeTooltip>
     <MST.ResetColTooltip>Reset all data displayed in the currently selected column. Does not reset data not displayed in the list.</MST.ResetColTooltip>
     <MST.JumpToDesc>Click the name to jump to its associated data.</MST.JumpToDesc>
+    <MST.JumpToDefData>Jump to: </MST.JumpToDefData>
     <MST.ResetCurTooltip>Reset all data currently displayed. Does not reset data not displayed in the list.</MST.ResetCurTooltip>
     <MST.ApplyToolTip>Modify all values in the selected column. Only modifies data displayed in the current list. The result is (Value + Flat Change) * Multiplier.</MST.ApplyToolTip>
     <MST.HelpTooltip>Operations
@@ -66,7 +67,7 @@
 - Editing a cell: a checkbox toggles; number / percent values are typed in place; an enum opens a dropdown; text, lists, curves, def pickers and so on open their own editor window.
 - Batch edit: hold Shift and drag with the left button to copy the start cell's value to every cell you drag over in the same column.
 - Name column: left-click the name to jump to its owner; right-click for Pin / Reset / Copy defName; the R button resets that entry.
-- Right-click a data cell: Copy / Paste / Reset that field.</MST.HelpTooltip>
+- Right-click a data cell: Copy / Paste / Reset that field; if the column references a Def (def-picker columns) and that Def is editable here, an extra "Jump to: ..." entry takes you straight to its data.</MST.HelpTooltip>
     <MST.SimpleDefEditer>Simple Def Editor</MST.SimpleDefEditer>
     <MST.EditCurve>Edit Curve</MST.EditCurve>
     <MST.Points>Points</MST.Points>

@@ -1572,6 +1572,27 @@ public partial class BalanceTweakSettings : ModSettings
                 editingControlConfig = null;
                 TweakUtility.ResetSingleItem(data, columnConfig);
             }));
+
+            // Def 引用列：若该单元格引用的 Def 在本编辑器里有对应数据，提供跳转入口。
+            // 判定走列的 FieldType.Def（即 DefSelector 一类字段），目标 Def 用 TweakData.GetData(Def)
+            // 按规则表解析 —— 只有能解析出 TweakData 时才加菜单项，等价于"此 Def 可编辑"。
+            if (columnConfig.SortFieldType == FieldType.Def
+                && columnConfig.GetRawValue(data) is Def def)
+            {
+                var target = TweakData.GetData(def);
+                if (target != null)
+                {
+                    string targetLabel = target.label.NullOrEmpty() ? target.id.defName : target.label;
+                    options.Add(new FloatMenuOption(
+                        $"{"MST.JumpToDefData".Translate().RawText}{targetLabel}({target.id.settingType.ToString().Translate().RawText})",
+                        () =>
+                        {
+                            // 跳转会重置筛选，先落盘未提交的编辑，免得被静默丢弃。
+                            CommitPendingEdit();
+                            TweakUtility.JumpToData(target);
+                        }));
+                }
+            }
         }
 
         Find.WindowStack.Add(new FloatMenu(options));
