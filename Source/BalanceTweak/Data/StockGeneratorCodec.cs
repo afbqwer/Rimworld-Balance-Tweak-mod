@@ -259,6 +259,11 @@ internal static class StockGeneratorCodec
     /// 而是按"类型相同、出现次序相同"从 <paramref name="defCurrent"/> 里找回那个原实例原样放回 ——
     /// 本工具从不读也不写它的字段，所以它不会因为"这个商人被改过 + 存档读档"而丢数据，位置也保持在原处。
     /// <para>
+    /// 找不到同类型原实例的条目（粘贴/复制到"本来就没有这个类型"的商人？）<b>直接丢弃并告警</b>：
+    /// 绝不写入一个字段全默认的实例 —— 那等于替别的 Mod 编一份它自己都没写过的数据。
+    /// 全部条目都被丢弃时返回 null，调用方据此保持 Def 现状（不写回）。
+    /// </para>
+    /// <para>
     /// <paramref name="defCurrent"/> 里还有没被字段认领的非原版生成器（例如两次存档之间某个 Mod 给这个
     /// Def 加了生成器）一律追加在末尾，绝不丢。
     /// </para>
@@ -293,9 +298,12 @@ internal static class StockGeneratorCodec
             }
             else
             {
+                // 不匹配只可能来自"复制/粘贴到别的商人"：编辑器里改的就是本 Def 自己的实例，必然匹配。
+                // 此时绝不能把 entry 放进 Def —— 它是解析类型名占位标记时 Activator 造出来的、字段全默认的
+                // 实例，写进去就是替别的 Mod 编了一份它自己都没写过的数据（"绝不能把空壳塞回 Def"）。
+                // 丢掉这一条并告警：让用户看到"少了一条"，而不是让游戏拿一份坏数据去生成库存。
                 Log.Warning($"[BalanceTweak] stockGenerators：Def 里找不到 {TypeLabel(entry.GetType())} 的原实例"
-                    + "（相关 Mod 变动过？），只能放回一个只有类型名的空壳。");
-                result.Add(entry);
+                    + "（粘贴来的条目，或相关 Mod 变动过？），本工具不读不写它的字段、无法重建，已丢弃这一条。");
             }
         }
 
@@ -744,6 +752,50 @@ internal static class StockGeneratorCodec
         if (parts.Length != 2) return false;
         min = parts[0];
         max = parts[1];
+        return true;
+    }
+
+    /// <summary>
+    /// <b>表单文本框</b>里的区间文本 → <see cref="IntRange"/> / <see cref="FloatRange"/>（失败只返回 false，
+    /// 不写日志：表单是逐键调用的，报错会刷屏）。判据与 <see cref="TryDecodeFieldValue"/> 的区间分支<b>有意不同</b>：
+    /// 这里<b>允许只写一个数</b>（= min~max 同值）—— <c>IntRange.ToString()</c> 在 min==max 时只显示一个数
+    /// （<c>countRange</c> 的默认值 <see cref="IntRange.Zero"/> 就显示成 "0"），用户直接改那个数必须能通过；
+    /// 存档那边的文本一律由本类写出（<see cref="IntRangeText"/> 永远带 "~"），所以那边保持严判。
+    /// <para>
+    /// <b>"写了一半"一律拒绝</b>：<c>"1~"</c> / <c>"~4"</c> / <c>"1~2~3"</c>。绝不能退回
+    /// <c>IntRange.FromString</c> / <c>FloatRange.FromString</c> 那种"靠抛异常判非法"的写法 ——
+    /// <c>IntRange.FromString("1~")</c> <b>不抛异常</b>，它把缺省的上界当 <c>int.MaxValue</c>，于是
+    /// "输到一半就点走"会把 <c>countRange</c> 写成 1~2147483647（生成库存时按这个数量造物品）。
+    /// </para>
+    /// <para>
+    /// 用 <see cref="NumberStyles.Float"/>（不含千位分隔符）而不是裸 <c>float.TryParse</c>：
+    /// 后者会把 <c>"1.5"</c> 在逗号小数点环境下读成 15。
+    /// </para>
+    /// </summary>
+    public static bool TryParseRangeText(bool isIntRange, string? text, out object? value)
+    {
+        value = null;
+        if (text.NullOrEmpty()) return false;
+
+        var parts = text!.Split('~');
+        if (parts.Length > 2 || parts[0].Length == 0) return false;
+        var minText = parts[0];
+        var maxText = parts.Length == 2 ? parts[1] : minText;
+        if (maxText.Length == 0) return false;
+
+        if (isIntRange)
+        {
+            if (!int.TryParse(minText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int min)
+                || !int.TryParse(maxText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int max))
+                return false;
+            value = new IntRange(min, max);
+            return true;
+        }
+
+        if (!float.TryParse(minText, NumberStyles.Float, CultureInfo.InvariantCulture, out float fmin)
+            || !float.TryParse(maxText, NumberStyles.Float, CultureInfo.InvariantCulture, out float fmax))
+            return false;
+        value = new FloatRange(fmin, fmax);
         return true;
     }
 

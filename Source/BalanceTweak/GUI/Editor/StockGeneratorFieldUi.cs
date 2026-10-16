@@ -160,17 +160,13 @@ internal static class StockGeneratorFieldUi
     {
         string text = current?.ToString() ?? "";
         string next = Widgets.TextField(rect, text);
-        if (next == text || next.NullOrEmpty()) return;
+        if (next == text) return;
 
-        try
-        {
-            // 输入中途（如 "5~"）不合法：忽略本次编辑，等用户敲完整。
-            StockGeneratorCodec.WriteField(field, target, isIntRange ? IntRange.FromString(next) : (object)FloatRange.FromString(next));
-        }
-        catch
-        {
-            // 忽略：保持在文本框中继续编辑
-        }
+        // 合法性由 codec 判（与格式定义同处）：输入中途（如 "5~"）一律不写回，等用户敲完整。
+        // 这里不能改用 IntRange.FromString 的"抛异常即非法"—— IntRange.FromString("5~") 是合法的
+        // （缺省上界 = int.MaxValue），异常拦不住它；详见 TryParseRangeText 的注释。
+        if (StockGeneratorCodec.TryParseRangeText(isIntRange, next, out var value))
+            StockGeneratorCodec.WriteField(field, target, value);
     }
 
     private static void DrawEnum(Rect rect, StockGeneratorCodec.SgField field, object target, object? current)

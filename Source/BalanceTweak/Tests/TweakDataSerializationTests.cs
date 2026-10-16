@@ -103,6 +103,7 @@ public static class TweakDataSerializationTests
         RunTest("Trader stockGenerators 字段表分类与摘要", () => testStockGen_FieldsAndSummary(), ref passed, ref failed);
         RunTest("Trader stockGenerators 类型菜单只列原版 / 非原版只读透传", () => testStockGen_NonVanillaRules(), ref passed, ref failed);
         RunTest("Trader stockGenerators 非原版占位标记：按类型名找回 Def 原实例（字段不丢）", () => testStockGen_NonVanillaPassthrough(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 表单区间文本：半成品（1~ / ~4）与千位分隔符必须被拒", () => testStockGen_RangeTextValidation(), ref passed, ref failed);
 
         // ─── 备份/回滚测试 ───
         RunTest("ResolveDefs 单字段失败 → 回滚所有字段", () => testBackupRestore_SingleFieldFail(), ref passed, ref failed);
@@ -1685,6 +1686,37 @@ public static class TweakDataSerializationTests
         var good = StockGeneratorCodec.ToItemString(new StockGenerator_Tag { tradeTag = "Foo" });
         Assert(StockGeneratorCodec.Deserialize(new List<string> { good, "StockGenerator_Tag|noSuchField=x" }) == null,
             "整块里有一条坏行 ⇒ 整块拒绝");
+    }
+
+    /// <summary>
+    /// 表单文本框里的区间文本：<b>"输到一半"必须被拒</b>。
+    /// 判据不能靠 <c>Verse.*.FromString</c> 抛不抛异常 —— <c>IntRange.FromString("1~")</c> 完全不抛，
+    /// 它把缺省的上界当 <c>int.MaxValue</c>，于是"在 "~" 之后离开输入框"会把 <c>countRange</c> 写成
+    /// 1~2147483647，而库存数量直接取自 <c>countRange.RandomInRange</c>（生成时按这个数量造物品）。
+    /// </summary>
+    private static void testStockGen_RangeTextValidation()
+    {
+        // 半成品 / 非数字：一律拒绝（前两个正是 IntRange.FromString 会收下的）
+        foreach (var bad in new[] { "1~", "~4", "1~2~3", "abc", "", " ", "1.5", "1~abc" })
+            Assert(!StockGeneratorCodec.TryParseRangeText(isIntRange: true, bad, out _),
+                $"整数区间不该接受 \"{bad}\"");
+
+        // 单值 = 两端同值：IntRange.ToString() 在 min==max 时只显示一个数，必须能编辑回去
+        Assert(StockGeneratorCodec.TryParseRangeText(true, "5", out var single)
+            && single is IntRange s && s.min == 5 && s.max == 5, "整数区间应接受单值（= min~max）");
+        Assert(StockGeneratorCodec.TryParseRangeText(true, "1~4", out var pair)
+            && pair is IntRange p && p.min == 1 && p.max == 4, "整数区间应接受 min~max");
+
+        // 浮点：显示用 G9，可能带指数写法，必须能读回来
+        Assert(StockGeneratorCodec.TryParseRangeText(false, "1.5~2.5", out var fr)
+            && fr is FloatRange f && f.min == 1.5f && f.max == 2.5f, "浮点区间应接受 min~max");
+        Assert(StockGeneratorCodec.TryParseRangeText(false, "1E-05~2", out var exp)
+            && exp is FloatRange e && e.min == 1E-05f, "浮点区间应接受 G9 可能产出的指数写法");
+        Assert(!StockGeneratorCodec.TryParseRangeText(false, "1~", out _), "浮点区间不该接受 1~");
+
+        // 千位分隔符不算合法数字（NumberStyles.Float 不含 AllowThousands）：
+        // 否则逗号小数点环境下 "1.5" 会被裸 float.TryParse 读成 15
+        Assert(!StockGeneratorCodec.TryParseRangeText(false, "1,5~2", out _), "浮点区间不该接受带千位分隔符的写法");
     }
 
     private static void testStockGen_FieldsAndSummary()

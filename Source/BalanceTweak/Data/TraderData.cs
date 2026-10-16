@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -112,8 +113,9 @@ class TraderData : TweakData<TraderData>
     /// 写入库存生成器。<paramref name="gens"/> 为 null（用户清空该字段）⇒ 清空库存列表；
     /// 否则原版生成器按字段表克隆后交给 Def，非原版（其它 Mod 新增）条目则按类型名从 Def 现有的
     /// 生成器里找回原实例原样放回（见 <see cref="StockGeneratorCodec.MergeWithDef"/>）—— 本工具从不读也不写
-    /// 非原版生成器的字段，所以"改过这个商人"绝不会弄坏它们。最后对每个生成器调一次
-    /// <see cref="StockGenerator.ResolveReferences"/>（<c>trader</c> 是 <c>[Unsaved]</c>，必须靠它写回）。
+    /// 非原版生成器的字段，所以"改过这个商人"绝不会弄坏它们（Def 里找不到原实例的条目会被丢弃并告警，
+    /// 不会写入默认值实例）。最后对每个生成器调一次 <see cref="StockGenerator.ResolveReferences"/>
+    /// （<c>trader</c> 是 <c>[Unsaved]</c>，必须靠它写回），逐条隔离异常、失败只告警不中断。
     /// </summary>
     private void ApplyStockGenerators(List<StockGenerator>? gens)
     {
@@ -128,12 +130,24 @@ class TraderData : TweakData<TraderData>
         var list = StockGeneratorCodec.MergeWithDef(gens, def.stockGenerators);
         if (list == null)
         {
-            Log.Warning($"[BalanceTweak] {id} 的库存生成器无法写回，已保持原有库存不变。");
+            // gens 非空 ⇒ MergeWithDef 返回 null 只可能是"条目全被丢弃"（旧版这里不可达：那时会把空壳塞进 result）。
+            Log.Warning($"[BalanceTweak] {id} 的库存生成器无可写回条目（条目都被丢弃，见上面的告警），已保持原有库存不变。");
             return;
         }
         def.stockGenerators = list;
         foreach (var gen in list)
-            gen.ResolveReferences(def);
+        {
+            // ResolveReferences 负责把 trader 写回（trader 是 [Unsaved]，只能靠它）。原版实现只有这一句赋值、
+            // 全库没有任何子类覆写它，但 list 里可能有别的 Mod 的生成器（MergeWithDef 放回的原实例）——
+            // 它们的覆写一旦抛异常，不能让整条链断掉：后面那条 StockGenerator_Slaves 会因此拿不到 trader
+            // （全库唯一读点），运行时生成库存就 NRE。失败只告警，该条目保持 trader 为空。
+            try { gen.ResolveReferences(def); }
+            catch (Exception e)
+            {
+                Log.Error($"[BalanceTweak] {id} 的库存生成器 {StockGeneratorCodec.TypeLabel(gen.GetType())}"
+                    + $" 解析引用失败（trader 引用会保持为空）：{e}");
+            }
+        }
     }
 
     public override List<string> TypeStrings => typeStrings;
