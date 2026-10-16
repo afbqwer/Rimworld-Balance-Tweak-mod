@@ -144,10 +144,62 @@ public class FieldCodecsTests
     public void 登记表已构建且字段完整()
     {
         var all = TweakData.FieldCodecs.All;
-        Assert.True(all.Count >= 32, $"登记表条目过少：{all.Count}");
+        Assert.NotEmpty(all);
         Assert.All(all, c => Assert.False(string.IsNullOrWhiteSpace(c.Name)));
         Assert.All(all, c => Assert.NotNull(c.Expose));
         Assert.All(all, c => Assert.NotNull(c.Matches));
+    }
+
+    /// <summary>
+    /// 同一类型不得被登记两次 —— <c>Exact</c> 是 <c>dict[type] = …</c>，后者会<b>静默覆盖</b>前者，
+    /// 于是前一条登记白写（该字段既不落盘也不还原），且运行期毫无信号。
+    ///
+    /// <para>
+    /// 这里原先是一条 <c>all.Count &gt;= 32</c> 的弱下界（登记表实际 34 条，掉 1~2 条抓不到）。
+    /// 真正的"漏登记"已由 <c>字段表覆盖原版全部类型与字段</c>（遍历真实程序集）守着，所以把这条换成
+    /// <b>重复登记</b>守卫更有价值 —— 它补的正是那次登记表审查指出的防御缺口。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void 登记表无重复条目()
+        => Assert.Empty(TweakData.FieldCodecs.DuplicateRegistrations);
+
+    /// <summary>
+    /// 登记的枚举字段必须<b>不是</b> <c>[Flags]</c>。
+    ///
+    /// <para>
+    /// <see cref="PocoCodec"/> 解 <c>Kind.Enum</c> 时用 <c>Enum.IsDefined</c> 拦未定义值，而 <c>[Flags]</c> 的
+    /// <b>多标志组合值不在定义集合里</b> ⇒ 编码端 <c>ToString()</c> 照写 <c>"A, B"</c>、解码端必拒 ⇒ "能写、不能读"。
+    /// 今天登记的枚举（<c>TechLevel</c> / <c>PriceType</c> 等）都不是 <c>[Flags]</c>，所以这条不会红；
+    /// 一旦有人加了这类字段，它会立刻红并提示先改 <see cref="PocoCodec"/> 的 <c>Kind.Enum</c> 判据 ——
+    /// 而不是等到玩家读档时才发现字段被拒。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void 枚举字段不得是Flags()
+    {
+        // 必须先拉起两条声明链，否则 DeclaredTypes 为空 ⇒ 扫描不到任何字段 ⇒ 断言恒真绿。
+        TweakData.FieldCodecs.EnsureBuilt();
+        Assert.NotEmpty(PocoCodec.DeclaredTypes);
+
+        var offenders = new List<string>();
+        var scanned = 0;
+        foreach (var type in PocoCodec.DeclaredTypes)
+        {
+            foreach (var f in PocoCodec.FieldsFor(type))
+            {
+                if (f.Kind != PocoCodec.Kind.Enum || f.EnumType == null) continue;
+                scanned++;
+                if (f.EnumType.IsDefined(typeof(FlagsAttribute), inherit: false))
+                    offenders.Add($"{type.Name}.{f.Name}（{f.EnumType.Name}）");
+            }
+        }
+
+        // 扫到 0 条枚举字段 = 扫描面失真（声明链没拉起 / 字段都改了）—— 那样本测试会静默恒真绿。
+        Assert.True(scanned > 0, "一条枚举字段都没扫到 —— 扫描面失真，这条守卫会静默恒真");
+        Assert.True(offenders.Count == 0,
+            "以下枚举字段带 [Flags]，PocoCodec 的 Kind.Enum 解码会拒收多标志组合值（能写不能读）："
+            + "要么别用 [Flags]，要么先改 PocoCodec 的 Kind.Enum 判据：\n" + string.Join("\n", offenders));
     }
 
     [Theory]

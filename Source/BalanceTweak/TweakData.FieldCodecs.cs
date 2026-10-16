@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using RimWorld;
 using Verse;
@@ -59,9 +58,16 @@ public abstract partial class TweakData
     {
         private static readonly Dictionary<Type, FieldCodec> exact = new();
         private static readonly List<FieldCodec> patterns = new();
+        private static readonly List<string> duplicateRegistrations = new();
 
         /// <summary>全部登记项（精确 + 通配），供文档与诊断使用。</summary>
         public static IReadOnlyList<FieldCodec> All { get; private set; } = Array.Empty<FieldCodec>();
+
+        /// <summary>
+        /// 被 <see cref="Exact"/> 登记两次的类型（后者静默覆盖前者 ⇒ 前一条登记<b>白写</b>：其字段既不落盘也不还原）。
+        /// 由 <see cref="Exact"/> 在覆盖前记下，测试断言为空。见 Docs §3.9.3。
+        /// </summary>
+        public static IReadOnlyList<string> DuplicateRegistrations => duplicateRegistrations;
 
         /// <summary>
         /// 显式确保**全部**字段声明已就绪（C# 的静态构造是惰性的，光读 <see cref="All"/> 只保证本表那部分）。
@@ -101,7 +107,17 @@ public abstract partial class TweakData
         static FieldCodecs() => Build();
 
         private static void Exact(Type type, string name, ExposeDelegate expose, ResolveDelegate? resolve = null)
-            => exact[type] = new FieldCodec { Name = name, Matches = t => t == type, Expose = expose, Resolve = resolve };
+        {
+            // 重复登记 = 静默覆盖：前一条登记白写（该类型字段既不落盘也不还原），运行期无任何信号 ——
+            // 与"两条链漂移""剪贴板截胡"是同一类失效。这里记下并报错，让测试能抓到，
+            // 比事后从"某字段怎么不生效"倒查便宜得多。
+            if (exact.TryGetValue(type, out var prev))
+            {
+                duplicateRegistrations.Add($"{type.Name}（先「{prev.Name}」，后「{name}」）");
+                Log.Error($"[BalanceTweak] 字段表重复登记：{type.Name} 被登记两次，后一条「{name}」覆盖了「{prev.Name}」。");
+            }
+            exact[type] = new FieldCodec { Name = name, Matches = t => t == type, Expose = expose, Resolve = resolve };
+        }
 
         private static void Pattern(string name, Func<Type, bool> matches, ExposeDelegate expose, ResolveDelegate? resolve = null)
             => patterns.Add(new FieldCodec { Name = name, Matches = matches, Expose = expose, Resolve = resolve });
@@ -333,14 +349,8 @@ public abstract partial class TweakData
         {
             var list = (List<IngredientCount>?)v;
             if (list == null || list.Count == 0) return null;
-            return list.Select(ic =>
-            {
-                var filterStr = SerializationHelper.IngredientFilterToString(ic.filter);
-                if (filterStr.Length == 0) return null;
-                // 与剪贴板那一份（SerializationHelper.SerializeIngredientCountList）同口径：
-                // InvariantCulture + G9。数值格式用当前区域性会让逗号小数点地区的数据换 locale 后读错。
-                return $"{filterStr}|{ic.GetBaseCount().ToString("G9", CultureInfo.InvariantCulture)}";
-            }).Where(s => s != null).ToList()!;
+            // 文本格式的唯一实现在 SerializationHelper.IngredientCountToText（剪贴板那份也调它）。
+            return list.Select(SerializationHelper.IngredientCountToText).OfType<string>().ToList();
         });
     }
 
@@ -450,25 +460,15 @@ public abstract partial class TweakData
         var result = new List<IngredientCount>(strList.Count);
         foreach (var str in strList)
         {
-            var pipeIdx = str.LastIndexOf('|');
-            if (pipeIdx < 0)
+            // 解析逻辑的唯一实现在 SerializationHelper.TextToIngredientCount（剪贴板那份也调它）。
+            var ic = SerializationHelper.TextToIngredientCount(str, out var malformed);
+            if (ic == null)
             {
-                Log.Warning($"[BalanceTweak] IngredientCount 语法解析失败：\"{str}\"（期望 filter|count，字段: {meta.Field.Name}），数据: {data.id}");
+                // 语义为空（Def 缺失 / 无允许项）属预期，内部已记 info —— 不在这里报 Warning。
+                if (malformed)
+                    Log.Warning($"[BalanceTweak] IngredientCount 解析失败：\"{str}\"（期望 filter|count、count 应为正浮点数，字段: {meta.Field.Name}），数据: {data.id}");
                 return (null, false);
             }
-            var filterStr = str[..pipeIdx];
-            var countStr = str[(pipeIdx + 1)..];
-            if (!float.TryParse(countStr, NumberStyles.Float, CultureInfo.InvariantCulture, out float count) || count <= 0)
-            {
-                Log.Warning($"[BalanceTweak] IngredientCount 语法解析失败：\"{str}\"（count 应为正浮点数，字段: {meta.Field.Name}），数据: {data.id}");
-                return (null, false);
-            }
-            var ic = new IngredientCount();
-            ic.SetBaseCount(count);
-            var filter = SerializationHelper.ParseIngredientFilter(filterStr);
-            if (filter == null) return (null, false);
-            ic.filter.CopyAllowancesFrom(filter);
-            if (ic.filter.AllowedDefCount == 0) return (null, false); // 过滤器解析后无任何允许项：跳过（缺失的 Def 已在 ParseIngredientFilter 中记录）
             result.Add(ic);
         }
         return (result.Count > 0 ? result : null, true);

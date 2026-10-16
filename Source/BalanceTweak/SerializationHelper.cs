@@ -112,18 +112,63 @@ public static class SerializationHelper
 
     #region IngredientCount（bespoke：挂在 ThingFilter + GetBaseCount/SetBaseCount 上）
 
+    /// <summary>
+    /// 一条 <see cref="IngredientCount"/> → <c>filter|count</c>；过滤器为空（无可编码内容）返回 <c>null</c>。
+    ///
+    /// <para>
+    /// <b>这是该文本格式的唯一实现</b> —— 剪贴板（<see cref="SerializeIngredientCountList"/>）与存档
+    /// （<c>TweakData.FieldCodecs.ExposeIngredientList</c>）都调它。此前这两处各写一份同样的拼接，
+    /// 而"同一格式写两遍"正是漂移的土壤：上一轮 GUI 审查抓到的那次截胡（StockGenList）就是同类重复导致的
+    /// （见 Docs §3.9.1 / §3.9.3）。
+    /// </para>
+    /// </summary>
+    internal static string? IngredientCountToText(IngredientCount ic)
+    {
+        var filterStr = IngredientFilterToString(ic.filter);
+        if (filterStr.NullOrEmpty()) return null;
+        // 数值一律 InvariantCulture + G9：与 PocoCodec 同一口径。
+        // 用当前区域性写会让逗号小数点地区的 "1,5" 在换 locale 后读成 15 或读不出（前者静默错值）。
+        return $"{filterStr}|{ic.GetBaseCount().ToString("G9", CultureInfo.InvariantCulture)}";
+    }
+
+    /// <summary>
+    /// <c>filter|count</c> → 一条 <see cref="IngredientCount"/>；解析不出来返回 <c>null</c>。
+    /// 调用方各自记日志（剪贴板用 <see cref="WarnSyntaxError"/>，存档带字段名与数据 id），
+    /// 见 <see cref="IngredientCountToText"/>。
+    ///
+    /// <para>
+    /// <paramref name="malformed"/> 用来区分<b>两种</b>失败 —— 它们的日志级别不同，混为一谈会把预期情况误报成错误：
+    /// <c>true</c> = <b>语法</b>不合法（缺分隔符 / count 不是正数），调用方应打 Warning；
+    /// <c>false</c> = <b>语义</b>为空（Def 缺失导致过滤器解析不出 / 过滤后无允许项），
+    /// 属预期情况（<see cref="ParseIngredientFilter"/> 内部已记 info 级日志），调用方不必再报。
+    /// </para>
+    /// </summary>
+    internal static IngredientCount? TextToIngredientCount(string text, out bool malformed)
+    {
+        malformed = false;
+        var pipeIdx = text.LastIndexOf('|');
+        if (pipeIdx < 0) { malformed = true; return null; }
+        var filterStr = text[..pipeIdx];
+        var countStr = text[(pipeIdx + 1)..];
+        if (!float.TryParse(countStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var count) || count <= 0)
+        {
+            malformed = true;
+            return null;
+        }
+
+        var ic = new IngredientCount();
+        ic.SetBaseCount(count);
+        var filter = ParseIngredientFilter(filterStr);
+        if (filter == null) return null;                 // Def 缺失：ParseIngredientFilter 已记 info
+        ic.filter.CopyAllowancesFrom(filter);
+        if (ic.filter.AllowedDefCount == 0) return null; // 过滤器解析后无任何允许项（同上）
+        return ic;
+    }
+
     public static string? SerializeIngredientCountList(List<IngredientCount>? list)
     {
         if (list == null || list.Count == 0) return null;
-        var lines = new List<string>();
-        foreach (var ic in list)
-        {
-            var filterStr = IngredientFilterToString(ic.filter);
-            if (filterStr.NullOrEmpty()) continue;
-            // 数值一律 InvariantCulture + G9：与 PocoCodec 同一口径。
-            // 用当前区域性写会让逗号小数点地区的 "1,5" 在换 locale 后读成 15 或读不出（前者静默错值）。
-            lines.Add($"{filterStr}|{ic.GetBaseCount().ToString("G9", CultureInfo.InvariantCulture)}");
-        }
+        var lines = list.Select(IngredientCountToText).OfType<string>().ToList();
         return lines.Count > 0 ? string.Join("\n", lines) : null;
     }
 
@@ -137,25 +182,13 @@ public static class SerializationHelper
             {
                 var trimmed = line.Trim();
                 if (trimmed.NullOrEmpty()) continue;
-                var pipeIdx = trimmed.LastIndexOf('|');
-                if (pipeIdx < 0)
+                var ic = TextToIngredientCount(trimmed, out var malformed);
+                if (ic == null)
                 {
-                    WarnSyntaxError("IngredientCount", trimmed, "filter|count");
+                    // 语义为空（Def 缺失 / 无允许项）属预期，内部已记 info —— 不在这里报 Warning。
+                    if (malformed) WarnSyntaxError("IngredientCount", trimmed, "filter|count（count 应为正浮点数）");
                     return null;
                 }
-                var filterStr = trimmed[..pipeIdx];
-                var countStr = trimmed[(pipeIdx + 1)..];
-                if (!float.TryParse(countStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var count) || count <= 0)
-                {
-                    WarnSyntaxError("IngredientCount", trimmed, "filter|count（count 应为正浮点数）");
-                    return null;
-                }
-                var ic = new IngredientCount();
-                ic.SetBaseCount(count);
-                var filter = ParseIngredientFilter(filterStr);
-                if (filter == null) return null;
-                ic.filter.CopyAllowancesFrom(filter);
-                if (ic.filter.AllowedDefCount == 0) return null; // 过滤器解析后无任何允许项：跳过（缺失的 Def 已在 ParseIngredientFilter 中记录）
                 result.Add(ic);
             }
             return result.Count > 0 ? result : null;
