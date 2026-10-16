@@ -1309,6 +1309,7 @@ public partial class BalanceTweakSettings : ModSettings
                 Text.Font = GameFont.Tiny;
                 Widgets.DrawButtonGraphic(cellRect);
                 Widgets.Label(cellRect, sourceText);
+                TipIfTextClipped(cellRect, sourceText);
                 Text.Font = GameFont.Small;
                 Text.Anchor = TextAnchor.UpperLeft;
                 if (!DragPaint.SuppressClick && Event.current.type == EventType.MouseUp && Event.current.button == 0 && cellRect.Contains(Event.current.mousePosition))
@@ -1334,7 +1335,10 @@ public partial class BalanceTweakSettings : ModSettings
             {
                 if (d != null)
                 {
-                    Widgets.Label(cellRect.ContractedBy(4f), sourceText + "%");
+                    Rect precTextRect = cellRect.ContractedBy(4f);
+                    string precText = sourceText + "%";
+                    Widgets.Label(precTextRect, precText);
+                    TipIfTextClipped(precTextRect, precText);
                 }
                 return;
             }
@@ -1346,9 +1350,34 @@ public partial class BalanceTweakSettings : ModSettings
             {
                 Text.Font = GameFont.Tiny;
             }
-            Widgets.Label(cellRect.ContractedBy(4f), sourceText);
+            Rect displayTextRect = cellRect.ContractedBy(4f);
+            Widgets.Label(displayTextRect, sourceText);
+            TipIfTextClipped(displayTextRect, sourceText);
             Text.Font = GameFont.Small;
             return;
+        }
+    }
+
+    /// <summary>
+    /// 只读单元格没有编辑入口，内容一旦超出单元格宽度就被 GUI 直接裁掉、无从查看。
+    /// 这里按当前字体（调用点已设好 Tiny/Small）测量文本实际宽度，超出绘制区域时挂上悬浮提示补全内容。
+    ///
+    /// 两道闸门把 Text.CalcSize 的调用压到「每帧最多一次」，见下面的开销说明：
+    /// 1. 只有 Repaint 事件才可能出提示 —— TooltipHandler.TipRegion 内部也是这个条件，
+    ///    先把 Layout / 各类输入事件挡掉，否则一帧要测好几遍；
+    /// 2. 只有鼠标所在的那一格 —— 格子互不重叠，整屏几百格里只有一格能通过。
+    /// </summary>
+    private static void TipIfTextClipped(Rect labelRect, string? text)
+    {
+        if (text.NullOrEmpty()) return;
+        if (Event.current.type != EventType.Repaint) return;
+        if (!Mouse.IsOver(labelRect)) return;
+        // Text.CalcSize 内部会 StripTags，并且用的是 Text.CurFontStyle —— 与 Widgets.Label 的绘制字体一致。
+        // 注意不要换成 GenUI.GetSizeCached/GetWidthCached：那个 labelWidthCache 只用字符串做 key、不带字体，
+        // 而同一段文字在 String 列走 Tiny、在 Int/Float 列走 Small，命中缓存会量出错字号的宽度。
+        if (Text.CalcSize(text).x > labelRect.width)
+        {
+            TooltipHandler.TipRegion(labelRect, text);
         }
     }
 
