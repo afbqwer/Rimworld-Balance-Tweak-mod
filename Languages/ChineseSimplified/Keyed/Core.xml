@@ -67,7 +67,7 @@
 - 编辑单元格：开关点击切换；数值 / 百分比点击原地输入；枚举点击弹出下拉；文本、列表、曲线、Def 选择等点击打开对应编辑窗口。
 - 批量修改：按住 Shift 左键拖动，把起始格的值复制到同一列中拖过的所有单元格。
 - 名称列：左键点名称跳转到所属条目；右键 固定/取消固定、重置、复制 defName；右侧 R 按钮重置该条目。
-- 数据单元格右键：复制 / 粘贴 / 重置该字段；Def 引用列（Def 选择列）额外提供「跳转到：…」入口，可直接跳到该 Def 的数据。没有可操作内容的项不显示（无可复制内容时不显示「复制」，Def 无对应数据时不显示跳转项）。</MST.HelpTooltip>
+- 数据单元格右键：复制 / 粘贴 / 重置该字段；Def 引用列可跳转到对应数据。</MST.HelpTooltip>
     <MST.SimpleDefEditer>简单Def编辑器</MST.SimpleDefEditer>
     <MST.EditCurve>编辑曲线</MST.EditCurve>
     <MST.Points>控制点</MST.Points>

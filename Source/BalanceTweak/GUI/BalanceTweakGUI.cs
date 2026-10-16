@@ -15,7 +15,7 @@ public partial class BalanceTweakSettings : ModSettings
     private const float LineHeight = 26f;
     private const float TabTopHeight = 60f;
     public static int NameColWidth = 230;
-    public static int DataColWidth = 74;
+    public static int DataColWidth = 76;
     public static int MainWindowWidth = 1280;
     public static int MainWindowHeight = 720;
     private const float IconSize = 30f;
@@ -258,7 +258,7 @@ public partial class BalanceTweakSettings : ModSettings
             pinnedIds = new HashSet<TweakID>(pinnedList);
         if (pinnedIds == null) pinnedIds = new();
         Scribe_Values.Look(ref NameColWidth, "nameColWidth", 230);
-        Scribe_Values.Look(ref DataColWidth, "dataColWidth", 74);
+        Scribe_Values.Look(ref DataColWidth, "dataColWidth", 76);
         Scribe_Values.Look(ref MainWindowWidth, "mainWindowWidth", 1280);
         Scribe_Values.Look(ref MainWindowHeight, "mainWindowHeight", 720);
         base.ExposeData();

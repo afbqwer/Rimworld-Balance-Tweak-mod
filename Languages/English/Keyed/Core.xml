@@ -67,7 +67,7 @@
 - Editing a cell: a checkbox toggles; number / percent values are typed in place; an enum opens a dropdown; text, lists, curves, def pickers and so on open their own editor window.
 - Batch edit: hold Shift and drag with the left button to copy the start cell's value to every cell you drag over in the same column.
 - Name column: left-click the name to jump to its owner; right-click for Pin / Reset / Copy defName; the R button resets that entry.
-- Right-click a data cell: Copy / Paste / Reset that field; def-picker columns also offer "Jump to: ..." to reach that Def's data. Entries with nothing to act on are hidden (Copy when there is nothing to copy, the jump entry when the Def has no matching data).</MST.HelpTooltip>
+- Right-click a data cell: Copy / Paste / Reset that field; def-picker columns also offer "Jump to: ..." to reach that Def's data.</MST.HelpTooltip>
     <MST.SimpleDefEditer>Simple Def Editor</MST.SimpleDefEditer>
     <MST.EditCurve>Edit Curve</MST.EditCurve>
     <MST.Points>Points</MST.Points>
