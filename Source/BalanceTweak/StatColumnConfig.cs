@@ -452,15 +452,21 @@ public class StatColumnConfig
 
     /// <summary>
     /// 检查浮点数值是否有意义地发生了变化。
-    /// 使用组合容差：小数值用绝对容差，大数值用相对容差，避免 float 精度在大数值时失效。
+    /// <para><paramref name="absTol"/> = 「一个显示单位」：Float 列为 0.01（F2 显示），Prec 列为 0.0001（百分比小数）。</para>
+    /// <para>阈值取 <c>max(半个显示单位, float 表示误差兜底)</c>：</para>
+    /// <list type="bullet">
+    /// <item>半个显示单位：float 无法精确表示 0.01（<c>1.01f - 1f = 0.00999999</c>），若用「一个显示单位」当阈值，
+    /// 恰好一个单位的编辑会因 <c>diff &lt;= absTol</c> 被误判为无变化；取半个单位才能稳定地「改一个显示单位即算变化」。</item>
+    /// <item>相对兜底只吸收 float 舍入噪声，系数取 ~1e-7（机器精度量级）。<b>绝不能</b>用 absTol 放大 —— 否则
+    /// 值越大容差越大（值 100 时达 1.0），会把 <c>100.00 -&gt; 100.01</c> 这类合法编辑一并吞掉。</item>
+    /// </list>
     /// </summary>
     public static bool FloatChanged(float oldVal, float newVal, float absTol)
     {
-        float diff = Math.Abs(oldVal - newVal);
-        if (diff <= absTol) return false;
+        if (oldVal == newVal) return false;
         float magnitude = Math.Max(Math.Abs(oldVal), Math.Abs(newVal));
-        float threshold = Math.Max(absTol, absTol * magnitude);
-        return diff > threshold;
+        float threshold = Math.Max(absTol * 0.5f, magnitude * 1e-7f);
+        return Math.Abs(oldVal - newVal) > threshold;
     }
 
     public string? GetCopyData(TweakData data)
