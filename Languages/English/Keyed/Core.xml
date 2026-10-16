@@ -50,6 +50,7 @@
     <MST.UpperLimit>Max:</MST.UpperLimit>
     <MST.LimitEnabled>Enabled</MST.LimitEnabled>
     <MST.LimitDisabled>Disabled</MST.LimitDisabled>
+    <MST.NotApplicable>N/A</MST.NotApplicable>
     <MST.LowerLimitToggleTooltip>Click to toggle whether the lower limit is applied: a result below it is raised up to it. Current state: {0}</MST.LowerLimitToggleTooltip>
     <MST.UpperLimitToggleTooltip>Click to toggle whether the upper limit is applied: a result above it is clamped down to it. Current state: {0}</MST.UpperLimitToggleTooltip>
     <MST.Apply>ApGlob</MST.Apply>

@@ -1560,11 +1560,20 @@ public partial class BalanceTweakSettings : ModSettings
         TooltipHandler.TipRegion(labelRect, tooltipKey.Translate(stateText).RawText);
 
         Rect inputRect = new(rect.x + labelWidth, rect.y, rect.width - labelWidth, rect.height);
-        string text = Widgets.TextField(inputRect, value.ToString("F2"));
-
-        if (float.TryParse(text, out float newVal))
+        if (enabled)
         {
-            value = postive ? Mathf.Max(newVal, 0) : newVal;
+            string text = Widgets.TextField(inputRect, value.ToString("F2"));
+            if (float.TryParse(text, out float newVal))
+            {
+                value = postive ? Mathf.Max(newVal, 0) : newVal;
+            }
+        }
+        else
+        {
+            // 停用时隐藏输入框，改为显示「不适用」提示
+            GUI.color = new Color(0.6f, 0.6f, 0.6f);
+            Widgets.Label(inputRect, "MST.NotApplicable".Translate().RawText);
+            GUI.color = prevColor;
         }
         return rect.width;
     }

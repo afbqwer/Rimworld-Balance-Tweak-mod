@@ -50,6 +50,7 @@
     <MST.UpperLimit>上限:</MST.UpperLimit>
     <MST.LimitEnabled>已启用</MST.LimitEnabled>
     <MST.LimitDisabled>已停用</MST.LimitDisabled>
+    <MST.NotApplicable>不适用</MST.NotApplicable>
     <MST.LowerLimitToggleTooltip>点击切换是否应用下限截断：结果低于该值时会提升到该值。当前状态：{0}</MST.LowerLimitToggleTooltip>
     <MST.UpperLimitToggleTooltip>点击切换是否应用上限截断：结果高于该值时会压到该值。当前状态：{0}</MST.UpperLimitToggleTooltip>
     <MST.Apply>统一修改</MST.Apply>
