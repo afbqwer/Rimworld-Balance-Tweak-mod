@@ -40,6 +40,7 @@
     <MST.DiseaseList>DiseaseList</MST.DiseaseList>
     <MST.WeatherCommonalityList>WeatherList</MST.WeatherCommonalityList>
     <MST.TerrainThresholdList>TerrainList</MST.TerrainThresholdList>
+    <MST.StockGenList>StockGen</MST.StockGenList>
     <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>

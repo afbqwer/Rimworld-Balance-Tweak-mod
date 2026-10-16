@@ -1,6 +1,8 @@
 #if DEBUG
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using LudeonTK;
 using RimWorld;
@@ -87,6 +89,18 @@ public static class TweakDataSerializationTests
 
         // ─── ResolveProcessResultList 测试 ───
         RunTest("ResolveProcessResultList 有效数据", () => testResolveProcessResultList_Valid(), ref passed, ref failed);
+
+        // ─── TraderKindDef.stockGenerators 的字段编解码与往返 ───
+        RunTest("Trader stockGenerators 字段表：原版全部类型/字段都在表里", () => testStockGen_FieldTableIntegrity(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 往返：全部已加载商人类型", () => testStockGen_RoundTripAllDefs(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 往返：每个原版类型逐字段（全部字段填非默认值）", () => testStockGen_AllTypesFieldRoundTrip(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 往返：Def/区间/枚举/嵌套对象列表/字符串列表", () => testStockGen_FieldValuesRoundTrip(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 转义：值里含分隔符也能原样往返", () => testStockGen_EscapingRoundTrip(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 克隆：改副本不影响原对象 / 非原版沿用原实例", () => testStockGen_CloneIsDeep(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 空/null 输入", () => testStockGen_EmptyAndNull(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 未知类型/字段/缺 Def → 解析失败", () => testStockGen_BadInputFails(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 字段表分类与摘要", () => testStockGen_FieldsAndSummary(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 类型菜单只列原版 / 非原版只暴露基类字段", () => testStockGen_NonVanillaRules(), ref passed, ref failed);
 
         // ─── 备份/回滚测试 ───
         RunTest("ResolveDefs 单字段失败 → 回滚所有字段", () => testBackupRestore_SingleFieldFail(), ref passed, ref failed);
@@ -1241,6 +1255,452 @@ public static class TweakDataSerializationTests
         }
 
         instance._backCompatResolved = true;
+    }
+
+    // ═══════════════════════ TraderKindDef.stockGenerators 字段表 / 编解码 ═══════════════════════
+    // 字段值是真实对象（List<StockGenerator>），文本只在存档/剪贴板时由 StockGeneratorCodec 生成。
+    // 字段集完全来自 StockGeneratorCodec 里"显式模式匹配原版类型"的那张字段表（不用反射遍历）：
+    // 核心不变量：编码 → 解码 → 再编码必须逐行一致，字段值也要逐字段相等。一旦不成立，用户每次
+    // 存档读档都会无声地丢掉或改写库存生成器的内容。
+
+    /// <summary>编码一次再解析回来（测试里最常用的往返）。</summary>
+    private static StockGenerator RoundTripGen(StockGenerator gen)
+    {
+        string line = StockGeneratorCodec.ToItemString(gen);
+        Assert(!line.Contains('\n'), "一行必须是一条（不含换行）");
+        Assert(StockGeneratorCodec.TryParse(line, out var back) && back != null, $"解析不了自己编码出来的行：{line}");
+        return back!;
+    }
+
+    /// <summary>反射设字段（原版不少生成器字段是 private，测试造样本只能这么设）。</summary>
+    private static void SetGenField(object target, string name, object? value)
+    {
+        var field = target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        Assert(field != null, $"找不到字段 {target.GetType().Name}.{name}");
+        field!.SetValue(target, value);
+    }
+
+    /// <summary>反射读字段（同上，配合 <see cref="SetGenField"/> 校验 private 字段的往返）。</summary>
+    private static object? GetGenField(object target, string name)
+    {
+        var field = target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        Assert(field != null, $"找不到字段 {target.GetType().Name}.{name}");
+        return field!.GetValue(target);
+    }
+
+    /// <summary>游戏本体程序集里的全部 StockGenerator 子类（含官方 DLC 的类型；原版与 DLC 编在同一个 Assembly-CSharp.dll 里）。</summary>
+    private static IEnumerable<Type> VanillaGeneratorSubclasses()
+        => typeof(StockGenerator).Assembly.GetTypes()
+            .Where(t => t != typeof(StockGenerator) && typeof(StockGenerator).IsAssignableFrom(t) && !t.IsAbstract);
+
+    /// <summary>原版会写进 Def XML 的实例字段：跳过 static / 编译器生成 / <c>[Unsaved]</c> / 运行期临时表。</summary>
+    private static IEnumerable<FieldInfo> XmlInstanceFields(Type type)
+    {
+        for (var t = type; t != null && t != typeof(object); t = t.BaseType)
+        {
+            foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+            {
+                if (f.IsDefined(typeof(UnsavedAttribute), false)) continue;
+                if (f.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), false)) continue;
+                if (f.Name.IndexOf('<') >= 0) continue;
+                if (f.Name == "tmpGenerated") continue; // 生成库存时的临时收集表（生成完就 Clear），故意不入字段表
+                yield return f;
+            }
+        }
+    }
+
+    private static void testStockGen_RoundTripAllDefs()
+    {
+        var problems = new List<string>();
+        int checkedCount = 0;
+
+        foreach (var def in DefDatabase<TraderKindDef>.AllDefsListForReading)
+        {
+            if (def.stockGenerators.NullOrEmpty()) continue;
+            checkedCount++;
+
+            var lines1 = StockGeneratorCodec.Serialize(def.stockGenerators);
+            if (lines1 == null) { problems.Add($"{def.defName}: 编码返回 null"); continue; }
+
+            var parsed = StockGeneratorCodec.Deserialize(lines1);
+            if (parsed == null)
+            {
+                problems.Add($"{def.defName}: 解析失败\n{string.Join("\n", lines1)}");
+                continue;
+            }
+            if (parsed.Count != def.stockGenerators.Count)
+            {
+                problems.Add($"{def.defName}: 数量不一致 {parsed.Count} != {def.stockGenerators.Count}");
+                continue;
+            }
+
+            var lines2 = StockGeneratorCodec.Serialize(parsed);
+            if (lines2 == null || !lines1.SequenceEqual(lines2))
+            {
+                problems.Add($"{def.defName}: 往返后不一致\n--- 第一次 ---\n{string.Join("\n", lines1)}"
+                    + $"\n--- 第二次 ---\n{string.Join("\n", lines2 ?? new List<string>())}");
+            }
+        }
+
+        Assert(checkedCount > 0, "未检查到任何商人类型（TraderKindDef 缺失？）");
+        Assert(problems.Count == 0, $"{problems.Count} 个商人类型往返失败（列出前 2 个）：\n{string.Join("\n", problems.Take(2))}");
+    }
+
+    /// <summary>
+    /// 字段表与原版对得上：表里声明的字段都能解析到（没有改名 / 拼错），原版每个生成器类型与每个字段
+    /// 都在表里，且字段类型都被支持。原版一旦加了新类型 / 新字段 / 新字段类型，这条会先炸出来 ——
+    /// 而不是等用户存档时静默丢字段。
+    /// </summary>
+    private static void testStockGen_FieldTableIntegrity()
+    {
+        Assert(StockGeneratorCodec.UnresolvedFields.Count == 0,
+            $"字段表里有解析不到的字段（原版改名 / 移除？）：{string.Join(", ", StockGeneratorCodec.UnresolvedFields)}");
+
+        var problems = new List<string>();
+        foreach (var type in VanillaGeneratorSubclasses())
+        {
+            if (!StockGeneratorCodec.IsVanilla(type))
+            {
+                problems.Add($"{type.Name} 不在字段表里（原版加了新生成器类型？）");
+                continue;
+            }
+
+            var declared = StockGeneratorCodec.FieldsFor(type).Select(f => f.Name).ToHashSet();
+            foreach (var field in XmlInstanceFields(type))
+                if (!declared.Contains(field.Name))
+                    problems.Add($"{type.Name}.{field.Name}（{field.FieldType.Name}）没写进字段表");
+
+            foreach (var field in StockGeneratorCodec.FieldsFor(type))
+                if (field.Kind == StockGeneratorCodec.Kind.Unsupported)
+                    problems.Add($"{type.Name}.{field.Name} 的字段类型不受支持");
+        }
+
+        Assert(problems.Count == 0, $"{problems.Count} 处字段表与原版对不上（列出前 8 条）：\n{string.Join("\n", problems.Take(8))}");
+    }
+
+    /// <summary>每个原版类型的每个字段都填上非默认值，往返后必须逐字段相等（覆盖各类型的全部读写路径）。</summary>
+    private static void testStockGen_AllTypesFieldRoundTrip()
+    {
+        var problems = new List<string>();
+        foreach (var type in StockGeneratorCodec.VanillaGeneratorTypes())
+        {
+            var gen = (StockGenerator)Activator.CreateInstance(type)!;
+            foreach (var field in StockGeneratorCodec.FieldsFor(type))
+            {
+                var sample = SampleValueOf(field, StockGeneratorCodec.ReadField(field, gen));
+                Assert(sample != null, $"{type.Name}.{field.Name}（{field.Kind}）造不出样本值");
+                StockGeneratorCodec.WriteField(field, gen, sample);
+            }
+
+            string line = StockGeneratorCodec.ToItemString(gen);
+            Assert(!line.Contains('\n'), $"{type.Name}：一行不得含换行");
+            Assert(StockGeneratorCodec.TryParse(line, out var back) && back != null, $"{type.Name}：解析不了自己编码出来的行：{line}");
+            if (back!.GetType() != type) { problems.Add($"{type.Name}: 往返后类型变成 {back.GetType().Name}"); continue; }
+            if (StockGeneratorCodec.ToItemString(back) != line) { problems.Add($"{type.Name}: 再编码不一致\n{line}\n{StockGeneratorCodec.ToItemString(back)}"); continue; }
+
+            foreach (var field in StockGeneratorCodec.FieldsFor(type))
+            {
+                var expected = StockGeneratorCodec.ReadField(field, gen);
+                var actual = StockGeneratorCodec.ReadField(field, back);
+                if (!SameValue(expected, actual))
+                    problems.Add($"{type.Name}.{field.Name}: {DescribeValueOf(expected)} != {DescribeValueOf(actual)}");
+            }
+        }
+        Assert(problems.Count == 0, $"{problems.Count} 处字段没往返一致（列出前 6 条）：\n{string.Join("\n", problems.Take(6))}");
+    }
+
+    /// <summary>按字段表的种类造一个"非默认"的样本值（<paramref name="baselineValue"/> 是新实例上的初始值）。</summary>
+    private static object? SampleValueOf(StockGeneratorCodec.SgField field, object? baselineValue)
+    {
+        switch (field.Kind)
+        {
+            case StockGeneratorCodec.Kind.Float: return 7.25f;
+            case StockGeneratorCodec.Kind.Int: return 3;
+            case StockGeneratorCodec.Kind.Bool: return !(baselineValue is bool b && b);
+            case StockGeneratorCodec.Kind.Text: return "示例|标签=值;[x]\\y";
+            case StockGeneratorCodec.Kind.IntRange: return new IntRange(2, 5);
+            case StockGeneratorCodec.Kind.FloatRange: return new FloatRange(1.5f, 9.75f);
+            case StockGeneratorCodec.Kind.Enum:
+            {
+                foreach (var value in Enum.GetValues(field.EnumType!))
+                    if (!Equals(value, baselineValue)) return value;
+                return null;
+            }
+            case StockGeneratorCodec.Kind.Def:
+                return GenDefDatabase.GetAllDefsInDatabaseForDef(field.ElementType!).FirstOrDefault();
+            case StockGeneratorCodec.Kind.DefList:
+            {
+                var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(field.ElementType!))!;
+                var def = GenDefDatabase.GetAllDefsInDatabaseForDef(field.ElementType!).FirstOrDefault();
+                if (def != null) list.Add(def);
+                return list.Count > 0 ? list : null;
+            }
+            case StockGeneratorCodec.Kind.StringList:
+                return new List<string> { "first", "second|x" };
+            case StockGeneratorCodec.Kind.ComplexList:
+            {
+                var elementType = field.ElementType!;
+                var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
+                var element = Activator.CreateInstance(elementType)!;
+                foreach (var sub in StockGeneratorCodec.FieldsFor(elementType))
+                {
+                    var sample = SampleValueOf(sub, StockGeneratorCodec.ReadField(sub, element));
+                    if (sample != null) StockGeneratorCodec.WriteField(sub, element, sample);
+                }
+                list.Add(element);
+                return list;
+            }
+            default:
+                return null;
+        }
+    }
+
+    private static bool SameValue(object? left, object? right)
+    {
+        if (left == null || right == null) return left == null && right == null;
+        if (left is IList listLeft && right is IList listRight)
+        {
+            if (listLeft.Count != listRight.Count) return false;
+            for (int i = 0; i < listLeft.Count; i++)
+                if (!SameValue(listLeft[i], listRight[i])) return false;
+            return true;
+        }
+        // 字段表里也声明了字段的小对象（CountChance / ThingDefCountRangeClass）逐字段比
+        if (left is CountChance ca && right is CountChance cb) return ca.count == cb.count && ca.chance == cb.chance;
+        if (left is ThingDefCountRangeClass ta && right is ThingDefCountRangeClass tb)
+            return ta.thingDef == tb.thingDef && ta.countRange.Equals(tb.countRange);
+        return Equals(left, right);
+    }
+
+    private static string DescribeValueOf(object? value) => value switch
+    {
+        null => "<null>",
+        Def def => def.defName ?? "<无名 Def>",
+        string str => $"\"{str}\"",
+        IList list => $"[{list.Count}]",
+        _ => value.ToString() ?? "<?>",
+    };
+
+    /// <summary>字段值要真的来回一致（不只是"文本一致"）：Def 引用、区间、枚举、嵌套对象列表、字符串列表。</summary>
+    private static void testStockGen_FieldValuesRoundTrip()
+    {
+        var tag = new StockGenerator_Tag
+        {
+            tradeTag = "ExoticMisc",
+            countRange = new IntRange(1, 4),
+            totalPriceRange = new FloatRange(10f, 99.5f),
+            maxTechLevelBuy = TechLevel.Medieval,
+            price = PriceType.Expensive,
+            customCountRanges = new List<ThingDefCountRangeClass>
+            {
+                new(ThingDefOf.Steel, new IntRange(2, 6)),
+                new(ThingDefOf.Cloth, new IntRange(7, 7)),
+            },
+        };
+        SetGenField(tag, "thingDefCountRange", new IntRange(3, 5));
+        SetGenField(tag, "excludedThingDefs", new List<ThingDef> { ThingDefOf.Steel, ThingDefOf.Cloth });
+
+        var back = RoundTripGen(tag) as StockGenerator_Tag;
+        Assert(back != null, "往返后类型应仍是 StockGenerator_Tag");
+        Assert(back!.tradeTag == "ExoticMisc", $"tradeTag 应保持，实际 {back.tradeTag}");
+        Assert(back.countRange.Equals(new IntRange(1, 4)), "countRange 应保持");
+        Assert(back.totalPriceRange.Equals(new FloatRange(10f, 99.5f)), "totalPriceRange 应保持");
+        Assert(back.maxTechLevelBuy == TechLevel.Medieval, "maxTechLevelBuy（枚举）应保持");
+        Assert(back.price == PriceType.Expensive, "price（枚举）应保持");
+        Assert(back.customCountRanges is { Count: 2 }, "customCountRanges 应保持 2 项");
+        Assert(back.customCountRanges![0].thingDef == ThingDefOf.Steel, "customCountRanges[0].thingDef 应保持");
+        Assert(back.customCountRanges[0].countRange.Equals(new IntRange(2, 6)), "customCountRanges[0].countRange 应保持");
+        Assert(back.customCountRanges[1].countRange.Equals(new IntRange(7, 7)), "customCountRanges[1] 应保持");
+        Assert((IntRange?)GetGenField(back, "thingDefCountRange") is { } range && range.Equals(new IntRange(3, 5)),
+            "私有字段 thingDefCountRange 也应保持");
+        var excluded = GetGenField(back, "excludedThingDefs") as List<ThingDef>;
+        Assert(excluded is { Count: 2 } && excluded[0] == ThingDefOf.Steel && excluded[1] == ThingDefOf.Cloth,
+            "Def 列表 excludedThingDefs 应保持");
+        Assert(back.trader == null, "[Unsaved] 的 trader 不应被编码");
+
+        // 字符串列表（StockGenerator_Animals 的 tradeTagsSell 是 private）
+        var animals = new StockGenerator_Animals();
+        SetGenField(animals, "tradeTagsSell", new List<string> { "AnimalCommon", "AnimalUncommon" });
+        SetGenField(animals, "kindCountRange", new IntRange(1, 3));
+        SetGenField(animals, "minWildness", 0.25f);
+        SetGenField(animals, "checkTemperature", false);
+        var animalsBack = RoundTripGen(animals) as StockGenerator_Animals;
+        Assert(animalsBack != null, "往返后类型应仍是 StockGenerator_Animals");
+        var tagsBack = GetGenField(animalsBack!, "tradeTagsSell") as List<string>;
+        Assert(tagsBack is { Count: 2 } && tagsBack[0] == "AnimalCommon" && tagsBack[1] == "AnimalUncommon",
+            "字符串列表 tradeTagsSell 应保持");
+        Assert((IntRange?)GetGenField(animalsBack!, "kindCountRange") is { } kcr && kcr.Equals(new IntRange(1, 3)),
+            "私有字段 kindCountRange 应保持");
+        Assert((float?)GetGenField(animalsBack!, "minWildness") == 0.25f, "私有字段 minWildness 应保持");
+        Assert((bool?)GetGenField(animalsBack!, "checkTemperature") == false, "私有字段 checkTemperature 应保持");
+
+        // 小对象列表（StockGenerator_Techprints 的 countChances 是 private List<CountChance>）
+        var techprints = new StockGenerator_Techprints();
+        SetGenField(techprints, "countChances", new List<CountChance>
+        {
+            new() { count = 2, chance = 0.5f },
+            new() { count = 3, chance = 1f },
+        });
+        var techprintsBack = RoundTripGen(techprints) as StockGenerator_Techprints;
+        var chances = techprintsBack == null ? null : GetGenField(techprintsBack, "countChances") as List<CountChance>;
+        Assert(chances is { Count: 2 } && chances[0].count == 2 && chances[0].chance == 0.5f && chances[1].count == 3,
+            "小对象列表 countChances 应保持");
+
+        // 单个 Def 引用（StockGenerator_SingleDef 的 thingDef 是 private）
+        var single = new StockGenerator_SingleDef();
+        SetGenField(single, "thingDef", ThingDefOf.Steel);
+        var singleBack = RoundTripGen(single) as StockGenerator_SingleDef;
+        Assert(singleBack != null && (ThingDef?)GetGenField(singleBack, "thingDef") == ThingDefOf.Steel,
+            "单个 Def 引用 thingDef 应保持");
+    }
+
+    /// <summary>字段值里出现分隔符（<c>| = [ ] ; \</c>）时也必须原样往返 —— 转义是这套格式唯一的"复杂"之处。</summary>
+    private static void testStockGen_EscapingRoundTrip()
+    {
+        string nasty = "a|b=c;[d]\\e;f~g,h=i";
+        var tag = new StockGenerator_Tag { tradeTag = nasty };
+        var back = RoundTripGen(tag) as StockGenerator_Tag;
+        Assert(back != null && back.tradeTag == nasty, $"含分隔符的字符串应原样往返，实际 {(back == null ? "<null>" : back.tradeTag)}");
+
+        var animals = new StockGenerator_Animals();
+        SetGenField(animals, "tradeTagsSell", new List<string> { "a|b", "c;d", "[e]", "f\\g", "" });
+        var animalsBack = RoundTripGen(animals) as StockGenerator_Animals;
+        var tags = animalsBack == null ? null : GetGenField(animalsBack, "tradeTagsSell") as List<string>;
+        Assert(tags is { Count: 4 }, $"空字符串元素跳过（其余 4 个保持），实际 {tags?.Count}");
+        Assert(tags!.Contains("a|b") && tags.Contains("c;d") && tags.Contains("[e]") && tags.Contains("f\\g"),
+            "含分隔符的列表元素应原样往返");
+
+        // 转义 / 反转义本身互逆
+        foreach (var s in new[] { "", "a", nasty, "\\", "[[;;]]", "==" })
+            Assert(StockGeneratorCodec.Unescape(StockGeneratorCodec.Escape(s)) == s, $"Escape/Unescape 不互逆：\"{s}\"");
+    }
+
+    /// <summary>克隆：改副本不得影响原对象；非原版（字段表外）子类因为字段复制不了，直接沿用原实例。</summary>
+    private static void testStockGen_CloneIsDeep()
+    {
+        var tag = new StockGenerator_Tag { tradeTag = "Foo" };
+        tag.customCountRanges = new List<ThingDefCountRangeClass> { new(ThingDefOf.Steel, new IntRange(1, 2)) };
+
+        var clone = StockGeneratorCodec.Clone(tag) as StockGenerator_Tag;
+        Assert(clone != null && !ReferenceEquals(clone, tag), "克隆应是新实例");
+        Assert(!ReferenceEquals(clone!.customCountRanges, tag.customCountRanges), "嵌套列表应是新实例");
+        Assert(clone.customCountRanges![0].thingDef == ThingDefOf.Steel, "嵌套元素内容应保持");
+        Assert(!ReferenceEquals(clone.customCountRanges[0], tag.customCountRanges[0]), "嵌套元素也应是新实例");
+
+        clone.tradeTag = "Changed";
+        clone.customCountRanges[0].countRange = new IntRange(9, 9);
+        Assert(tag.tradeTag == "Foo", "改副本不应影响原对象（标量）");
+        Assert(tag.customCountRanges[0].countRange.Equals(new IntRange(1, 2)), "改副本不应影响原对象（嵌套元素）");
+
+        // 列表字段（CountChance 是值类型，装箱即复制）也应独立
+        var techprints = new StockGenerator_Techprints();
+        SetGenField(techprints, "countChances", new List<CountChance> { new() { count = 1, chance = 1f } });
+        var techprintsClone = StockGeneratorCodec.Clone(techprints) as StockGenerator_Techprints;
+        var cloneChances = techprintsClone == null ? null : GetGenField(techprintsClone, "countChances") as List<CountChance>;
+        Assert(cloneChances is { Count: 1 } && cloneChances[0].count == 1, "小对象列表应被克隆");
+        Assert(!ReferenceEquals(cloneChances, GetGenField(techprints, "countChances")), "克隆的列表应是新实例");
+
+        // 字段表外的类型不克隆：它自己的字段复制不了，克隆只会丢数据，所以直接沿用原实例
+        var mod = new TestNonVanillaGenerator { tradeTag = "Bar", extraModField = "mod" };
+        Assert(ReferenceEquals(StockGeneratorCodec.Clone(mod), mod), "非原版子类应直接沿用原实例（不克隆）");
+    }
+
+    private static void testStockGen_EmptyAndNull()
+    {
+        Assert(StockGeneratorCodec.Serialize(null) == null, "null 列表应编码为 null");
+        Assert(StockGeneratorCodec.Serialize(new List<StockGenerator>()) == null, "空列表应编码为 null");
+        Assert(StockGeneratorCodec.Deserialize(null) == null, "null 输入应还原为 null");
+        Assert(StockGeneratorCodec.Deserialize(new List<string>()) == null, "空输入应还原为 null");
+        Assert(StockGeneratorCodec.CloneAll(null) == null, "克隆 null 应得到 null");
+        Assert(!StockGeneratorCodec.TryParse(null, out _), "null 行应解析失败");
+        Assert(!StockGeneratorCodec.TryParse("", out _), "空行应解析失败");
+    }
+
+    private static void testStockGen_BadInputFails()
+    {
+        Assert(!StockGeneratorCodec.TryParse("StockGenerator_ThisTypeDoesNotExist|a=b", out _), "未知类型应解析失败");
+        Assert(!StockGeneratorCodec.TryParse("StockGenerator_Tag|noSuchField=x", out _), "未知字段应解析失败");
+        Assert(!StockGeneratorCodec.TryParse("StockGenerator_SingleDef|thingDef=__BT_Not_A_Real_Def__", out _),
+            "缺 Def 应解析失败（由调用方保持 Def 现状）");
+        Assert(!StockGeneratorCodec.TryParse("StockGenerator_Tag|countRange=abc", out _), "区间值非法应解析失败");
+        Assert(!StockGeneratorCodec.TryParse("StockGenerator_Tag|tradeTag", out _), "缺 \"=\" 的字段段应解析失败");
+        Assert(!StockGeneratorCodec.TryParse("StockGenerator|tradeTag=x", out _), "抽象基类名应解析失败");
+        Assert(!StockGeneratorCodec.TryParse("StockGenerator_MiscItems|countRange=1~2", out _), "抽象类型应解析失败");
+        Assert(!StockGeneratorCodec.TryParse("CountChance|count=1", out _), "字段表里的小对象类型不是生成器，应解析失败");
+        Assert(!StockGeneratorCodec.TryParse("StockGenerator_Tag|excludedThingDefs=[__BT_Not_A_Real_Def__]", out _),
+            "Def 列表里缺 Def 应解析失败");
+
+        var good = StockGeneratorCodec.ToItemString(new StockGenerator_Tag { tradeTag = "Foo" });
+        Assert(StockGeneratorCodec.Deserialize(new List<string> { good, "StockGenerator_Tag|noSuchField=x" }) == null,
+            "整块里有一条坏行 ⇒ 整块拒绝");
+    }
+
+    private static void testStockGen_FieldsAndSummary()
+    {
+        var fields = StockGeneratorCodec.FieldsFor(typeof(StockGenerator_Tag));
+        Assert(fields.Any(f => f.Name == "tradeTag" && f.Kind == StockGeneratorCodec.Kind.Text), "tradeTag 应是文本字段");
+        Assert(fields.Any(f => f.Name == "countRange" && f.Kind == StockGeneratorCodec.Kind.IntRange), "countRange 应是整数区间字段");
+        Assert(fields.Any(f => f.Name == "totalPriceRange" && f.Kind == StockGeneratorCodec.Kind.FloatRange), "totalPriceRange 应是浮点区间字段");
+        Assert(fields.Any(f => f.Name == "maxTechLevelBuy" && f.Kind == StockGeneratorCodec.Kind.Enum), "maxTechLevelBuy 应是枚举字段");
+        Assert(fields.Any(f => f.Name == "price" && f.Kind == StockGeneratorCodec.Kind.Enum), "price 应是枚举字段");
+        Assert(fields.Any(f => f.Name == "excludedThingDefs" && f.Kind == StockGeneratorCodec.Kind.DefList), "excludedThingDefs 应是 Def 列表字段");
+        Assert(fields.Any(f => f.Name == "customCountRanges" && f.Kind == StockGeneratorCodec.Kind.ComplexList), "customCountRanges 应是小对象列表字段");
+        Assert(!fields.Any(f => f.Name == "trader"), "字段表不应含 [Unsaved] 的 trader");
+        Assert(!fields.Any(f => f.Name == "tmpGenerated"), "字段表不应含运行期临时表 tmpGenerated");
+
+        // 小对象列表的元素类型也用同一张字段表（SGComplexListEditorWindow 直接读它）
+        Assert(StockGeneratorCodec.FieldsFor(typeof(CountChance)).Any(f => f.Name == "chance" && f.Kind == StockGeneratorCodec.Kind.Float),
+            "CountChance.chance 应是浮点字段");
+        Assert(StockGeneratorCodec.FieldsFor(typeof(ThingDefCountRangeClass)).Any(f => f.Name == "thingDef" && f.Kind == StockGeneratorCodec.Kind.Def),
+            "ThingDefCountRangeClass.thingDef 应是 Def 字段");
+
+        string summary = StockGeneratorCodec.Summarize(new StockGenerator_Tag { tradeTag = "Foo" });
+        Assert(summary.Contains("tradeTag=Foo"), $"摘要应含 tradeTag=Foo，实际：\"{summary}\"");
+        Assert(StockGeneratorCodec.Summarize(new TestNonVanillaGenerator()) == "", "非原版类型不打摘要");
+        Assert(StockGeneratorCodec.TypeLabel(typeof(StockGenerator_Tag)) == "StockGenerator_Tag", "类型显示名应是原版 XML Class 的写法");
+    }
+
+    /// <summary>
+    /// 原版 / 非原版的判据就是"在不在字段表里"：类型菜单只列表里的具体类型；表外（其它 Mod 新增）
+    /// 的子类只暴露它继承链上表内类型声明的字段 —— 即"只可改其基类的字段"。
+    /// </summary>
+    private static void testStockGen_NonVanillaRules()
+    {
+        Assert(StockGeneratorCodec.IsVanilla(typeof(StockGenerator_Tag)), "原版 StockGenerator_Tag 应判定为原版");
+        Assert(!StockGeneratorCodec.IsVanilla(typeof(TestNonVanillaGenerator)), "字段表外的类型应判定为非原版");
+
+        var vanilla = StockGeneratorCodec.VanillaGeneratorTypes();
+        Assert(vanilla.Count > 1, "原版类型列表不应为空");
+        Assert(vanilla.All(StockGeneratorCodec.IsVanilla), "类型菜单里的每一项都必须是原版类型");
+        Assert(vanilla.All(t => !t.IsAbstract && t != typeof(StockGenerator)), "类型菜单不得含抽象类型与基类");
+        Assert(vanilla.Contains(typeof(StockGenerator_Tag)), "StockGenerator_Tag 应在类型菜单里");
+        Assert(vanilla.Contains(typeof(StockGenerator_MarketValue)), "官方的 StockGenerator_MarketValue 也应在类型菜单里");
+        Assert(!vanilla.Contains(typeof(StockGenerator_MiscItems)), "抽象类 StockGenerator_MiscItems 不应出现在类型菜单里");
+        Assert(!vanilla.Contains(typeof(TestNonVanillaGenerator)), "非原版子类不得出现在类型菜单里");
+
+        // 字段表外的类型：基类字段 + 它继承的原版类型字段，自己的字段不给
+        var fields = StockGeneratorCodec.FieldsFor(typeof(TestNonVanillaGenerator)).Select(f => f.Name).ToList();
+        Assert(fields.Contains("countRange"), "非原版子类应可编辑原版基类字段 countRange");
+        Assert(fields.Contains("tradeTag"), "非原版子类应可编辑原版基类（StockGenerator_Tag）字段 tradeTag");
+        Assert(!fields.Contains("extraModField"), "非原版子类自己的字段不得出现在字段表里");
+
+        // 继承链上的字段也跟着走
+        Assert(StockGeneratorCodec.FieldsFor(typeof(StockGenerator_Tomes)).Any(f => f.Name == "thingDef"),
+            "StockGenerator_Tomes 应含它从 StockGenerator_SingleDef 继承的 thingDef");
+        var marketValue = StockGeneratorCodec.FieldsFor(typeof(StockGenerator_MarketValue)).Select(f => f.Name).ToList();
+        Assert(marketValue.Contains("countRange") && marketValue.Contains("tradeTag")
+            && marketValue.Contains("weaponTag") && marketValue.Contains("apparelTag"),
+            "StockGenerator_MarketValue 应含基类字段与自有的三个标签字段");
+    }
+
+    /// <summary>
+    /// 测试用的"非原版"生成器：位于本 Mod 程序集，行为等价于其它 Mod 新增的 <see cref="StockGenerator"/> 子类
+    /// （多出一个自有的 <c>extraModField</c>）。直接派生自原版 <see cref="StockGenerator_Tag"/> 是为了免去实现
+    /// 抽象成员；它同时覆盖"字段表外的类型只暴露继承字段"这条规则。
+    /// </summary>
+    private class TestNonVanillaGenerator : StockGenerator_Tag
+    {
+        public string extraModField = "mod";
     }
 
     // ═══════════════════════ 辅助方法 ═══════════════════════

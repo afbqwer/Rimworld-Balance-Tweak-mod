@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Trader>商人</MST.Trader>
+    <MST.orbital>轨道</MST.orbital>
+    <MST.requestable>可请求</MST.requestable>
+    <MST.hideThingsNotWillingToTrade>隐藏拒售</MST.hideThingsNotWillingToTrade>
+    <MST.category>分类</MST.category>
+    <MST.tradeCurrency>交易货币</MST.tradeCurrency>
+    <MST.faction>派系</MST.faction>
+    <MST.permitRequiredForTrading>所需许可</MST.permitRequiredForTrading>
+    <MST.stockGenerators>库存</MST.stockGenerators>
+    <MST.commonalityMultFromPopulationIntent>人口曲线</MST.commonalityMultFromPopulationIntent>
+    <MST.Orbital>轨道</MST.Orbital>
+    <MST.Specialist>特殊</MST.Specialist>
+    <MST.Standard>普通</MST.Standard>
+
+    <!-- 库存生成器列表窗口 -->
+    <MST.AddStockGenerator>添加生成器</MST.AddStockGenerator>
+    <MST.AddEntry>添加一项</MST.AddEntry>
+    <MST.StockGenType>类型</MST.StockGenType>
+    <MST.StockGenNonVanilla>非原版类型（其它 Mod 新增）：只显示类型名，且只能编辑它继承的原版字段</MST.StockGenNonVanilla>
+    <MST.StockGenUnsupported>该字段类型暂不支持编辑，保留原值</MST.StockGenUnsupported>
+
+    <!-- 库存生成器字段（键名与原版 XML 元素名一致，便于对照 Def XML） -->
+    <MST.countRange>数量区间</MST.countRange>
+    <MST.customCountRanges>自定义数量区间</MST.customCountRanges>
+    <MST.totalPriceRange>总价值区间</MST.totalPriceRange>
+    <MST.maxTechLevelGenerate>生成科技上限</MST.maxTechLevelGenerate>
+    <MST.maxTechLevelBuy>收购科技上限</MST.maxTechLevelBuy>
+    <MST.price>定价类型</MST.price>
+    <MST.minValuePerUnit>单位最低价值</MST.minValuePerUnit>
+    <MST.thingDef>物品</MST.thingDef>
+    <MST.thingDefs>物品列表</MST.thingDefs>
+    <MST.thingDefCountRange>物品种数区间</MST.thingDefCountRange>
+    <MST.tag>标签</MST.tag>
+    <MST.tradeTag>交易标签</MST.tradeTag>
+    <MST.apparelTag>服装标签</MST.apparelTag>
+    <MST.weaponTag>武器标签</MST.weaponTag>
+    <MST.tradeTagsSell>出售交易标签</MST.tradeTagsSell>
+    <MST.tradeTagsBuy>收购交易标签</MST.tradeTagsBuy>
+    <MST.createMatingPair>可配对的交易标签</MST.createMatingPair>
+    <MST.kindCountRange>种类数区间</MST.kindCountRange>
+    <MST.minWildness>最低野性</MST.minWildness>
+    <MST.maxWildness>最高野性</MST.maxWildness>
+    <MST.checkTemperature>检查温度</MST.checkTemperature>
+    <MST.categoryDef>物品分类</MST.categoryDef>
+    <MST.excludedCategories>排除分类</MST.excludedCategories>
+    <MST.excludedThingDefs>排除物品</MST.excludedThingDefs>
+    <MST.respectPopulationIntent>受人口意图影响</MST.respectPopulationIntent>
+    <MST.slaveKindDef>奴隶类型</MST.slaveKindDef>
+    <MST.countChances>数量-概率</MST.countChances>
+    <MST.count>次数</MST.count>
+    <MST.chance>概率</MST.chance>
+
+    <MST.requestableComment>是否可由玩家在通讯台主动请求该商人前来交易。</MST.requestableComment>
+    <MST.hideThingsNotWillingToTradeComment>在交易界面中隐藏该商人不愿交易的物品。</MST.hideThingsNotWillingToTradeComment>
+    <MST.categoryComment>自由文本分类标记（原版如 Slaver、TributeCollector），仅影响分类展示。</MST.categoryComment>
+    <MST.tradeCurrencyComment>交易使用的货币：Silver 为白银，Favor 为帝国恩宠（需 Royalty）。</MST.tradeCurrencyComment>
+    <MST.permitRequiredForTradingComment>需要持有该帝国许可才能与之交易（需 Royalty）。</MST.permitRequiredForTradingComment>
+    <MST.commonalityMultFromPopulationIntentComment>按人口意图（population intent）对 commonality 的修正曲线。</MST.commonalityMultFromPopulationIntentComment>
+    <MST.stockGeneratorsComment>库存生成器列表。字段直接持有生成器对象，点“编辑”逐条修改：每行一个生成器（类型 + 关键字段摘要），可添加（只列原版类型）、上下移动、删除；生成器的每个字段按种类给出输入框、下拉菜单或子列表窗口。非原版（其它 Mod 新增）类型只显示类型名，且只能改它继承的原版字段。存档时按“一行一条生成器文本”保存，复制/粘贴也按行处理（粘贴会整体校验）。</MST.stockGeneratorsComment>
+</LanguageData>

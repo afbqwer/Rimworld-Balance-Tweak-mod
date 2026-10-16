@@ -27,7 +27,8 @@ public abstract class EditorWindowBase : Window
         closeOnClickedOutside = true;
     }
 
-    protected void OpenChildWindow(Window window)
+    /// <summary>打开一个子窗口（关掉子窗口之前，本窗口不会被"点击外部"关掉）。</summary>
+    public void OpenChildWindow(Window window)
     {
         childWindows.Add(window);
         Find.WindowStack.Add(window);

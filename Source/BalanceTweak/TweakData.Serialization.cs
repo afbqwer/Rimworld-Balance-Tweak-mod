@@ -106,6 +106,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         else if (fieldType == typeof(List<BiomeDiseaseRecord>)) ExposeDiseaseList(meta);
         else if (fieldType == typeof(List<WeatherCommonalityRecord>)) ExposeWeatherCommonalityList(meta);
         else if (fieldType == typeof(List<TerrainThreshold>)) ExposeTerrainThresholdList(meta);
+        else if (fieldType == typeof(List<StockGenerator>)) ExposeStockGeneratorList(meta);
         else if (fieldType == typeof(ThingFilter)) ExposeIngredientFilter(meta);
         else if (fieldType == typeof(List<string>)) ExposeStringList(meta);
         else if (fieldType == typeof(List<int>)) ExposeIntList(meta);
@@ -391,6 +392,18 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             return list.Select(SerializationHelper.TerrainThresholdToItemString).ToList();
         });
     }
+
+    /// <summary>
+    /// 库存生成器：字段值是真实对象，存档时按"一行一条生成器文本"落盘（见 <see cref="StockGeneratorCodec"/>）。
+    /// 与其它列表列同一套路：<c>List&lt;T&gt;</c> ↔ <c>List&lt;string&gt;</c>，读档在
+    /// <c>ResolveStockGeneratorList</c> 里还原（任一条解析失败即整字段标损坏、保持 Def 现状）。
+    /// </summary>
+    private void ExposeStockGeneratorList(StatFieldMeta meta) => ExposeList(meta, v =>
+    {
+        var list = (List<StockGenerator>?)v;
+        if (list == null || list.Count == 0) return null;
+        return StockGeneratorCodec.Serialize(list);
+    });
 
     #endregion
 }

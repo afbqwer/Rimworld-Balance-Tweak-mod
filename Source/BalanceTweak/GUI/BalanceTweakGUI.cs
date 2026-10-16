@@ -154,6 +154,7 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.AptitudeList, (c, d) => new AptitudeListEditorWindow(c, d) },
         { ColumnStyle.GeneticTraitList, (c, d) => new GeneticTraitListEditorWindow(c, d) },
         { ColumnStyle.StringList, (c, d) => new StringListEditorWindow(c, d) },
+        { ColumnStyle.StockGenList, (c, d) => new StockGeneratorListEditorWindow(c, d) },
         { ColumnStyle.IntList, (c, d) => new IntListEditorWindow(c, d) },
         { ColumnStyle.ThingDefCountList, (c, d) => new ThingDefCountListEditorWindow(c, d) },
         { ColumnStyle.IngredientList, (c, d) => new IngredientListEditorWindow(c, d) },

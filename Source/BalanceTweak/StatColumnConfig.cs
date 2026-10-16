@@ -55,7 +55,7 @@ public class StatColumnConfig
         { FieldType.IntRange, new[] { ColumnStyle.Range } },
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
-        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList } },
+        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList } },
         { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks } },
     };
 
@@ -149,7 +149,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -162,7 +162,8 @@ public class StatColumnConfig
             or ColumnStyle.BodyPartTree
             or ColumnStyle.BiomePlantList or ColumnStyle.BiomeAnimalList
             or ColumnStyle.FishChanceList or ColumnStyle.DiseaseList or ColumnStyle.WeatherCommonalityList
-            or ColumnStyle.TerrainThresholdList;
+            or ColumnStyle.TerrainThresholdList
+            or ColumnStyle.StockGenList;
     }
 
     private void ValidateFieldTypeStyle()
@@ -565,11 +566,21 @@ public class StatColumnConfig
             return GetString(data);
         }
 
+        // StringList：每个元素占一行。
         if (columnType == ColumnStyle.StringList)
         {
             var list = (IList?)GetRawValue(data);
             if (list == null) return null;
             return string.Join("\n", list.Cast<string>());
+        }
+
+        // StockGenList：字段值就是生成器对象，出去时按"一行一条生成器文本"编码（见 StockGeneratorCodec）。
+        // 优先用编辑器里的结构化窗口改；复制/粘贴只是把一整套库存搬到另一行时的快捷方式。
+        if (columnType == ColumnStyle.StockGenList)
+        {
+            var list = (List<StockGenerator>?)GetRawValue(data);
+            var lines = StockGeneratorCodec.Serialize(list);
+            return lines != null ? string.Join("\n", lines) : null;
         }
 
         if (columnType == ColumnStyle.IntList)
@@ -750,9 +761,21 @@ public class StatColumnConfig
                 return false;
             }
 
+            // StringList：每个元素占一行。
             if (columnType == ColumnStyle.StringList)
             {
                 var list = clipboardData.Split('\n').ToList();
+                ApplyValue(data, list);
+                return true;
+            }
+
+            // StockGenList：整体校验（任一条解析不了就整块拒绝），免得把半截数据塞进字段。
+            if (columnType == ColumnStyle.StockGenList)
+            {
+                var lines = clipboardData.Split('\n').Where(l => !l.NullOrEmpty()).ToList();
+                if (lines.Count == 0) return false;
+                var list = StockGeneratorCodec.Deserialize(lines);
+                if (list == null) return false;
                 ApplyValue(data, list);
                 return true;
             }

@@ -39,6 +39,7 @@
     <MST.DiseaseList>疾病列表</MST.DiseaseList>
     <MST.WeatherCommonalityList>天气列表</MST.WeatherCommonalityList>
     <MST.TerrainThresholdList>地形区间列表</MST.TerrainThresholdList>
+    <MST.StockGenList>库存列表</MST.StockGenList>
     <MST.empty>空</MST.empty>
     <MST.ColumnConfig>列配置</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>列配置</MST.ColumnSelectorTitle>

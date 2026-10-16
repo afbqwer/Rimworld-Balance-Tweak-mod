@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Trader>Trader</MST.Trader>
+    <MST.orbital>Orbital</MST.orbital>
+    <MST.requestable>Request</MST.requestable>
+    <MST.hideThingsNotWillingToTrade>HideRefuse</MST.hideThingsNotWillingToTrade>
+    <MST.category>Category</MST.category>
+    <MST.tradeCurrency>Currency</MST.tradeCurrency>
+    <MST.faction>Faction</MST.faction>
+    <MST.permitRequiredForTrading>Permit</MST.permitRequiredForTrading>
+    <MST.stockGenerators>Stock</MST.stockGenerators>
+    <MST.commonalityMultFromPopulationIntent>PopCurve</MST.commonalityMultFromPopulationIntent>
+    <MST.Orbital>Orbital</MST.Orbital>
+    <MST.Specialist>Specialist</MST.Specialist>
+    <MST.Standard>Standard</MST.Standard>
+
+    <!-- Stock generator list window -->
+    <MST.AddStockGenerator>Add generator</MST.AddStockGenerator>
+    <MST.AddEntry>Add entry</MST.AddEntry>
+    <MST.StockGenType>Type</MST.StockGenType>
+    <MST.StockGenNonVanilla>Non-vanilla type (added by another mod): only the type name is shown, and only its inherited vanilla fields can be edited</MST.StockGenNonVanilla>
+    <MST.StockGenUnsupported>Editing this field type is not supported; value kept</MST.StockGenUnsupported>
+
+    <!-- Stock generator fields (key = vanilla XML element name, easy to map to def XML) -->
+    <MST.countRange>CountRange</MST.countRange>
+    <MST.customCountRanges>CustomCounts</MST.customCountRanges>
+    <MST.totalPriceRange>PriceRange</MST.totalPriceRange>
+    <MST.maxTechLevelGenerate>MaxGenTech</MST.maxTechLevelGenerate>
+    <MST.maxTechLevelBuy>MaxBuyTech</MST.maxTechLevelBuy>
+    <MST.price>PriceType</MST.price>
+    <MST.minValuePerUnit>MinValuePt</MST.minValuePerUnit>
+    <MST.thingDef>ThingDef</MST.thingDef>
+    <MST.thingDefs>ThingDefs</MST.thingDefs>
+    <MST.thingDefCountRange>DefCountRng</MST.thingDefCountRange>
+    <MST.tag>Tag</MST.tag>
+    <MST.tradeTag>TradeTag</MST.tradeTag>
+    <MST.apparelTag>ApparelTag</MST.apparelTag>
+    <MST.weaponTag>WeaponTag</MST.weaponTag>
+    <MST.tradeTagsSell>TagsSell</MST.tradeTagsSell>
+    <MST.tradeTagsBuy>TagsBuy</MST.tradeTagsBuy>
+    <MST.createMatingPair>MatingTags</MST.createMatingPair>
+    <MST.kindCountRange>KindCountRng</MST.kindCountRange>
+    <MST.minWildness>MinWildness</MST.minWildness>
+    <MST.maxWildness>MaxWildness</MST.maxWildness>
+    <MST.checkTemperature>CheckTemp</MST.checkTemperature>
+    <MST.categoryDef>CategoryDef</MST.categoryDef>
+    <MST.excludedCategories>ExclCats</MST.excludedCategories>
+    <MST.excludedThingDefs>ExclDefs</MST.excludedThingDefs>
+    <MST.respectPopulationIntent>PopIntent</MST.respectPopulationIntent>
+    <MST.slaveKindDef>SlaveKind</MST.slaveKindDef>
+    <MST.countChances>CountChances</MST.countChances>
+    <MST.count>Count</MST.count>
+    <MST.chance>Chance</MST.chance>
+
+    <MST.requestableComment>Whether the player can request this trader to come via the comms console.</MST.requestableComment>
+    <MST.hideThingsNotWillingToTradeComment>Hide things this trader is not willing to trade in the trade window.</MST.hideThingsNotWillingToTradeComment>
+    <MST.categoryComment>Free-text category tag (vanilla uses Slaver, TributeCollector...). Only affects display grouping.</MST.categoryComment>
+    <MST.tradeCurrencyComment>Currency used for trading: Silver, or Favor (requires Royalty).</MST.tradeCurrencyComment>
+    <MST.permitRequiredForTradingComment>Requires holding this imperial permit to trade (requires Royalty).</MST.permitRequiredForTradingComment>
+    <MST.commonalityMultFromPopulationIntentComment>Curve multiplying commonality by population intent.</MST.commonalityMultFromPopulationIntentComment>
+    <MST.stockGeneratorsComment>Stock generator list. The field holds the generator objects directly; click Edit to change entries one by one: each row is a generator (class name + key field summary) and can be added (vanilla types only), moved up/down or removed; every generator field gets a text box, dropdown or sub-list window depending on its kind. Non-vanilla (mod-added) types show only the class name and allow editing only their inherited vanilla fields. Saves as one line of field text per generator; copy/paste also works line by line (paste is validated as a whole).</MST.stockGeneratorsComment>
+</LanguageData>

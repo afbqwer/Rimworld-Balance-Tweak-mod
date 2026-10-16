@@ -35,5 +35,6 @@ public partial class BalanceTweakSettings
         BodyPart = 27,
         BodyDef = 28,
         Biome = 29,
+        Trader = 30,
     }
 }

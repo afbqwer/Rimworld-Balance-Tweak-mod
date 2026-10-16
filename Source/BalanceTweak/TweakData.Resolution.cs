@@ -91,6 +91,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         if (fieldType == typeof(List<BiomeDiseaseRecord>)) return ResolveDiseaseList(meta);
         if (fieldType == typeof(List<WeatherCommonalityRecord>)) return ResolveWeatherCommonalityList(meta);
         if (fieldType == typeof(List<TerrainThreshold>)) return ResolveTerrainThresholdList(meta);
+        if (fieldType == typeof(List<StockGenerator>)) return ResolveStockGeneratorList(meta);
         if (fieldType == typeof(ThingFilter)) return ResolveIngredientFilter(meta);
         if (fieldType == typeof(List<string>)) return ResolveStringList(meta);
         if (fieldType == typeof(List<int>)) return ResolveIntList(meta);
@@ -423,6 +424,16 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
                 result.Add(item);
             }
             return (result.Count > 0 ? result : null, true);
+        });
+    }
+
+    /// <summary>库存生成器：行文本 → 生成器对象（<see cref="StockGeneratorCodec"/>）。任一条失败即整字段回滚。</summary>
+    private bool ResolveStockGeneratorList(StatFieldMeta meta)
+    {
+        return ResolveList(meta, strList =>
+        {
+            var result = StockGeneratorCodec.Deserialize(strList);
+            return result == null ? (null, false) : (result, true);
         });
     }
 
