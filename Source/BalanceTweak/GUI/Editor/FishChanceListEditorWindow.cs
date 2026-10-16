@@ -78,11 +78,4 @@ public class FishChanceListEditorWindow : ListEditorWindow<FishChance>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeFishChanceList(workingList);
-
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeFishChanceList(data);
-        if (list != null) workingList = list;
-    }
 }

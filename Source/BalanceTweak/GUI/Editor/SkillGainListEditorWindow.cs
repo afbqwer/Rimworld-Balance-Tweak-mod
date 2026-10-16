@@ -78,10 +78,4 @@ public class SkillGainListEditorWindow : ListEditorWindow<SkillGain>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeSkillGainList(workingList);
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeSkillGainList(data);
-        if (list != null) workingList = list;
-    }
 }

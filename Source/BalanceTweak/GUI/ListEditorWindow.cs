@@ -107,8 +107,36 @@ public abstract class ListEditorWindow<T> : EditorWindowBase
         Close();
     }
 
-    protected abstract string? SerializeList();
-    protected abstract void DeserializeList(string data);
+    /// <summary>
+    /// 列表 → 多行文本（剪贴板复制 / 拖拽涂抹取值）。
+    ///
+    /// <para>
+    /// <b>默认走字段表通用编解码</b>：只要 <c>T</c> 已进 <see cref="PocoCodec"/> 的字段表，
+    /// 这里就是完整实现 —— 17 个子类因此不必再各写一遍转发。仍然需要覆写的只有三类：
+    /// 元素类型不在字段表里（<c>int</c> / <c>IngredientCount</c>）、格式特殊（<c>string</c> /
+    /// <c>StockGenerator</c>）、以及刻意不支持剪贴板的（两个 giver，覆写成返回 <c>null</c>）。
+    /// </para>
+    /// <para>
+    /// <b>别把 <c>virtual</c> 读成"随便"</b>：元素类型未声明、子类又没覆写时，默认实现返回
+    /// <c>null</c>（而不是静默算出一串垃圾）—— 那是**可见**的失效（复制/涂抹没反应），不是数据损坏。
+    /// 契约由游戏外测试 <c>ListEditorWindowContractTests</c> 枚举全部子类钉住。
+    /// </para>
+    /// </summary>
+    protected virtual string? SerializeList()
+    {
+        TweakData.FieldCodecs.EnsureBuilt();   // 见该方法注释：不碰这一下，IsDeclared 全判 false
+        return PocoCodec.EncodeList(workingList);
+    }
+
+    /// <summary>
+    /// 多行文本 → 列表。任一行解析失败 ⇒ 保持原列表不动（<see cref="PocoCodec.DecodeList(Type, string)"/>
+    /// 返回 <c>null</c>），绝不写入半截数据。
+    /// </summary>
+    protected virtual void DeserializeList(string data)
+    {
+        TweakData.FieldCodecs.EnsureBuilt();
+        if (PocoCodec.DecodeList(typeof(T), data) is List<T> list) workingList = list;
+    }
 
     protected override void OnSave() => SaveAndClose();
     protected override void OnCancel() => Close();

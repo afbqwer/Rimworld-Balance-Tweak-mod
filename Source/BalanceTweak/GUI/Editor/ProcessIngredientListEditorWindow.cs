@@ -143,10 +143,4 @@ public class ProcessIngredientListEditorWindow : ListEditorWindow<ProcessIngredi
         Close();
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeProcessIngredientItemList(workingList);
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeProcessIngredientItemList(data);
-        if (list != null) workingList = list;
-    }
 }

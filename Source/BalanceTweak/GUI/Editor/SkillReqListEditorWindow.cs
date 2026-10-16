@@ -78,11 +78,4 @@ public class SkillReqListEditorWindow : ListEditorWindow<SkillRequirement>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeSkillRequirementList(workingList);
-
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeSkillRequirementList(data);
-        if (list != null) workingList = list;
-    }
 }

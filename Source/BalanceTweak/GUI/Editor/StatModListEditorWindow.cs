@@ -93,10 +93,4 @@ public class StatModListEditorWindow : ListEditorWindow<StatModifier>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeStatModifierList(workingList);
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeStatModifierList(data);
-        if (list != null) workingList = list;
-    }
 }

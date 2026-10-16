@@ -88,11 +88,4 @@ public class TerrainThresholdListEditorWindow : ListEditorWindow<TerrainThreshol
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeTerrainThresholdList(workingList);
-
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeTerrainThresholdList(data);
-        if (list != null) workingList = list;
-    }
 }

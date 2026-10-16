@@ -74,11 +74,4 @@ public class BiomeAnimalListEditorWindow : ListEditorWindow<BiomeAnimalRecord>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeBiomeAnimalList(workingList);
-
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeBiomeAnimalList(data);
-        if (list != null) workingList = list;
-    }
 }

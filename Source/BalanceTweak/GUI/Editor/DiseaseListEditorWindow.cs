@@ -78,11 +78,4 @@ public class DiseaseListEditorWindow : ListEditorWindow<BiomeDiseaseRecord>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeDiseaseList(workingList);
-
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeDiseaseList(data);
-        if (list != null) workingList = list;
-    }
 }

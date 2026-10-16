@@ -240,12 +240,6 @@ public class CapModListEditorWindow : ListEditorWindow<PawnCapacityModifier>
         Text.Anchor = TextAnchor.UpperLeft;
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializePawnCapacityModifierList(workingList);
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializePawnCapacityModifierList(data);
-        if (list != null) workingList = list;
-    }
 
     protected override void SaveAndClose()
     {

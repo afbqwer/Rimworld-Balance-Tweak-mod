@@ -35,10 +35,9 @@ public class SerializationCodecsTests
 
     /// <summary>
     /// 确保字段表已初始化。字段声明与登记项都在 <c>TweakData.FieldCodecs.Build()</c>，
-    /// 由那条链上的静态构造统一完成 —— 这里借一次 <see cref="SerializationHelper"/> 调用把它拉起来
-    /// （GUI 调 <c>SerializeXxxList</c> 走的也是这条路）。
+    /// 由该类的静态构造统一完成 —— 碰一下 <c>All</c> 就把它拉起来了。
     /// </summary>
-    private static void EnsureDeclared() => _ = SerializationHelper.SerializeStatModifierList(null);
+    private static void EnsureDeclared() => _ = TweakData.FieldCodecs.All;
 
     /// <summary>逐条编码 —— 与登记表里 <c>Expose</c> 调的是同一个方法。</summary>
     private static string Item<T>(T value) where T : class => PocoCodec.Encode(value);
@@ -112,21 +111,18 @@ public class SerializationCodecsTests
     // ═══════════════════════ 登记覆盖与包装一致 ═══════════════════════
 
     /// <summary>
-    /// 登记表把 17 个类型都登记成了 <c>List&lt;T&gt;</c> 的收发对，且**列表包装与逐条编码一致**。
+    /// 登记表把 17 个类型都登记成了 <c>List&lt;T&gt;</c> 的收发对 —— 缺登记 ⇒ 该字段**静默不落盘**。
     ///
     /// <para>
-    /// 前半条守"漏登记"（该字段会静默不落盘）；后半条守"包装层与编解码层分叉"——
-    /// 游戏内的往返测试用 <c>PocoCodec.Encode</c> 模拟存档内容，若 <c>SerializeXxxList</c>
-    /// 的包装产出与之不同，那些测试就是在编一份存档里根本不会出现的文本。
-    /// </para>
-    ///
-    /// <para>
-    /// 注：逐条编解码现在由登记项直接调 <c>PocoCodec</c>（<c>PocoList&lt;T&gt;</c> 一行登记），
-    /// 所以"逐条路径一致"由类型系统保证，不需要再断言；这里只测**包装层**。
+    /// <b>原先这里还有一条"列表包装与逐条编码一致"的断言</b>（比 <c>SerializeXxxList</c> 与
+    /// <c>PocoCodec.Encode</c> 的产出是否相同）。GUI 去样板之后那 17 对 <c>SerializeXxxList</c>
+    /// 已删：存档侧（<c>ExposePocoList</c>）、剪贴板（<c>EncodeList</c>）、编辑器窗口的默认实现
+    /// <b>共用同一个 <c>PocoCodec</c> 入口</b>，"两份实现分叉"这个失效模式从结构上消失了 ——
+    /// 断言随之成了恒真，故删除。
     /// </para>
     /// </summary>
     [Fact]
-    public void 登记表覆盖且列表包装一致()
+    public void 登记表覆盖17个列表类型()
     {
         EnsureDeclared();
 
@@ -136,10 +132,30 @@ public class SerializationCodecsTests
             Assert.True(codec != null, $"List<{type.Name}> 没有登记（该字段会静默不落盘）");
             Assert.True(codec!.Resolve != null, $"List<{type.Name}> 登记了却没有解析分支（读档后不会还原）");
         }
+    }
 
-        var list = new List<StatModifier> { new() { value = 1f } };
-        Assert.Equal(string.Join("\n", list.Select(PocoCodec.Encode)),
-            SerializationHelper.SerializeStatModifierList(list));
+    /// <summary>
+    /// 非泛型列表入口（GUI 剪贴板按字段类型分派时用）与泛型等价；且
+    /// <b>元素类型未声明 ⇒ 一律 <c>null</c></b>。
+    ///
+    /// <para>
+    /// 后半条是这条测试的重点：不这么判的话，未声明类型会走"空字段表"解出一串<b>默认值</b>
+    /// （<c>int</c> 的默认值是 0，且 <c>Activator.CreateInstance(typeof(int))</c> 会成功）——
+    /// 于是一份粘贴内容会静默变成"全 0 列表"覆盖掉用户的字段。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void 非泛型列表入口_未声明类型一律返回null()
+    {
+        EnsureDeclared();
+
+        var text = PocoCodec.EncodeList(new List<StatModifier> { new() { value = 1f } });
+        var back = Assert.IsType<List<StatModifier>>(PocoCodec.DecodeList(typeof(StatModifier), text));
+        Assert.Equal(1f, back[0].value);
+
+        // 未声明：整块拒绝，绝不产出"默认值列表"
+        Assert.Null(PocoCodec.DecodeList(typeof(int), "0\n1"));
+        Assert.Null(PocoCodec.DecodeList(typeof(IngredientCount), "x=1"));
     }
 
     /// <summary>合成 Def 只用来验证编码方向（解码要 DefDatabase 查回实例，测试进程做不到）。</summary>
@@ -201,49 +217,42 @@ public class SerializationCodecsTests
     {
         EnsureDeclared();
 
-        var sm = RoundTrip(new StatModifier { value = 1.5f }, SerializationHelper.SerializeStatModifierList,
-            SerializationHelper.DeserializeStatModifierList);
+        var sm = RoundTrip(new StatModifier { value = 1.5f });
         Assert.Equal(1.5f, sm!.value);
 
-        var sg = RoundTrip(new SkillGain { amount = 7 }, SerializationHelper.SerializeSkillGainList,
-            SerializationHelper.DeserializeSkillGainList);
+        var sg = RoundTrip(new SkillGain { amount = 7 });
         Assert.Equal(7, sg!.amount);
 
-        var ap = RoundTrip(new Aptitude { level = 4 }, SerializationHelper.SerializeAptitudeList,
-            SerializationHelper.DeserializeAptitudeList);
+        var ap = RoundTrip(new Aptitude { level = 4 });
         Assert.Equal(4, ap!.level);
 
         // int? 字段（TraitRequirement.degree）
-        var tr = RoundTrip(new TraitRequirement { degree = 2 }, SerializationHelper.SerializeTraitRequirementList,
-            SerializationHelper.DeserializeTraitRequirementList);
+        var tr = RoundTrip(new TraitRequirement { degree = 2 });
         Assert.Equal(2, tr!.degree);
 
-        var gtd = RoundTrip(new GeneticTraitData { degree = 1 },
-            SerializationHelper.SerializeGeneticTraitDataList, SerializationHelper.DeserializeGeneticTraitDataList);
+        var gtd = RoundTrip(new GeneticTraitData { degree = 1 });
         Assert.Equal(1, gtd!.degree);
 
-        var plant = RoundTrip(new BiomePlantRecord { commonality = 0.75f },
-            SerializationHelper.SerializeBiomePlantList, SerializationHelper.DeserializeBiomePlantList);
+        var plant = RoundTrip(new BiomePlantRecord { commonality = 0.75f });
         Assert.Equal(0.75f, plant!.commonality);
 
-        var thr = RoundTrip(new TerrainThreshold { min = 0.1f, max = 0.9f },
-            SerializationHelper.SerializeTerrainThresholdList, SerializationHelper.DeserializeTerrainThresholdList);
+        var thr = RoundTrip(new TerrainThreshold { min = 0.1f, max = 0.9f });
         Assert.Equal(0.1f, thr!.min);
         Assert.Equal(0.9f, thr.max);
 
-        var pr = RoundTrip(new ProcessResultItem { count = 5 },
-            SerializationHelper.SerializeProcessResultItemList, SerializationHelper.DeserializeProcessResultItemList);
+        var pr = RoundTrip(new ProcessResultItem { count = 5 });
         Assert.Equal(5, pr!.count);
     }
 
-    private static T? RoundTrip<T>(
-        T item,
-        Func<List<T>?, string?> serialize,
-        Func<string?, List<T>?> deserialize) where T : class
+    /// <summary>
+    /// 走<b>生产同一条</b>列表入口（<see cref="PocoCodec.EncodeList"/> / <see cref="PocoCodec.DecodeList{T}"/>）——
+    /// 存档侧的 <c>ExposePocoList</c>、剪贴板、编辑器窗口默认实现现在都收口到这对方法上。
+    /// </summary>
+    private static T? RoundTrip<T>(T item) where T : class
     {
-        var text = serialize(new List<T> { item });
+        var text = PocoCodec.EncodeList(new List<T> { item });
         Assert.False(text.NullOrEmpty(), $"{typeof(T).Name} 应该编码出非空文本");
-        var back = deserialize(text);
+        var back = PocoCodec.DecodeList<T>(text);
         Assert.True(back is { Count: 1 }, $"{typeof(T).Name} 应还原成 1 个元素，实际 {back?.Count}");
         return back![0];
     }
@@ -276,21 +285,21 @@ public class SerializationCodecsTests
         Assert.Null(Parse<StatModifier>("noSuchField=1"));
         Assert.Null(Parse<StatModifier>("value=abc"));
         Assert.Null(Parse<SkillGain>("amount=1.5"));  // amount 是 int
-        Assert.Null(SerializationHelper.DeserializeStatModifierList("value=abc\nvalue=1"));
+        Assert.Null(PocoCodec.DecodeList<StatModifier>("value=abc\nvalue=1"));
     }
 
     // ═══════════════════════ 列表包装的失败语义 ═══════════════════════
 
     [Fact]
-    public void 列表包装_空与null()
+    public void 列表入口_空与null()
     {
         EnsureDeclared();
 
-        Assert.Null(SerializationHelper.SerializeStatModifierList(null));
-        Assert.Null(SerializationHelper.SerializeStatModifierList(new List<StatModifier>()));
-        Assert.Null(SerializationHelper.DeserializeStatModifierList(null));
-        Assert.Null(SerializationHelper.DeserializeStatModifierList(""));
-        Assert.Null(SerializationHelper.DeserializeStatModifierList("   \n  "));
+        Assert.Null(PocoCodec.EncodeList(null));
+        Assert.Null(PocoCodec.EncodeList(new List<StatModifier>()));
+        Assert.Null(PocoCodec.DecodeList<StatModifier>(null));
+        Assert.Null(PocoCodec.DecodeList<StatModifier>(""));
+        Assert.Null(PocoCodec.DecodeList<StatModifier>("   \n  "));
     }
 
     /// <summary>
@@ -298,16 +307,16 @@ public class SerializationCodecsTests
     /// 所以整块返回 <c>null</c>（与旧格式"该元素解析不出 ⇒ 整块拒绝"一致）。
     /// </summary>
     [Fact]
-    public void 列表包装_全默认元素整块失败()
+    public void 列表入口_全默认元素整块失败()
     {
         EnsureDeclared();
 
-        Assert.Null(SerializationHelper.SerializeStatModifierList(new List<StatModifier> { new() }));
+        Assert.Null(PocoCodec.EncodeList(new List<StatModifier> { new() }));
     }
 
     /// <summary>多元素：一行一个，顺序保持。</summary>
     [Fact]
-    public void 列表包装_多元素顺序保持()
+    public void 列表入口_多元素顺序保持()
     {
         EnsureDeclared();
 
@@ -317,9 +326,9 @@ public class SerializationCodecsTests
             new() { value = 2f },
             new() { value = 3f },
         };
-        var text = SerializationHelper.SerializeStatModifierList(list);
+        var text = PocoCodec.EncodeList(list);
         Assert.Equal("value=1\nvalue=2\nvalue=3", text);
-        var back = SerializationHelper.DeserializeStatModifierList(text);
+        var back = PocoCodec.DecodeList<StatModifier>(text);
         Assert.Equal(new[] { 1f, 2f, 3f }, back!.Select(x => x.value));
     }
 }

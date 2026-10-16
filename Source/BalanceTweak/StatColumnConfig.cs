@@ -499,6 +499,29 @@ public class StatColumnConfig
         return Math.Abs(oldVal - newVal) > threshold;
     }
 
+    /// <summary>
+    /// 该列的列表元素类型是否已进 <see cref="PocoCodec"/> 的字段表 —— 是则剪贴板可走通用编解码。
+    ///
+    /// <para>
+    /// 判据完全由<b>字段类型</b>推出（<c>List&lt;T&gt;</c> 的 <c>T</c>），**不需要 <c>ColumnStyle</c> 参与**。
+    /// 这也自动把 <c>IngredientCount</c> / <c>int</c> 排除在外，无需维护白名单。
+    /// </para>
+    /// </summary>
+    private bool TryGetDeclaredListElementType(out Type elementType)
+    {
+        // 字段声明由 TweakData.FieldCodecs 的静态构造写入 PocoCodec，而 PocoCodec.IsDeclared 不会
+        // 触发那条链 —— 这里显式碰一下，免得"GUI 早于任何一次 ExposeData 被打开"时全部判 false
+        // ⇒ 剪贴板/拖拽涂抹静默失效。
+        TweakData.FieldCodecs.EnsureBuilt();
+
+        elementType = typeof(object);
+        var fieldType = field?.FieldType;
+        if (fieldType == null || !fieldType.IsGenericType) return false;
+        if (fieldType.GetGenericTypeDefinition() != typeof(List<>)) return false;
+        elementType = fieldType.GetGenericArguments()[0];
+        return PocoCodec.IsDeclared(elementType);
+    }
+
     public string? GetCopyData(TweakData data)
     {
         // 简单类型 (TextField 可编辑)
@@ -507,42 +530,25 @@ public class StatColumnConfig
             return GetString(data);
         }
 
-        // 列表类型（通过 SerializationHelper 序列化）。
+        // ── 列表：元素类型已进字段表 ⇒ 走字段表通用编解码 ──
         //
-        // 这里**只保留 switch 这一份样式清单**。原先外面还叠了一层 `columnType is …` 手写守卫，
-        // 两份清单已经漂移过：FishChanceList / DiseaseList / WeatherCommonalityList 在 switch 里有分支、
-        // 却不在守卫里 ⇒ 那 3 类列永远走不到这里，GetCopyData 恒返回 null。
-        //
-        // 后果不只是"复制拿不到"：拖拽涂抹靠它定值（BalanceTweakGUI.cs 里 DragPaint.Value = GetCopyData(data)），
-        // 拿到 null 就 Reset 放弃整轮手势 —— 于是这几列的 Shift+拖拽涂抹**静默失效**（无日志、无提示）。
-        //
-        // 现在由 switch 的 `_ => null` 兜底：非列表样式自然落到下面的分支去，列表样式照常取值。
-        // 值为 null 时统一取空列表 —— 各 SerializeXxxList 对空列表同样返回 null，与原先的提前 return 等价。
+        // 判据由字段自身推出，**不认 ColumnStyle** —— 这一点是刻意的：
+        // 原先这里是 18 项手写样式 switch、`TryPasteData` 里另有一份 27 项手写清单，两份漂移过一次，
+        // 把 `FishChanceList` / `DiseaseList` / `WeatherCommonalityList` 漏在守卫之外 ⇒ 本方法恒返回 null
+        // ⇒ 那几列的 Shift+拖拽涂抹**静默失效**（无日志无提示，见 Docs §3.9.1）。
+        // 改判据之后，增删列表列都不必碰这里，"两份清单漂移"从根上没了。
+        if (TryGetDeclaredListElementType(out _))
         {
             var list = (IList?)GetRawValue(data) ?? Array.Empty<object>();
-            var listText = columnType switch
-            {
-                ColumnStyle.StatModList => SerializationHelper.SerializeStatModifierList(list.Cast<StatModifier>().ToList()),
-                ColumnStyle.CapModList => SerializationHelper.SerializePawnCapacityModifierList(list.Cast<PawnCapacityModifier>().ToList()),
-                ColumnStyle.DamageModList => SerializationHelper.SerializeDamageFactorList(list.Cast<DamageFactor>().ToList()),
-                ColumnStyle.SkillGainList => SerializationHelper.SerializeSkillGainList(list.Cast<SkillGain>().ToList()),
-                ColumnStyle.SkillReqList => SerializationHelper.SerializeSkillRequirementList(list.Cast<SkillRequirement>().ToList()),
-                ColumnStyle.TraitReqList => SerializationHelper.SerializeTraitRequirementList(list.Cast<TraitRequirement>().ToList()),
-                ColumnStyle.AptitudeList => SerializationHelper.SerializeAptitudeList(list.Cast<Aptitude>().ToList()),
-                ColumnStyle.GeneticTraitList => SerializationHelper.SerializeGeneticTraitDataList(list.Cast<GeneticTraitData>().ToList()),
-                ColumnStyle.ThingDefCountList => SerializationHelper.SerializeThingDefCountClassList(list.Cast<ThingDefCountClass>().ToList()),
-                ColumnStyle.IngredientList => SerializationHelper.SerializeIngredientCountList(list.Cast<IngredientCount>().ToList()),
-                ColumnStyle.ProcessIngredientList => SerializationHelper.SerializeProcessIngredientItemList(list.Cast<ProcessIngredientItem>().ToList()),
-                ColumnStyle.ProcessResultList => SerializationHelper.SerializeProcessResultItemList(list.Cast<ProcessResultItem>().ToList()),
-                ColumnStyle.BiomePlantList => SerializationHelper.SerializeBiomePlantList(list.Cast<BiomePlantRecord>().ToList()),
-                ColumnStyle.BiomeAnimalList => SerializationHelper.SerializeBiomeAnimalList(list.Cast<BiomeAnimalRecord>().ToList()),
-                ColumnStyle.FishChanceList => SerializationHelper.SerializeFishChanceList(list.Cast<FishChance>().ToList()),
-                ColumnStyle.DiseaseList => SerializationHelper.SerializeDiseaseList(list.Cast<BiomeDiseaseRecord>().ToList()),
-                ColumnStyle.WeatherCommonalityList => SerializationHelper.SerializeWeatherCommonalityList(list.Cast<WeatherCommonalityRecord>().ToList()),
-                ColumnStyle.TerrainThresholdList => SerializationHelper.SerializeTerrainThresholdList(list.Cast<TerrainThreshold>().ToList()),
-                _ => null
-            };
+            var listText = PocoCodec.EncodeList(list);
             if (listText != null) return listText;
+        }
+
+        // `IngredientCount` 未进字段表（它带 GetBaseCount 语义、文本格式也自成一格），单列一支。
+        if (columnType == ColumnStyle.IngredientList)
+        {
+            var list = (IList?)GetRawValue(data) ?? Array.Empty<object>();
+            return SerializationHelper.SerializeIngredientCountList(list.Cast<IngredientCount>().ToList());
         }
 
         if (columnType == ColumnStyle.Curve)
@@ -630,111 +636,18 @@ public class StatColumnConfig
                 return true;
             }
 
-            if (columnType == ColumnStyle.StatModList)
+            // ── 列表：元素类型已进字段表 ⇒ 走字段表通用解码（判据同 GetCopyData，同样不认 ColumnStyle） ──
+            if (TryGetDeclaredListElementType(out var listElementType))
             {
-                var list = SerializationHelper.DeserializeStatModifierList(clipboardData);
+                var list = PocoCodec.DecodeList(listElementType, clipboardData);
                 if (list != null) { ApplyValue(data, list); return true; }
                 return false;
             }
-            if (columnType == ColumnStyle.CapModList)
-            {
-                var list = SerializationHelper.DeserializePawnCapacityModifierList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.DamageModList)
-            {
-                var list = SerializationHelper.DeserializeDamageFactorList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.SkillGainList)
-            {
-                var list = SerializationHelper.DeserializeSkillGainList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.SkillReqList)
-            {
-                var list = SerializationHelper.DeserializeSkillRequirementList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.TraitReqList)
-            {
-                var list = SerializationHelper.DeserializeTraitRequirementList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.AptitudeList)
-            {
-                var list = SerializationHelper.DeserializeAptitudeList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.GeneticTraitList)
-            {
-                var list = SerializationHelper.DeserializeGeneticTraitDataList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.ThingDefCountList)
-            {
-                var list = SerializationHelper.DeserializeThingDefCountClassList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
+
+            // `IngredientCount` 未进字段表，单列一支（见 GetCopyData 的同类分支）。
             if (columnType == ColumnStyle.IngredientList)
             {
                 var list = SerializationHelper.DeserializeIngredientCountList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.ProcessIngredientList)
-            {
-                var list = SerializationHelper.DeserializeProcessIngredientItemList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.ProcessResultList)
-            {
-                var list = SerializationHelper.DeserializeProcessResultItemList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.BiomePlantList)
-            {
-                var list = SerializationHelper.DeserializeBiomePlantList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.BiomeAnimalList)
-            {
-                var list = SerializationHelper.DeserializeBiomeAnimalList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.FishChanceList)
-            {
-                var list = SerializationHelper.DeserializeFishChanceList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.DiseaseList)
-            {
-                var list = SerializationHelper.DeserializeDiseaseList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.WeatherCommonalityList)
-            {
-                var list = SerializationHelper.DeserializeWeatherCommonalityList(clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
-            }
-            if (columnType == ColumnStyle.TerrainThresholdList)
-            {
-                var list = SerializationHelper.DeserializeTerrainThresholdList(clipboardData);
                 if (list != null) { ApplyValue(data, list); return true; }
                 return false;
             }

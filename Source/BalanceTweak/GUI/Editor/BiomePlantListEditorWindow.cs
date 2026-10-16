@@ -78,11 +78,4 @@ public class BiomePlantListEditorWindow : ListEditorWindow<BiomePlantRecord>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeBiomePlantList(workingList);
-
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeBiomePlantList(data);
-        if (list != null) workingList = list;
-    }
 }

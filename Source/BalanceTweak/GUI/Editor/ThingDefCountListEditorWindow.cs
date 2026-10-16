@@ -182,10 +182,4 @@ public class ThingDefCountListEditorWindow : ListEditorWindow<ThingDefCountClass
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeThingDefCountClassList(workingList);
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeThingDefCountClassList(data);
-        if (list != null) workingList = list;
-    }
 }

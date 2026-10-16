@@ -354,17 +354,32 @@ internal static class PocoCodec
 
     /// <summary>多行文本 → 列表。任一行解析失败 ⇒ 返回 <c>null</c>（调用方据此保持原值，绝不写入半截数据）。</summary>
     public static List<T>? DecodeList<T>(string? data) where T : class
+        => DecodeList(typeof(T), data) as List<T>;
+
+    /// <summary>
+    /// 同 <see cref="DecodeList{T}"/>，但元素类型在运行期给出 —— 供"手里只有字段、拿不到泛型参数"
+    /// 的调用点使用（如 GUI 剪贴板按字段类型分派）。返回实例的真实类型是 <c>List&lt;elementType&gt;</c>。
+    ///
+    /// <para>
+    /// <b>元素类型未声明 ⇒ 一律返回 <c>null</c></b>，而不是"按空字段表解出一串默认值"。
+    /// 后者会静默产出"全 0 的列表"这类垃圾（<c>int</c> 的默认值是 0、且 <c>TryCreateInstance</c> 会成功），
+    /// 调用方拿它覆盖字段就毁了数据。非原版类型走空字段表那条路是 <see cref="StockGeneratorCodec"/>
+    /// 专有的（它有自己的类型标记），不经过这里。
+    /// </para>
+    /// </summary>
+    public static object? DecodeList(Type elementType, string? data)
     {
         if (data.NullOrEmpty()) return null;
-        var result = new List<T>();
+        if (!IsDeclared(elementType)) return null;
+        var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
         foreach (var raw in data!.Split('\n'))
         {
             var line = raw.Trim();
             if (line.NullOrEmpty()) continue;
-            if (!TryDecode(line, typeof(T), out var value) || value is not T item) return null;
-            result.Add(item);
+            if (!TryDecode(line, elementType, out var value) || value == null) return null;
+            list.Add(value);
         }
-        return result.Count > 0 ? result : null;
+        return list.Count > 0 ? list : null;
     }
 
     /// <summary>

@@ -64,16 +64,6 @@ public static class SerializationHelper
     static SerializationHelper() => _ = TweakData.FieldCodecs.All;
 
     // ============================================================
-    //  字段表驱动的编解码（上述 17 个类型共用同一形状）
-    // ============================================================
-
-    /// <summary>列表 → 多行文本；空列表返回 <c>null</c>。</summary>
-    private static string? SerializeItems<T>(List<T>? list) where T : class => PocoCodec.EncodeList(list);
-
-    /// <summary>多行文本 → 列表；任一行失败 ⇒ 整块 <c>null</c>（绝不写入半截数据）。</summary>
-    private static List<T>? DeserializeItems<T>(string? data) where T : class => PocoCodec.DecodeList<T>(data);
-
-    // ============================================================
     //  Generic list serialization helpers
     // ============================================================
 
@@ -119,72 +109,6 @@ public static class SerializationHelper
     internal static void LogMissingDef(string parseTarget, string? defName)
         => Log.Message($"[BalanceTweak] {parseTarget} 引用的 Def 缺失，已跳过：'{defName}'");
 
-    // ============================================================
-    //  以下 17 组：字段表驱动（④ 第二步迁移）
-    //
-    //  逐条编解码（对象 ↔ 一行文本）已收进 PocoCodec，由 FieldCodecs 的登记项直接调用；
-    //  这里只保留**列表级**入口 —— GUI 编辑器的 SerializeList/DeserializeList
-    //  （剪贴板）与 StatColumnConfig 用它，与存档写的是同一份文本。
-    // ============================================================
-
-    #region StatModifier
-
-    public static string? SerializeStatModifierList(List<StatModifier>? list) => SerializeItems(list);
-
-    public static List<StatModifier>? DeserializeStatModifierList(string? data) => DeserializeItems<StatModifier>(data);
-
-    #endregion
-
-    #region PawnCapacityModifier
-
-    public static string? SerializePawnCapacityModifierList(List<PawnCapacityModifier>? list) => SerializeItems(list);
-
-    public static List<PawnCapacityModifier>? DeserializePawnCapacityModifierList(string? data)
-        => DeserializeItems<PawnCapacityModifier>(data);
-
-    #endregion
-
-    #region DamageFactor
-
-    public static string? SerializeDamageFactorList(List<DamageFactor>? list) => SerializeItems(list);
-
-    public static List<DamageFactor>? DeserializeDamageFactorList(string? data) => DeserializeItems<DamageFactor>(data);
-
-    #endregion
-
-    #region SkillGain
-
-    public static string? SerializeSkillGainList(List<SkillGain>? list) => SerializeItems(list);
-
-    public static List<SkillGain>? DeserializeSkillGainList(string? data) => DeserializeItems<SkillGain>(data);
-
-    #endregion
-
-    #region Aptitude
-
-    public static string? SerializeAptitudeList(List<Aptitude>? list) => SerializeItems(list);
-
-    public static List<Aptitude>? DeserializeAptitudeList(string? data) => DeserializeItems<Aptitude>(data);
-
-    #endregion
-
-    #region GeneticTraitData
-
-    public static string? SerializeGeneticTraitDataList(List<GeneticTraitData>? list) => SerializeItems(list);
-
-    public static List<GeneticTraitData>? DeserializeGeneticTraitDataList(string? data)
-        => DeserializeItems<GeneticTraitData>(data);
-
-    #endregion
-
-    #region ThingDefCountClass
-
-    public static string? SerializeThingDefCountClassList(List<ThingDefCountClass>? list) => SerializeItems(list);
-
-    public static List<ThingDefCountClass>? DeserializeThingDefCountClassList(string? data)
-        => DeserializeItems<ThingDefCountClass>(data);
-
-    #endregion
 
     #region IngredientCount（bespoke：挂在 ThingFilter + GetBaseCount/SetBaseCount 上）
 
@@ -240,95 +164,6 @@ public static class SerializationHelper
             return null;
         }
     }
-
-    #endregion
-
-    #region SkillRequirement
-
-    public static string? SerializeSkillRequirementList(List<SkillRequirement>? list) => SerializeItems(list);
-
-    public static List<SkillRequirement>? DeserializeSkillRequirementList(string? data)
-        => DeserializeItems<SkillRequirement>(data);
-
-    #endregion
-
-    #region TraitRequirement
-
-    public static string? SerializeTraitRequirementList(List<TraitRequirement>? list) => SerializeItems(list);
-
-    public static List<TraitRequirement>? DeserializeTraitRequirementList(string? data)
-        => DeserializeItems<TraitRequirement>(data);
-
-    #endregion
-
-    #region BiomePlantRecord
-
-    public static string? SerializeBiomePlantList(List<BiomePlantRecord>? list) => SerializeItems(list);
-
-    public static List<BiomePlantRecord>? DeserializeBiomePlantList(string? data)
-        => DeserializeItems<BiomePlantRecord>(data);
-
-    #endregion
-
-    #region BiomeAnimalRecord
-
-    public static string? SerializeBiomeAnimalList(List<BiomeAnimalRecord>? list) => SerializeItems(list);
-
-    public static List<BiomeAnimalRecord>? DeserializeBiomeAnimalList(string? data)
-        => DeserializeItems<BiomeAnimalRecord>(data);
-
-    #endregion
-
-    #region FishChance
-
-    public static string? SerializeFishChanceList(List<FishChance>? list) => SerializeItems(list);
-
-    public static List<FishChance>? DeserializeFishChanceList(string? data) => DeserializeItems<FishChance>(data);
-
-    #endregion
-
-    #region BiomeDiseaseRecord
-
-    public static string? SerializeDiseaseList(List<BiomeDiseaseRecord>? list) => SerializeItems(list);
-
-    public static List<BiomeDiseaseRecord>? DeserializeDiseaseList(string? data)
-        => DeserializeItems<BiomeDiseaseRecord>(data);
-
-    #endregion
-
-    #region WeatherCommonalityRecord
-
-    public static string? SerializeWeatherCommonalityList(List<WeatherCommonalityRecord>? list) => SerializeItems(list);
-
-    public static List<WeatherCommonalityRecord>? DeserializeWeatherCommonalityList(string? data)
-        => DeserializeItems<WeatherCommonalityRecord>(data);
-
-    #endregion
-
-    #region TerrainThreshold
-
-    public static string? SerializeTerrainThresholdList(List<TerrainThreshold>? list) => SerializeItems(list);
-
-    public static List<TerrainThreshold>? DeserializeTerrainThresholdList(string? data)
-        => DeserializeItems<TerrainThreshold>(data);
-
-    #endregion
-
-    #region ProcessIngredientItem
-
-    public static string? SerializeProcessIngredientItemList(List<ProcessIngredientItem>? list) => SerializeItems(list);
-
-    public static List<ProcessIngredientItem>? DeserializeProcessIngredientItemList(string? data)
-        => DeserializeItems<ProcessIngredientItem>(data);
-
-    #endregion
-
-    #region ProcessResultItem
-
-    public static string? SerializeProcessResultItemList(List<ProcessResultItem>? list) => SerializeItems(list);
-
-    public static List<ProcessResultItem>? DeserializeProcessResultItemList(string? data)
-        => DeserializeItems<ProcessResultItem>(data);
 
     #endregion
 

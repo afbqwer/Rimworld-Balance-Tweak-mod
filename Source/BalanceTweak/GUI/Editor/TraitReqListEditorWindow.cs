@@ -82,11 +82,4 @@ public class TraitReqListEditorWindow : ListEditorWindow<TraitRequirement>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeTraitRequirementList(workingList);
-
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeTraitRequirementList(data);
-        if (list != null) workingList = list;
-    }
 }

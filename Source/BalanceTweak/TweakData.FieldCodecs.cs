@@ -62,6 +62,23 @@ public abstract partial class TweakData
         /// <summary>全部登记项（精确 + 通配），供文档与诊断使用。</summary>
         public static IReadOnlyList<FieldCodec> All { get; private set; } = Array.Empty<FieldCodec>();
 
+        /// <summary>
+        /// 显式确保登记表已构建（C# 的静态构造是惰性的，碰一下 <see cref="All"/> 才会跑 <c>Build()</c>）。
+        ///
+        /// <para>
+        /// <b>谁需要调它</b>：只用 <see cref="PocoCodec"/> 而不查表的调用点 —— GUI 剪贴板
+        /// （<c>StatColumnConfig.TryGetDeclaredListElementType</c>）与编辑器窗口的默认
+        /// <c>SerializeList</c> / <c>DeserializeList</c>。它们判 <c>PocoCodec.IsDeclared</c>，
+        /// 而 <b><see cref="PocoCodec"/> 不会自己去拉本类</b>（反向依赖会构成静态构造环）——
+        /// 少这一次触碰，未初始化的进程里 <c>IsDeclared</c> 会**全部返回 false**，
+        /// 表现为"复制/粘贴/拖拽涂抹按了没反应"，且无任何日志。
+        /// </para>
+        /// <para>
+        /// 正常流程下（Mod 设置先于 GUI 加载，<c>ExposeData</c> 里查过表）它早已建好，这里只是白跑一次属性读取。
+        /// </para>
+        /// </summary>
+        public static void EnsureBuilt() => _ = All;
+
         public static FieldCodec? Find(Type fieldType)
         {
             if (exact.TryGetValue(fieldType, out var hit)) return hit;

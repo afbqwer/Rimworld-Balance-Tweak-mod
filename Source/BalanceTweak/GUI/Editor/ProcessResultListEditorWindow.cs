@@ -97,10 +97,4 @@ public class ProcessResultListEditorWindow : ListEditorWindow<ProcessResultItem>
         Close();
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeProcessResultItemList(workingList);
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeProcessResultItemList(data);
-        if (list != null) workingList = list;
-    }
 }

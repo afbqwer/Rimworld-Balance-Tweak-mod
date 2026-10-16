@@ -77,11 +77,4 @@ public class WeatherCommonalityListEditorWindow : ListEditorWindow<WeatherCommon
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeWeatherCommonalityList(workingList);
-
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeWeatherCommonalityList(data);
-        if (list != null) workingList = list;
-    }
 }

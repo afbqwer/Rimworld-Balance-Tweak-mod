@@ -97,12 +97,6 @@ public class GeneticTraitListEditorWindow : ListEditorWindow<GeneticTraitData>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeGeneticTraitDataList(workingList);
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeGeneticTraitDataList(data);
-        if (list != null) workingList = list;
-    }
 
     private static string GetDegreeLabel(GeneticTraitData entry)
     {

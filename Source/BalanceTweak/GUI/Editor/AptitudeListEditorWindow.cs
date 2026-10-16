@@ -77,10 +77,4 @@ public class AptitudeListEditorWindow : ListEditorWindow<Aptitude>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeAptitudeList(workingList);
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeAptitudeList(data);
-        if (list != null) workingList = list;
-    }
 }

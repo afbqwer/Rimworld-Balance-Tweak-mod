@@ -81,10 +81,4 @@ public class DamageModListEditorWindow : ListEditorWindow<DamageFactor>
         }
     }
 
-    protected override string? SerializeList() => SerializationHelper.SerializeDamageFactorList(workingList);
-    protected override void DeserializeList(string data)
-    {
-        var list = SerializationHelper.DeserializeDamageFactorList(data);
-        if (list != null) workingList = list;
-    }
 }
