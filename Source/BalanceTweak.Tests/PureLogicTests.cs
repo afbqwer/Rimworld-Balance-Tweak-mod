@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using BalanceTweak;
+using Verse;
 using Xunit;
 
 namespace BalanceTweak.Tests;
@@ -27,6 +28,20 @@ public class PureLogicTests
         Assert.False(TweakData.IsEmptyValue(new List<int> { 1 }));
         Assert.False(TweakData.IsEmptyValue(0));   // 数值 0 不算空
         Assert.False(TweakData.IsEmptyValue(false));
+    }
+
+    /// <summary>
+    /// <c>ThingFilter</c> 的判空分支必须<b>早于</b> <c>ICollection</c> ——
+    /// 否则过滤器会被当普通集合误判（"无允许项"的过滤器其实该判空）。
+    /// </summary>
+    [Fact]
+    public void IsEmptyValue_ThingFilter优先于集合()
+    {
+        Assert.True(TweakData.IsEmptyValue(new ThingFilter()), "无允许项的 ThingFilter 应判空");
+
+        var tf = new ThingFilter();
+        tf.SetAllow(new ThingDef { defName = "Steel" }, true);   // 合成 Def：SetAllow 不需要 DefDatabase
+        Assert.False(TweakData.IsEmptyValue(tf), "有允许项的 ThingFilter 不判空");
     }
 
     /// <summary>
