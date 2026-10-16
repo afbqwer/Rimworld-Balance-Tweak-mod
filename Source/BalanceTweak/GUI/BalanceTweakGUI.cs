@@ -63,6 +63,10 @@ public partial class BalanceTweakSettings : ModSettings
     public static float batchPrec = 1f;
     public static float batchLowerLimit = -9999999999f;
     public static float batchUpperLimit = 9999999999f;
+    /// <summary>是否对统一修改的结果应用下限截断（点击「下限」标签切换）。</summary>
+    public static bool batchLowerLimitEnabled = true;
+    /// <summary>是否对统一修改的结果应用上限截断（点击「上限」标签切换）。</summary>
+    public static bool batchUpperLimitEnabled = true;
     private static TweakData? needRemove = null;
     private static string? editingControlName = null;
     private static string? editingBuffer = null;
@@ -321,14 +325,14 @@ public partial class BalanceTweakSettings : ModSettings
         curX += DrawLabeledInput(FlatRect, "MST.FlatInput".Translate().RawText, ref batchFlat, false);
         Rect PrecRect = new Rect(curX, toprow.y, toprow.width * 0.10f + Contracted, toprow.height).ContractedBy(Contracted);
         curX += DrawLabeledInput(PrecRect, "MST.PrecInput".Translate().RawText, ref batchPrec, true) + 4f;
-        // 下限输入框
+        // 下限输入框（点击「下限」标签切换是否应用下限截断）
         Rect LowerLimitRect = new Rect(curX, toprow.y, toprow.width * 0.12f + Contracted, toprow.height).ContractedBy(Contracted);
-        curX += DrawLabeledInput(LowerLimitRect, "MST.LowerLimit".Translate().RawText, ref batchLowerLimit, false);
-        // 上限输入框
+        curX += DrawLabeledInputToggle(LowerLimitRect, "MST.LowerLimit".Translate().RawText, ref batchLowerLimit, ref batchLowerLimitEnabled, "MST.LowerLimitToggleTooltip");
+        // 上限输入框（点击「上限」标签切换是否应用上限截断）
         Rect UpperLimitRect = new Rect(curX, toprow.y, toprow.width * 0.12f + Contracted, toprow.height).ContractedBy(Contracted);
-        curX += DrawLabeledInput(UpperLimitRect, "MST.UpperLimit".Translate().RawText, ref batchUpperLimit, false) + 4f;
-        // 确保下限 ≤ 上限
-        if (batchLowerLimit > batchUpperLimit)
+        curX += DrawLabeledInputToggle(UpperLimitRect, "MST.UpperLimit".Translate().RawText, ref batchUpperLimit, ref batchUpperLimitEnabled, "MST.UpperLimitToggleTooltip") + 4f;
+        // 仅当两侧都启用时才强制 下限 ≤ 上限；某一侧停用时保留用户输入，便于稍后再启用
+        if (batchLowerLimitEnabled && batchUpperLimitEnabled && batchLowerLimit > batchUpperLimit)
         {
             batchLowerLimit = batchUpperLimit;
         }
@@ -1496,6 +1500,51 @@ public partial class BalanceTweakSettings : ModSettings
         Text.Anchor = TextAnchor.MiddleCenter;
         float labelWidth = 40f;
         Widgets.Label(new Rect(rect.x, rect.y, labelWidth, rect.height), label);
+
+        Rect inputRect = new(rect.x + labelWidth, rect.y, rect.width - labelWidth, rect.height);
+        string text = Widgets.TextField(inputRect, value.ToString("F2"));
+
+        if (float.TryParse(text, out float newVal))
+        {
+            value = postive ? Mathf.Max(newVal, 0) : newVal;
+        }
+        return rect.width;
+    }
+
+    /// <summary>启用状态下标签的底色（绿色高亮，表示该项会参与截断）</summary>
+    private static readonly Color LimitLabelOnColor = new(0.26f, 0.58f, 0.30f);
+    /// <summary>停用状态下标签的底色（灰色，表示该项不参与截断）</summary>
+    private static readonly Color LimitLabelOffColor = new(0.30f, 0.30f, 0.30f);
+
+    /// <summary>
+    /// 绘制带「可点击标签」的输入框：点击标签切换 <paramref name="enabled"/>，
+    /// 标签区域以底色高亮表示当前状态，并附带悬浮工具提示。
+    /// </summary>
+    /// <param name="tooltipKey">工具提示的翻译键，其中 {0} 会被替换为当前状态文案。</param>
+    private static float DrawLabeledInputToggle(Rect rect, string label, ref float value, ref bool enabled, string tooltipKey, bool postive = false)
+    {
+        Text.Anchor = TextAnchor.MiddleCenter;
+        float labelWidth = 40f;
+        Rect labelRect = new(rect.x, rect.y, labelWidth, rect.height);
+
+        // 状态底色 + 悬浮高光
+        Widgets.DrawBoxSolid(labelRect, enabled ? LimitLabelOnColor : LimitLabelOffColor);
+        if (Mouse.IsOver(labelRect)) Widgets.DrawHighlight(labelRect);
+
+        // 点击标签切换是否启用
+        if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && labelRect.Contains(Event.current.mousePosition))
+        {
+            enabled = !enabled;
+            Event.current.Use();
+        }
+
+        Color prevColor = GUI.color;
+        GUI.color = enabled ? Color.white : new Color(0.68f, 0.68f, 0.68f);
+        Widgets.Label(labelRect, label);
+        GUI.color = prevColor;
+
+        string stateText = (enabled ? "MST.LimitEnabled" : "MST.LimitDisabled").Translate().RawText;
+        TooltipHandler.TipRegion(labelRect, tooltipKey.Translate(stateText).RawText);
 
         Rect inputRect = new(rect.x + labelWidth, rect.y, rect.width - labelWidth, rect.height);
         string text = Widgets.TextField(inputRect, value.ToString("F2"));

@@ -48,6 +48,10 @@
     <MST.PrecInput>倍率:</MST.PrecInput>
     <MST.LowerLimit>下限:</MST.LowerLimit>
     <MST.UpperLimit>上限:</MST.UpperLimit>
+    <MST.LimitEnabled>已启用</MST.LimitEnabled>
+    <MST.LimitDisabled>已停用</MST.LimitDisabled>
+    <MST.LowerLimitToggleTooltip>点击切换是否应用下限截断：结果低于该值时会提升到该值。当前状态：{0}</MST.LowerLimitToggleTooltip>
+    <MST.UpperLimitToggleTooltip>点击切换是否应用上限截断：结果高于该值时会压到该值。当前状态：{0}</MST.UpperLimitToggleTooltip>
     <MST.Apply>统一修改</MST.Apply>
     <MST.ResetCur>重置显示项</MST.ResetCur>
     <MST.Openconfigfolder>打开配置目录（在关闭mod配置窗口时才会保存配置）</MST.Openconfigfolder>
@@ -61,10 +65,10 @@
     <MST.JumpToDesc>点击名称，可跳转到其所属的数据。</MST.JumpToDesc>
     <MST.JumpToDefData>跳转到：</MST.JumpToDefData>
     <MST.ResetCurTooltip>重置目前所显示的全部数据。不会重置未显示在列表中的数据。</MST.ResetCurTooltip>
-    <MST.ApplyToolTip>修改选中列的所有值。只会修改显示在目前列表中的数据。数值的结果=(值+增减)*倍率</MST.ApplyToolTip>
+    <MST.ApplyToolTip>修改选中列的所有值。只会修改显示在目前列表中的数据。数值的结果=(值+增减)*倍率，再按已启用的上下限截断。</MST.ApplyToolTip>
     <MST.HelpTooltip>操作说明
 - 表头：左键 选中并排序，右键 仅排序，拖动 调整列顺序，悬浮 查看列说明。
-- 顶栏：统一修改 =(值+增减)*倍率 后按上下限截断，作用于选中列的可见数据；另有 列配置/总体设置/重置选中列/重置显示项。
+- 顶栏：统一修改 =(值+增减)*倍率 后按已启用的上下限截断（点击 下限/上限 标签可切换是否启用，标签底色高亮表示启用），作用于选中列的可见数据；另有 列配置/总体设置/重置选中列/重置显示项。
 - 筛选行：搜索、类型/Mod 筛选、排序；显示结果值/显示默认值 仅改显示，查看模式 整表只读。
 - 单元格：开关点击切换，数值/百分比原地输入，枚举下拉，文本/列表/曲线/Def 打开编辑窗口。
 - 批量：Shift+左键拖动，复制起始格的值到同列拖过的单元格。

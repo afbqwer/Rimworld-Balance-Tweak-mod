@@ -48,6 +48,10 @@
     <MST.PrecInput>Mult:</MST.PrecInput>
     <MST.LowerLimit>Min:</MST.LowerLimit>
     <MST.UpperLimit>Max:</MST.UpperLimit>
+    <MST.LimitEnabled>Enabled</MST.LimitEnabled>
+    <MST.LimitDisabled>Disabled</MST.LimitDisabled>
+    <MST.LowerLimitToggleTooltip>Click to toggle whether the lower limit is applied: a result below it is raised up to it. Current state: {0}</MST.LowerLimitToggleTooltip>
+    <MST.UpperLimitToggleTooltip>Click to toggle whether the upper limit is applied: a result above it is clamped down to it. Current state: {0}</MST.UpperLimitToggleTooltip>
     <MST.Apply>ApGlob</MST.Apply>
     <MST.ResetCur>RstDspI</MST.ResetCur>
     <MST.Openconfigfolder>Open Config Folder (Configuration only saved when window closed)</MST.Openconfigfolder>
@@ -61,10 +65,10 @@
     <MST.JumpToDesc>Click the name to jump to its associated data.</MST.JumpToDesc>
     <MST.JumpToDefData>Jump to: </MST.JumpToDefData>
     <MST.ResetCurTooltip>Reset all data currently displayed. Does not reset data not displayed in the list.</MST.ResetCurTooltip>
-    <MST.ApplyToolTip>Modify all values in the selected column. Only modifies data displayed in the current list. The result is (Value + Flat Change) * Multiplier.</MST.ApplyToolTip>
+    <MST.ApplyToolTip>Modify all values in the selected column. Only modifies data displayed in the current list. The result is (Value + Flat Change) * Multiplier, then clamped by the enabled limits.</MST.ApplyToolTip>
     <MST.HelpTooltip>Operations
 - Header: left-click selects + sorts, right-click sorts only, drag reorders columns, hover shows the column description.
-- Top bar: Apply computes (value + flat) * multiplier over the selected column's visible data and clamps to the limits; also Columns / Settings / Reset Column / Reset Shown Items.
+- Top bar: Apply computes (value + flat) * multiplier over the selected column's visible data and clamps to the enabled limits (click the Min / Max label to toggle a limit; a highlighted label means enabled); also Columns / Settings / Reset Column / Reset Shown Items.
 - Filter row: search, type / mod filters, sort; Show Result and Show Default only change the display; Display Mode makes the table read-only.
 - Cells: a checkbox toggles, numbers / percents are typed in place, an enum opens a dropdown, text / lists / curves / def pickers open their editor window.
 - Batch: Shift + drag to copy the start cell's value across the dragged cells in the same column.
