@@ -171,10 +171,16 @@ public abstract partial class TweakData : IExposable
     /// 不会再出现"两处各写一份分类逻辑然后漂移"的问题（旧实现里 Init() 用 deepCommonality、
     /// 这里用 deepCountPerCell，早就已经不一致了）。
     /// </summary>
-    /// <param name="def">目标 Def</param>
+    /// <param name="def">目标 Def；传 null 返回 null。</param>
     /// <param name="settingType">可选，指定 SettingType。若不指定则自动检测。</param>
+    /// <param name="includeFallback">
+    /// 自动检测时是否把兜底规则（<see cref="TweakRule.IsFallback"/>）也算进来。
+    /// 默认 <c>false</c>，保持"未匹配即 null"的旧语义；UI 的「跳转到该 Def 的数据」需传 <c>true</c> ——
+    /// 兜底收编的 Def（如 <c>MiscThingData</c> 覆盖的物品）在表里同样可编辑，
+    /// 只认非兜底规则会把它们误判成"无对应数据"。
+    /// </param>
     /// <returns>匹配的 TweakData，若未找到则返回 null</returns>
-    public static TweakData? GetData(Def def, SettingType? settingType = null)
+    public static TweakData? GetData(Def? def, SettingType? settingType = null, bool includeFallback = false)
     {
         if (def == null) return null;
 
@@ -182,20 +188,27 @@ public abstract partial class TweakData : IExposable
         if (settingType.HasValue)
             return GetData(new TweakID(def.defName, settingType.Value));
 
-        var rule = FindRuleFor(def);
+        var rule = FindRuleFor(def, includeFallback);
         return rule == null ? null : GetData(new TweakID(def.defName, rule.Tab));
     }
 
     /// <summary>
-    /// 按规则表找出该 Def 的主类型规则（不含兜底规则，保持"未匹配即 null"的旧语义）。
+    /// 按规则表找出该 Def 的主类型规则。
+    /// 非兜底规则按 Priority 降序取首个命中者；<paramref name="includeFallback"/> 为 true 时，
+    /// 前者全不命中再退回兜底规则（仍须过其 Matcher 收容范围，与 <c>TweakDatabase.ClassifyAll</c> 一致）。
     /// </summary>
-    public static TweakRule? FindRuleFor(Def def)
+    public static TweakRule? FindRuleFor(Def def, bool includeFallback = false)
     {
         var defType = def.GetType();
-        return TweakRegistry.Rules
-            .Where(r => r.IsAvailable && !r.IsFallback && r.DefType.IsAssignableFrom(defType))
+        var candidates = TweakRegistry.Rules
+            .Where(r => r.IsAvailable && r.DefType.IsAssignableFrom(defType))
             .OrderByDescending(r => r.Priority)
-            .FirstOrDefault(r => r.Matcher == null || r.Matcher(def));
+            .ToList();
+
+        var primary = candidates.FirstOrDefault(r => !r.IsFallback && (r.Matcher == null || r.Matcher(def)));
+        if (primary != null || !includeFallback) return primary;
+
+        return candidates.FirstOrDefault(r => r.IsFallback && (r.Matcher == null || r.Matcher(def)));
     }
 
     private static bool ValuesEqual(object? a, object? b)

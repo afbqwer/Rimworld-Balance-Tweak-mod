@@ -1340,7 +1340,8 @@ public partial class BalanceTweakSettings : ModSettings
             else if (config.columnType == ColumnStyle.String)
             {
                 Text.Font = GameFont.Tiny;
-            } else if (!(config.columnType is ColumnStyle.Int or ColumnStyle.Float or ColumnStyle.Prec) && sourceText.Length > 5)
+            }
+            else if (!(config.columnType is ColumnStyle.Int or ColumnStyle.Float or ColumnStyle.Prec) && sourceText.Length > 5)
             {
                 Text.Font = GameFont.Tiny;
             }
@@ -1546,19 +1547,22 @@ public partial class BalanceTweakSettings : ModSettings
                         Messages.Message("MST.PasteFailed".Translate().RawText, MessageTypeDefOf.NegativeEvent, false);
                 }
             }));
-            options.Add(new FloatMenuOption("MST.Copy".Translate().RawText, () =>
+            if (columnConfig.GetRawValue(data) != null)
             {
-                var copyData = columnConfig.GetCopyData(data);
-                if (copyData != null)
+                options.Add(new FloatMenuOption("MST.Copy".Translate().RawText, () =>
                 {
-                    GUIUtility.systemCopyBuffer = copyData;
-                    Messages.Message("MST.CopySuccess".Translate().RawText, MessageTypeDefOf.NeutralEvent, false);
-                }
-                else
-                {
-                    Messages.Message("MST.CopyFailed".Translate().RawText, MessageTypeDefOf.NegativeEvent, false);
-                }
-            }));
+                    var copyData = columnConfig.GetCopyData(data);
+                    if (copyData != null)
+                    {
+                        GUIUtility.systemCopyBuffer = copyData;
+                        Messages.Message("MST.CopySuccess".Translate().RawText, MessageTypeDefOf.NeutralEvent, false);
+                    }
+                    else
+                    {
+                        Messages.Message("MST.CopyFailed".Translate().RawText, MessageTypeDefOf.NegativeEvent, false);
+                    }
+                }));
+            }
             options.Add(new FloatMenuOption("MST.Reset".Translate().RawText, () =>
             {
                 // 先提交旧单元格的编辑
@@ -1573,13 +1577,13 @@ public partial class BalanceTweakSettings : ModSettings
                 TweakUtility.ResetSingleItem(data, columnConfig);
             }));
 
-            // Def 引用列：若该单元格引用的 Def 在本编辑器里有对应数据，提供跳转入口。
-            // 判定走列的 FieldType.Def（即 DefSelector 一类字段），目标 Def 用 TweakData.GetData(Def)
-            // 按规则表解析 —— 只有能解析出 TweakData 时才加菜单项，等价于"此 Def 可编辑"。
-            if (columnConfig.SortFieldType == FieldType.Def
-                && columnConfig.GetRawValue(data) is Def def)
+            // Def 引用列：若该单元格引用的 Def 在本编辑器里有对应数据，提供跳转入口；无对应数据则整项不出现。
+            // 判定走列的 FieldType.Def（即 DefSelector 一类字段），目标用 TweakData.GetData(Def) 按规则表解析；
+            // includeFallback: true —— 兜底收编的 Def（如 MiscThingData 覆盖的物品）在表里同样可编辑，
+            // 不带上兜底规则会把这些 Def 误判成"无对应数据"。
+            if (columnConfig.SortFieldType == FieldType.Def)
             {
-                var target = TweakData.GetData(def);
+                var target = TweakData.GetData(columnConfig.GetRawValue(data) as Def, null, includeFallback: true);
                 if (target != null)
                 {
                     string targetLabel = target.label.NullOrEmpty() ? target.id.defName : target.label;
