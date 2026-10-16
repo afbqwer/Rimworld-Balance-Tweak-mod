@@ -87,20 +87,21 @@ public class StatColumnConfig
         columnDataTypeLabel = ("MST." + columnDataType.ToString()).Translate().RawText;
         columnTypeLabel = ("MST." + columnType.ToString()).Translate().RawText;
         id = $"{columnDataType}_{field.Name}";
+        string typeName = GetFieldTypeName(field.FieldType);
         if (stat != null)
         {
             this.stat = stat;
-            comment = $"{field.Name}\n{stat.LabelForFullStatList}\n{stat.description}";
+            comment = $"{field.Name} ({typeName})\n{stat.LabelForFullStatList}\n{stat.description}";
         }
         else
         {
             if ($"MST.{field.Name}Comment".TryTranslate(out var c))
             {
-                comment = $"{field.Name}\n{c}";
+                comment = $"{field.Name} ({typeName})\n{c}";
             }
             else
             {
-                comment = field.Name;
+                comment = $"{field.Name} ({typeName})";
             }
         }
 
@@ -117,6 +118,34 @@ public class StatColumnConfig
                 DefSelectorType = underlying;
             }
         }
+    }
+
+    /// <summary>
+    /// 把字段的声明类型格式化成简洁的可读名称，供列描述使用：
+    /// 省去命名空间前缀、泛型展开为 List&lt;T&gt;、可空类型追加 ?，基本类型用 C# 关键字。
+    /// 例：float? / int? / List&lt;ResearchProjectDef&gt; / TechLevel? / SimpleCurve。
+    /// </summary>
+    private static string GetFieldTypeName(Type type)
+    {
+        Type? underlying = Nullable.GetUnderlyingType(type);
+        if (underlying != null) return GetFieldTypeName(underlying) + "?";
+        if (type.IsArray) return GetFieldTypeName(type.GetElementType()!) + "[]";
+        if (type.IsGenericType)
+        {
+            string name = type.Name;
+            int tick = name.IndexOf('`');
+            if (tick >= 0) name = name[..tick];
+            string args = string.Join(", ", type.GetGenericArguments().Select(GetFieldTypeName));
+            return $"{name}<{args}>";
+        }
+        return type switch
+        {
+            _ when type == typeof(float) => "float",
+            _ when type == typeof(int) => "int",
+            _ when type == typeof(bool) => "bool",
+            _ when type == typeof(string) => "string",
+            _ => type.Name,
+        };
     }
 
     public enum ColumnDataType { Field, Display }

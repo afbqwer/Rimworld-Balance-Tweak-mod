@@ -62,18 +62,21 @@
     <MST.ResetCurTooltip>重置目前所显示的全部数据。不会重置未显示在列表中的数据。</MST.ResetCurTooltip>
     <MST.ApplyToolTip>修改选中列的所有值。只会修改显示在目前列表中的数据。数值的结果=(值+增减)*倍率</MST.ApplyToolTip>
     <MST.HelpTooltip>操作说明
-- 顶栏上半行：统一修改 = 对选中列的可见数据执行 (值+增减)*倍率，再按上下限截断；另有 列配置 / 总体设置 / 重置此列 / 重置当前项。
-- 顶栏下半行：搜索、主类型 / 次要类型 / Mod 筛选、排序；(显示结果值)(显示默认值) 只改显示不改实际数值；(查看模式) 整表只读。
-- 编辑单元格：开关点击切换；数值 / 百分比点击原地输入；枚举点击弹出下拉；文本、列表、曲线、Def 选择等点击打开对应编辑窗口。
-- 批量修改：按住 Shift 左键拖动，把起始格的值复制到同一列中拖过的所有单元格。
-- 名称列：左键点名称跳转到所属条目；右键 固定/取消固定、重置、复制 defName；右侧 R 按钮重置该条目。
-- 数据单元格右键：复制 / 粘贴 / 重置该字段；Def 引用列可跳转到对应数据。</MST.HelpTooltip>
+- 表头：左键 选中并排序，右键 仅排序，拖动 调整列顺序，悬浮 查看列说明。
+- 顶栏：统一修改 =(值+增减)*倍率 后按上下限截断，作用于选中列的可见数据；另有 列配置/总体设置/重置选中列/重置显示项。
+- 筛选行：搜索、类型/Mod 筛选、排序；显示结果值/显示默认值 仅改显示，查看模式 整表只读。
+- 单元格：开关点击切换，数值/百分比原地输入，枚举下拉，文本/列表/曲线/Def 打开编辑窗口。
+- 批量：Shift+左键拖动，复制起始格的值到同列拖过的单元格。
+- 名称列：左键跳转条目，右键 固定/重置/复制 defName，右侧 R 重置。
+- 数据格右键：复制/粘贴/重置该字段，Def 引用列可跳转。</MST.HelpTooltip>
     <MST.SimpleDefEditer>简单Def编辑器</MST.SimpleDefEditer>
     <MST.EditCurve>编辑曲线</MST.EditCurve>
     <MST.Points>控制点</MST.Points>
     <MST.AddPoint>添加点</MST.AddPoint>
     <MST.DeletePoint>删除点</MST.DeletePoint>
     <MST.DuplicatePoint>复制点</MST.DuplicatePoint>
+    <MST.ResetZoom>缩放重置</MST.ResetZoom>
+    <MST.ResetZoomTooltip>把曲线视图的缩放与平移恢复到自动适配状态，不改动曲线数据。</MST.ResetZoomTooltip>
     <MST.Reset>重置</MST.Reset>
     <MST.Save>保存</MST.Save>
     <MST.Close>关闭</MST.Close>

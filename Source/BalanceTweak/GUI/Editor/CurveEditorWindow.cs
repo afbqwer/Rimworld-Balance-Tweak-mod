@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -9,7 +8,6 @@ namespace BalanceTweak;
 public class CurveEditorWindow : EditorWindowBase
 {
     private SimpleCurve curve;
-    private SimpleCurve originalCurve;
     private SimpleCurveDrawerStyle style;
     private Action<SimpleCurve?>? onSaveCallback;
 
@@ -28,8 +26,36 @@ public class CurveEditorWindow : EditorWindowBase
     private const float FieldHeight = 24f;
     private const float MeasureLeftPadding = 60f;
     private const float MeasureBottomPadding = 30f;
+    private const float ZoomResetButtonWidth = 110f;
 
     public override Vector2 InitialSize => new(1100f, 700f);
+
+    protected override string SaveButtonLabel => "MST.Save".Translate().RawText;
+    protected override string CancelButtonLabel => "MST.Cancel".Translate().RawText;
+    protected override bool ShowCopyButton => true;
+    protected override bool ShowPasteButton => true;
+
+    /// <summary>确定：写回曲线并关闭窗口。</summary>
+    protected override void OnSave()
+    {
+        SaveCurve();
+        Close();
+    }
+
+    /// <summary>取消：直接关闭，不写回（等价于放弃本次编辑）。</summary>
+    protected override void OnCancel() => Close();
+
+    /// <summary>底栏中段：缩放重置（只影响视图，不改动曲线数据）。</summary>
+    protected override void DrawMiddleContent(ref float curX, Rect rect)
+    {
+        Rect zoomResetRect = new(curX, rect.y, ZoomResetButtonWidth, rect.height);
+        if (Widgets.ButtonText(zoomResetRect, "MST.ResetZoom".Translate().RawText))
+        {
+            ResetZoom();
+        }
+        TooltipHandler.TipRegion(zoomResetRect, "MST.ResetZoomTooltip".Translate().RawText);
+        curX += ZoomResetButtonWidth + Spacing;
+    }
 
     public CurveEditorWindow(StatColumnConfig config, TweakData data)
     {
@@ -37,7 +63,6 @@ public class CurveEditorWindow : EditorWindowBase
         this.data = data;
         var raw = (SimpleCurve?)config.GetRawValue(data);
         this.curve = raw != null ? CloneCurve(raw) : new SimpleCurve();
-        this.originalCurve = CloneCurve(curve);
 
         style = new SimpleCurveDrawerStyle
         {
@@ -62,7 +87,6 @@ public class CurveEditorWindow : EditorWindowBase
         pickerTitle = title;
         onSaveCallback = onSave;
         curve = initialCurve != null ? CloneCurve(initialCurve) : new SimpleCurve();
-        originalCurve = CloneCurve(curve);
 
         style = new SimpleCurveDrawerStyle
         {
@@ -102,7 +126,8 @@ public class CurveEditorWindow : EditorWindowBase
         string titleText = GetBaseTitle();
         Widgets.Label(titleRect, titleText);
 
-        Rect contentRect = new(0f, titleHeight + Spacing, inRect.width, inRect.height - titleHeight - Spacing);
+        float contentHeight = inRect.height - titleHeight - Spacing - BottomBarHeight - Spacing;
+        Rect contentRect = new(0f, titleHeight + Spacing, inRect.width, contentHeight);
 
         Rect leftPanelRect = new(contentRect.x, contentRect.y, LeftPanelWidth, contentRect.height);
         Rect curveRect = new(leftPanelRect.xMax + Spacing, contentRect.y, contentRect.width - LeftPanelWidth - Spacing, contentRect.height);
@@ -111,6 +136,9 @@ public class CurveEditorWindow : EditorWindowBase
         DrawCurveArea(curveRect);
 
         HandleInput(curveRect);
+
+        Rect bottomRect = new(inRect.x, contentRect.yMax + Spacing, inRect.width, BottomBarHeight);
+        DrawBottomBar(bottomRect);
     }
 
     private void DrawLeftPanel(Rect rect)
@@ -128,8 +156,7 @@ public class CurveEditorWindow : EditorWindowBase
         curY += pointsLabelRect.height + Spacing;
 
         float addSectionHeight = FieldHeight * 2 + Spacing * 2 + ButtonHeight;
-        float bottomButtonsHeight = ButtonHeight * 3 + Spacing * 5;
-        float listHeight = rect.height - (curY - rect.y) - addSectionHeight - bottomButtonsHeight;
+        float listHeight = rect.height - (curY - rect.y) - addSectionHeight - Spacing * 2;
 
         Rect listRect = new(rect.x + Spacing, curY, innerWidth, listHeight);
         DrawPointsList(listRect);
@@ -137,57 +164,6 @@ public class CurveEditorWindow : EditorWindowBase
 
         Rect addSectionRect = new(rect.x + Spacing, curY, innerWidth, addSectionHeight);
         DrawAddPointSection(addSectionRect);
-        curY = addSectionRect.yMax + Spacing;
-
-        Rect resetButtonRect = new(rect.x + Spacing, curY, innerWidth, ButtonHeight);
-        if (Widgets.ButtonText(resetButtonRect, "MST.Reset".Translate().RawText))
-        {
-            ResetCurve();
-        }
-        curY += ButtonHeight + Spacing;
-
-        // 复制按钮
-        Rect copyBtnRect = new(rect.x + Spacing, curY, innerWidth, ButtonHeight);
-        if (Widgets.ButtonText(copyBtnRect, "MST.Copy".Translate().RawText))
-        {
-            var data = GetCopyData();
-            if (data != null)
-            {
-                GUIUtility.systemCopyBuffer = data;
-                Messages.Message("MST.CopySuccess".Translate().RawText, MessageTypeDefOf.NeutralEvent, false);
-            }
-            else
-                Messages.Message("MST.CopyFailed".Translate().RawText, MessageTypeDefOf.NegativeEvent, false);
-        }
-        curY += ButtonHeight + Spacing;
-
-        // 粘贴按钮
-        Rect pasteBtnRect = new(rect.x + Spacing, curY, innerWidth, ButtonHeight);
-        if (Widgets.ButtonText(pasteBtnRect, "MST.Paste".Translate().RawText))
-        {
-            var clipboardData = GUIUtility.systemCopyBuffer;
-            if (!clipboardData.NullOrEmpty())
-            {
-                if (OnPasteData(clipboardData))
-                    Messages.Message("MST.PasteSuccess".Translate().RawText, MessageTypeDefOf.NeutralEvent, false);
-                else
-                    Messages.Message("MST.PasteFailed".Translate().RawText, MessageTypeDefOf.NegativeEvent, false);
-            }
-        }
-        curY += ButtonHeight + Spacing;
-
-        Rect saveButtonRect = new(rect.x + Spacing, curY, innerWidth, ButtonHeight);
-        if (Widgets.ButtonText(saveButtonRect, "MST.Save".Translate().RawText))
-        {
-            SaveCurve();
-        }
-        curY += ButtonHeight + Spacing;
-
-        Rect closeButtonRect = new(rect.x + Spacing, curY, innerWidth, ButtonHeight);
-        if (Widgets.ButtonText(closeButtonRect, "MST.Close".Translate().RawText))
-        {
-            Close();
-        }
     }
 
     private void DrawPointsList(Rect rect)
@@ -292,9 +268,17 @@ public class CurveEditorWindow : EditorWindowBase
         float highlightSize = PointRadius * 2.5f;
         Rect highlightRect = new(screenPos.x - highlightSize / 2f, screenPos.y - highlightSize / 2f, highlightSize, highlightSize);
 
+        // 点被缩放/平移移到视野之外时，高亮只保留落在绘图区内的部分，不再溢出到左侧面板或测量轴
+        Rect visibleRect = Rect.MinMaxRect(
+            Mathf.Max(highlightRect.xMin, graphRect.xMin),
+            Mathf.Max(highlightRect.yMin, graphRect.yMin),
+            Mathf.Min(highlightRect.xMax, graphRect.xMax),
+            Mathf.Min(highlightRect.yMax, graphRect.yMax));
+        if (visibleRect.width <= 0f || visibleRect.height <= 0f) return;
+
         Color prevColor = GUI.color;
         GUI.color = new Color(1f, 1f, 0f, 0.5f);
-        GUI.DrawTexture(highlightRect, BaseContent.WhiteTex);
+        GUI.DrawTexture(visibleRect, BaseContent.WhiteTex);
         GUI.color = prevColor;
     }
 
@@ -484,14 +468,10 @@ public class CurveEditorWindow : EditorWindowBase
         }
     }
 
-    private void ResetCurve()
+    /// <summary>把视图的缩放与平移恢复到自动适配状态（不影响曲线数据）。</summary>
+    private void ResetZoom()
     {
-        curve = CloneCurve(originalCurve);
-        selectedPointIndex = null;
-        if (curve.PointsCount > 0)
-        {
-            curve.View.SetViewRectAround(curve);
-        }
+        curve.View.SetViewRectAround(curve);
     }
 
     protected override string? GetCopyData() => SerializationHelper.SerializeSimpleCurve(curve);

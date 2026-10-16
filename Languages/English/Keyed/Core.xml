@@ -62,18 +62,21 @@
     <MST.ResetCurTooltip>Reset all data currently displayed. Does not reset data not displayed in the list.</MST.ResetCurTooltip>
     <MST.ApplyToolTip>Modify all values in the selected column. Only modifies data displayed in the current list. The result is (Value + Flat Change) * Multiplier.</MST.ApplyToolTip>
     <MST.HelpTooltip>Operations
-- Top row: Apply = applies (value + flat) * multiplier to the visible data of the selected column, clamped by the lower/upper limits. Also: Columns / Settings / Reset Column / Reset Shown Items.
-- Bottom row: search, main type / sub type / mod filters, sort. "Show Result" and "Show Default" only change the display, never the data; "Display Mode" makes the whole table read-only.
-- Editing a cell: a checkbox toggles; number / percent values are typed in place; an enum opens a dropdown; text, lists, curves, def pickers and so on open their own editor window.
-- Batch edit: hold Shift and drag with the left button to copy the start cell's value to every cell you drag over in the same column.
-- Name column: left-click the name to jump to its owner; right-click for Pin / Reset / Copy defName; the R button resets that entry.
-- Right-click a data cell: Copy / Paste / Reset that field; def-picker columns also offer "Jump to: ..." to reach that Def's data.</MST.HelpTooltip>
+- Header: left-click selects + sorts, right-click sorts only, drag reorders columns, hover shows the column description.
+- Top bar: Apply computes (value + flat) * multiplier over the selected column's visible data and clamps to the limits; also Columns / Settings / Reset Column / Reset Shown Items.
+- Filter row: search, type / mod filters, sort; Show Result and Show Default only change the display; Display Mode makes the table read-only.
+- Cells: a checkbox toggles, numbers / percents are typed in place, an enum opens a dropdown, text / lists / curves / def pickers open their editor window.
+- Batch: Shift + drag to copy the start cell's value across the dragged cells in the same column.
+- Name column: left-click jumps to the entry, right-click for Pin / Reset / Copy defName, R resets it.
+- Data cell: right-click for Copy / Paste / Reset that field; def-picker columns can also jump.</MST.HelpTooltip>
     <MST.SimpleDefEditer>Simple Def Editor</MST.SimpleDefEditer>
     <MST.EditCurve>Edit Curve</MST.EditCurve>
     <MST.Points>Points</MST.Points>
     <MST.AddPoint>Add Point</MST.AddPoint>
     <MST.DeletePoint>Delete Point</MST.DeletePoint>
     <MST.DuplicatePoint>Duplicate Point</MST.DuplicatePoint>
+    <MST.ResetZoom>Reset Zoom</MST.ResetZoom>
+    <MST.ResetZoomTooltip>Restores the curve view's zoom and pan to the auto-fitted state. Does not change the curve data.</MST.ResetZoomTooltip>
     <MST.Reset>Reset</MST.Reset>
     <MST.Save>Save</MST.Save>
     <MST.Cancel>Cancel</MST.Cancel>
