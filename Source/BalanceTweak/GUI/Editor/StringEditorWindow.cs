@@ -13,6 +13,15 @@ public class StringEditorWindow : EditorWindowBase
 
     private const float TextAreaPadding = 8f;
 
+    // 初始窗口尺寸的上下界：既能把初始字符串完整显示出来，又不会因为默认尺寸过大而不美观。
+    private const float MinWindowWidth = 340f;
+    private const float MaxWindowWidth = 620f;
+    private const float MinWindowHeight = 170f;
+    private const float MaxWindowHeight = 560f;
+
+    // 估算文本区高度时预留的余量，避免字体度量误差导致最后一行被裁掉。
+    private const float HeightSafetyPadding = 6f;
+
     public StringEditorWindow(StatColumnConfig config, TweakData data)
     {
         this.config = config;
@@ -31,6 +40,75 @@ public class StringEditorWindow : EditorWindowBase
         textFieldControlName = "StringEditorTextField_independent";
 
         absorbInputAroundWindow = true;
+    }
+
+    /// <summary>
+    /// 依据初始字符串的内容动态计算初始窗口大小：短文本得到紧凑的小窗口（避免默认尺寸过大而不美观），
+    /// 长文本则加宽/加高以完整显示（超长单行靠自动换行，宽度受上限约束）。
+    /// </summary>
+    public override Vector2 InitialSize
+    {
+        get
+        {
+            float width = MaxWindowWidth;
+            float height = MinWindowHeight;
+            try
+            {
+                GameFont prevFont = Text.Font;
+                Text.Font = GameFont.Small;
+                try
+                {
+                    GUIStyle style = Text.CurTextAreaStyle;
+                    float stylePadX = style.padding.horizontal;
+                    float stylePadY = style.padding.vertical;
+
+                    // 宽度：容纳最长的一行（加上文本区与窗口的内边距），并限制在合理范围内。
+                    float longestLine = MeasureLongestLineWidth(workingValue, MaxWindowWidth);
+                    float desiredWidth = longestLine + stylePadX + TextAreaPadding * 2f + Margin * 2f;
+                    width = Mathf.Clamp(desiredWidth, MinWindowWidth, MaxWindowWidth);
+
+                    // 高度：容纳按当前宽度换行后的全部文本。
+                    float wrapWidth = Mathf.Max(1f, width - Margin * 2f - TextAreaPadding * 2f - stylePadX);
+                    float textHeight = Text.CalcHeight(workingValue, wrapWidth) + stylePadY;
+                    float chromeHeight = Margin * 2f + TitleHeight + Spacing * 3f + BottomBarHeight + TextAreaPadding * 2f;
+                    float maxHeight = Mathf.Max(MinWindowHeight, Mathf.Min(MaxWindowHeight, UI.screenHeight * 0.8f));
+                    height = Mathf.Clamp(chromeHeight + textHeight + HeightSafetyPadding, MinWindowHeight, maxHeight);
+                }
+                finally
+                {
+                    Text.Font = prevFont;
+                }
+            }
+            catch (Exception e)
+            {
+                // 度量失败（如字体尚未就绪）时退回一个折中的固定尺寸，保证窗口仍能正常打开。
+                Log.WarningOnce("[BalanceTweak] Failed to measure string editor window size, falling back to default: " + e, 0x5B1D30);
+                width = MaxWindowWidth;
+                height = MinWindowHeight;
+            }
+
+            return new Vector2(width, height);
+        }
+    }
+
+    /// <summary>返回文本中最长一行的像素宽度；一旦超过 stopAt 即提前返回，避免超长文本的度量开销。</summary>
+    private static float MeasureLongestLineWidth(string text, float stopAt)
+    {
+        float width = 0f;
+        int lineStart = 0;
+        for (int i = 0; i <= text.Length; i++)
+        {
+            if (i == text.Length || text[i] == '\n')
+            {
+                width = Mathf.Max(width, Text.CalcSize(text.Substring(lineStart, i - lineStart)).x);
+                if (width >= stopAt)
+                {
+                    return width;
+                }
+                lineStart = i + 1;
+            }
+        }
+        return width;
     }
 
     public override void DoWindowContents(Rect inRect)
