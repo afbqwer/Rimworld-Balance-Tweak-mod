@@ -20,9 +20,6 @@ public partial class BalanceTweakSettings
             var config = selectedCol;
             if (config == null) return;
             showChanged = false;
-            // 上下限开关：未启用的一侧取无穷大，等价于该侧不参与截断
-            float lowerLimit = batchLowerLimitEnabled ? batchLowerLimit : float.NegativeInfinity;
-            float upperLimit = batchUpperLimitEnabled ? batchUpperLimit : float.PositiveInfinity;
             foreach (var data in filteredData)
             {
                 var org = config.GetRawValue(data);
@@ -30,15 +27,15 @@ public partial class BalanceTweakSettings
                 if (org == null && !showAbstract) continue;
                 if (org is FloatRange fr)
                 {
-                    float newMin = Mathf.Clamp((fr.min + batchFlat) * batchPrec, lowerLimit, upperLimit);
-                    float newMax = Mathf.Clamp((fr.max + batchFlat) * batchPrec, lowerLimit, upperLimit);
+                    float newMin = ApplyBatchToValue(fr.min);
+                    float newMax = ApplyBatchToValue(fr.max);
                     var newRange = new FloatRange(newMin, newMax);
                     config.ApplyValue(data, newRange);
                 }
                 else if (org is IntRange ir)
                 {
-                    int newMin = (int)Mathf.Clamp((ir.min + batchFlat) * batchPrec, lowerLimit, upperLimit);
-                    int newMax = (int)Mathf.Clamp((ir.max + batchFlat) * batchPrec, lowerLimit, upperLimit);
+                    int newMin = (int)ApplyBatchToValue(ir.min);
+                    int newMax = (int)ApplyBatchToValue(ir.max);
                     var newRange = new IntRange(newMin, newMax);
                     config.ApplyValue(data, newRange);
                 }
@@ -48,7 +45,7 @@ public partial class BalanceTweakSettings
                     //Log.Message($"[BalanceTweak]rawNum{rawNum}");
                     if (!rawNum.HasValue) { continue; }
                     if (config.getAbstract != null && rawNum == -1f) { continue; }
-                    float newVal = Mathf.Clamp((rawNum.Value + batchFlat) * batchPrec, lowerLimit, upperLimit);
+                    float newVal = ApplyBatchToValue(rawNum.Value);
                     if (org is int)
                     {
                         config.ApplyValue(data, (int?)newVal);

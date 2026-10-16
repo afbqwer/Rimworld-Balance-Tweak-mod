@@ -773,7 +773,7 @@ public class StatColumnConfig
             var fr = (FloatRange?)GetRawValue(data);
             if (showChanged && selectedCol == this && fr.HasValue)
             {
-                return new FloatRange((fr.Value.min + batchFlat) * batchPrec, (fr.Value.max + batchFlat) * batchPrec).ToString();
+                return new FloatRange(ApplyBatchToValue(fr.Value.min), ApplyBatchToValue(fr.Value.max)).ToString();
             }
             return fr.HasValue ? fr.Value.ToString() : "Null";
         }
@@ -782,7 +782,7 @@ public class StatColumnConfig
             var ir = (IntRange?)GetRawValue(data);
             if (showChanged && selectedCol == this && ir.HasValue)
             {
-                return new IntRange((int)((ir.Value.min + batchFlat) * batchPrec), (int)((ir.Value.max + batchFlat) * batchPrec)).ToString();
+                return new IntRange((int)ApplyBatchToValue(ir.Value.min), (int)ApplyBatchToValue(ir.Value.max)).ToString();
             }
             return ir.HasValue ? ir.Value.ToString() : "";
         }
@@ -1035,7 +1035,7 @@ public class StatColumnConfig
         float? val = GetNumericValue(data);
         if (showChanged && selectedCol == this && val != null && !(getAbstract != null && val == -1f))
         {
-            val = (val + batchFlat) * batchPrec;
+            val = ApplyBatchToValue(val.Value);
         }
         switch (columnType)
         {

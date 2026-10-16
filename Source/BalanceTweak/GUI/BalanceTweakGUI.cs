@@ -61,12 +61,25 @@ public partial class BalanceTweakSettings : ModSettings
     public static StatColumnConfig? sortCol = null;
     public static float batchFlat = 0f;
     public static float batchPrec = 1f;
-    public static float batchLowerLimit = -9999999999f;
-    public static float batchUpperLimit = 9999999999f;
-    /// <summary>是否对统一修改的结果应用下限截断（点击「下限」标签切换）。</summary>
-    public static bool batchLowerLimitEnabled = true;
-    /// <summary>是否对统一修改的结果应用上限截断（点击「上限」标签切换）。</summary>
-    public static bool batchUpperLimitEnabled = true;
+    public static float batchLowerLimit = 0f;
+    public static float batchUpperLimit = 10000f;
+    /// <summary>是否对统一修改的结果应用下限截断（点击「下限」标签切换）。默认关闭。</summary>
+    public static bool batchLowerLimitEnabled = false;
+    /// <summary>是否对统一修改的结果应用上限截断（点击「上限」标签切换）。默认关闭。</summary>
+    public static bool batchUpperLimitEnabled = false;
+
+    /// <summary>统一修改实际生效的下限；未启用下限时为负无穷，等价于该侧不截断。</summary>
+    public static float EffectiveBatchLowerLimit => batchLowerLimitEnabled ? batchLowerLimit : float.NegativeInfinity;
+    /// <summary>统一修改实际生效的上限；未启用上限时为正无穷，等价于该侧不截断。</summary>
+    public static float EffectiveBatchUpperLimit => batchUpperLimitEnabled ? batchUpperLimit : float.PositiveInfinity;
+
+    /// <summary>
+    /// 统一修改的数值变换：(值 + 增减) * 倍率，再按已启用的上下限截断。
+    /// 「统一修改」按钮与「显示结果值」预览共用此方法，确保两者结果一致。
+    /// </summary>
+    public static float ApplyBatchToValue(float value)
+        => Mathf.Clamp((value + batchFlat) * batchPrec, EffectiveBatchLowerLimit, EffectiveBatchUpperLimit);
+
     private static TweakData? needRemove = null;
     private static string? editingControlName = null;
     private static string? editingBuffer = null;
