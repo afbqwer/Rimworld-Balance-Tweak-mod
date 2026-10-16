@@ -530,20 +530,6 @@ public class StatColumnConfig
             return GetString(data);
         }
 
-        // ── 列表：元素类型已进字段表 ⇒ 走字段表通用编解码 ──
-        //
-        // 判据由字段自身推出，**不认 ColumnStyle** —— 这一点是刻意的：
-        // 原先这里是 18 项手写样式 switch、`TryPasteData` 里另有一份 27 项手写清单，两份漂移过一次，
-        // 把 `FishChanceList` / `DiseaseList` / `WeatherCommonalityList` 漏在守卫之外 ⇒ 本方法恒返回 null
-        // ⇒ 那几列的 Shift+拖拽涂抹**静默失效**（无日志无提示，见 Docs §3.9.1）。
-        // 改判据之后，增删列表列都不必碰这里，"两份清单漂移"从根上没了。
-        if (TryGetDeclaredListElementType(out _))
-        {
-            var list = (IList?)GetRawValue(data) ?? Array.Empty<object>();
-            var listText = PocoCodec.EncodeList(list);
-            if (listText != null) return listText;
-        }
-
         // `IngredientCount` 未进字段表（它带 GetBaseCount 语义、文本格式也自成一格），单列一支。
         if (columnType == ColumnStyle.IngredientList)
         {
@@ -622,6 +608,23 @@ public class StatColumnConfig
             return string.Join("\n", list.Cast<string>());
         }
 
+        // ── 兜底：元素类型已进字段表 ⇒ 走字段表通用编解码 ──
+        //
+        // 判据只看**字段类型**（`List<T>` 的 `T` 是否已声明），不认 `ColumnStyle` —— 这样增删列表列
+        // 都不必改这里，"两份手写清单漂移"从根上没了（见 Docs §3.9.1 那个真 bug）。
+        //
+        // **但它必须放在所有专用分支之后。** 「元素类型已声明」不等于「该列的文本格式就是这套通用格式」：
+        // `StockGenList` 列的 `List<StockGenerator>` 元素类型确实已声明（`StockGenerator` 基类在
+        // `StockGeneratorCodec` 的静态构造里声明过），可它的文本必须由 `StockGeneratorCodec` 带
+        // **类型标记**写出来 —— 否则非原版子类无法透传，而且 `StockGenerator` 是抽象类、根本解不回来。
+        // 先前把这道门放在最前面，专用分支就永远走不到 ⇒ 复制丢类型标记、粘贴必然失败。
+        // 放在最后：专用分支**按位置**天然优先，将来再加专用分支也不会被截胡。
+        if (TryGetDeclaredListElementType(out _))
+        {
+            var list = (IList?)GetRawValue(data) ?? Array.Empty<object>();
+            return PocoCodec.EncodeList(list);
+        }
+
         return null;
     }
     // TryPasteData用于数据粘贴的解析
@@ -634,14 +637,6 @@ public class StatColumnConfig
             {
                 CheckAndApply(data, clipboardData);
                 return true;
-            }
-
-            // ── 列表：元素类型已进字段表 ⇒ 走字段表通用解码（判据同 GetCopyData，同样不认 ColumnStyle） ──
-            if (TryGetDeclaredListElementType(out var listElementType))
-            {
-                var list = PocoCodec.DecodeList(listElementType, clipboardData);
-                if (list != null) { ApplyValue(data, list); return true; }
-                return false;
             }
 
             // `IngredientCount` 未进字段表，单列一支（见 GetCopyData 的同类分支）。
@@ -736,6 +731,16 @@ public class StatColumnConfig
                 if (encoded == null || encoded.Count == 0) return false;
                 ApplyValue(data, encoded);
                 return true;
+            }
+
+            // ── 兜底：元素类型已进字段表 ⇒ 走字段表通用解码（判据同 GetCopyData） ──
+            // **必须在所有专用分支之后**。理由见 GetCopyData 里那段注释：
+            // `StockGenList` 的元素类型已声明、格式却由 `StockGeneratorCodec` 专管，放在前面会被截胡。
+            if (TryGetDeclaredListElementType(out var listElementType))
+            {
+                var list = PocoCodec.DecodeList(listElementType, clipboardData);
+                if (list != null) { ApplyValue(data, list); return true; }
+                return false;
             }
 
             return false;

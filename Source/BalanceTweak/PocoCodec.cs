@@ -82,6 +82,23 @@ internal static class PocoCodec
         public override string ToString() => $"{Name}({Kind})";
     }
 
+    /// <summary>
+    /// 本类全部可变静态状态的互斥锁。
+    ///
+    /// <para>
+    /// <b>为什么需要</b>：下面几张表是懒建的（<see cref="FieldsFor"/> / <see cref="BaselineFor"/> 边算边缓存），
+    /// 而声明来自<b>多个</b>静态构造（<c>TweakData.FieldCodecs</c> / <c>StockGeneratorCodec</c>）。
+    /// 在 xunit 这类"按类并行"的宿主里，多线程同时写同一个 <c>Dictionary</c> 会损坏内部状态，
+    /// 症状是 <see cref="FieldsFor"/> 返回<b>不完整的字段表</b> ⇒ <c>Encode</c> 静默产出空串。
+    /// 实测撞到过一次（105 项里红 1 项、只红一次、单跑不复现，见 Docs §3.9.3）。
+    /// </para>
+    /// <para>
+    /// 用一把锁而不是 <c>ConcurrentDictionary</c>：这些访问都是<b>冷路径</b>（每个类型一次），
+    /// 一把锁更简单也更容易确认正确；C# 的 <c>lock</c> 可重入，<see cref="FieldsFor"/> 内层再取一次也安全。
+    /// </para>
+    /// </summary>
+    private static readonly object Gate = new();
+
     /// <summary>类型 → 它<b>自己声明</b>的字段（继承来的不在此列，由继承链上的那一项给出）。顺序即文本中的顺序。</summary>
     private static readonly Dictionary<Type, string[]> declared = new();
 
@@ -90,11 +107,20 @@ internal static class PocoCodec
     private static readonly Dictionary<Type, object?> baselines = new();
     private static readonly Dictionary<Type, Func<object, bool>> validators = new();
 
-    /// <summary>声明了但解析不到的字段（类型改名 / 字段移除），形如 <c>StatModifier.foo</c>。完整性断言会检查它是空的。</summary>
-    public static IReadOnlyList<string> UnresolvedFields => unresolvedFields;
+    /// <summary>
+    /// 声明了但解析不到的字段（类型改名 / 字段移除），形如 <c>StatModifier.foo</c>。完整性断言会检查它是空的。
+    /// <para>返回<b>快照</b>：调用方（多为测试）会在别的线程仍在解析时枚举它，直接给活列表会踩"集合已修改"。</para>
+    /// </summary>
+    public static IReadOnlyList<string> UnresolvedFields
+    {
+        get { lock (Gate) return unresolvedFields.ToArray(); }
+    }
 
     /// <summary>声明一个类型<b>自己</b>的字段。<paramref name="fieldNames"/> 顺序即文本里的出现顺序。</summary>
-    public static void Declare(Type type, params string[] fieldNames) => declared[type] = fieldNames;
+    public static void Declare(Type type, params string[] fieldNames)
+    {
+        lock (Gate) declared[type] = fieldNames;
+    }
 
     /// <summary>
     /// 注册"字段表表达不了"的业务校验（例如 <c>count >= 0</c>、<c>count &gt; 0</c> 这类<b>取值范围</b>约束）。
@@ -104,13 +130,22 @@ internal static class PocoCodec
     /// 后者正是这次要消掉的那类手写代码。
     /// </para>
     /// </summary>
-    public static void SetValidator(Type type, Func<object, bool> validate) => validators[type] = validate;
+    public static void SetValidator(Type type, Func<object, bool> validate)
+    {
+        lock (Gate) validators[type] = validate;
+    }
 
     /// <summary>该类型是否已被声明（未声明的调用方通常当作"不认识"处理）。</summary>
-    public static bool IsDeclared(Type type) => declared.ContainsKey(type);
+    public static bool IsDeclared(Type type)
+    {
+        lock (Gate) return declared.ContainsKey(type);
+    }
 
-    /// <summary>已声明的全部类型（完整性断言用）。</summary>
-    public static IReadOnlyCollection<Type> DeclaredTypes => declared.Keys;
+    /// <summary>已声明的全部类型（完整性断言用）。返回<b>快照</b>，理由同 <see cref="UnresolvedFields"/>。</summary>
+    public static IReadOnlyCollection<Type> DeclaredTypes
+    {
+        get { lock (Gate) return declared.Keys.ToArray(); }
+    }
 
     /// <summary>
     /// 某类型可读写的字段 = 继承链上每个"已声明类型"声明的字段（基类字段在前）。
@@ -118,38 +153,41 @@ internal static class PocoCodec
     /// </summary>
     public static IReadOnlyList<Field> FieldsFor(Type type)
     {
-        if (fieldCache.TryGetValue(type, out var cached)) return cached;
-
-        var fields = new List<Field>();
-        if (!declared.ContainsKey(type))
+        lock (Gate)
         {
-            fieldCache[type] = fields; // 未声明：不读不写
+            if (fieldCache.TryGetValue(type, out var cached)) return cached;
+
+            var fields = new List<Field>();
+            if (!declared.ContainsKey(type))
+            {
+                fieldCache[type] = fields; // 未声明：不读不写
+                return fields;
+            }
+
+            var chain = new List<Type>();
+            for (var t = type; t != null && t != typeof(object) && t != typeof(ValueType); t = t.BaseType)
+                chain.Add(t);
+            chain.Reverse(); // 基类字段在前
+
+            foreach (var t in chain)
+            {
+                if (!declared.TryGetValue(t, out var names)) continue;
+                foreach (var name in names)
+                {
+                    var info = Reflect.Field(t, name); // 找不到会打一条 Log.Error
+                    if (info == null)
+                    {
+                        unresolvedFields.Add($"{t.Name}.{name}");
+                        continue;
+                    }
+                    var field = new Field { Name = name, Info = info };
+                    Classify(field);
+                    fields.Add(field);
+                }
+            }
+            fieldCache[type] = fields;
             return fields;
         }
-
-        var chain = new List<Type>();
-        for (var t = type; t != null && t != typeof(object) && t != typeof(ValueType); t = t.BaseType)
-            chain.Add(t);
-        chain.Reverse(); // 基类字段在前
-
-        foreach (var t in chain)
-        {
-            if (!declared.TryGetValue(t, out var names)) continue;
-            foreach (var name in names)
-            {
-                var info = Reflect.Field(t, name); // 找不到会打一条 Log.Error
-                if (info == null)
-                {
-                    unresolvedFields.Add($"{t.Name}.{name}");
-                    continue;
-                }
-                var field = new Field { Name = name, Info = info };
-                Classify(field);
-                fields.Add(field);
-            }
-        }
-        fieldCache[type] = fields;
-        return fields;
     }
 
     /// <summary>
@@ -290,17 +328,20 @@ internal static class PocoCodec
     /// </summary>
     public static object? BaselineFor(Type type)
     {
-        if (baselines.TryGetValue(type, out var cached)) return cached;
-
-        object? result = null;
-        for (var t = type; t != null && t != typeof(object) && t != typeof(ValueType); t = t.BaseType)
+        lock (Gate)
         {
-            if (t.IsAbstract) continue;
-            try { result = Activator.CreateInstance(t); break; }
-            catch { /* 没有无参构造：继续往上找 */ }
+            if (baselines.TryGetValue(type, out var cached)) return cached;
+
+            object? result = null;
+            for (var t = type; t != null && t != typeof(object) && t != typeof(ValueType); t = t.BaseType)
+            {
+                if (t.IsAbstract) continue;
+                try { result = Activator.CreateInstance(t); break; }
+                catch { /* 没有无参构造：继续往上找 */ }
+            }
+            baselines[type] = result;
+            return result;
         }
-        baselines[type] = result;
-        return result;
     }
 
     #endregion
@@ -321,7 +362,11 @@ internal static class PocoCodec
         value = null;
         if (!TryCreateInstance(type, out var instance) || instance == null) return false;
         if (!FillFromRecord(text, instance, text)) return false;
-        if (validators.TryGetValue(type, out var validate) && !validate(instance))
+
+        // 查表在锁内、调用在锁外：validate 是外部传进来的委托，不该在持锁时执行。
+        Func<object, bool>? validate;
+        lock (Gate) validators.TryGetValue(type, out validate);
+        if (validate != null && !validate(instance))
         {
             Log.Warning($"[BalanceTweak] POCO 编解码：{type.Name} 的值不满足业务约束，放弃整条：{text}");
             return false;
@@ -333,9 +378,16 @@ internal static class PocoCodec
     /// <summary>
     /// 列表 → 多行文本（一行一个元素）。<c>null</c> / 空列表返回 <c>null</c>。
     /// <para>
-    /// 元素"字段全默认"时 <see cref="Encode"/> 会给出空串 —— 那在文本里就变成空行、解码时会被跳过，
-    /// 等于<b>静默少一条</b>。所以这里遇到空编码结果**直接让整个列表失败**（返回 <c>null</c>），
-    /// 与旧手写格式"该元素解析不出 ⇒ 整条拒绝"的行为一致。
+    /// 元素"字段全默认"时 <see cref="Encode"/> 会给出空串 —— 那在文本里就是一个空行，而
+    /// <see cref="DecodeList"/> 会**跳过空行**，于是列表**静默少一条**。所以这里遇到空编码结果
+    /// 直接让整个列表失败（返回 <c>null</c>）：调用方会报"复制失败"，是**可见**的失败，
+    /// 而不是静默丢数据。
+    /// </para>
+    /// <para>
+    /// <b>这是相对旧手写编码器的行为变化</b>：旧的逐类型编码器用哨兵值保证任何元素都产出一行
+    /// 非空文本（如 <c>$"{sm.stat?.defName ?? "NULL"}|{sm.value}"</c>），所以"整块失败"不会发生。
+    /// 改成字段表驱动后，"等于新实例初始值就不写"是核心优化（见 <see cref="IsDefault"/>），
+    /// 于是"全默认 ⇒ 空文本"成了必然，必须在这里显式兜住。
     /// </para>
     /// </summary>
     public static string? EncodeList(IEnumerable? list)
@@ -648,18 +700,24 @@ internal static class PocoCodec
             if (field.Kind == Kind.Unsupported) continue;
             var value = ReadField(field, source);
             if (value == null) continue; // 源为 null ⇒ 保持目标实例的初始值，不覆盖
-            if (!WriteField(field, copy, CloneValue(field, value))) return null;
+            if (!TryCloneValue(field, value, out var cloned)) return null;
+            if (!WriteField(field, copy, cloned)) return null;
         }
         return copy;
     }
 
-    private static object? CloneValue(Field field, object? value)
+    /// <summary>
+    /// 按字段值的语义拷一份。<b>失败由返回值表达，不用 <c>null</c> 兼职</b> ——
+    /// <c>null</c> 本身是合法字段值，"值是 null"与"拷不出来"混在一起时，
+    /// <c>ComplexList</c> 里某个元素拷失败会被写成 <c>null</c>，即**静默改掉数据**。
+    /// </summary>
+    private static bool TryCloneValue(Field field, object value, out object? cloned)
     {
-        if (value == null) return null;
         switch (field.Kind)
         {
             case Kind.Def:
-                return value; // Def 是单例，按引用共享
+                cloned = value; // Def 是单例，按引用共享
+                return true;
             case Kind.DefList:
             case Kind.StringList:
             {
@@ -667,7 +725,8 @@ internal static class PocoCodec
                 var elementType = field.ElementType!;
                 var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
                 foreach (var item in (IEnumerable)value) list.Add(item);
-                return list;
+                cloned = list;
+                return true;
             }
             case Kind.ComplexList:
             {
@@ -677,13 +736,15 @@ internal static class PocoCodec
                 {
                     if (item == null) continue;
                     var copy = CloneElement(item, elementType);
-                    if (copy == null) return null;
+                    if (copy == null) { cloned = null; return false; } // 元素拷不出来 ⇒ 整个值拷不出来
                     list.Add(copy);
                 }
-                return list;
+                cloned = list;
+                return true;
             }
             default:
-                return value; // 标量 / 区间：值语义，直接复制
+                cloned = value; // 标量 / 区间：值语义，直接复制
+                return true;
         }
     }
 

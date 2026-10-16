@@ -80,6 +80,19 @@ internal static class StockGeneratorCodec
     /// <summary>声明了但解析不到的字段（被原版改名 / 移除），形如 <c>StockGenerator_Animals.foo</c>。测试会断言它是空的。</summary>
     public static IReadOnlyList<string> UnresolvedFields => PocoCodec.UnresolvedFields;
 
+    /// <summary>
+    /// 显式确保本类已初始化 —— 上面那些 <see cref="PocoCodec.Declare"/> 写在**静态构造**里，
+    /// 而 <c>PocoCodec.IsDeclared</c> 不会触发它（反向依赖会构成静态构造环）。
+    ///
+    /// <para>
+    /// <b>字段声明有两个来源</b>：<c>TweakData.FieldCodecs.Build()</c>（17 个 POCO 类型）与本类
+    /// （<c>StockGenerator</c> 及其子类、<c>CountChance</c>、<c>ThingDefCountRangeClass</c>）。
+    /// 一般调用 <c>TweakData.FieldCodecs.EnsureBuilt()</c> 即可 —— 它会把两处都拉起来；
+    /// 本方法只在"明确只依赖本类声明"的场合单独用。
+    /// </para>
+    /// </summary>
+    public static void EnsureBuilt() => _ = UnresolvedFields;
+
     /// <summary>表里所有"具体的"原版生成器类型（类型菜单用），按名字排序。</summary>
     public static List<Type> VanillaGeneratorTypes() =>
         PocoCodec.DeclaredTypes

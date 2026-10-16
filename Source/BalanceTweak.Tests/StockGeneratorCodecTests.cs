@@ -34,10 +34,20 @@ public class StockGeneratorCodecTests
 {
     // ═══════════════════════ 字段表 ═══════════════════════
 
-    /// <summary>表里声明的字段都解析得到（原版没改名 / 没移除）。</summary>
+    /// <summary>
+    /// 表里声明的字段都解析得到（原版没改名 / 没移除）。
+    /// <para>
+    /// <b>必须先跑一遍 <c>FieldsFor</c></b>：<c>UnresolvedFields</c> 是在解析字段时才填的，
+    /// 不触发解析的话它恒为空，这条断言就成了恒真。（2026-10-16 审查发现的假绿。）
+    /// </para>
+    /// </summary>
     [Fact]
     public void 字段表无未解析项()
-        => Assert.Empty(StockGeneratorCodec.UnresolvedFields);
+    {
+        foreach (var type in StockGeneratorCodec.VanillaGeneratorTypes())
+            StockGeneratorCodec.FieldsFor(type);
+        Assert.Empty(StockGeneratorCodec.UnresolvedFields);
+    }
 
     /// <summary>
     /// 原版每个生成器类型与每个 XML 字段都在表里，且字段类型都被支持。

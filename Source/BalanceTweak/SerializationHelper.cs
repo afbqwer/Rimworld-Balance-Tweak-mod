@@ -120,7 +120,9 @@ public static class SerializationHelper
         {
             var filterStr = IngredientFilterToString(ic.filter);
             if (filterStr.NullOrEmpty()) continue;
-            lines.Add($"{filterStr}|{ic.GetBaseCount()}");
+            // 数值一律 InvariantCulture + G9：与 PocoCodec 同一口径。
+            // 用当前区域性写会让逗号小数点地区的 "1,5" 在换 locale 后读成 15 或读不出（前者静默错值）。
+            lines.Add($"{filterStr}|{ic.GetBaseCount().ToString("G9", CultureInfo.InvariantCulture)}");
         }
         return lines.Count > 0 ? string.Join("\n", lines) : null;
     }
@@ -143,7 +145,7 @@ public static class SerializationHelper
                 }
                 var filterStr = trimmed[..pipeIdx];
                 var countStr = trimmed[(pipeIdx + 1)..];
-                if (!float.TryParse(countStr, out var count) || count <= 0)
+                if (!float.TryParse(countStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var count) || count <= 0)
                 {
                     WarnSyntaxError("IngredientCount", trimmed, "filter|count（count 应为正浮点数）");
                     return null;
@@ -167,20 +169,10 @@ public static class SerializationHelper
 
     #endregion
 
-    #region String list
-
-    public static string? SerializeStringList(List<string>? list)
-        => SerializeList(list, s => s);
-
-    public static List<string>? DeserializeStringList(string? data)
-        => DeserializeList(data, s => s, "DeserializeStringList");
-
-    #endregion
-
     #region Int list
 
     public static string? SerializeIntList(List<int>? list)
-        => SerializeList(list, i => i.ToString());
+        => SerializeList(list, i => i.ToString(CultureInfo.InvariantCulture));
 
     public static List<int>? DeserializeIntList(string? data)
     {
@@ -192,7 +184,7 @@ public static class SerializationHelper
             {
                 var trimmed = line.Trim();
                 if (trimmed.NullOrEmpty()) continue;
-                if (!int.TryParse(trimmed, out var val))
+                if (!int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var val))
                 {
                     WarnSyntaxError("IntList", trimmed, "每行一个整数");
                     return null;
@@ -229,7 +221,9 @@ public static class SerializationHelper
     public static string? SerializeSimpleCurve(SimpleCurve? curve)
     {
         if (curve == null || curve.PointsCount == 0) return null;
-        return string.Join("\n", curve.Points.Select(p => $"{p.x}|{p.y}"));
+        // x / y 走 InvariantCulture + G9，与 PocoCodec 的 FloatRange 同口径（原先用默认 ToString，口径其实不一致）。
+        return string.Join("\n", curve.Points.Select(p =>
+            $"{p.x.ToString("G9", CultureInfo.InvariantCulture)}|{p.y.ToString("G9", CultureInfo.InvariantCulture)}"));
     }
 
     public static SimpleCurve? DeserializeSimpleCurve(string? data)
@@ -248,7 +242,8 @@ public static class SerializationHelper
                     WarnSyntaxError("SimpleCurve", trimmed, "x|y");
                     return null;
                 }
-                if (!float.TryParse(parts[0], out var x) || !float.TryParse(parts[1], out var y))
+                if (!float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var x)
+                    || !float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
                 {
                     WarnSyntaxError("SimpleCurve", trimmed, "x|y（x、y 应为浮点数）");
                     return null;
@@ -520,11 +515,6 @@ public static class SerializationHelper
     public static List<StuffCategoryDef>? GetThingFilterStuffCategories(ThingFilter filter)
     {
         return TfStuffCategoriesToAllowField?.GetValue(filter) as List<StuffCategoryDef>;
-    }
-
-    public static List<ThingDef>? GetThingFilterThingDefs(ThingFilter filter)
-    {
-        return TfThingDefsField?.GetValue(filter) as List<ThingDef>;
     }
 
     #endregion

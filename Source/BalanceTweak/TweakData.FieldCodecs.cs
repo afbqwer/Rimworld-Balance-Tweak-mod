@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using RimWorld;
 using Verse;
@@ -63,21 +64,31 @@ public abstract partial class TweakData
         public static IReadOnlyList<FieldCodec> All { get; private set; } = Array.Empty<FieldCodec>();
 
         /// <summary>
-        /// 显式确保登记表已构建（C# 的静态构造是惰性的，碰一下 <see cref="All"/> 才会跑 <c>Build()</c>）。
+        /// 显式确保**全部**字段声明已就绪（C# 的静态构造是惰性的，光读 <see cref="All"/> 只保证本表那部分）。
         ///
         /// <para>
         /// <b>谁需要调它</b>：只用 <see cref="PocoCodec"/> 而不查表的调用点 —— GUI 剪贴板
         /// （<c>StatColumnConfig.TryGetDeclaredListElementType</c>）与编辑器窗口的默认
         /// <c>SerializeList</c> / <c>DeserializeList</c>。它们判 <c>PocoCodec.IsDeclared</c>，
-        /// 而 <b><see cref="PocoCodec"/> 不会自己去拉本类</b>（反向依赖会构成静态构造环）——
+        /// 而 <b><see cref="PocoCodec"/> 不会自己去拉这些声明类</b>（反向依赖会构成静态构造环）——
         /// 少这一次触碰，未初始化的进程里 <c>IsDeclared</c> 会**全部返回 false**，
         /// 表现为"复制/粘贴/拖拽涂抹按了没反应"，且无任何日志。
         /// </para>
         /// <para>
-        /// 正常流程下（Mod 设置先于 GUI 加载，<c>ExposeData</c> 里查过表）它早已建好，这里只是白跑一次属性读取。
+        /// <b>声明有两个来源，两处都得拉</b>：本表（<c>PocoList&lt;T&gt;</c> 登记的 17 个 POCO 类型）
+        /// 与 <see cref="StockGeneratorCodec"/>（<c>StockGenerator</c> 及其子类等）。只拉一处会让
+        /// <c>IsDeclared</c> 随"哪条链先被触发"而漂移 —— 实测代价见 Docs §3.9.3（一个契约测试
+        /// 单独跑红、全量跑绿）。
+        /// </para>
+        /// <para>
+        /// 正常流程下（Mod 设置先于 GUI 加载，<c>ExposeData</c> 里查过表）两处都早已建好，这里只是白跑两次属性读取。
         /// </para>
         /// </summary>
-        public static void EnsureBuilt() => _ = All;
+        public static void EnsureBuilt()
+        {
+            _ = All;
+            StockGeneratorCodec.EnsureBuilt();
+        }
 
         public static FieldCodec? Find(Type fieldType)
         {
@@ -326,7 +337,9 @@ public abstract partial class TweakData
             {
                 var filterStr = SerializationHelper.IngredientFilterToString(ic.filter);
                 if (filterStr.Length == 0) return null;
-                return $"{filterStr}|{ic.GetBaseCount()}";
+                // 与剪贴板那一份（SerializationHelper.SerializeIngredientCountList）同口径：
+                // InvariantCulture + G9。数值格式用当前区域性会让逗号小数点地区的数据换 locale 后读错。
+                return $"{filterStr}|{ic.GetBaseCount().ToString("G9", CultureInfo.InvariantCulture)}";
             }).Where(s => s != null).ToList()!;
         });
     }
@@ -445,7 +458,7 @@ public abstract partial class TweakData
             }
             var filterStr = str[..pipeIdx];
             var countStr = str[(pipeIdx + 1)..];
-            if (!float.TryParse(countStr, out float count) || count <= 0)
+            if (!float.TryParse(countStr, NumberStyles.Float, CultureInfo.InvariantCulture, out float count) || count <= 0)
             {
                 Log.Warning($"[BalanceTweak] IngredientCount 语法解析失败：\"{str}\"（count 应为正浮点数，字段: {meta.Field.Name}），数据: {data.id}");
                 return (null, false);

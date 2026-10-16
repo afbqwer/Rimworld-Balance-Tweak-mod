@@ -54,11 +54,19 @@ public class SerializationCodecsTests
             Assert.True(PocoCodec.IsDeclared(type), $"{type.Name} 没有在字段表里声明");
     }
 
-    /// <summary>声明的字段名都解析得到（拼写正确、原版没改名）。这一条同时兜住 StockGenerator 与这里两处声明。</summary>
+    /// <summary>
+    /// 声明的字段名都解析得到（拼写正确、原版没改名）。这一条同时兜住 StockGenerator 与这里两处声明。
+    ///
+    /// <para>
+    /// <b>必须先跑一遍 <c>FieldsFor</c></b>：<c>UnresolvedFields</c> 是在解析字段时才填的，
+    /// 不触发解析它恒为空 ⇒ 断言恒真（2026-10-16 审查发现的假绿）。
+    /// </para>
+    /// </summary>
     [Fact]
     public void 声明字段全部可解析()
     {
         EnsureDeclared();
+        foreach (var type in PocoCodec.DeclaredTypes) PocoCodec.FieldsFor(type);
         Assert.Empty(PocoCodec.UnresolvedFields);
     }
 
