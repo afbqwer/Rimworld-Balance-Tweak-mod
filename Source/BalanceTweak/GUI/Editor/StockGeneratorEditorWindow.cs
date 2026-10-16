@@ -70,7 +70,7 @@ public class StockGeneratorEditorWindow : EditorWindowBase
         DrawLabel(new Rect(0f, y, LabelWidth, StockGeneratorFieldUi.RowHeight), "MST.StockGenType");
         var typeRect = new Rect(LabelWidth, y, viewRect.width - LabelWidth, StockGeneratorFieldUi.RowHeight);
         DrawLabelText(typeRect, StockGeneratorCodec.TypeLabel(gen.GetType()));
-        // 非原版（其它 Mod 新增）类型：下面只列出它继承的原版字段，悬停解释原因。
+        // 非原版（其它 Mod 新增）类型：列表窗口里这一行是只读的（不给开本窗口），这里保留提示以防被直接调用。
         if (!StockGeneratorCodec.IsVanilla(gen.GetType()))
             TooltipHandler.TipRegion(typeRect, "MST.StockGenNonVanilla".Translate().RawText);
         y += RowStride;

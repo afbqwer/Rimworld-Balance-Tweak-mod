@@ -96,11 +96,13 @@ public static class TweakDataSerializationTests
         RunTest("Trader stockGenerators 往返：每个原版类型逐字段（全部字段填非默认值）", () => testStockGen_AllTypesFieldRoundTrip(), ref passed, ref failed);
         RunTest("Trader stockGenerators 往返：Def/区间/枚举/嵌套对象列表/字符串列表", () => testStockGen_FieldValuesRoundTrip(), ref passed, ref failed);
         RunTest("Trader stockGenerators 转义：值里含分隔符也能原样往返", () => testStockGen_EscapingRoundTrip(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 文本格式：列表两端的转义与省略默认值", () => testStockGen_Format(), ref passed, ref failed);
         RunTest("Trader stockGenerators 克隆：改副本不影响原对象 / 非原版沿用原实例", () => testStockGen_CloneIsDeep(), ref passed, ref failed);
         RunTest("Trader stockGenerators 空/null 输入", () => testStockGen_EmptyAndNull(), ref passed, ref failed);
         RunTest("Trader stockGenerators 未知类型/字段/缺 Def → 解析失败", () => testStockGen_BadInputFails(), ref passed, ref failed);
         RunTest("Trader stockGenerators 字段表分类与摘要", () => testStockGen_FieldsAndSummary(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 类型菜单只列原版 / 非原版只暴露基类字段", () => testStockGen_NonVanillaRules(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 类型菜单只列原版 / 非原版只读透传", () => testStockGen_NonVanillaRules(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 非原版占位标记：按类型名找回 Def 原实例（字段不丢）", () => testStockGen_NonVanillaPassthrough(), ref passed, ref failed);
 
         // ─── 备份/回滚测试 ───
         RunTest("ResolveDefs 单字段失败 → 回滚所有字段", () => testBackupRestore_SingleFieldFail(), ref passed, ref failed);
@@ -1600,9 +1602,59 @@ public static class TweakDataSerializationTests
         Assert(cloneChances is { Count: 1 } && cloneChances[0].count == 1, "小对象列表应被克隆");
         Assert(!ReferenceEquals(cloneChances, GetGenField(techprints, "countChances")), "克隆的列表应是新实例");
 
+        // 字符串列表与 Def 列表也必须跟着克隆（少复制一个字段 = 静默丢数据，克隆宁可失败也不能交出半份副本）
+        var animals = new StockGenerator_Animals();
+        SetGenField(animals, "tradeTagsSell", new List<string> { "AnimalFarm", "AnimalPet" });
+        SetGenField(animals, "tradeTagsBuy", new List<string> { "AnimalExotic" });
+        SetGenField(animals, "createMatingPair", new List<string> { "AnimalFarm" });
+        var animalsClone = StockGeneratorCodec.Clone(animals) as StockGenerator_Animals;
+        Assert(animalsClone != null && !ReferenceEquals(animalsClone, animals), "有字符串列表的生成器也应克隆成新实例");
+        foreach (var name in new[] { "tradeTagsSell", "tradeTagsBuy", "createMatingPair" })
+        {
+            var from = GetGenField(animals, name) as List<string>;
+            var to = GetGenField(animalsClone!, name) as List<string>;
+            Assert(to != null && !ReferenceEquals(from, to) && to.SequenceEqual(from!),
+                $"字符串列表 {name} 应被克隆成内容相同的新实例");
+        }
+        (GetGenField(animalsClone!, "tradeTagsSell") as List<string>)!.Add("OnlyInClone");
+        Assert((GetGenField(animals, "tradeTagsSell") as List<string>)!.Count == 2, "改克隆的字符串列表不应影响原对象");
+
+        var defListGen = new StockGenerator_Tag { tradeTag = "Foo" };
+        SetGenField(defListGen, "excludedThingDefs", new List<ThingDef> { ThingDefOf.Steel });
+        var defListClone = StockGeneratorCodec.Clone(defListGen) as StockGenerator_Tag;
+        var clonedDefs = defListClone == null ? null : GetGenField(defListClone, "excludedThingDefs") as List<ThingDef>;
+        Assert(clonedDefs is { Count: 1 } && clonedDefs[0] == ThingDefOf.Steel, "Def 列表应被克隆");
+        Assert(!ReferenceEquals(clonedDefs, GetGenField(defListGen, "excludedThingDefs")), "克隆的 Def 列表应是新实例");
+
         // 字段表外的类型不克隆：它自己的字段复制不了，克隆只会丢数据，所以直接沿用原实例
         var mod = new TestNonVanillaGenerator { tradeTag = "Bar", extraModField = "mod" };
         Assert(ReferenceEquals(StockGeneratorCodec.Clone(mod), mod), "非原版子类应直接沿用原实例（不克隆）");
+    }
+
+    /// <summary>
+    /// 钉住文本格式：值里的 <c>[ ] ; = | \</c> 都要转义，列表两端必须成对出现。
+    /// （曾经的 bug：`new StringBuilder(ListStart)` 命中"容量"构造函数，开头的 <c>[</c> 被静默丢掉，
+    /// 于是所有带列表字段的生成器都解析不回来 —— 这条用例就是为了让这种回归一眼可查。）
+    /// </summary>
+    private static void testStockGen_Format()
+    {
+        var tag = new StockGenerator_Tag { tradeTag = "Foo" };
+        Assert(StockGeneratorCodec.ToItemString(tag) == "StockGenerator_Tag|tradeTag=Foo",
+            $"默认值应省略、只留类型与非默认字段，实际：{StockGeneratorCodec.ToItemString(tag)}");
+
+        SetGenField(tag, "excludedThingDefs", new List<ThingDef> { ThingDefOf.Steel, ThingDefOf.Cloth });
+        string line = StockGeneratorCodec.ToItemString(tag);
+        Assert(line.Contains(@"excludedThingDefs=\[Steel\;Cloth\]"), $@"Def 列表应写成 \[a\;b\]，实际：{line}");
+
+        var animals = new StockGenerator_Animals();
+        SetGenField(animals, "tradeTagsSell", new List<string> { "first", "second|x" });
+        string animalLine = StockGeneratorCodec.ToItemString(animals);
+        Assert(animalLine.Contains(@"tradeTagsSell=\[first\;second\\\|x\]"),
+            $@"字符串列表元素要多转义一层，应写成 \[a\;b\\\|c\]，实际：{animalLine}");
+
+        // 编码出来的行必须能解析回来（格式自洽）
+        Assert(StockGeneratorCodec.TryParse(line, out var back1) && back1 != null, $"格式自洽性：{line}");
+        Assert(StockGeneratorCodec.TryParse(animalLine, out var back2) && back2 != null, $"格式自洽性：{animalLine}");
     }
 
     private static void testStockGen_EmptyAndNull()
@@ -1662,7 +1714,7 @@ public static class TweakDataSerializationTests
 
     /// <summary>
     /// 原版 / 非原版的判据就是"在不在字段表里"：类型菜单只列表里的具体类型；表外（其它 Mod 新增）
-    /// 的子类只暴露它继承链上表内类型声明的字段 —— 即"只可改其基类的字段"。
+    /// 的子类字段集为空 —— 本工具对它们只做只读展示，不读取也不修改它们的字段。
     /// </summary>
     private static void testStockGen_NonVanillaRules()
     {
@@ -1678,13 +1730,12 @@ public static class TweakDataSerializationTests
         Assert(!vanilla.Contains(typeof(StockGenerator_MiscItems)), "抽象类 StockGenerator_MiscItems 不应出现在类型菜单里");
         Assert(!vanilla.Contains(typeof(TestNonVanillaGenerator)), "非原版子类不得出现在类型菜单里");
 
-        // 字段表外的类型：基类字段 + 它继承的原版类型字段，自己的字段不给
-        var fields = StockGeneratorCodec.FieldsFor(typeof(TestNonVanillaGenerator)).Select(f => f.Name).ToList();
-        Assert(fields.Contains("countRange"), "非原版子类应可编辑原版基类字段 countRange");
-        Assert(fields.Contains("tradeTag"), "非原版子类应可编辑原版基类（StockGenerator_Tag）字段 tradeTag");
-        Assert(!fields.Contains("extraModField"), "非原版子类自己的字段不得出现在字段表里");
+        // 字段表外的类型：本工具只读展示，字段一个都不读不写
+        Assert(StockGeneratorCodec.FieldsFor(typeof(TestNonVanillaGenerator)).Count == 0,
+            "非原版子类的字段表应为空（本工具不读不写它的字段）");
+        Assert(StockGeneratorCodec.Clone(new TestNonVanillaGenerator()) is TestNonVanillaGenerator, "非原版子类应能原样透传");
 
-        // 继承链上的字段也跟着走
+        // 继承链上的字段也跟着走（表内类型）
         Assert(StockGeneratorCodec.FieldsFor(typeof(StockGenerator_Tomes)).Any(f => f.Name == "thingDef"),
             "StockGenerator_Tomes 应含它从 StockGenerator_SingleDef 继承的 thingDef");
         var marketValue = StockGeneratorCodec.FieldsFor(typeof(StockGenerator_MarketValue)).Select(f => f.Name).ToList();
@@ -1694,9 +1745,50 @@ public static class TweakDataSerializationTests
     }
 
     /// <summary>
+    /// 非原版（其它 Mod 新增）生成器：只读展示 + 占位标记透传。
+    /// 编码只写类型名；回填时按类型名把 Def 里那个原实例原样放回原位 —— 它自己的字段一个都不丢。
+    /// </summary>
+    private static void testStockGen_NonVanillaPassthrough()
+    {
+        var mod = new TestNonVanillaGenerator { tradeTag = "Tag", extraModField = "mod" };
+
+        // 编码：只留类型名（连它继承的 tradeTag 都不写 —— 本工具不读不写它的字段）
+        string line = StockGeneratorCodec.ToItemString(mod);
+        Assert(line == StockGeneratorCodec.TypeLabel(typeof(TestNonVanillaGenerator)),
+            $"非原版条目应只写类型名，实际：{line}");
+        Assert(!line.Contains('|'), "非原版条目的行里不应有任何字段段");
+
+        // 解码：得到一个同类型的"空壳"（字段不还原，只当占位标记）
+        Assert(StockGeneratorCodec.TryParse(line, out var shell) && shell != null, $"类型名占位标记应能解析：{line}");
+        Assert(shell!.GetType() == typeof(TestNonVanillaGenerator), "占位标记应还原出同类型实例");
+        Assert(StockGeneratorCodec.ToItemString(shell) == line, "占位标记应能稳定地再编码");
+
+        // 回填：非原版条目必须换成 Def 里的原实例（身份与字段都不变），顺序保持在原处
+        var defGen1 = new StockGenerator_SingleDef();
+        var defMod1 = new TestNonVanillaGenerator { tradeTag = "Tag", extraModField = "keep-1" };
+        var defGen2 = new StockGenerator_Tag();
+        var defMod2 = new TestNonVanillaGenerator { tradeTag = "Tag", extraModField = "keep-2" };
+        var defList = new List<StockGenerator> { defGen1, defMod1, defGen2, defMod2 };
+
+        var merged = StockGeneratorCodec.MergeWithDef(new List<StockGenerator> { shell, defGen2 }, defList);
+        Assert(merged is { Count: 3 }, $"应得到 1 个原版克隆 + 2 个原实例 共 3 条，实际 {merged?.Count}");
+        Assert(merged![0].GetType() == typeof(StockGenerator_Tag) && !ReferenceEquals(merged[0], defGen2),
+            "原版条目应是克隆（不与 Def 共享实例）");
+        Assert(merged[1] is TestNonVanillaGenerator m1 && m1.extraModField == "keep-1",
+            "非原版条目应按类型名换回 Def 里的原实例（字段不丢）");
+        Assert(!ReferenceEquals(merged[1], shell), "绝不能把空壳塞回 Def");
+        Assert(merged[2] is TestNonVanillaGenerator m2 && m2.extraModField == "keep-2",
+            "Def 里剩下的非原版生成器应原样保留（追加在末尾，绝不丢）");
+
+        // 清空字段（用户显式清掉整个字段）⇒ 不合并，直接清空
+        Assert(StockGeneratorCodec.MergeWithDef(new List<StockGenerator>(), defList) == null, "空字段应返回 null（清空库存）");
+        Assert(StockGeneratorCodec.MergeWithDef(null, defList) == null, "null 字段应返回 null");
+    }
+
+    /// <summary>
     /// 测试用的"非原版"生成器：位于本 Mod 程序集，行为等价于其它 Mod 新增的 <see cref="StockGenerator"/> 子类
     /// （多出一个自有的 <c>extraModField</c>）。直接派生自原版 <see cref="StockGenerator_Tag"/> 是为了免去实现
-    /// 抽象成员；它同时覆盖"字段表外的类型只暴露继承字段"这条规则。
+    /// 抽象成员；它同时覆盖"字段表外的类型只读透传（占位标记 + 按类型名找回原实例）"这条规则。
     /// </summary>
     private class TestNonVanillaGenerator : StockGenerator_Tag
     {

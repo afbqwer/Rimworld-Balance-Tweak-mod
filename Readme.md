@@ -249,7 +249,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `DiseaseList` | `List<BiomeDiseaseRecord>?` | 疾病列表编辑器（diseaseInc + commonality） |
 | `WeatherCommonalityList` | `List<WeatherCommonalityRecord>?` | 天气列表编辑器（weather + commonality） |
 | `TerrainThresholdList` | `List<TerrainThreshold>?` | 地表肥沃度区间列表（terrain + min/max） |
-| `StockGenList` | `List<StockGenerator>?` | 库存生成器列表编辑器（每行一个生成器，按字段表声明的种类给出输入框/下拉/子列表；类型菜单只列原版类型，非原版条目只可改它继承的原版字段）；字段直接持有对象，见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist) |
+| `StockGenList` | `List<StockGenerator>?` | 库存生成器列表编辑器（每行一个生成器，按字段表声明的种类给出输入框/下拉/子列表；类型菜单只列原版类型，非原版条目只读展示类型名）；字段直接持有对象，见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist) |
 
 ---
 
@@ -366,10 +366,11 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 
 ### 7.6 多态列表：字段直接持有对象 + 列表窗口编辑（StockGenList）
 
-有些字段是**多态列表**，元素类型各不相同、每个子类字段也不一样，无法用「一个列表编辑器 + 固定列」表达。
+有的字段是**多态列表**，元素类型各不相同、每个子类字段也不一样，无法用「一个列表编辑器 + 固定列」表达。
 典型例子：`TraderKindDef.stockGenerators`（`List<StockGenerator>`，原版 15 个子类）。这类字段用
 `ColumnStyle.StockGenList`：**字段值就是真实对象**，UI 上是结构化的列表窗口 —— 每行一个生成器
-（类型名 + 关键字段摘要），可添加（类型菜单）/ 编辑 / 上下移动 / 删除。
+（类型名 + 关键字段摘要），可添加（类型菜单）/ 编辑 / 上下移动 / 删除；**其它 Mod 新增的生成器只读展示**
+（灰字 + 鼠标悬停说明），编辑 / 移动 / 删除都禁用（见下表"类型菜单"/"非原版子类"两行）。
 
 > **编辑路径上没有任何文本格式**：既不用过时的"整块 XML 文本框"（`ColumnStyle.TextBlock`，已删除），
 > 也不用"字段值是 XML 文本、Apply 时再解析回来"那种绕法 —— 窗口直接读写 `StockGenerator` 的字段，
@@ -384,7 +385,8 @@ public List<StockGenerator>? stockGenerators = null;
 if (!IsFieldModified(nameof(stockGenerators)))
     stockGenerators ??= StockGeneratorCodec.CloneAll(d.stockGenerators);
 
-// Apply：字段 → Def（Cleared ⇒ null ⇒ 清空库存）；每个生成器还要 ResolveReferences(def)
+// Apply：字段 → Def（Cleared ⇒ null ⇒ 清空库存）；原版条目克隆写回，非原版条目按类型名换回
+// Def 里的原实例（MergeWithDef），最后每个生成器还要 ResolveReferences(def)
 ApplyL<StockGenerator>(nameof(stockGenerators), ApplyStockGenerators);
 ```
 
@@ -402,16 +404,16 @@ codec，所以新增了两处分支 —— `TweakData.Serialization.cs` 的 `Exp
 | 字段表 | `Data/StockGeneratorCodec.cs` 的 `ownFieldNames`：**类型 → 它自己声明的字段名**（继承来的不重复列，由继承链上那一项给出），按名字经 `Reflect.Field` 一次性解析成 `FieldInfo`（私有字段也拿得到）。新增原版类型 / 字段只改这一处 |
 | 字段种类 | `Kind`：`Float / Int / Bool / Text / IntRange / FloatRange / Enum / Def / DefList / StringList / ComplexList`，由字段的 C# 类型在 `Classify` 里显式匹配得出，**文本写法与表单控件都看它**。类型不在列表里 ⇒ `Log.Error` + `Kind.Unsupported`（编解码跳过、表单提示"暂不支持"），由 `testStockGen_FieldTableIntegrity` 先炸出来 |
 | 字段值 | 真实对象（`List<StockGenerator>`）。`SetDef` 克隆一份、`Apply` 时再克隆一份交给 Def：字段与 Def 的活对象永不共享实例，重复 Apply / 再次编辑不会互相影响 |
-| 文本格式 | 一行一个生成器：`StockGenerator_Tag\|countRange=1~4\|tradeTag=ExoticMisc\|excludedThingDefs=[Steel;Cloth]`。Def 写 `defName`、数值/枚举/区间写文本（不变文化，浮点用 "G9"）、列表写 `[a;b]`、小对象列表写 `[字段名=值;…]`；每段内容拼进上层结构前整体转义（`\` 转义 `\ \| = [ ] ;`），列表元素再各自多转义一层 —— **值里出现任何分隔符都不会破坏结构**；等于"新实例初始值"的字段不写 |
+| 文本格式 | 一行一个生成器：`StockGenerator_Tag\|countRange=1~4\|tradeTag=ExoticMisc\|excludedThingDefs=[Steel;Cloth]`。Def 写 `defName`、数值/枚举/区间写文本（不变文化，浮点用 "G9"）、列表写 `[a;b]`、小对象列表写 `[字段名=值;…]`；每段内容拼进上层结构前整体转义（`\` 转义 `\ \| = [ ] ;`），列表元素再各自多转义一层 —— **值里出现任何分隔符都不会破坏结构**；等于"新实例初始值"的字段不写。**非原版条目只写类型名**（`NewRatkin.StockGenerator_UniqueWeapon`），不带任何字段段 |
 | 解码失败 | 任一条解析不了（类型不存在 / 字段不认识 / 值非法 / Def 缺失）⇒ `Deserialize` 返回 null ⇒ 框架按既有"损坏字段"路径保持 Def 现状并保留原文，绝不写入半截数据 |
-| 克隆 | `Clone` 按字段表复制（**不**经过文本），因此 `customCountRanges` 这类嵌套列表也换成新实例；列表窗口打开时克隆副本，字段编辑不会直接落到 Def 的活对象上 |
+| 克隆 | `Clone` 按字段表复制（**不**经过文本），因此 `customCountRanges`、字符串列表、Def 列表这类嵌套列表也都换成新实例；复制中的任何一步失败都**不**交出"半份副本"（那等于静默丢字段），而是沿用原实例并 `Log.Error`；列表窗口打开时克隆副本，字段编辑不会直接落到 Def 的活对象上 |
 | 打开子生成的实例 | Apply 写完列表后要对每个生成器调 `ResolveReferences(def)`（`trader` 是 `[Unsaved]` 不序列化，必须靠它写回） |
 | 字段表单 | `GUI/Editor/StockGeneratorFieldUi.cs` 按 `Kind` 画控件（文本框 / 复选框 / 下拉菜单 / `DefSelectionWindow` / `DefListEditorWindow` / `StringListEditorWindow` / `SGComplexListEditorWindow`），读写统一走 `StockGeneratorCodec.ReadField` / `WriteField`；`SGComplexListEditorWindow` 的元素字段（`CountChance` / `ThingDefCountRangeClass`）读同一张字段表 |
 | 字段标签 | 字段名 → key 用 `StockGeneratorFieldUi.FieldLabelKeys` 的**显式字面量字典**声明（不是拼 `"MST." + 字段名`）：CheckLoc 是静态正则，拼接出来的键它看不见，会把 XML 里那些键全判成"多余"。表里没有的字段直接显示 C# 字段名 |
 | 类型菜单 | 只列字段表里的**具体**原版类型：`StockGeneratorCodec.VanillaGeneratorTypes()`（按名字排序，排除抽象类）。判据就是"在不在 `ownFieldNames` 里" —— 原版与官方 DLC 的生成器都编在 Core 程序集里，Mod 新增的子类必然不在表内 |
-| 非原版子类 | 其它 Mod 新增的生成器（只可能来自既有 Def 数据）：`IsVanilla` = false，列表行只显示类型名（不打摘要——字段名无从翻译），字段只用 `FieldsFor` 给出的**继承链上表内那部分**（基类字段 + 它继承的原版类型字段），自己的字段不给编辑。这类条目**不克隆**（它的自有字段不在表里，克隆只会把它们换成默认值、等于丢数据），因此它的基类字段是就地改在 Def 的活对象上的；存档也只保留类型名与继承字段（编码时告警一次） |
+| 非原版子类 | 其它 Mod 新增的生成器（只可能来自既有 Def 数据）：**只读**。`IsVanilla` = false ⇒ `FieldsFor` 返回空（字段一个都不读不写），列表行灰字只显示类型名、编辑/移动/删除全禁用；存档只留类型名的**占位标记**，Apply 时 `MergeWithDef` 按"类型相同、出现次序相同"从 Def 里找回那个原实例原样放回原位置，认领不到的非原版生成器追加在末尾。于是"改了这个商人 + 存档读档"绝不会弄丢其它 Mod 的数据，也不会误改它 |
 | 剪贴板 | 复制/粘贴按"一行一条"处理（同一套 codec）；粘贴先整体解析，任一条失败就整块拒绝，不把半截数据写进字段 |
-| 回归测试 | `Tests/TweakDataSerializationTests.cs` 的 `testStockGen_*`：**编码 → 解码 → 再编码必须逐行一致**（覆盖全部已加载商人类型）；`testStockGen_FieldTableIntegrity` 校验"原版每个生成器类型、每个 XML 字段都在表里，字段类型都受支持"（原版加类型 / 加字段 / 换字段类型的第一道警报）；`testStockGen_AllTypesFieldRoundTrip` 逐类型把所有字段填成非默认值再逐字段比对；另有字段值往返（Def/区间/枚举/嵌套对象列表/字符串列表）、转义往返、克隆独立性、坏输入拒绝、字段分类，以及"类型菜单只列原版 / 非原版只暴露基类字段"（用本程序集里的测试子类当"非原版"） |
+| 回归测试 | `Tests/TweakDataSerializationTests.cs` 的 `testStockGen_*`：**编码 → 解码 → 再编码必须逐行一致**（覆盖全部已加载商人类型，含其它 Mod 的商人）；`testStockGen_FieldTableIntegrity` 校验"原版每个生成器类型、每个 XML 字段都在表里，字段类型都受支持"（原版加类型 / 加字段 / 换字段类型的第一道警报）；`testStockGen_AllTypesFieldRoundTrip` 逐类型把所有字段填成非默认值再逐字段比对；`testStockGen_Format` 把文本格式钉死（列表两端转义、省略默认值）；`testStockGen_NonVanillaPassthrough` 校验"占位标记 + 按类型名找回 Def 原实例（字段不丢、位置不变）"；另有字段值往返（Def/区间/枚举/嵌套对象列表/字符串列表）、转义往返、克隆独立性（含字符串列表、Def 列表）、坏输入拒绝、字段分类等 |
 
 ### 7.7 构建验证
 

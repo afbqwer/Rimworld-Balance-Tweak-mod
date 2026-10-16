@@ -26,7 +26,7 @@ class TraderData : TweakData<TraderData>
     [TweakField()]
     public float? commonality = null;
 
-    [TweakField(Style = ColumnStyle.Bool)]
+    [TweakField(Style = ColumnStyle.Bool, DataType = ColumnDataType.Display)]
     public bool? orbital = null;
 
     [TweakField(Style = ColumnStyle.Bool)]
@@ -35,17 +35,17 @@ class TraderData : TweakData<TraderData>
     [TweakField(Style = ColumnStyle.Bool)]
     public bool? hideThingsNotWillingToTrade = null;
 
-    [TweakField(Style = ColumnStyle.String)]
+    [TweakField(Style = ColumnStyle.String, DataType = ColumnDataType.Display)]
     public string? category = null;
 
     [TweakField(Style = ColumnStyle.Curve)]
     public SimpleCurve? commonalityMultFromPopulationIntent = null;
 
-    [TweakField(Style = ColumnStyle.DefSelector)]
+    [TweakField(Style = ColumnStyle.DefSelector, DataType = ColumnDataType.Display)]
     public FactionDef? faction = null;
 
-    /// <summary>交易货币（银 / 帝国恩宠）。只有 Royalty 用得上，未装时不显示该列。</summary>
-    [TweakField(Style = ColumnStyle.Enum, EnumType = typeof(TradeCurrency), MayRequire = "ludeon.rimworld.royalty")]
+    /// <summary>交易货币（银 / 荣誉点）。只有 Royalty 用得上，未装时不显示该列。</summary>
+    [TweakField(Style = ColumnStyle.Enum, EnumType = typeof(TradeCurrency), MayRequire = "ludeon.rimworld.royalty", DataType = ColumnDataType.Display)]
     public TradeCurrency? tradeCurrency = null;
 
     [TweakField(Style = ColumnStyle.DefSelector, MayRequire = "ludeon.rimworld.royalty")]
@@ -110,7 +110,9 @@ class TraderData : TweakData<TraderData>
 
     /// <summary>
     /// 写入库存生成器。<paramref name="gens"/> 为 null（用户清空该字段）⇒ 清空库存列表；
-    /// 否则整表直接交给 Def（<b>不</b>做编码/解析往返），再对每个生成器调一次
+    /// 否则原版生成器按字段表克隆后交给 Def，非原版（其它 Mod 新增）条目则按类型名从 Def 现有的
+    /// 生成器里找回原实例原样放回（见 <see cref="StockGeneratorCodec.MergeWithDef"/>）—— 本工具从不读也不写
+    /// 非原版生成器的字段，所以"改过这个商人"绝不会弄坏它们。最后对每个生成器调一次
     /// <see cref="StockGenerator.ResolveReferences"/>（<c>trader</c> 是 <c>[Unsaved]</c>，必须靠它写回）。
     /// </summary>
     private void ApplyStockGenerators(List<StockGenerator>? gens)
@@ -123,12 +125,10 @@ class TraderData : TweakData<TraderData>
             return;
         }
 
-        // 交给 Def 的是克隆：Def 的活对象始终独立于本实例的字段（否则重复 Apply / 再次编辑会互相影响）。
-        // 非原版（其它 Mod 新增）生成器不克隆（它的自有字段不在字段表里），直接沿用原实例。
-        var list = StockGeneratorCodec.CloneAll(gens);
+        var list = StockGeneratorCodec.MergeWithDef(gens, def.stockGenerators);
         if (list == null)
         {
-            Log.Warning($"[BalanceTweak] {id} 的库存生成器克隆失败，已保持原有库存不变。");
+            Log.Warning($"[BalanceTweak] {id} 的库存生成器无法写回，已保持原有库存不变。");
             return;
         }
         def.stockGenerators = list;

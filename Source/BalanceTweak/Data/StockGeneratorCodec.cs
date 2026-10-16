@@ -16,16 +16,22 @@ namespace BalanceTweak;
 /// <para>
 /// <b>不做反射遍历</b>：原版每个 <see cref="StockGenerator"/> 子类都在 <see cref="ownFieldNames"/> 里
 /// 显式列出<b>自己的</b>字段，逐字段解析成 <see cref="FieldInfo"/>（不少字段是 private，只能按名字经
-/// <see cref="Reflect.Field"/> 拿）。<b>不在这张表里的类型一律视为"非原版"</b>（其它 Mod 新增的子类）：
-/// 只暴露它继承链上表内类型声明的字段（即"只可改其基类的字段"），见 <see cref="FieldsFor"/> /
-/// <see cref="IsVanilla"/>。原版加了新生成器类型 / 新字段时，测试会先炸出来（见
+/// <see cref="Reflect.Field"/> 拿）。原版加了新生成器类型 / 新字段时，测试会先炸出来（见
 /// <c>testStockGen_FieldTableIntegrity</c>）。
+/// </para>
+///
+/// <para>
+/// <b>不在这张表里的类型一律视为"非原版"</b>（其它 Mod 新增的子类），对它们只做<b>只读展示</b>：不读取
+/// 也不修改它们的字段（<see cref="FieldsFor"/> 返回空），存档只留类型名当占位标记，回填时按类型名在 Def
+/// 里找回那个原实例原样放回（<see cref="MergeWithDef"/>）—— 既不会误改其它 Mod 的数据，也不会因为
+/// "改过这个商人 + 存档读档"而把它们的字段弄丢。见 <see cref="IsVanilla"/>。
 /// </para>
 ///
 /// <para>
 /// 文本（<b>非 XML</b>）一行一个生成器，只服务本 mod 的存档与剪贴板：
 /// <code>
 /// StockGenerator_Tag|countRange=1~4|tradeTag=ExoticMisc|excludedThingDefs=[Steel;Cloth]
+/// NewRatkin.StockGenerator_UniqueWeapon
 /// </code>
 /// 每个字段值写进记录前整体转义（<see cref="Escape"/> 用反斜杠转义 <c>\ | = [ ] ;</c>），列表元素
 /// 再各自多转义一层 —— 值里出现任何分隔符都不会破坏结构。<b>等于"新实例初始值"的字段不写</b>
@@ -67,7 +73,8 @@ internal static class StockGeneratorCodec
         public FieldInfo Info = null!;
         /// <summary><see cref="Kind.Enum"/> 的枚举类型。</summary>
         public Type? EnumType;
-        /// <summary><see cref="Kind.Def"/> / <see cref="Kind.DefList"/> / <see cref="Kind.ComplexList"/> 的元素类型。</summary>
+        /// <summary><see cref="Kind.Def"/> 的 Def 类型；<see cref="Kind.DefList"/> / <see cref="Kind.StringList"/> /
+        /// <see cref="Kind.ComplexList"/> 的元素类型（克隆时按它重建 <c>List&lt;T&gt;</c>，必须与字段类型一致）。</summary>
         public Type? ElementType;
 
         public override string ToString() => $"{Name}({Kind})";
@@ -130,19 +137,29 @@ internal static class StockGeneratorCodec
 
     /// <summary>
     /// 某类型可读写的字段 = 继承链上每个"表内类型"声明的字段（<see cref="StockGenerator"/> 的基类字段在前，
-    /// 各级子类字段随后）。表外类型（其它 Mod 新增的子类）只拿到链上表内那部分 —— 即"只可改其基类的字段"。
+    /// 各级子类字段随后）。
+    /// <para>
+    /// <b>表外类型（其它 Mod 新增的生成器）一律返回空</b>：本工具对它们只做只读展示，不读取也不修改它们的
+    /// 字段（见 <see cref="ToItemString"/> / <see cref="MergeWithDef"/>）。
+    /// </para>
     /// <para>也支持字段表里的非生成器小对象类型（<see cref="CountChance"/> / <see cref="ThingDefCountRangeClass"/>）。</para>
     /// </summary>
     public static IReadOnlyList<SgField> FieldsFor(Type type)
     {
         if (fieldCache.TryGetValue(type, out var cached)) return cached;
 
+        var fields = new List<SgField>();
+        if (!ownFieldNames.ContainsKey(type))
+        {
+            fieldCache[type] = fields; // 表外类型：不读不写
+            return fields;
+        }
+
         var chain = new List<Type>();
         for (var t = type; t != null && t != typeof(object) && t != typeof(ValueType); t = t.BaseType)
             chain.Add(t);
         chain.Reverse(); // 基类字段在前
 
-        var fields = new List<SgField>();
         foreach (var t in chain)
         {
             if (!ownFieldNames.TryGetValue(t, out var names)) continue;
@@ -180,7 +197,7 @@ internal static class StockGeneratorCodec
         if (type == typeof(FloatRange)) { field.Kind = Kind.FloatRange; return; }
         if (type.IsEnum) { field.Kind = Kind.Enum; field.EnumType = type; return; }
         if (typeof(Def).IsAssignableFrom(type)) { field.Kind = Kind.Def; field.ElementType = type; return; }
-        if (type == typeof(List<string>)) { field.Kind = Kind.StringList; return; }
+        if (type == typeof(List<string>)) { field.Kind = Kind.StringList; field.ElementType = typeof(string); return; }
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
         {
             var element = type.GetGenericArguments()[0];
@@ -208,14 +225,19 @@ internal static class StockGeneratorCodec
         return lines.Count > 0 ? lines : null;
     }
 
-    /// <summary>单条 → 一行文本（不含换行）。格式见类型注释。</summary>
+    /// <summary>单条 → 一行文本（不含换行）。格式见类型注释。非原版类型只写类型名（占位标记）。</summary>
     public static string ToItemString(StockGenerator gen)
     {
         var type = gen.GetType();
-        if (!IsVanilla(type) && warnedNonVanilla.Add(type))
+
+        // 非原版（其它 Mod 新增）：本工具不读取也不修改它的字段，只留类型名当占位标记；
+        // 回填时按类型名在 Def 里找回那个原实例（见 MergeWithDef），所以它的数据永远不会丢。
+        if (!IsVanilla(type))
         {
-            Log.Warning($"[BalanceTweak] stockGenerators：{TypeLabel(type)} 是非原版生成器（字段表里没有它的字段），"
-                + "存档只保留类型名和它继承的原版字段，它自己的字段不会被保存。");
+            if (warnedNonVanilla.Add(type))
+                Log.Message($"[BalanceTweak] stockGenerators：{TypeLabel(type)} 是非原版生成器，本工具只做只读展示"
+                    + "（不读不写它的字段）：存档只留类型名，回填时按类型名在 Def 里找回原实例。");
+            return TypeLabel(type);
         }
 
         var baseline = BaselineFor(type);
@@ -230,6 +252,62 @@ internal static class StockGeneratorCodec
             sb.Append(FieldSep).Append(field.Name).Append(PairSep).Append(Escape(text));
         }
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// 字段 → Def：原版条目按字段表克隆成新实例（字段与 Def 永不共享实例）；<b>非原版条目不重建</b>，
+    /// 而是按"类型相同、出现次序相同"从 <paramref name="defCurrent"/> 里找回那个原实例原样放回 ——
+    /// 本工具从不读也不写它的字段，所以它不会因为"这个商人被改过 + 存档读档"而丢数据，位置也保持在原处。
+    /// <para>
+    /// <paramref name="defCurrent"/> 里还有没被字段认领的非原版生成器（例如两次存档之间某个 Mod 给这个
+    /// Def 加了生成器）一律追加在末尾，绝不丢。
+    /// </para>
+    /// </summary>
+    public static List<StockGenerator>? MergeWithDef(List<StockGenerator>? picked, List<StockGenerator>? defCurrent)
+    {
+        if (picked.NullOrEmpty()) return null;
+
+        var pool = new List<StockGenerator>();
+        if (defCurrent != null)
+            foreach (var gen in defCurrent)
+                if (gen != null && !IsVanilla(gen.GetType())) pool.Add(gen);
+
+        var used = new List<StockGenerator>();
+        var result = new List<StockGenerator>(picked!.Count + pool.Count);
+        foreach (var entry in picked)
+        {
+            if (entry == null) continue;
+            if (IsVanilla(entry.GetType()))
+            {
+                var clone = Clone(entry);
+                if (clone != null) result.Add(clone);
+                continue;
+            }
+
+            // 非原版：找 Def 里同类型的下一个原实例（StockGenerator 不重写 Equals，Contains 即引用比较）
+            var match = pool.FirstOrDefault(g => g.GetType() == entry.GetType() && !used.Contains(g));
+            if (match != null)
+            {
+                used.Add(match);
+                result.Add(match);
+            }
+            else
+            {
+                Log.Warning($"[BalanceTweak] stockGenerators：Def 里找不到 {TypeLabel(entry.GetType())} 的原实例"
+                    + "（相关 Mod 变动过？），只能放回一个只有类型名的空壳。");
+                result.Add(entry);
+            }
+        }
+
+        foreach (var leftover in pool)
+        {
+            if (used.Contains(leftover)) continue;
+            Log.Message($"[BalanceTweak] stockGenerators：Def 里的非原版生成器 {TypeLabel(leftover.GetType())}"
+                + " 不在字段里，已原样保留（追加在末尾）。");
+            result.Add(leftover);
+        }
+
+        return result.Count > 0 ? result : null;
     }
 
     /// <summary>
@@ -274,8 +352,12 @@ internal static class StockGeneratorCodec
     /// 克隆：按字段表复制（<b>不</b>经过文本），因此字段里的列表都换成新实例，派生自 Def 的活对象不会
     /// 被字段的编辑影响。用于 Def → 字段（避免共享）与字段 → 编辑窗口的副本（Cancel 不影响字段）。
     /// <para>
-    /// <b>表外的非原版类型不克隆，直接沿用原实例</b>：它的自有字段不在表里，克隆只会把它们换成默认值
-    /// （等于丢数据）。代价是该条目的基类字段是<b>就地</b>改在 Def 的活对象上的。
+    /// 复制过程中任何一步失败都<b>不</b>交出"半份副本"（那等于静默丢字段）：直接沿用原实例并报错。
+    /// </para>
+    /// <para>
+    /// <b>表外的非原版类型不克隆</b>：它的字段不在表里，克隆只会把它们换成默认值（同样等于丢数据）。
+    /// 这类条目本工具只做只读展示、不读不写，因此沿用原实例不会带来"编辑落到 Def 上"的问题；
+    /// 回填时另有 <see cref="MergeWithDef"/> 保证 Def 里那个原实例原样归位。
     /// </para>
     /// </summary>
     public static StockGenerator? Clone(StockGenerator? gen)
@@ -284,12 +366,11 @@ internal static class StockGeneratorCodec
         var type = gen.GetType();
         if (!IsVanilla(type)) return gen;
 
-        if (TryCreateInstance(type, out var copyObj) && copyObj is StockGenerator copy)
-        {
-            CopyFields(gen, copy);
+        if (TryCreateInstance(type, out var copyObj) && copyObj is StockGenerator copy && CopyFields(gen, copy))
             return copy;
-        }
-        return gen; // 抽象 / 无法实例化：同样沿用原实例
+
+        Log.Error($"[BalanceTweak] stockGenerators：克隆 {TypeLabel(type)} 失败，已沿用原实例（该条目的字段会就地改在 Def 上）。");
+        return gen;
     }
 
     public static List<StockGenerator>? CloneAll(List<StockGenerator>? list)
@@ -304,39 +385,58 @@ internal static class StockGeneratorCodec
         return result.Count > 0 ? result : null;
     }
 
-    /// <summary>按字段表把 <paramref name="src"/> 的字段复制到 <paramref name="dst"/>（值类型 / Def / 字符串共享，列表新建）。</summary>
-    private static void CopyFields(object src, object dst)
+    /// <summary>按字段表把 <paramref name="src"/> 的字段复制到 <paramref name="dst"/>（值类型 / Def / 字符串共享，列表新建）。
+    /// 任一步失败返回 false —— 调用方据此丢掉这份副本、改用原实例，而不是交出"少字段"的副本。</summary>
+    private static bool CopyFields(object src, object dst)
     {
         foreach (var field in FieldsFor(src.GetType()))
         {
             if (field.Kind == Kind.Unsupported) continue;
             var value = ReadField(field, src);
             if (value == null) continue;
-            WriteField(field, dst, CopyFieldValue(field, value));
+            if (!TryCopyFieldValue(field, value, out var copied)) return false;
+            if (!WriteField(field, dst, copied)) return false;
         }
+        return true;
     }
 
-    private static object CopyFieldValue(SgField field, object value)
+    private static bool TryCopyFieldValue(SgField field, object value, out object? copied)
     {
-        if (field.Kind is not (Kind.StringList or Kind.DefList or Kind.ComplexList)) return value; // 值类型 / 枚举 / Def / 字符串：按值或按引用共享
+        copied = value; // 值类型 / 枚举 / Def / 字符串：按值或按引用共享
+        if (field.Kind is not (Kind.StringList or Kind.DefList or Kind.ComplexList)) return true;
 
-        var elementType = field.ElementType ?? typeof(object);
-        var source = (IList)value;
-        var copy = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
-        foreach (var item in source)
+        var elementType = field.ElementType;
+        if (elementType == null)
         {
-            if (item == null) continue;
-            if (field.Kind == Kind.ComplexList && TryCreateInstance(elementType, out var itemCopy) && itemCopy != null)
-            {
-                CopyFields(item, itemCopy);
-                copy.Add(itemCopy);
-            }
-            else
-            {
-                copy.Add(item); // Def / 字符串不可变，直接共享；CountChance 是值类型，装箱即复制
-            }
+            Log.Error($"[BalanceTweak] stockGenerators：字段 {field.Name}（{field.Kind}）没声明元素类型，无法克隆它的列表。");
+            return false;
         }
-        return copy;
+
+        try
+        {
+            var source = (IList)value;
+            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
+            foreach (var item in source)
+            {
+                if (item == null) continue;
+                if (field.Kind != Kind.ComplexList)
+                {
+                    list.Add(item); // Def / 字符串不可变，直接共享
+                    continue;
+                }
+                // 小对象：换成新实例（CountChance 是值类型，装箱即复制）
+                if (!TryCreateInstance(elementType, out var itemCopy) || itemCopy == null) return false;
+                if (!CopyFields(item, itemCopy)) return false;
+                list.Add(itemCopy);
+            }
+            copied = list;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error($"[BalanceTweak] stockGenerators：克隆字段 {field.Name}（{field.Kind}）失败：{e.Message}");
+            return false;
+        }
     }
 
     #endregion
@@ -381,7 +481,9 @@ internal static class StockGeneratorCodec
 
     private static string JoinList(IEnumerable<string?> items)
     {
-        var sb = new StringBuilder(ListStart);
+        // 注意：不能写 new StringBuilder(ListStart) —— char 会隐式转成 int，命中"容量"构造函数，
+        // 结果是"空内容 + 容量 91"，开头的 '[' 会被静默丢掉（列表解码随即失败）。必须显式 Append。
+        var sb = new StringBuilder().Append(ListStart);
         bool any = false;
         foreach (var item in items)
         {
@@ -507,7 +609,7 @@ internal static class StockGeneratorCodec
             }
             if (field.Kind == Kind.Unsupported) continue; // Classify 已报过，不当作损坏
             if (!TryDecodeFieldValue(field, Unescape(pair[1]), out var value)) return false;
-            WriteField(field, target, value);
+            if (!WriteField(field, target, value)) return false;
         }
         return true;
     }
@@ -666,13 +768,14 @@ internal static class StockGeneratorCodec
         }
     }
 
-    /// <summary>写字段值；失败只告警（<c>CountChance</c> 这类值类型要传装箱对象，<see cref="FieldInfo.SetValue"/> 会就地改写这个箱子）。</summary>
-    public static void WriteField(SgField field, object target, object? value)
+    /// <summary>写字段值；失败告警并返回 false（<c>CountChance</c> 这类值类型要传装箱对象，<see cref="FieldInfo.SetValue"/> 会就地改写这个箱子）。</summary>
+    public static bool WriteField(SgField field, object target, object? value)
     {
-        try { field.Info.SetValue(target, value); }
+        try { field.Info.SetValue(target, value); return true; }
         catch (Exception e)
         {
-            Log.Error($"[BalanceTweak] stockGenerators：写入 {target.GetType().Name}.{field.Name} 失败：{e.Message}");
+            Log.Error($"[BalanceTweak] stockGenerators：写入 {target.GetType().Name}.{field.Name}（{field.Kind}）失败：{e.Message}");
+            return false;
         }
     }
 

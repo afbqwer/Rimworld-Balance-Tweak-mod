@@ -20,7 +20,8 @@ namespace BalanceTweak;
 /// </para>
 /// <para>
 /// 读写统一走 <see cref="StockGeneratorCodec.ReadField"/> / <see cref="StockGeneratorCodec.WriteField"/>；
-/// 哪些字段可编辑由 <see cref="StockGeneratorCodec.FieldsFor"/> 决定（非原版子类只给出它继承的原版字段）。
+/// 哪些字段可编辑由 <see cref="StockGeneratorCodec.FieldsFor"/> 决定（非原版子类返回空集 —— 本工具对它们
+/// 只做只读展示，列表窗口里连编辑窗口都不给开）。
 /// </para>
 /// </summary>
 internal static class StockGeneratorFieldUi

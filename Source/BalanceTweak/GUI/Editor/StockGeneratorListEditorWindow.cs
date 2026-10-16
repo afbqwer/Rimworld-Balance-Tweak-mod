@@ -18,10 +18,10 @@ namespace BalanceTweak;
 /// </para>
 ///
 /// <para>
-/// 非原版子类（其它 Mod 新增的生成器，只可能来自既有 Def 数据）：行上只显示类型名，编辑时也只暴露
-/// 它继承的原版字段 —— 见 <see cref="StockGeneratorCodec.IsVanilla"/> 与
-/// <see cref="StockGeneratorCodec.FieldsFor"/>。这类条目<b>不克隆</b>（它的自有字段不在字段表里，
-/// 克隆只会丢数据），因此它的基类字段是就地改在 Def 的活对象上的。
+/// 非原版子类（其它 Mod 新增的生成器，只可能来自既有 Def 数据）：<b>只读</b> —— 行上只显示类型名（灰字），
+/// 编辑 / 上下移动 / 删除都禁用。本工具不读取也不修改它的字段：存档只留一个类型名的占位标记，保存时按
+/// 类型名把 Def 里那个原实例原样放回原位置（见 <see cref="StockGeneratorCodec.MergeWithDef"/>），
+/// 所以既不会误改其它 Mod 的数据，也不会把它的字段弄丢。
 /// </para>
 /// </summary>
 public class StockGeneratorListEditorWindow : ListEditorWindow<StockGenerator>
@@ -71,13 +71,20 @@ public class StockGeneratorListEditorWindow : ListEditorWindow<StockGenerator>
     protected override void DrawEntry(Rect rect, int index)
     {
         var gen = workingList[index];
+        // 非原版（其它 Mod 新增）条目：只读展示，编辑 / 移动 / 删除一律禁用 —— 本工具不读取也不修改它的
+        // 字段（存档只留类型名，Apply 时按类型名把 Def 里那个原实例原样放回，见 StockGeneratorCodec.MergeWithDef），
+        // 位置也必须跟它在 Def 里的原位置对齐。
+        bool readOnly = !StockGeneratorCodec.IsVanilla(gen.GetType());
 
         float available = rect.width - (EditButtonWidth + MoveButtonWidth * 2 + DeleteButtonWidth + Spacing * 4);
         float curX = rect.x;
+        bool prevEnabled = GUI.enabled;
 
         // 编辑
+        GUI.enabled = !readOnly;
         if (Widgets.ButtonText(new Rect(curX, rect.y, EditButtonWidth, rect.height), "MST.Edit".Translate().RawText))
             OpenGeneratorEditor(gen);
+        GUI.enabled = prevEnabled;
         curX += EditButtonWidth + Spacing;
 
         // 类型 + 摘要
@@ -86,21 +93,18 @@ public class StockGeneratorListEditorWindow : ListEditorWindow<StockGenerator>
         curX += labelRect.width + Spacing;
 
         // 上移 / 下移
-        bool prevEnabled = GUI.enabled;
-        GUI.enabled = index > 0;
+        GUI.enabled = !readOnly && index > 0;
         if (Widgets.ButtonText(new Rect(curX, rect.y, MoveButtonWidth, rect.height), "▲")) Swap(index, index - 1);
+        GUI.enabled = !readOnly && index < workingList.Count - 1;
+        if (Widgets.ButtonText(new Rect(curX + MoveButtonWidth + Spacing, rect.y, MoveButtonWidth, rect.height), "▼")) Swap(index, index + 1);
         GUI.enabled = prevEnabled;
-        curX += MoveButtonWidth + Spacing;
-
-        prevEnabled = GUI.enabled;
-        GUI.enabled = index < workingList.Count - 1;
-        if (Widgets.ButtonText(new Rect(curX, rect.y, MoveButtonWidth, rect.height), "▼")) Swap(index, index + 1);
-        GUI.enabled = prevEnabled;
-        curX += MoveButtonWidth + Spacing;
+        curX += MoveButtonWidth * 2 + Spacing * 2;
 
         // 删除
+        GUI.enabled = !readOnly;
         if (Widgets.ButtonText(new Rect(curX, rect.y, DeleteButtonWidth, rect.height), "X"))
             workingList.RemoveAt(index);
+        GUI.enabled = prevEnabled;
     }
 
     private static void DrawGeneratorLabel(Rect rect, StockGenerator gen)
@@ -113,10 +117,15 @@ public class StockGeneratorListEditorWindow : ListEditorWindow<StockGenerator>
             string summary = StockGeneratorCodec.Summarize(gen);
             if (summary.Length > 0) label += "   " + summary;
         }
+
+        // 非原版条目用灰字提示"这一行是只读的"
+        Color prevColor = GUI.color;
+        if (!vanilla) GUI.color = new Color(0.75f, 0.75f, 0.75f);
         Widgets.Label(rect, label);
+        GUI.color = prevColor;
         Text.Anchor = TextAnchor.UpperLeft;
 
-        // 非原版类型：只显示类型名（Mod 字段既无翻译也无从判断语义），悬停说明为什么表单里字段很少。
+        // 非原版类型：只显示类型名（字段靠 Mod 自己解释、没有翻译），悬停说明本工具对它只读。
         if (!vanilla)
             TooltipHandler.TipRegion(rect, "MST.StockGenNonVanilla".Translate().RawText);
     }

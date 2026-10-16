@@ -18,7 +18,7 @@
     <MST.AddStockGenerator>Add generator</MST.AddStockGenerator>
     <MST.AddEntry>Add entry</MST.AddEntry>
     <MST.StockGenType>Type</MST.StockGenType>
-    <MST.StockGenNonVanilla>Non-vanilla type (added by another mod): only the type name is shown, and only its inherited vanilla fields can be edited</MST.StockGenNonVanilla>
+    <MST.StockGenNonVanilla>Non-vanilla type (added by another mod): shown read-only; this tool neither reads nor writes its fields</MST.StockGenNonVanilla>
     <MST.StockGenUnsupported>Editing this field type is not supported; value kept</MST.StockGenUnsupported>
 
     <!-- Stock generator fields (key = vanilla XML element name, easy to map to def XML) -->
@@ -58,5 +58,5 @@
     <MST.tradeCurrencyComment>Currency used for trading: Silver, or Favor (requires Royalty).</MST.tradeCurrencyComment>
     <MST.permitRequiredForTradingComment>Requires holding this imperial permit to trade (requires Royalty).</MST.permitRequiredForTradingComment>
     <MST.commonalityMultFromPopulationIntentComment>Curve multiplying commonality by population intent.</MST.commonalityMultFromPopulationIntentComment>
-    <MST.stockGeneratorsComment>Stock generator list. The field holds the generator objects directly; click Edit to change entries one by one: each row is a generator (class name + key field summary) and can be added (vanilla types only), moved up/down or removed; every generator field gets a text box, dropdown or sub-list window depending on its kind. Non-vanilla (mod-added) types show only the class name and allow editing only their inherited vanilla fields. Saves as one line of field text per generator; copy/paste also works line by line (paste is validated as a whole).</MST.stockGeneratorsComment>
+    <MST.stockGeneratorsComment>Stock generator list. The field holds the generator objects directly; click Edit to change entries one by one: each row is a generator (class name + key field summary) and can be added (vanilla types only), moved up/down or removed; every generator field gets a text box, dropdown or sub-list window depending on its kind. Non-vanilla (mod-added) types are shown read-only by class name; this tool neither reads nor writes their fields. Saves as one line of field text per generator; copy/paste also works line by line (paste is validated as a whole).</MST.stockGeneratorsComment>
 </LanguageData>
