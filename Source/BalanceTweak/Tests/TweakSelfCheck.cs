@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using RimWorld;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -61,11 +62,12 @@ public static class TweakSelfCheck
         r += Guard("SC5", SC5_UnsetNotWritten);
         r += Guard("SC6", SC6_Snapshot);
         r += Guard("SC9", SC9_LinkageRefresh);
+        r += Guard("SC10", SC10_CodecCoverage);
 
         if (r.Issues == 0)
-            Log.Message($"{Tag} SC1–SC9 全部通过（共 {r.Checks} 项检查）。");
+            Log.Message($"{Tag} SC1–SC10 全部通过（共 {r.Checks} 项检查）。");
         else
-            Log.Warning($"{Tag} SC1–SC9 完成：检查 {r.Checks} 项，异常 {r.Issues} 项（详见上方 [BT/SELFCHECK] 警告）。");
+            Log.Warning($"{Tag} SC1–SC10 完成：检查 {r.Checks} 项，异常 {r.Issues} 项（详见上方 [BT/SELFCHECK] 警告）。");
     }
 
     /// <summary>自检本身绝不允许影响游戏：任何异常都吞掉并记 error。</summary>
@@ -447,6 +449,40 @@ public static class TweakSelfCheck
                 if (!string.Equals(now, expect, StringComparison.Ordinal))
                     Warn("SC9", $"{weapon.id} 派生列 {col.fieldName} 与重算值不一致（{now} -> 重算 {expect}）"
                               + " —— 检查关联项（弹丸 / 炮塔）改动后是否漏了刷新调用", ref issues, printed++);
+            }
+        }
+        return new R(checks, issues);
+    }
+
+    // ─────────────────────────── SC10 登记表完备性 ───────────────────────────
+
+    /// <summary>
+    /// 断言每个 <c>[TweakField]</c> 字段的类型都登记在 <c>TweakData.FieldCodecs</c> 里。
+    /// <para>
+    /// 这条是 ①（登记表）的直接收益：改造前"漏登记"是**静默**的 —— 字段不落盘、读档也不还原，
+    /// 只在用户改完重开后才发现数据没了。现在启动即报。
+    /// </para>
+    /// <para>
+    /// 字段枚举口径必须与 <c>TweakData&lt;T&gt;.InitStaticFields</c> 严格一致：
+    /// <c>MayRequire</c> 未满足的字段不进字段表、不参与序列化，也就不该检查（否则误报 —— SC11 首跑踩过这个坑）。
+    /// </para>
+    /// </summary>
+    private static R SC10_CodecCoverage()
+    {
+        int checks = 0, issues = 0, printed = 0;
+
+        foreach (var dataType in TweakData.AllConcreteDataTypes)
+        {
+            foreach (var field in dataType.GetFields(BindingFlags.Public | BindingFlags.Instance))
+            {
+                var attr = field.GetCustomAttribute<TweakFieldAttribute>();
+                if (attr == null || attr.DataType != ColumnDataType.Field) continue;
+                if (!DataUtility.MayRequire(attr.MayRequire)) continue;
+
+                checks++;
+                if (TweakData.FieldCodecs.Find(field.FieldType) == null)
+                    Warn("SC10", $"{dataType.Name}.{field.Name}（{field.FieldType.Name}）的类型未登记在 FieldCodecs 里"
+                                + " —— 该字段既不会落盘也不会还原", ref issues, printed++);
             }
         }
         return new R(checks, issues);

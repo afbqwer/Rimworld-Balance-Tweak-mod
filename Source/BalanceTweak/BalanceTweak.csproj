@@ -82,4 +82,8 @@
 	<!-- 可选 Mod（PipeSystem / VEF / VanillaPsycastsExpanded）不在此引用：
 	     一旦引用，编译器就可能把它们的类型编进类型/闭包字段，未加载该 Mod 的玩家会在
 	     启动期 TypeLoadException。这些 Mod 的类型一律按全名反射访问（见 DataUtility）。 -->
+
+	<!-- 测试工程需要访问 internal 类型（FieldCodecs 登记表、StockGeneratorCodec 等）。
+	     注意：不能用 <InternalsVisibleTo> item —— 上面 GenerateAssemblyInfo=false 会把它吃掉；
+	     改为在 AssemblyInfo.cs 里手写特性（且仅 Debug）。 -->
 </Project>

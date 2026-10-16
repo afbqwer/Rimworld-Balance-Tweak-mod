@@ -105,6 +105,12 @@ public static class TweakDataSerializationTests
         RunTest("Trader stockGenerators 非原版占位标记：按类型名找回 Def 原实例（字段不丢）", () => testStockGen_NonVanillaPassthrough(), ref passed, ref failed);
         RunTest("Trader stockGenerators 表单区间文本：半成品（1~ / ~4）与千位分隔符必须被拒", () => testStockGen_RangeTextValidation(), ref passed, ref failed);
 
+        // ─── SC11a：全字段 Scribe 往返自检（见 Docs/Architecture_Improvement_Plan.md §3.1）───
+        // 行为验证：给每个可测字段灌非默认样本值 → 真实 Scribe 存/读往返 → 逐字段比对。
+        // 这是 SC1–SC9 之外唯一验证"字段真能落盘、又能读回"的检查。
+        RunTest("★SC11a 全字段 Scribe 往返（漏登记/编解码错误都会让值读不回来）",
+            () => TweakFieldScribeRoundTripTests.Run(), ref passed, ref failed);
+
         // ─── 备份/回滚测试 ───
         RunTest("ResolveDefs 单字段失败 → 回滚所有字段", () => testBackupRestore_SingleFieldFail(), ref passed, ref failed);
         RunTest("ResolveDefs 多类型字段，单个失败 → 全部回滚", () => testBackupRestore_MixedTypes(), ref passed, ref failed);
@@ -1804,11 +1810,14 @@ public static class TweakDataSerializationTests
 
         var merged = StockGeneratorCodec.MergeWithDef(new List<StockGenerator> { shell, defGen2 }, defList);
         Assert(merged is { Count: 3 }, $"应得到 1 个原版克隆 + 2 个原实例 共 3 条，实际 {merged?.Count}");
-        Assert(merged![0].GetType() == typeof(StockGenerator_Tag) && !ReferenceEquals(merged[0], defGen2),
+        // 输出顺序 = picked 顺序（= 用户编辑时的列表顺序），逐项替换、位置保持。
+        // 本用例 picked = [shell, defGen2] ⇒ merged[0] 来自 shell（非原版 → 换回 Def 原实例），
+        //                                  merged[1] 来自 defGen2（原版 → 克隆）。
+        Assert(merged![0] is TestNonVanillaGenerator m1 && m1.extraModField == "keep-1",
+            "非原版条目应按类型名换回 Def 里的原实例（字段不丢），且停在 picked 原位");
+        Assert(!ReferenceEquals(merged[0], shell), "绝不能把空壳塞回 Def");
+        Assert(merged[1].GetType() == typeof(StockGenerator_Tag) && !ReferenceEquals(merged[1], defGen2),
             "原版条目应是克隆（不与 Def 共享实例）");
-        Assert(merged[1] is TestNonVanillaGenerator m1 && m1.extraModField == "keep-1",
-            "非原版条目应按类型名换回 Def 里的原实例（字段不丢）");
-        Assert(!ReferenceEquals(merged[1], shell), "绝不能把空壳塞回 Def");
         Assert(merged[2] is TestNonVanillaGenerator m2 && m2.extraModField == "keep-2",
             "Def 里剩下的非原版生成器应原样保留（追加在末尾，绝不丢）");
 

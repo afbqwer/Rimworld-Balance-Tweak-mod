@@ -145,6 +145,18 @@ public abstract partial class TweakData : IExposable
         => value != null
            || (savedLoadData?.TryGetValue(fieldName, out var saved) == true && !IsEmptyValue(saved));
 
+    /// <summary>
+    /// 所有具体的 TweakData 子类（自检 / 统计共用，缓存一次）。
+    /// 口径：非抽象、非基类自身、且继承自 <see cref="TweakData"/>。
+    /// </summary>
+    public static IReadOnlyList<Type> AllConcreteDataTypes => _allConcreteDataTypes ??= typeof(TweakData).Assembly
+        .GetTypes()
+        .Where(t => !t.IsAbstract && t != typeof(TweakData) && typeof(TweakData).IsAssignableFrom(t))
+        .OrderBy(t => t.Name)
+        .ToList();
+
+    private static IReadOnlyList<Type>? _allConcreteDataTypes;
+
     public static TweakData? GetData(TweakID? id)
     {
         if (id == null) return null;

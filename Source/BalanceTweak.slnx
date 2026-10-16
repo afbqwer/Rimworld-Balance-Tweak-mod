@@ -4,5 +4,6 @@
     <BuildType Name="Release" />
   </Configurations>
   <Project Path="BalanceTweak/BalanceTweak.csproj" />
+  <Project Path="BalanceTweak.Tests/BalanceTweak.Tests.csproj" />
   <Project Path="CheckLoc/CheckLoc.csproj" />
 </Solution>
