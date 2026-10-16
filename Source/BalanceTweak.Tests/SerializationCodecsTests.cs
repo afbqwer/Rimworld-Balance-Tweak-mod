@@ -33,8 +33,19 @@ public class SerializationCodecsTests
         typeof(ProcessIngredientItem), typeof(ProcessResultItem),
     };
 
-    /// <summary>碰一下 <see cref="SerializationHelper"/>，确保它的静态构造（字段声明）已经跑过。</summary>
+    /// <summary>
+    /// 确保字段表已初始化。字段声明与登记项都在 <c>TweakData.FieldCodecs.Build()</c>，
+    /// 由那条链上的静态构造统一完成 —— 这里借一次 <see cref="SerializationHelper"/> 调用把它拉起来
+    /// （GUI 调 <c>SerializeXxxList</c> 走的也是这条路）。
+    /// </summary>
     private static void EnsureDeclared() => _ = SerializationHelper.SerializeStatModifierList(null);
+
+    /// <summary>逐条编码 —— 与登记表里 <c>Expose</c> 调的是同一个方法。</summary>
+    private static string Item<T>(T value) where T : class => PocoCodec.Encode(value);
+
+    /// <summary>逐条解码 —— 与登记表里 <c>Resolve</c> 调的是同一个方法。失败返回 <c>null</c>。</summary>
+    private static T? Parse<T>(string text) where T : class
+        => PocoCodec.TryDecode(text, typeof(T), out var value) && value is T item ? item : null;
 
     [Fact]
     public void 迁移类型都已声明()
@@ -98,33 +109,43 @@ public class SerializationCodecsTests
             Assert.Equal(fields, PocoCodec.FieldsFor(type).Select(f => f.Name).ToArray());
     }
 
-    // ═══════════════════════ 编码文本 ═══════════════════════
+    // ═══════════════════════ 登记覆盖与包装一致 ═══════════════════════
 
     /// <summary>
-    /// <b>守卫</b>：游戏内的往返测试用 <c>PocoCodec.Encode</c> 模拟 <c>_savedLoadData</c> 的内容，
-    /// 而真正写进存档的是 <c>ExposeXxxList</c> 调用的 <c>XToItemString</c>。
-    /// 这条保证两者产出完全一致 —— 否则那些测试就是在"自说自话"（编一份存档里根本不会出现的文本）。
+    /// 登记表把 17 个类型都登记成了 <c>List&lt;T&gt;</c> 的收发对，且**列表包装与逐条编码一致**。
+    ///
+    /// <para>
+    /// 前半条守"漏登记"（该字段会静默不落盘）；后半条守"包装层与编解码层分叉"——
+    /// 游戏内的往返测试用 <c>PocoCodec.Encode</c> 模拟存档内容，若 <c>SerializeXxxList</c>
+    /// 的包装产出与之不同，那些测试就是在编一份存档里根本不会出现的文本。
+    /// </para>
+    ///
+    /// <para>
+    /// 注：逐条编解码现在由登记项直接调 <c>PocoCodec</c>（<c>PocoList&lt;T&gt;</c> 一行登记），
+    /// 所以"逐条路径一致"由类型系统保证，不需要再断言；这里只测**包装层**。
+    /// </para>
     /// </summary>
     [Fact]
-    public void 编码路径与存档写入一致()
+    public void 登记表覆盖且列表包装一致()
     {
         EnsureDeclared();
 
-        Assert.Equal(PocoCodec.Encode(new StatModifier { stat = Def<StatDef>("Foo"), value = 1.5f }),
-            SerializationHelper.StatModifierToItemString(new StatModifier { stat = Def<StatDef>("Foo"), value = 1.5f }));
-        Assert.Equal(PocoCodec.Encode(new SkillGain { skill = Def<SkillDef>("Bar"), amount = 3 }),
-            SerializationHelper.SkillGainToItemString(new SkillGain { skill = Def<SkillDef>("Bar"), amount = 3 }));
-        Assert.Equal(PocoCodec.Encode(new TerrainThreshold { terrain = Def<TerrainDef>("Soil"), min = 1f, max = 2f }),
-            SerializationHelper.TerrainThresholdToItemString(new TerrainThreshold { terrain = Def<TerrainDef>("Soil"), min = 1f, max = 2f }));
+        foreach (var type in MigratedTypes)
+        {
+            var codec = TweakData.FieldCodecs.Find(typeof(List<>).MakeGenericType(type));
+            Assert.True(codec != null, $"List<{type.Name}> 没有登记（该字段会静默不落盘）");
+            Assert.True(codec!.Resolve != null, $"List<{type.Name}> 登记了却没有解析分支（读档后不会还原）");
+        }
 
-        // 列表包装同样要一致
         var list = new List<StatModifier> { new() { value = 1f } };
-        var text = SerializationHelper.SerializeStatModifierList(list);
-        Assert.Equal(string.Join("\n", list.Select(PocoCodec.Encode)), text);
+        Assert.Equal(string.Join("\n", list.Select(PocoCodec.Encode)),
+            SerializationHelper.SerializeStatModifierList(list));
     }
 
     /// <summary>合成 Def 只用来验证编码方向（解码要 DefDatabase 查回实例，测试进程做不到）。</summary>
     private static T Def<T>(string defName) where T : Def, new() => new() { defName = defName };
+
+    // ═══════════════════════ 编码文本 ═══════════════════════
 
     [Fact]
     public void 编码文本_字段名与顺序()
@@ -132,19 +153,19 @@ public class SerializationCodecsTests
         EnsureDeclared();
 
         var sm = new StatModifier { stat = Def<StatDef>("Foo"), value = 1.5f };
-        Assert.Equal("stat=Foo|value=1.5", SerializationHelper.StatModifierToItemString(sm));
+        Assert.Equal("stat=Foo|value=1.5", Item(sm));
 
         // 默认值省略：value 为 0（= 新实例初值）时不写
-        Assert.Equal("stat=Foo", SerializationHelper.StatModifierToItemString(new StatModifier { stat = Def<StatDef>("Foo") }));
+        Assert.Equal("stat=Foo", Item(new StatModifier { stat = Def<StatDef>("Foo") }));
 
         var df = new DamageFactor { damageDef = Def<DamageDef>("Blunt"), factor = 0.25f };
-        Assert.Equal("damageDef=Blunt|factor=0.25", SerializationHelper.DamageFactorToItemString(df));
+        Assert.Equal("damageDef=Blunt|factor=0.25", Item(df));
 
         var sg = new SkillGain { skill = Def<SkillDef>("Shooting"), amount = 3 };
-        Assert.Equal("skill=Shooting|amount=3", SerializationHelper.SkillGainToItemString(sg));
+        Assert.Equal("skill=Shooting|amount=3", Item(sg));
 
         var tt = new TerrainThreshold { terrain = Def<TerrainDef>("Soil"), min = 1.5f, max = 9f };
-        Assert.Equal("terrain=Soil|min=1.5|max=9", SerializationHelper.TerrainThresholdToItemString(tt));
+        Assert.Equal("terrain=Soil|min=1.5|max=9", Item(tt));
     }
 
     /// <summary>旧格式是 <c>a|b|c</c>（位置敏感），新格式自带字段名 —— 顺带钉住"值带转义"这一点。</summary>
@@ -163,7 +184,7 @@ public class SerializationCodecsTests
             postFactor = 1.5f,
             statFactorMod = Def<StatDef>("SomeStat"),
         };
-        var line = SerializationHelper.PawnCapacityModifierToItemString(pcm);
+        var line = Item(pcm);
         Assert.StartsWith("capacity=Moving|offset=0.25|setMax=0.75|postFactor=1.5", line);
         Assert.Contains("statFactorMod=SomeStat", line);
         Assert.DoesNotContain("setMaxCurveEvaluateStat", line); // 默认 null，省略
@@ -238,12 +259,12 @@ public class SerializationCodecsTests
     {
         EnsureDeclared();
 
-        Assert.Null(SerializationHelper.ParseThingDefCountClass("count=-1"));
-        Assert.Null(SerializationHelper.ParseThingDefCountClass("count=-1|thingDef="));
-        Assert.NotNull(SerializationHelper.ParseThingDefCountClass("count=0"));
+        Assert.Null(Parse<ThingDefCountClass>("count=-1"));
+        Assert.Null(Parse<ThingDefCountClass>("count=-1|thingDef="));
+        Assert.NotNull(Parse<ThingDefCountClass>("count=0"));
 
-        Assert.Null(SerializationHelper.ParseProcessResultItem("count=-3"));
-        Assert.NotNull(SerializationHelper.ParseProcessResultItem("count=0"));
+        Assert.Null(Parse<ProcessResultItem>("count=-3"));
+        Assert.NotNull(Parse<ProcessResultItem>("count=0"));
     }
 
     /// <summary>未知字段名 / 值类型不对 ⇒ 整条丢弃（旧手写格式同样如此，且更严格）。</summary>
@@ -252,9 +273,9 @@ public class SerializationCodecsTests
     {
         EnsureDeclared();
 
-        Assert.Null(SerializationHelper.ParseStatModifier("noSuchField=1"));
-        Assert.Null(SerializationHelper.ParseStatModifier("value=abc"));
-        Assert.Null(SerializationHelper.ParseSkillGain("amount=1.5"));  // amount 是 int
+        Assert.Null(Parse<StatModifier>("noSuchField=1"));
+        Assert.Null(Parse<StatModifier>("value=abc"));
+        Assert.Null(Parse<SkillGain>("amount=1.5"));  // amount 是 int
         Assert.Null(SerializationHelper.DeserializeStatModifierList("value=abc\nvalue=1"));
     }
 

@@ -13,8 +13,10 @@ namespace BalanceTweak;
 ///
 /// <para>
 /// <b>④ 第二步（2026-10-16）</b>：17 个纯数据类型的编解码已从"手写 <c>split('|')</c>"迁到
-/// <see cref="PocoCodec"/> 的字段表驱动 —— 见下方静态构造里的声明。文本格式随之从
-/// <c>值|值|值</c>（位置敏感）变成 <c>字段名=值|…</c>（自描述、值带转义）。
+/// <see cref="PocoCodec"/> 的字段表驱动 —— 字段声明与登记项都在
+/// <c>TweakData.FieldCodecs.Build()</c> 的 <c>PocoList&lt;T&gt;(...)</c> 一行里。
+/// 文本格式随之从 <c>值|值|值</c>（位置敏感）变成 <c>字段名=值|…</c>（自描述、值带转义）。
+/// 本文件只保留这些类型的<b>列表级</b>入口（GUI 剪贴板要用）。
 /// </para>
 ///
 /// <para>
@@ -37,7 +39,14 @@ public static class SerializationHelper
     // ============================================================
 
     /// <summary>
-    /// 声明各类型参与序列化的字段（<b>顺序即文本里的字段顺序</b>）。
+    /// 确保字段表已初始化。
+    ///
+    /// <para>
+    /// <b>字段声明与登记项现在都在 <c>TweakData.FieldCodecs.Build()</c> 一处</b>
+    /// （见那里的 <c>PocoList&lt;T&gt;(...)</c>）—— 加一个 POCO 列表类型只改那一行。
+    /// 本静态构造只做一次触发，保证任何 <c>SerializationHelper.*</c> 调用
+    /// （例如 GUI 的 <c>SerializeXxxList</c>）拿到的都是已声明的字段表。
+    /// </para>
     ///
     /// <para>
     /// <b>只声明"迁移前就参与序列化"的字段</b>，而不是原版实际拥有的全部字段 —— 这是刻意的：
@@ -52,43 +61,11 @@ public static class SerializationHelper
     /// 代价是旧存档里这部分数据不再可读（本项目不考虑迁移）。
     /// </para>
     /// </summary>
-    static SerializationHelper()
-    {
-        PocoCodec.Declare(typeof(StatModifier), "stat", "value");
-        PocoCodec.Declare(typeof(PawnCapacityModifier),
-            "capacity", "offset", "setMax", "postFactor", "statFactorMod", "setMaxCurveEvaluateStat");
-        PocoCodec.Declare(typeof(DamageFactor), "damageDef", "factor");
-        PocoCodec.Declare(typeof(SkillGain), "skill", "amount");
-        PocoCodec.Declare(typeof(Aptitude), "skill", "level");
-        PocoCodec.Declare(typeof(GeneticTraitData), "def", "degree");
-        PocoCodec.Declare(typeof(ThingDefCountClass), "thingDef", "stuff", "count");
-        PocoCodec.Declare(typeof(SkillRequirement), "skill", "minLevel");
-        PocoCodec.Declare(typeof(TraitRequirement), "def", "degree");
-        PocoCodec.Declare(typeof(BiomePlantRecord), "plant", "commonality");
-        PocoCodec.Declare(typeof(BiomeAnimalRecord), "animal", "commonality");
-        PocoCodec.Declare(typeof(FishChance), "fishDef", "chance");
-        PocoCodec.Declare(typeof(BiomeDiseaseRecord), "diseaseInc", "commonality");
-        PocoCodec.Declare(typeof(WeatherCommonalityRecord), "weather", "commonality");
-        PocoCodec.Declare(typeof(TerrainThreshold), "terrain", "min", "max");
-        PocoCodec.Declare(typeof(ProcessIngredientItem), "thing", "thingCategory", "disallowedThingDefs", "countNeeded");
-        PocoCodec.Declare(typeof(ProcessResultItem), "thing", "count");
-
-        // 字段表表达不了的**取值范围**约束（原来手写在各个 Parse 里）。
-        // 没有这个钩子就只能二选一：放弃校验（开始接受以前拒绝的值），或把校验留在编解码里。
-        PocoCodec.SetValidator(typeof(ThingDefCountClass), o => ((ThingDefCountClass)o).count >= 0);
-        PocoCodec.SetValidator(typeof(ProcessResultItem), o => ((ProcessResultItem)o).count >= 0);
-    }
+    static SerializationHelper() => _ = TweakData.FieldCodecs.All;
 
     // ============================================================
     //  字段表驱动的编解码（上述 17 个类型共用同一形状）
     // ============================================================
-
-    /// <summary>元素 → 一行文本（字段名=值 …）。</summary>
-    private static string ToItem<T>(T value) where T : class => PocoCodec.Encode(value);
-
-    /// <summary>一行文本 → 元素。任一步失败返回 <c>null</c>（调用方据此丢弃整条）。</summary>
-    private static T? FromItem<T>(string str) where T : class
-        => PocoCodec.TryDecode(str, typeof(T), out var value) && value is T item ? item : null;
 
     /// <summary>列表 → 多行文本；空列表返回 <c>null</c>。</summary>
     private static string? SerializeItems<T>(List<T>? list) where T : class => PocoCodec.EncodeList(list);
@@ -144,13 +121,13 @@ public static class SerializationHelper
 
     // ============================================================
     //  以下 17 组：字段表驱动（④ 第二步迁移）
+    //
+    //  逐条编解码（对象 ↔ 一行文本）已收进 PocoCodec，由 FieldCodecs 的登记项直接调用；
+    //  这里只保留**列表级**入口 —— GUI 编辑器的 SerializeList/DeserializeList
+    //  （剪贴板）与 StatColumnConfig 用它，与存档写的是同一份文本。
     // ============================================================
 
     #region StatModifier
-
-    public static string StatModifierToItemString(StatModifier sm) => ToItem(sm);
-
-    public static StatModifier? ParseStatModifier(string str) => FromItem<StatModifier>(str);
 
     public static string? SerializeStatModifierList(List<StatModifier>? list) => SerializeItems(list);
 
@@ -159,10 +136,6 @@ public static class SerializationHelper
     #endregion
 
     #region PawnCapacityModifier
-
-    public static string PawnCapacityModifierToItemString(PawnCapacityModifier pcm) => ToItem(pcm);
-
-    public static PawnCapacityModifier? ParsePawnCapacityModifier(string str) => FromItem<PawnCapacityModifier>(str);
 
     public static string? SerializePawnCapacityModifierList(List<PawnCapacityModifier>? list) => SerializeItems(list);
 
@@ -173,10 +146,6 @@ public static class SerializationHelper
 
     #region DamageFactor
 
-    public static string DamageFactorToItemString(DamageFactor df) => ToItem(df);
-
-    public static DamageFactor? ParseDamageFactor(string str) => FromItem<DamageFactor>(str);
-
     public static string? SerializeDamageFactorList(List<DamageFactor>? list) => SerializeItems(list);
 
     public static List<DamageFactor>? DeserializeDamageFactorList(string? data) => DeserializeItems<DamageFactor>(data);
@@ -184,10 +153,6 @@ public static class SerializationHelper
     #endregion
 
     #region SkillGain
-
-    public static string SkillGainToItemString(SkillGain sg) => ToItem(sg);
-
-    public static SkillGain? ParseSkillGain(string str) => FromItem<SkillGain>(str);
 
     public static string? SerializeSkillGainList(List<SkillGain>? list) => SerializeItems(list);
 
@@ -197,10 +162,6 @@ public static class SerializationHelper
 
     #region Aptitude
 
-    public static string AptitudeToItemString(Aptitude a) => ToItem(a);
-
-    public static Aptitude? ParseAptitude(string str) => FromItem<Aptitude>(str);
-
     public static string? SerializeAptitudeList(List<Aptitude>? list) => SerializeItems(list);
 
     public static List<Aptitude>? DeserializeAptitudeList(string? data) => DeserializeItems<Aptitude>(data);
@@ -208,10 +169,6 @@ public static class SerializationHelper
     #endregion
 
     #region GeneticTraitData
-
-    public static string GeneticTraitDataToItemString(GeneticTraitData gtd) => ToItem(gtd);
-
-    public static GeneticTraitData? ParseGeneticTraitData(string str) => FromItem<GeneticTraitData>(str);
 
     public static string? SerializeGeneticTraitDataList(List<GeneticTraitData>? list) => SerializeItems(list);
 
@@ -221,10 +178,6 @@ public static class SerializationHelper
     #endregion
 
     #region ThingDefCountClass
-
-    public static string ThingDefCountClassToItemString(ThingDefCountClass tdc) => ToItem(tdc);
-
-    public static ThingDefCountClass? ParseThingDefCountClass(string str) => FromItem<ThingDefCountClass>(str);
 
     public static string? SerializeThingDefCountClassList(List<ThingDefCountClass>? list) => SerializeItems(list);
 
@@ -292,10 +245,6 @@ public static class SerializationHelper
 
     #region SkillRequirement
 
-    public static string SkillRequirementToItemString(SkillRequirement sr) => ToItem(sr);
-
-    public static SkillRequirement? ParseSkillRequirement(string str) => FromItem<SkillRequirement>(str);
-
     public static string? SerializeSkillRequirementList(List<SkillRequirement>? list) => SerializeItems(list);
 
     public static List<SkillRequirement>? DeserializeSkillRequirementList(string? data)
@@ -304,10 +253,6 @@ public static class SerializationHelper
     #endregion
 
     #region TraitRequirement
-
-    public static string TraitRequirementToItemString(TraitRequirement tr) => ToItem(tr);
-
-    public static TraitRequirement? ParseTraitRequirement(string str) => FromItem<TraitRequirement>(str);
 
     public static string? SerializeTraitRequirementList(List<TraitRequirement>? list) => SerializeItems(list);
 
@@ -318,10 +263,6 @@ public static class SerializationHelper
 
     #region BiomePlantRecord
 
-    public static string BiomePlantRecordToItemString(BiomePlantRecord r) => ToItem(r);
-
-    public static BiomePlantRecord? ParseBiomePlantRecord(string str) => FromItem<BiomePlantRecord>(str);
-
     public static string? SerializeBiomePlantList(List<BiomePlantRecord>? list) => SerializeItems(list);
 
     public static List<BiomePlantRecord>? DeserializeBiomePlantList(string? data)
@@ -330,10 +271,6 @@ public static class SerializationHelper
     #endregion
 
     #region BiomeAnimalRecord
-
-    public static string BiomeAnimalRecordToItemString(BiomeAnimalRecord r) => ToItem(r);
-
-    public static BiomeAnimalRecord? ParseBiomeAnimalRecord(string str) => FromItem<BiomeAnimalRecord>(str);
 
     public static string? SerializeBiomeAnimalList(List<BiomeAnimalRecord>? list) => SerializeItems(list);
 
@@ -344,10 +281,6 @@ public static class SerializationHelper
 
     #region FishChance
 
-    public static string FishChanceToItemString(FishChance f) => ToItem(f);
-
-    public static FishChance? ParseFishChance(string str) => FromItem<FishChance>(str);
-
     public static string? SerializeFishChanceList(List<FishChance>? list) => SerializeItems(list);
 
     public static List<FishChance>? DeserializeFishChanceList(string? data) => DeserializeItems<FishChance>(data);
@@ -355,10 +288,6 @@ public static class SerializationHelper
     #endregion
 
     #region BiomeDiseaseRecord
-
-    public static string BiomeDiseaseRecordToItemString(BiomeDiseaseRecord r) => ToItem(r);
-
-    public static BiomeDiseaseRecord? ParseBiomeDiseaseRecord(string str) => FromItem<BiomeDiseaseRecord>(str);
 
     public static string? SerializeDiseaseList(List<BiomeDiseaseRecord>? list) => SerializeItems(list);
 
@@ -369,11 +298,6 @@ public static class SerializationHelper
 
     #region WeatherCommonalityRecord
 
-    public static string WeatherCommonalityRecordToItemString(WeatherCommonalityRecord r) => ToItem(r);
-
-    public static WeatherCommonalityRecord? ParseWeatherCommonalityRecord(string str)
-        => FromItem<WeatherCommonalityRecord>(str);
-
     public static string? SerializeWeatherCommonalityList(List<WeatherCommonalityRecord>? list) => SerializeItems(list);
 
     public static List<WeatherCommonalityRecord>? DeserializeWeatherCommonalityList(string? data)
@@ -382,10 +306,6 @@ public static class SerializationHelper
     #endregion
 
     #region TerrainThreshold
-
-    public static string TerrainThresholdToItemString(TerrainThreshold t) => ToItem(t);
-
-    public static TerrainThreshold? ParseTerrainThreshold(string str) => FromItem<TerrainThreshold>(str);
 
     public static string? SerializeTerrainThresholdList(List<TerrainThreshold>? list) => SerializeItems(list);
 
@@ -396,10 +316,6 @@ public static class SerializationHelper
 
     #region ProcessIngredientItem
 
-    public static string ProcessIngredientItemToItemString(ProcessIngredientItem i) => ToItem(i);
-
-    public static ProcessIngredientItem? ParseProcessIngredientItem(string str) => FromItem<ProcessIngredientItem>(str);
-
     public static string? SerializeProcessIngredientItemList(List<ProcessIngredientItem>? list) => SerializeItems(list);
 
     public static List<ProcessIngredientItem>? DeserializeProcessIngredientItemList(string? data)
@@ -408,10 +324,6 @@ public static class SerializationHelper
     #endregion
 
     #region ProcessResultItem
-
-    public static string ProcessResultItemToItemString(ProcessResultItem r) => ToItem(r);
-
-    public static ProcessResultItem? ParseProcessResultItem(string str) => FromItem<ProcessResultItem>(str);
 
     public static string? SerializeProcessResultItemList(List<ProcessResultItem>? list) => SerializeItems(list);
 

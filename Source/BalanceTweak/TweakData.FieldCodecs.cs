@@ -78,6 +78,35 @@ public abstract partial class TweakData
         private static void Pattern(string name, Func<Type, bool> matches, ExposeDelegate expose, ResolveDelegate? resolve = null)
             => patterns.Add(new FieldCodec { Name = name, Matches = matches, Expose = expose, Resolve = resolve });
 
+        /// <summary>
+        /// 登记一个"字段表驱动的 POCO 列表"字段类型（<see cref="PocoCodec"/> 管编解码）。
+        ///
+        /// <para>
+        /// 一行完成三件事：把字段声明写进 <see cref="PocoCodec"/>（**顺序即文本里的字段顺序**）、
+        /// 可选取值校验、把 <c>List&lt;T&gt;</c> 登记进本表。
+        /// </para>
+        ///
+        /// <para>
+        /// <b>为什么声明也放在这里</b>：原先 17 个类型的字段声明写在 <c>SerializationHelper</c> 的
+        /// 静态构造里，而登记项写在本表 —— 于是"加一个类型"要改两个文件，且两张静态构造的
+        /// 初始化顺序没有保证（谁先被访问谁先跑），SC10 有可能在声明尚未生效时误报。
+        /// 现在两者同一处、同一次初始化。
+        /// </para>
+        /// </summary>
+        private static void PocoList<T>(params string[] fields) where T : class => PocoList<T>(null, fields);
+
+        /// <inheritdoc cref="PocoList{T}(string[])"/>
+        /// <param name="validate">
+        /// 字段表表达不了的**取值范围**约束（如 <c>count &gt;= 0</c>），解码后校验；返回 <c>false</c> ⇒ 整条被拒。
+        /// 不传则不做额外校验。
+        /// </param>
+        private static void PocoList<T>(Func<T, bool>? validate, params string[] fields) where T : class
+        {
+            PocoCodec.Declare(typeof(T), fields);
+            if (validate != null) PocoCodec.SetValidator(typeof(T), o => validate((T)o));
+            Exact(typeof(List<T>), $"List<{typeof(T).Name}>", ExposePocoList<T>, ResolvePocoList<T>);
+        }
+
         private static void Build()
         {
             // ── 标量：Resolve = null。读档时 ExposeSimple/ExposeString/... 已直接落值，无需解析层 ──
@@ -106,24 +135,32 @@ public abstract partial class TweakData
             // ── 结构化：Resolve 非 null ──
             Pattern("Def 子类", t => t.IsSubclassOf(typeof(Def)), ExposeDef, ResolveDef);
 
-            Exact(typeof(List<StatModifier>), "List<StatModifier>", ExposeStatModifierList, ResolveStatModifierList);
-            Exact(typeof(List<PawnCapacityModifier>), "List<PawnCapacityModifier>", ExposePawnCapacityList, ResolvePawnCapacityList);
-            Exact(typeof(List<DamageFactor>), "List<DamageFactor>", ExposeDamageFactorList, ResolveDamageFactorList);
-            Exact(typeof(List<SkillGain>), "List<SkillGain>", ExposeSkillGainList, ResolveSkillGainList);
-            Exact(typeof(List<Aptitude>), "List<Aptitude>", ExposeAptitudeList, ResolveAptitudeList);
-            Exact(typeof(List<GeneticTraitData>), "List<GeneticTraitData>", ExposeGeneticTraitDataList, ResolveGeneticTraitDataList);
-            Exact(typeof(List<ThingDefCountClass>), "List<ThingDefCountClass>", ExposeThingDefCountList, ResolveThingDefCountList);
+            // ── 字段表驱动的 POCO 列表（④ 第二步迁到 PocoCodec 的那 17 个）──
+            // 一行完成三件事：声明字段（顺序即文本里的字段顺序）、可选取值校验、把 List<T> 登记进本表。
+            // **加一个新的 POCO 列表类型 = 在这里加一行**，不用再同步改别的文件。
+            PocoList<StatModifier>("stat", "value");
+            PocoList<PawnCapacityModifier>(
+                "capacity", "offset", "setMax", "postFactor", "statFactorMod", "setMaxCurveEvaluateStat");
+            PocoList<DamageFactor>("damageDef", "factor");
+            PocoList<SkillGain>("skill", "amount");
+            PocoList<Aptitude>("skill", "level");
+            PocoList<GeneticTraitData>("def", "degree");
+            PocoList<ThingDefCountClass>(c => c.count >= 0, "thingDef", "stuff", "count");
+            PocoList<SkillRequirement>("skill", "minLevel");
+            PocoList<TraitRequirement>("def", "degree");
+            PocoList<BiomePlantRecord>("plant", "commonality");
+            PocoList<BiomeAnimalRecord>("animal", "commonality");
+            PocoList<FishChance>("fishDef", "chance");
+            PocoList<BiomeDiseaseRecord>("diseaseInc", "commonality");
+            PocoList<WeatherCommonalityRecord>("weather", "commonality");
+            PocoList<TerrainThreshold>("terrain", "min", "max");
+            PocoList<ProcessIngredientItem>("thing", "thingCategory", "disallowedThingDefs", "countNeeded");
+            PocoList<ProcessResultItem>(r => r.count >= 0, "thing", "count");
+
+            // ── bespoke：各有不走字段表的硬理由 ──
+            // IngredientCount 挂在 ThingFilter + GetBaseCount/SetBaseCount 上，不是普通字段；
+            // StockGenerator 是**多态**列表，每行要带类型标记；ThingFilter 见 SerializationHelper 的说明。
             Exact(typeof(List<IngredientCount>), "List<IngredientCount>", ExposeIngredientList, ResolveIngredientList);
-            Exact(typeof(List<SkillRequirement>), "List<SkillRequirement>", ExposeSkillReqList, ResolveSkillReqList);
-            Exact(typeof(List<TraitRequirement>), "List<TraitRequirement>", ExposeTraitReqList, ResolveTraitReqList);
-            Exact(typeof(List<ProcessIngredientItem>), "List<ProcessIngredientItem>", ExposeProcessIngredientList, ResolveProcessIngredientList);
-            Exact(typeof(List<ProcessResultItem>), "List<ProcessResultItem>", ExposeProcessResultList, ResolveProcessResultList);
-            Exact(typeof(List<BiomePlantRecord>), "List<BiomePlantRecord>", ExposeBiomePlantList, ResolveBiomePlantList);
-            Exact(typeof(List<BiomeAnimalRecord>), "List<BiomeAnimalRecord>", ExposeBiomeAnimalList, ResolveBiomeAnimalList);
-            Exact(typeof(List<FishChance>), "List<FishChance>", ExposeFishChanceList, ResolveFishChanceList);
-            Exact(typeof(List<BiomeDiseaseRecord>), "List<BiomeDiseaseRecord>", ExposeDiseaseList, ResolveDiseaseList);
-            Exact(typeof(List<WeatherCommonalityRecord>), "List<WeatherCommonalityRecord>", ExposeWeatherCommonalityList, ResolveWeatherCommonalityList);
-            Exact(typeof(List<TerrainThreshold>), "List<TerrainThreshold>", ExposeTerrainThresholdList, ResolveTerrainThresholdList);
             Exact(typeof(List<StockGenerator>), "List<StockGenerator>", ExposeStockGeneratorList, ResolveStockGeneratorList);
             Exact(typeof(ThingFilter), "ThingFilter", ExposeIngredientFilter, ResolveIngredientFilter);
             Exact(typeof(List<string>), "List<string>", ExposeStringList, ResolveStringList);
@@ -224,54 +261,17 @@ public abstract partial class TweakData
         }
     }
 
-    private static void ExposeStatModifierList(TweakData data, StatFieldMeta meta) => ExposeList(data, meta, v =>
-    {
-        var list = (List<StatModifier>?)v;
-        if (list == null || list.Count == 0) return null;
-        return list.Select(SerializationHelper.StatModifierToItemString).ToList();
-    });
-
-    private static void ExposePawnCapacityList(TweakData data, StatFieldMeta meta) => ExposeList(data, meta, v =>
-    {
-        var list = (List<PawnCapacityModifier>?)v;
-        if (list == null || list.Count == 0) return null;
-        return list.Select(SerializationHelper.PawnCapacityModifierToItemString).ToList();
-    });
-
-    private static void ExposeDamageFactorList(TweakData data, StatFieldMeta meta) => ExposeList(data, meta, v =>
-    {
-        var list = (List<DamageFactor>?)v;
-        if (list == null || list.Count == 0) return null;
-        return list.Select(SerializationHelper.DamageFactorToItemString).ToList();
-    });
-
-    private static void ExposeSkillGainList(TweakData data, StatFieldMeta meta) => ExposeList(data, meta, v =>
-    {
-        var list = (List<SkillGain>?)v;
-        if (list == null || list.Count == 0) return null;
-        return list.Select(SerializationHelper.SkillGainToItemString).ToList();
-    });
-
-    private static void ExposeAptitudeList(TweakData data, StatFieldMeta meta) => ExposeList(data, meta, v =>
-    {
-        var list = (List<Aptitude>?)v;
-        if (list == null || list.Count == 0) return null;
-        return list.Select(SerializationHelper.AptitudeToItemString).ToList();
-    });
-
-    private static void ExposeGeneticTraitDataList(TweakData data, StatFieldMeta meta) => ExposeList(data, meta, v =>
-    {
-        var list = (List<GeneticTraitData>?)v;
-        if (list == null || list.Count == 0) return null;
-        return list.Select(SerializationHelper.GeneticTraitDataToItemString).ToList();
-    });
-
-    private static void ExposeThingDefCountList(TweakData data, StatFieldMeta meta) => ExposeList(data, meta, v =>
-    {
-        var list = (List<ThingDefCountClass>?)v;
-        if (list == null || list.Count == 0) return null;
-        return list.Select(SerializationHelper.ThingDefCountClassToItemString).ToList();
-    });
+    /// <summary>
+    /// 字段表驱动的 POCO 列表 —— 落盘（对象列表 → 文本行列表）。17 个类型共用这一份，
+    /// 解析侧是 <see cref="ResolvePocoList{T}"/>。
+    /// </summary>
+    private static void ExposePocoList<T>(TweakData data, StatFieldMeta meta) where T : class
+        => ExposeList(data, meta, v =>
+        {
+            var list = (List<T>?)v;
+            if (list == null || list.Count == 0) return null;
+            return list.Select(x => PocoCodec.Encode(x)).ToList();
+        });
 
     private static void ExposeDefList(TweakData data, StatFieldMeta meta) => ExposeList(data, meta, v =>
     {
@@ -314,26 +314,6 @@ public abstract partial class TweakData
         });
     }
 
-    private static void ExposeSkillReqList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<SkillRequirement>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.SkillRequirementToItemString).ToList();
-        });
-    }
-
-    private static void ExposeTraitReqList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<TraitRequirement>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.TraitRequirementToItemString).ToList();
-        });
-    }
-
     private static void ExposeIngredientFilter(TweakData data, StatFieldMeta meta)
     {
         if (Scribe.mode == LoadSaveMode.Saving)
@@ -349,86 +329,6 @@ public abstract partial class TweakData
             if (Scribe.mode == LoadSaveMode.LoadingVars)
                 (data._savedLoadData ??= new())[meta.Field.Name] = str;
         }
-    }
-
-    private static void ExposeProcessIngredientList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<ProcessIngredientItem>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.ProcessIngredientItemToItemString).ToList();
-        });
-    }
-
-    private static void ExposeProcessResultList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<ProcessResultItem>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.ProcessResultItemToItemString).ToList();
-        });
-    }
-
-    private static void ExposeBiomePlantList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<BiomePlantRecord>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.BiomePlantRecordToItemString).ToList();
-        });
-    }
-
-    private static void ExposeBiomeAnimalList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<BiomeAnimalRecord>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.BiomeAnimalRecordToItemString).ToList();
-        });
-    }
-
-    private static void ExposeFishChanceList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<FishChance>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.FishChanceToItemString).ToList();
-        });
-    }
-
-    private static void ExposeDiseaseList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<BiomeDiseaseRecord>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.BiomeDiseaseRecordToItemString).ToList();
-        });
-    }
-
-    private static void ExposeWeatherCommonalityList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<WeatherCommonalityRecord>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.WeatherCommonalityRecordToItemString).ToList();
-        });
-    }
-
-    private static void ExposeTerrainThresholdList(TweakData data, StatFieldMeta meta)
-    {
-        ExposeList(data, meta, v =>
-        {
-            var list = (List<TerrainThreshold>?)v;
-            if (list == null || list.Count == 0) return null;
-            return list.Select(SerializationHelper.TerrainThresholdToItemString).ToList();
-        });
     }
 
     /// <summary>
@@ -479,89 +379,23 @@ public abstract partial class TweakData
         return false;
     }
 
-    private static bool ResolveStatModifierList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
-    {
-        var result = new List<StatModifier>(strList.Count);
-        foreach (var str in strList)
+    /// <summary>
+    /// 字段表驱动的 POCO 列表 —— 解析（文本行列表 → 对象列表）。17 个类型共用这一份。
+    /// 任一行失败 ⇒ 整字段标损坏（绝不写入半截数据）。落盘侧是 <see cref="ExposePocoList{T}"/>。
+    /// </summary>
+    private static bool ResolvePocoList<T>(TweakData data, StatFieldMeta meta) where T : class
+        => ResolveList(data, meta, strList =>
         {
-            var item = SerializationHelper.ParseStatModifier(str);
-            if (item == null) return (null, false);
-            result.Add(item);
-        }
-        return (result.Count > 0 ? result : null, true);
-    });
-
-    private static bool ResolvePawnCapacityList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
-    {
-        var result = new List<PawnCapacityModifier>(strList.Count);
-        foreach (var str in strList)
-        {
-            var item = SerializationHelper.ParsePawnCapacityModifier(str);
-            if (item == null) return (null, false);
-            result.Add(item);
-        }
-        return (result.Count > 0 ? result : null, true);
-    });
-
-    private static bool ResolveDamageFactorList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
-    {
-        var result = new List<DamageFactor>(strList.Count);
-        foreach (var str in strList)
-        {
-            var item = SerializationHelper.ParseDamageFactor(str);
-            if (item == null) return (null, false);
-            result.Add(item);
-        }
-        return (result.Count > 0 ? result : null, true);
-    });
-
-    private static bool ResolveSkillGainList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
-    {
-        var result = new List<SkillGain>(strList.Count);
-        foreach (var str in strList)
-        {
-            var item = SerializationHelper.ParseSkillGain(str);
-            if (item == null) return (null, false);
-            result.Add(item);
-        }
-        return (result.Count > 0 ? result : null, true);
-    });
-
-    private static bool ResolveAptitudeList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
-    {
-        var result = new List<Aptitude>(strList.Count);
-        foreach (var str in strList)
-        {
-            var item = SerializationHelper.ParseAptitude(str);
-            if (item == null) return (null, false);
-            result.Add(item);
-        }
-        return (result.Count > 0 ? result : null, true);
-    });
-
-    private static bool ResolveGeneticTraitDataList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
-    {
-        var result = new List<GeneticTraitData>(strList.Count);
-        foreach (var str in strList)
-        {
-            var item = SerializationHelper.ParseGeneticTraitData(str);
-            if (item == null) return (null, false);
-            result.Add(item);
-        }
-        return (result.Count > 0 ? result : null, true);
-    });
-
-    private static bool ResolveThingDefCountList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
-    {
-        var result = new List<ThingDefCountClass>(strList.Count);
-        foreach (var str in strList)
-        {
-            var item = SerializationHelper.ParseThingDefCountClass(str);
-            if (item == null) return (null, false);
-            result.Add(item);
-        }
-        return (result.Count > 0 ? result : null, true);
-    });
+            var result = new List<T>(strList.Count);
+            foreach (var str in strList)
+            {
+                // 解码失败（含取值校验不过）与"解出来不是 T"都算损坏：前者是存档文本坏了，
+                // 后者是本表登记错了类型 —— 两种都不该把半截数据写进字段。
+                if (!PocoCodec.TryDecode(str, typeof(T), out var item) || item is not T typed) return (null, false);
+                result.Add(typed);
+            }
+            return (result.Count > 0 ? result : null, true);
+        });
 
     private static bool ResolveDefList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
     {
@@ -610,30 +444,6 @@ public abstract partial class TweakData
         return (result.Count > 0 ? result : null, true);
     });
 
-    private static bool ResolveSkillReqList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
-    {
-        var result = new List<SkillRequirement>(strList.Count);
-        foreach (var str in strList)
-        {
-            var item = SerializationHelper.ParseSkillRequirement(str);
-            if (item == null) return (null, false);
-            result.Add(item);
-        }
-        return (result.Count > 0 ? result : null, true);
-    });
-
-    private static bool ResolveTraitReqList(TweakData data, StatFieldMeta meta) => ResolveList(data, meta, strList =>
-    {
-        var result = new List<TraitRequirement>(strList.Count);
-        foreach (var str in strList)
-        {
-            var item = SerializationHelper.ParseTraitRequirement(str);
-            if (item == null) return (null, false);
-            result.Add(item);
-        }
-        return (result.Count > 0 ? result : null, true);
-    });
-
     private static bool ResolveIngredientFilter(TweakData data, StatFieldMeta meta)
     {
         if (data._savedLoadData == null || !data._savedLoadData.TryGetValue(meta.Field.Name, out var saved) || saved is not string str || str.NullOrEmpty())
@@ -649,126 +459,6 @@ public abstract partial class TweakData
             return true;
         }
         return false;
-    }
-
-    private static bool ResolveProcessIngredientList(TweakData data, StatFieldMeta meta)
-    {
-        return ResolveList(data, meta, strList =>
-        {
-            var result = new List<ProcessIngredientItem>(strList.Count);
-            foreach (var str in strList)
-            {
-                var item = SerializationHelper.ParseProcessIngredientItem(str);
-                if (item == null) return (null, false);
-                result.Add(item);
-            }
-            return (result.Count > 0 ? result : null, true);
-        });
-    }
-
-    private static bool ResolveProcessResultList(TweakData data, StatFieldMeta meta)
-    {
-        return ResolveList(data, meta, strList =>
-        {
-            var result = new List<ProcessResultItem>(strList.Count);
-            foreach (var str in strList)
-            {
-                var item = SerializationHelper.ParseProcessResultItem(str);
-                if (item == null) return (null, false);
-                result.Add(item);
-            }
-            return (result.Count > 0 ? result : null, true);
-        });
-    }
-
-    private static bool ResolveBiomePlantList(TweakData data, StatFieldMeta meta)
-    {
-        return ResolveList(data, meta, strList =>
-        {
-            var result = new List<BiomePlantRecord>(strList.Count);
-            foreach (var str in strList)
-            {
-                var item = SerializationHelper.ParseBiomePlantRecord(str);
-                if (item == null) return (null, false);
-                result.Add(item);
-            }
-            return (result.Count > 0 ? result : null, true);
-        });
-    }
-
-    private static bool ResolveBiomeAnimalList(TweakData data, StatFieldMeta meta)
-    {
-        return ResolveList(data, meta, strList =>
-        {
-            var result = new List<BiomeAnimalRecord>(strList.Count);
-            foreach (var str in strList)
-            {
-                var item = SerializationHelper.ParseBiomeAnimalRecord(str);
-                if (item == null) return (null, false);
-                result.Add(item);
-            }
-            return (result.Count > 0 ? result : null, true);
-        });
-    }
-
-    private static bool ResolveFishChanceList(TweakData data, StatFieldMeta meta)
-    {
-        return ResolveList(data, meta, strList =>
-        {
-            var result = new List<FishChance>(strList.Count);
-            foreach (var str in strList)
-            {
-                var item = SerializationHelper.ParseFishChance(str);
-                if (item == null) return (null, false);
-                result.Add(item);
-            }
-            return (result.Count > 0 ? result : null, true);
-        });
-    }
-
-    private static bool ResolveDiseaseList(TweakData data, StatFieldMeta meta)
-    {
-        return ResolveList(data, meta, strList =>
-        {
-            var result = new List<BiomeDiseaseRecord>(strList.Count);
-            foreach (var str in strList)
-            {
-                var item = SerializationHelper.ParseBiomeDiseaseRecord(str);
-                if (item == null) return (null, false);
-                result.Add(item);
-            }
-            return (result.Count > 0 ? result : null, true);
-        });
-    }
-
-    private static bool ResolveWeatherCommonalityList(TweakData data, StatFieldMeta meta)
-    {
-        return ResolveList(data, meta, strList =>
-        {
-            var result = new List<WeatherCommonalityRecord>(strList.Count);
-            foreach (var str in strList)
-            {
-                var item = SerializationHelper.ParseWeatherCommonalityRecord(str);
-                if (item == null) return (null, false);
-                result.Add(item);
-            }
-            return (result.Count > 0 ? result : null, true);
-        });
-    }
-
-    private static bool ResolveTerrainThresholdList(TweakData data, StatFieldMeta meta)
-    {
-        return ResolveList(data, meta, strList =>
-        {
-            var result = new List<TerrainThreshold>(strList.Count);
-            foreach (var str in strList)
-            {
-                var item = SerializationHelper.ParseTerrainThreshold(str);
-                if (item == null) return (null, false);
-                result.Add(item);
-            }
-            return (result.Count > 0 ? result : null, true);
-        });
     }
 
     /// <summary>库存生成器：行文本 → 生成器对象（<see cref="StockGeneratorCodec"/>）。任一条失败即整字段回滚。</summary>
