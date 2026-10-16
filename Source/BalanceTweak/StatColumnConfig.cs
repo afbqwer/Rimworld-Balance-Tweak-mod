@@ -507,12 +507,20 @@ public class StatColumnConfig
             return GetString(data);
         }
 
-        // 列表类型 (通过 SerializationHelper 序列化)
-        if (columnType is ColumnStyle.StatModList or ColumnStyle.CapModList or ColumnStyle.DamageModList or ColumnStyle.SkillGainList or ColumnStyle.SkillReqList or ColumnStyle.TraitReqList or ColumnStyle.AptitudeList or ColumnStyle.GeneticTraitList or ColumnStyle.ThingDefCountList or ColumnStyle.IngredientList or ColumnStyle.ProcessIngredientList or ColumnStyle.ProcessResultList or ColumnStyle.BiomePlantList or ColumnStyle.BiomeAnimalList or ColumnStyle.TerrainThresholdList)
+        // 列表类型（通过 SerializationHelper 序列化）。
+        //
+        // 这里**只保留 switch 这一份样式清单**。原先外面还叠了一层 `columnType is …` 手写守卫，
+        // 两份清单已经漂移过：FishChanceList / DiseaseList / WeatherCommonalityList 在 switch 里有分支、
+        // 却不在守卫里 ⇒ 那 3 类列永远走不到这里，GetCopyData 恒返回 null。
+        //
+        // 后果不只是"复制拿不到"：拖拽涂抹靠它定值（BalanceTweakGUI.cs 里 DragPaint.Value = GetCopyData(data)），
+        // 拿到 null 就 Reset 放弃整轮手势 —— 于是这几列的 Shift+拖拽涂抹**静默失效**（无日志、无提示）。
+        //
+        // 现在由 switch 的 `_ => null` 兜底：非列表样式自然落到下面的分支去，列表样式照常取值。
+        // 值为 null 时统一取空列表 —— 各 SerializeXxxList 对空列表同样返回 null，与原先的提前 return 等价。
         {
-            var list = (IList?)GetRawValue(data);
-            if (list == null) return null;
-            return columnType switch
+            var list = (IList?)GetRawValue(data) ?? Array.Empty<object>();
+            var listText = columnType switch
             {
                 ColumnStyle.StatModList => SerializationHelper.SerializeStatModifierList(list.Cast<StatModifier>().ToList()),
                 ColumnStyle.CapModList => SerializationHelper.SerializePawnCapacityModifierList(list.Cast<PawnCapacityModifier>().ToList()),
@@ -534,6 +542,7 @@ public class StatColumnConfig
                 ColumnStyle.TerrainThresholdList => SerializationHelper.SerializeTerrainThresholdList(list.Cast<TerrainThreshold>().ToList()),
                 _ => null
             };
+            if (listText != null) return listText;
         }
 
         if (columnType == ColumnStyle.Curve)
