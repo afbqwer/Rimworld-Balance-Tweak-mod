@@ -8,8 +8,94 @@ using Verse;
 
 namespace BalanceTweak;
 
+/// <summary>
+/// 各类"小对象"与其列表的文本编解码。
+///
+/// <para>
+/// <b>④ 第二步（2026-10-16）</b>：17 个纯数据类型的编解码已从"手写 <c>split('|')</c>"迁到
+/// <see cref="PocoCodec"/> 的字段表驱动 —— 见下方静态构造里的声明。文本格式随之从
+/// <c>值|值|值</c>（位置敏感）变成 <c>字段名=值|…</c>（自描述、值带转义）。
+/// </para>
+///
+/// <para>
+/// <b>仍然保留 bespoke（不走字段表）的</b>：
+/// </para>
+/// <list type="bullet">
+/// <item><b><see cref="ThingFilter"/> / <see cref="IngredientCount"/></b> —— 前者是一整套机制
+/// （反射读写私有字段 + <c>ResolveReferences</c> + <c>extraAllowed/DisallowedDefs</c> 差分补全），
+/// 后者挂在 <c>GetBaseCount/SetBaseCount</c> 上而非普通字段；</item>
+/// <item><b><see cref="SimpleCurve"/></b> —— 数据在 <c>Points</c>（<c>List&lt;CurvePoint&gt;</c>），
+/// 而 <c>CurvePoint.loc</c> 是 <c>private Vector2</c>，字段表读写不了；</item>
+/// <item><b><c>BodyPartNode</c> 树</b> —— 树形 + 行末 <c>customLabel</c> 需吸收其中可能出现的 <c>|</c>，
+/// 是位置敏感的变长行，与字段表模型不同。</item>
+/// </list>
+/// </summary>
 public static class SerializationHelper
 {
+    // ============================================================
+    //  字段表（④ 第二步：手写编解码 → PocoCodec 字段表驱动）
+    // ============================================================
+
+    /// <summary>
+    /// 声明各类型参与序列化的字段（<b>顺序即文本里的字段顺序</b>）。
+    ///
+    /// <para>
+    /// <b>只声明"迁移前就参与序列化"的字段</b>，而不是原版实际拥有的全部字段 —— 这是刻意的：
+    /// 本次是<b>机制迁移</b>，不是"顺带补字段覆盖"。原版有、但历来没被本工具读写的字段
+    /// （<c>ThingDefCountClass.color/chance/quality</c>、<c>BiomeDiseaseRecord.biome</c>、
+    /// <c>PawnCapacityModifier.setMaxCurveOverride</c>）继续保持不读写，要改另议。
+    /// </para>
+    ///
+    /// <para>
+    /// <b>文本格式变了</b>：从 <c>值|值|值</c>（位置敏感）变成 <c>字段名=值|字段名=值</c>（自描述），
+    /// 且值里的分隔符会被转义。好处是原版若加字段或调整字段顺序，旧格式会<b>静默错位</b>，新格式不会。
+    /// 代价是旧存档里这部分数据不再可读（本项目不考虑迁移）。
+    /// </para>
+    /// </summary>
+    static SerializationHelper()
+    {
+        PocoCodec.Declare(typeof(StatModifier), "stat", "value");
+        PocoCodec.Declare(typeof(PawnCapacityModifier),
+            "capacity", "offset", "setMax", "postFactor", "statFactorMod", "setMaxCurveEvaluateStat");
+        PocoCodec.Declare(typeof(DamageFactor), "damageDef", "factor");
+        PocoCodec.Declare(typeof(SkillGain), "skill", "amount");
+        PocoCodec.Declare(typeof(Aptitude), "skill", "level");
+        PocoCodec.Declare(typeof(GeneticTraitData), "def", "degree");
+        PocoCodec.Declare(typeof(ThingDefCountClass), "thingDef", "stuff", "count");
+        PocoCodec.Declare(typeof(SkillRequirement), "skill", "minLevel");
+        PocoCodec.Declare(typeof(TraitRequirement), "def", "degree");
+        PocoCodec.Declare(typeof(BiomePlantRecord), "plant", "commonality");
+        PocoCodec.Declare(typeof(BiomeAnimalRecord), "animal", "commonality");
+        PocoCodec.Declare(typeof(FishChance), "fishDef", "chance");
+        PocoCodec.Declare(typeof(BiomeDiseaseRecord), "diseaseInc", "commonality");
+        PocoCodec.Declare(typeof(WeatherCommonalityRecord), "weather", "commonality");
+        PocoCodec.Declare(typeof(TerrainThreshold), "terrain", "min", "max");
+        PocoCodec.Declare(typeof(ProcessIngredientItem), "thing", "thingCategory", "disallowedThingDefs", "countNeeded");
+        PocoCodec.Declare(typeof(ProcessResultItem), "thing", "count");
+
+        // 字段表表达不了的**取值范围**约束（原来手写在各个 Parse 里）。
+        // 没有这个钩子就只能二选一：放弃校验（开始接受以前拒绝的值），或把校验留在编解码里。
+        PocoCodec.SetValidator(typeof(ThingDefCountClass), o => ((ThingDefCountClass)o).count >= 0);
+        PocoCodec.SetValidator(typeof(ProcessResultItem), o => ((ProcessResultItem)o).count >= 0);
+    }
+
+    // ============================================================
+    //  字段表驱动的编解码（上述 17 个类型共用同一形状）
+    // ============================================================
+
+    /// <summary>元素 → 一行文本（字段名=值 …）。</summary>
+    private static string ToItem<T>(T value) where T : class => PocoCodec.Encode(value);
+
+    /// <summary>一行文本 → 元素。任一步失败返回 <c>null</c>（调用方据此丢弃整条）。</summary>
+    private static T? FromItem<T>(string str) where T : class
+        => PocoCodec.TryDecode(str, typeof(T), out var value) && value is T item ? item : null;
+
+    /// <summary>列表 → 多行文本；空列表返回 <c>null</c>。</summary>
+    private static string? SerializeItems<T>(List<T>? list) where T : class => PocoCodec.EncodeList(list);
+
+    /// <summary>多行文本 → 列表；任一行失败 ⇒ 整块 <c>null</c>（绝不写入半截数据）。</summary>
+    private static List<T>? DeserializeItems<T>(string? data) where T : class => PocoCodec.DecodeList<T>(data);
+
     // ============================================================
     //  Generic list serialization helpers
     // ============================================================
@@ -57,299 +143,97 @@ public static class SerializationHelper
         => Log.Message($"[BalanceTweak] {parseTarget} 引用的 Def 缺失，已跳过：'{defName}'");
 
     // ============================================================
-    //  StatModifier
+    //  以下 17 组：字段表驱动（④ 第二步迁移）
     // ============================================================
 
     #region StatModifier
 
-    public static string StatModifierToItemString(StatModifier sm)
-        => $"{sm.stat?.defName ?? "NULL"}|{sm.value}";
+    public static string StatModifierToItemString(StatModifier sm) => ToItem(sm);
 
-    public static StatModifier? ParseStatModifier(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("StatModifier", str, "statDefName|value");
-            return null;
-        }
-        var statDef = DefDatabase<StatDef>.GetNamedSilentFail(parts[0]);
-        if (statDef == null)
-        {
-            LogMissingDef("StatModifier.stat", parts[0]);
-            return null;
-        }
-        if (!float.TryParse(parts[1], out var val))
-        {
-            WarnSyntaxError("StatModifier", str, "statDefName|value");
-            return null;
-        }
-        return new StatModifier { stat = statDef, value = val };
-    }
+    public static StatModifier? ParseStatModifier(string str) => FromItem<StatModifier>(str);
 
-    public static string? SerializeStatModifierList(List<StatModifier>? list)
-        => SerializeList(list, StatModifierToItemString);
+    public static string? SerializeStatModifierList(List<StatModifier>? list) => SerializeItems(list);
 
-    public static List<StatModifier>? DeserializeStatModifierList(string? data)
-        => DeserializeList(data, ParseStatModifier, "DeserializeStatModifierList");
+    public static List<StatModifier>? DeserializeStatModifierList(string? data) => DeserializeItems<StatModifier>(data);
 
     #endregion
 
     #region PawnCapacityModifier
 
-    public static string PawnCapacityModifierToItemString(PawnCapacityModifier pcm)
-        => $"{pcm.capacity?.defName ?? "NULL"}|{pcm.offset}|{pcm.setMax}|{pcm.postFactor}|{pcm.statFactorMod?.defName ?? "NULL"}|{pcm.setMaxCurveEvaluateStat?.defName ?? "NULL"}";
+    public static string PawnCapacityModifierToItemString(PawnCapacityModifier pcm) => ToItem(pcm);
 
-    public static PawnCapacityModifier? ParsePawnCapacityModifier(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length < 4)
-        {
-            WarnSyntaxError("PawnCapacityModifier", str, "capacityDefName|offset|setMax|postFactor[|statFactorModDefName[|setMaxCurveEvaluateStatDefName]]");
-            return null;
-        }
-        var pcm = new PawnCapacityModifier();
-        pcm.capacity = DefDatabase<PawnCapacityDef>.GetNamedSilentFail(parts[0]);
-        if (pcm.capacity == null)
-        {
-            LogMissingDef("PawnCapacityModifier.capacity", parts[0]);
-            return null;
-        }
-        if (!float.TryParse(parts[1], out pcm.offset))
-        {
-            WarnSyntaxError("PawnCapacityModifier", str, "offset 应为浮点数");
-            return null;
-        }
-        if (!float.TryParse(parts[2], out pcm.setMax))
-        {
-            WarnSyntaxError("PawnCapacityModifier", str, "setMax 应为浮点数");
-            return null;
-        }
-        if (!float.TryParse(parts[3], out pcm.postFactor))
-        {
-            WarnSyntaxError("PawnCapacityModifier", str, "postFactor 应为浮点数");
-            return null;
-        }
-        if (parts.Length >= 5 && parts[4] != "NULL" && !parts[4].NullOrEmpty())
-        {
-            pcm.statFactorMod = DefDatabase<StatDef>.GetNamedSilentFail(parts[4]);
-            if (pcm.statFactorMod == null)
-            {
-                LogMissingDef("PawnCapacityModifier.statFactorMod", parts[4]);
-                return null;
-            }
-        }
-        if (parts.Length >= 6 && parts[5] != "NULL" && !parts[5].NullOrEmpty())
-        {
-            pcm.setMaxCurveEvaluateStat = DefDatabase<StatDef>.GetNamedSilentFail(parts[5]);
-            if (pcm.setMaxCurveEvaluateStat == null)
-            {
-                LogMissingDef("PawnCapacityModifier.setMaxCurveEvaluateStat", parts[5]);
-                return null;
-            }
-        }
-        return pcm;
-    }
+    public static PawnCapacityModifier? ParsePawnCapacityModifier(string str) => FromItem<PawnCapacityModifier>(str);
 
-    public static string? SerializePawnCapacityModifierList(List<PawnCapacityModifier>? list)
-        => SerializeList(list, PawnCapacityModifierToItemString);
+    public static string? SerializePawnCapacityModifierList(List<PawnCapacityModifier>? list) => SerializeItems(list);
 
     public static List<PawnCapacityModifier>? DeserializePawnCapacityModifierList(string? data)
-        => DeserializeList(data, ParsePawnCapacityModifier, "DeserializePawnCapacityModifierList");
+        => DeserializeItems<PawnCapacityModifier>(data);
 
     #endregion
 
     #region DamageFactor
 
-    public static string DamageFactorToItemString(DamageFactor df)
-        => $"{df.damageDef?.defName ?? "NULL"}|{df.factor}";
+    public static string DamageFactorToItemString(DamageFactor df) => ToItem(df);
 
-    public static DamageFactor? ParseDamageFactor(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("DamageFactor", str, "damageDefName|factor");
-            return null;
-        }
-        var damageDef = DefDatabase<DamageDef>.GetNamedSilentFail(parts[0]);
-        if (damageDef == null)
-        {
-            LogMissingDef("DamageFactor.damageDef", parts[0]);
-            return null;
-        }
-        if (!float.TryParse(parts[1], out var val))
-        {
-            WarnSyntaxError("DamageFactor", str, "damageDefName|factor");
-            return null;
-        }
-        return new DamageFactor { damageDef = damageDef, factor = val };
-    }
+    public static DamageFactor? ParseDamageFactor(string str) => FromItem<DamageFactor>(str);
 
-    public static string? SerializeDamageFactorList(List<DamageFactor>? list)
-        => SerializeList(list, DamageFactorToItemString);
+    public static string? SerializeDamageFactorList(List<DamageFactor>? list) => SerializeItems(list);
 
-    public static List<DamageFactor>? DeserializeDamageFactorList(string? data)
-        => DeserializeList(data, ParseDamageFactor, "DeserializeDamageFactorList");
+    public static List<DamageFactor>? DeserializeDamageFactorList(string? data) => DeserializeItems<DamageFactor>(data);
 
     #endregion
 
     #region SkillGain
 
-    public static string SkillGainToItemString(SkillGain sg)
-        => $"{sg.skill?.defName ?? "NULL"}|{sg.amount}";
+    public static string SkillGainToItemString(SkillGain sg) => ToItem(sg);
 
-    public static SkillGain? ParseSkillGain(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("SkillGain", str, "skillDefName|amount");
-            return null;
-        }
-        var skillDef = DefDatabase<SkillDef>.GetNamedSilentFail(parts[0]);
-        if (skillDef == null)
-        {
-            LogMissingDef("SkillGain.skill", parts[0]);
-            return null;
-        }
-        if (!int.TryParse(parts[1], out var val))
-        {
-            WarnSyntaxError("SkillGain", str, "skillDefName|amount（amount 应为整数）");
-            return null;
-        }
-        return new SkillGain { skill = skillDef, amount = val };
-    }
+    public static SkillGain? ParseSkillGain(string str) => FromItem<SkillGain>(str);
 
-    public static string? SerializeSkillGainList(List<SkillGain>? list)
-        => SerializeList(list, SkillGainToItemString);
+    public static string? SerializeSkillGainList(List<SkillGain>? list) => SerializeItems(list);
 
-    public static List<SkillGain>? DeserializeSkillGainList(string? data)
-        => DeserializeList(data, ParseSkillGain, "DeserializeSkillGainList");
+    public static List<SkillGain>? DeserializeSkillGainList(string? data) => DeserializeItems<SkillGain>(data);
 
     #endregion
 
     #region Aptitude
 
-    public static string AptitudeToItemString(Aptitude a)
-        => $"{a.skill?.defName ?? "NULL"}|{a.level}";
+    public static string AptitudeToItemString(Aptitude a) => ToItem(a);
 
-    public static Aptitude? ParseAptitude(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("Aptitude", str, "skillDefName|level");
-            return null;
-        }
-        var skillDef = DefDatabase<SkillDef>.GetNamedSilentFail(parts[0]);
-        if (skillDef == null)
-        {
-            LogMissingDef("Aptitude.skill", parts[0]);
-            return null;
-        }
-        if (!int.TryParse(parts[1], out var val))
-        {
-            WarnSyntaxError("Aptitude", str, "skillDefName|level（level 应为整数）");
-            return null;
-        }
-        return new Aptitude(skillDef, val);
-    }
+    public static Aptitude? ParseAptitude(string str) => FromItem<Aptitude>(str);
 
-    public static string? SerializeAptitudeList(List<Aptitude>? list)
-        => SerializeList(list, AptitudeToItemString);
+    public static string? SerializeAptitudeList(List<Aptitude>? list) => SerializeItems(list);
 
-    public static List<Aptitude>? DeserializeAptitudeList(string? data)
-        => DeserializeList(data, ParseAptitude, "DeserializeAptitudeList");
+    public static List<Aptitude>? DeserializeAptitudeList(string? data) => DeserializeItems<Aptitude>(data);
 
     #endregion
 
     #region GeneticTraitData
 
-    public static string GeneticTraitDataToItemString(GeneticTraitData gtd)
-        => $"{gtd.def?.defName ?? "NULL"}|{gtd.degree}";
+    public static string GeneticTraitDataToItemString(GeneticTraitData gtd) => ToItem(gtd);
 
-    public static GeneticTraitData? ParseGeneticTraitData(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("GeneticTraitData", str, "traitDefName|degree");
-            return null;
-        }
-        var traitDef = DefDatabase<TraitDef>.GetNamedSilentFail(parts[0]);
-        if (traitDef == null)
-        {
-            LogMissingDef("GeneticTraitData.def", parts[0]);
-            return null;
-        }
-        if (!int.TryParse(parts[1], out var degree))
-        {
-            WarnSyntaxError("GeneticTraitData", str, "traitDefName|degree（degree 应为整数）");
-            return null;
-        }
-        return new GeneticTraitData { def = traitDef, degree = degree };
-    }
+    public static GeneticTraitData? ParseGeneticTraitData(string str) => FromItem<GeneticTraitData>(str);
 
-    public static string? SerializeGeneticTraitDataList(List<GeneticTraitData>? list)
-        => SerializeList(list, GeneticTraitDataToItemString);
+    public static string? SerializeGeneticTraitDataList(List<GeneticTraitData>? list) => SerializeItems(list);
 
     public static List<GeneticTraitData>? DeserializeGeneticTraitDataList(string? data)
-        => DeserializeList(data, ParseGeneticTraitData, "DeserializeGeneticTraitDataList");
+        => DeserializeItems<GeneticTraitData>(data);
 
     #endregion
 
     #region ThingDefCountClass
 
-    public static string ThingDefCountClassToItemString(ThingDefCountClass tdc)
-        => $"{tdc.thingDef?.defName ?? "NULL"}|{tdc.stuff?.defName ?? "NULL"}|{tdc.count}";
+    public static string ThingDefCountClassToItemString(ThingDefCountClass tdc) => ToItem(tdc);
 
-    public static ThingDefCountClass? ParseThingDefCountClass(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 3)
-        {
-            WarnSyntaxError("ThingDefCountClass", str, "thingDefName|stuffDefName|count");
-            return null;
-        }
-        var thingDef = DefDatabase<ThingDef>.GetNamedSilentFail(parts[0]);
-        if (thingDef == null)
-        {
-            LogMissingDef("ThingDefCountClass.thingDef", parts[0]);
-            return null;
-        }
-        ThingDef? stuff = null;
-        if (parts[1] != "NULL" && !parts[1].NullOrEmpty())
-        {
-            stuff = DefDatabase<ThingDef>.GetNamedSilentFail(parts[1]);
-            if (stuff == null)
-            {
-                LogMissingDef("ThingDefCountClass.stuff", parts[1]);
-                return null;
-            }
-        }
-        if (!int.TryParse(parts[2], out var count) || count < 0)
-        {
-            WarnSyntaxError("ThingDefCountClass", str, "count 应为非负整数");
-            return null;
-        }
-        return new ThingDefCountClass
-        {
-            thingDef = thingDef,
-            stuff = stuff,
-            count = count
-        };
-    }
+    public static ThingDefCountClass? ParseThingDefCountClass(string str) => FromItem<ThingDefCountClass>(str);
 
-    public static string? SerializeThingDefCountClassList(List<ThingDefCountClass>? list)
-        => SerializeList(list, ThingDefCountClassToItemString);
+    public static string? SerializeThingDefCountClassList(List<ThingDefCountClass>? list) => SerializeItems(list);
 
     public static List<ThingDefCountClass>? DeserializeThingDefCountClassList(string? data)
-        => DeserializeList(data, ParseThingDefCountClass, "DeserializeThingDefCountClassList");
+        => DeserializeItems<ThingDefCountClass>(data);
 
     #endregion
 
-    #region IngredientCount
+    #region IngredientCount（bespoke：挂在 ThingFilter + GetBaseCount/SetBaseCount 上）
 
     public static string? SerializeIngredientCountList(List<IngredientCount>? list)
     {
@@ -408,401 +292,131 @@ public static class SerializationHelper
 
     #region SkillRequirement
 
-    public static string SkillRequirementToItemString(SkillRequirement sr)
-        => $"{sr.skill?.defName ?? "NULL"}|{sr.minLevel}";
+    public static string SkillRequirementToItemString(SkillRequirement sr) => ToItem(sr);
 
-    public static SkillRequirement? ParseSkillRequirement(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("SkillRequirement", str, "skillDefName|minLevel");
-            return null;
-        }
-        var skill = DefDatabase<SkillDef>.GetNamedSilentFail(parts[0]);
-        if (skill == null)
-        {
-            LogMissingDef("SkillRequirement.skill", parts[0]);
-            return null;
-        }
-        if (!int.TryParse(parts[1], out var minLevel))
-        {
-            WarnSyntaxError("SkillRequirement", str, "skillDefName|minLevel（minLevel 应为整数）");
-            return null;
-        }
-        return new SkillRequirement { skill = skill, minLevel = minLevel };
-    }
+    public static SkillRequirement? ParseSkillRequirement(string str) => FromItem<SkillRequirement>(str);
 
-    public static string? SerializeSkillRequirementList(List<SkillRequirement>? list)
-        => SerializeList(list, SkillRequirementToItemString);
+    public static string? SerializeSkillRequirementList(List<SkillRequirement>? list) => SerializeItems(list);
 
     public static List<SkillRequirement>? DeserializeSkillRequirementList(string? data)
-        => DeserializeList(data, ParseSkillRequirement, "DeserializeSkillRequirementList");
+        => DeserializeItems<SkillRequirement>(data);
 
     #endregion
 
     #region TraitRequirement
 
-    public static string TraitRequirementToItemString(TraitRequirement tr)
-        => $"{tr.def?.defName ?? "NULL"}|{(tr.degree.HasValue ? tr.degree.Value.ToString() : "")}";
+    public static string TraitRequirementToItemString(TraitRequirement tr) => ToItem(tr);
 
-    public static TraitRequirement? ParseTraitRequirement(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("TraitRequirement", str, "traitDefName|degree（degree 可为空表示任意强度）");
-            return null;
-        }
-        var trait = DefDatabase<TraitDef>.GetNamedSilentFail(parts[0]);
-        if (trait == null)
-        {
-            LogMissingDef("TraitRequirement.def", parts[0]);
-            return null;
-        }
-        int? degree = null;
-        if (!parts[1].NullOrEmpty())
-        {
-            if (!int.TryParse(parts[1], out var deg))
-            {
-                WarnSyntaxError("TraitRequirement", str, "traitDefName|degree（degree 应为整数或空）");
-                return null;
-            }
-            degree = deg;
-        }
-        return new TraitRequirement { def = trait, degree = degree };
-    }
+    public static TraitRequirement? ParseTraitRequirement(string str) => FromItem<TraitRequirement>(str);
 
-    public static string? SerializeTraitRequirementList(List<TraitRequirement>? list)
-        => SerializeList(list, TraitRequirementToItemString);
+    public static string? SerializeTraitRequirementList(List<TraitRequirement>? list) => SerializeItems(list);
 
     public static List<TraitRequirement>? DeserializeTraitRequirementList(string? data)
-        => DeserializeList(data, ParseTraitRequirement, "DeserializeTraitRequirementList");
+        => DeserializeItems<TraitRequirement>(data);
 
     #endregion
 
     #region BiomePlantRecord
 
-    public static string BiomePlantRecordToItemString(BiomePlantRecord r)
-        => $"{r.plant?.defName ?? "NULL"}|{r.commonality}";
+    public static string BiomePlantRecordToItemString(BiomePlantRecord r) => ToItem(r);
 
-    public static BiomePlantRecord? ParseBiomePlantRecord(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("BiomePlantRecord", str, "plantDefName|commonality");
-            return null;
-        }
-        var plant = DefDatabase<ThingDef>.GetNamedSilentFail(parts[0]);
-        if (plant == null)
-        {
-            LogMissingDef("BiomePlantRecord.plant", parts[0]);
-            return null;
-        }
-        if (!float.TryParse(parts[1], out var commonality))
-        {
-            WarnSyntaxError("BiomePlantRecord", str, "plantDefName|commonality（commonality 应为浮点数）");
-            return null;
-        }
-        return new BiomePlantRecord { plant = plant, commonality = commonality };
-    }
+    public static BiomePlantRecord? ParseBiomePlantRecord(string str) => FromItem<BiomePlantRecord>(str);
 
-    public static string? SerializeBiomePlantList(List<BiomePlantRecord>? list)
-        => SerializeList(list, BiomePlantRecordToItemString);
+    public static string? SerializeBiomePlantList(List<BiomePlantRecord>? list) => SerializeItems(list);
 
     public static List<BiomePlantRecord>? DeserializeBiomePlantList(string? data)
-        => DeserializeList(data, ParseBiomePlantRecord, "DeserializeBiomePlantList");
+        => DeserializeItems<BiomePlantRecord>(data);
 
     #endregion
 
     #region BiomeAnimalRecord
 
-    public static string BiomeAnimalRecordToItemString(BiomeAnimalRecord r)
-        => $"{r.animal?.defName ?? "NULL"}|{r.commonality}";
+    public static string BiomeAnimalRecordToItemString(BiomeAnimalRecord r) => ToItem(r);
 
-    public static BiomeAnimalRecord? ParseBiomeAnimalRecord(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("BiomeAnimalRecord", str, "animalKindDefName|commonality");
-            return null;
-        }
-        var animal = DefDatabase<PawnKindDef>.GetNamedSilentFail(parts[0]);
-        if (animal == null)
-        {
-            LogMissingDef("BiomeAnimalRecord.animal", parts[0]);
-            return null;
-        }
-        if (!float.TryParse(parts[1], out var commonality))
-        {
-            WarnSyntaxError("BiomeAnimalRecord", str, "animalKindDefName|commonality（commonality 应为浮点数）");
-            return null;
-        }
-        return new BiomeAnimalRecord { animal = animal, commonality = commonality };
-    }
+    public static BiomeAnimalRecord? ParseBiomeAnimalRecord(string str) => FromItem<BiomeAnimalRecord>(str);
 
-    public static string? SerializeBiomeAnimalList(List<BiomeAnimalRecord>? list)
-        => SerializeList(list, BiomeAnimalRecordToItemString);
+    public static string? SerializeBiomeAnimalList(List<BiomeAnimalRecord>? list) => SerializeItems(list);
 
     public static List<BiomeAnimalRecord>? DeserializeBiomeAnimalList(string? data)
-        => DeserializeList(data, ParseBiomeAnimalRecord, "DeserializeBiomeAnimalList");
+        => DeserializeItems<BiomeAnimalRecord>(data);
 
     #endregion
 
     #region FishChance
 
-    public static string FishChanceToItemString(FishChance f)
-        => $"{f.fishDef?.defName ?? "NULL"}|{f.chance}";
+    public static string FishChanceToItemString(FishChance f) => ToItem(f);
 
-    public static FishChance? ParseFishChance(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("FishChance", str, "fishDefName|chance");
-            return null;
-        }
-        var fish = DefDatabase<ThingDef>.GetNamedSilentFail(parts[0]);
-        if (fish == null)
-        {
-            LogMissingDef("FishChance.fishDef", parts[0]);
-            return null;
-        }
-        if (!float.TryParse(parts[1], out var chance))
-        {
-            WarnSyntaxError("FishChance", str, "fishDefName|chance（chance 应为浮点数）");
-            return null;
-        }
-        return new FishChance { fishDef = fish, chance = chance };
-    }
+    public static FishChance? ParseFishChance(string str) => FromItem<FishChance>(str);
 
-    public static string? SerializeFishChanceList(List<FishChance>? list)
-        => SerializeList(list, FishChanceToItemString);
+    public static string? SerializeFishChanceList(List<FishChance>? list) => SerializeItems(list);
 
-    public static List<FishChance>? DeserializeFishChanceList(string? data)
-        => DeserializeList(data, ParseFishChance, "DeserializeFishChanceList");
+    public static List<FishChance>? DeserializeFishChanceList(string? data) => DeserializeItems<FishChance>(data);
 
     #endregion
 
     #region BiomeDiseaseRecord
 
-    public static string BiomeDiseaseRecordToItemString(BiomeDiseaseRecord r)
-        => $"{r.diseaseInc?.defName ?? "NULL"}|{r.commonality}";
+    public static string BiomeDiseaseRecordToItemString(BiomeDiseaseRecord r) => ToItem(r);
 
-    public static BiomeDiseaseRecord? ParseBiomeDiseaseRecord(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("BiomeDiseaseRecord", str, "diseaseIncidentDefName|commonality");
-            return null;
-        }
-        var diseaseInc = DefDatabase<IncidentDef>.GetNamedSilentFail(parts[0]);
-        if (diseaseInc == null)
-        {
-            LogMissingDef("BiomeDiseaseRecord.diseaseInc", parts[0]);
-            return null;
-        }
-        if (!float.TryParse(parts[1], out var commonality))
-        {
-            WarnSyntaxError("BiomeDiseaseRecord", str, "diseaseIncidentDefName|commonality（commonality 应为浮点数）");
-            return null;
-        }
-        return new BiomeDiseaseRecord { diseaseInc = diseaseInc, commonality = commonality };
-    }
+    public static BiomeDiseaseRecord? ParseBiomeDiseaseRecord(string str) => FromItem<BiomeDiseaseRecord>(str);
 
-    public static string? SerializeDiseaseList(List<BiomeDiseaseRecord>? list)
-        => SerializeList(list, BiomeDiseaseRecordToItemString);
+    public static string? SerializeDiseaseList(List<BiomeDiseaseRecord>? list) => SerializeItems(list);
 
     public static List<BiomeDiseaseRecord>? DeserializeDiseaseList(string? data)
-        => DeserializeList(data, ParseBiomeDiseaseRecord, "DeserializeDiseaseList");
+        => DeserializeItems<BiomeDiseaseRecord>(data);
 
     #endregion
 
     #region WeatherCommonalityRecord
 
-    public static string WeatherCommonalityRecordToItemString(WeatherCommonalityRecord r)
-        => $"{r.weather?.defName ?? "NULL"}|{r.commonality}";
+    public static string WeatherCommonalityRecordToItemString(WeatherCommonalityRecord r) => ToItem(r);
 
     public static WeatherCommonalityRecord? ParseWeatherCommonalityRecord(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 2)
-        {
-            WarnSyntaxError("WeatherCommonalityRecord", str, "weatherDefName|commonality");
-            return null;
-        }
-        var weather = DefDatabase<WeatherDef>.GetNamedSilentFail(parts[0]);
-        if (weather == null)
-        {
-            LogMissingDef("WeatherCommonalityRecord.weather", parts[0]);
-            return null;
-        }
-        if (!float.TryParse(parts[1], out var commonality))
-        {
-            WarnSyntaxError("WeatherCommonalityRecord", str, "weatherDefName|commonality（commonality 应为浮点数）");
-            return null;
-        }
-        return new WeatherCommonalityRecord { weather = weather, commonality = commonality };
-    }
+        => FromItem<WeatherCommonalityRecord>(str);
 
-    public static string? SerializeWeatherCommonalityList(List<WeatherCommonalityRecord>? list)
-        => SerializeList(list, WeatherCommonalityRecordToItemString);
+    public static string? SerializeWeatherCommonalityList(List<WeatherCommonalityRecord>? list) => SerializeItems(list);
 
     public static List<WeatherCommonalityRecord>? DeserializeWeatherCommonalityList(string? data)
-        => DeserializeList(data, ParseWeatherCommonalityRecord, "DeserializeWeatherCommonalityList");
+        => DeserializeItems<WeatherCommonalityRecord>(data);
 
     #endregion
 
     #region TerrainThreshold
 
-    public static string TerrainThresholdToItemString(TerrainThreshold t)
-        => $"{t.terrain?.defName ?? "NULL"}|{t.min}|{t.max}";
+    public static string TerrainThresholdToItemString(TerrainThreshold t) => ToItem(t);
 
-    public static TerrainThreshold? ParseTerrainThreshold(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length != 3)
-        {
-            WarnSyntaxError("TerrainThreshold", str, "terrainDefName|min|max");
-            return null;
-        }
-        var terrain = DefDatabase<TerrainDef>.GetNamedSilentFail(parts[0]);
-        if (terrain == null)
-        {
-            LogMissingDef("TerrainThreshold.terrain", parts[0]);
-            return null;
-        }
-        if (!float.TryParse(parts[1], out var min) || !float.TryParse(parts[2], out var max))
-        {
-            WarnSyntaxError("TerrainThreshold", str, "terrainDefName|min|max（min/max 应为浮点数）");
-            return null;
-        }
-        return new TerrainThreshold { terrain = terrain, min = min, max = max };
-    }
+    public static TerrainThreshold? ParseTerrainThreshold(string str) => FromItem<TerrainThreshold>(str);
 
-    public static string? SerializeTerrainThresholdList(List<TerrainThreshold>? list)
-        => SerializeList(list, TerrainThresholdToItemString);
+    public static string? SerializeTerrainThresholdList(List<TerrainThreshold>? list) => SerializeItems(list);
 
     public static List<TerrainThreshold>? DeserializeTerrainThresholdList(string? data)
-        => DeserializeList(data, ParseTerrainThreshold, "DeserializeTerrainThresholdList");
+        => DeserializeItems<TerrainThreshold>(data);
 
     #endregion
 
     #region ProcessIngredientItem
 
-    public static string ProcessIngredientItemToItemString(ProcessIngredientItem i)
-    {
-        var thingStr = i.thing?.defName ?? "";
-        var catStr = i.thingCategory?.defName ?? "";
-        var disallowedStr = i.disallowedThingDefs != null && i.disallowedThingDefs.Count > 0
-            ? string.Join(",", i.disallowedThingDefs.Select(d => d.defName))
-            : "";
-        return $"{thingStr}|{catStr}|{disallowedStr}|{i.countNeeded}";
-    }
+    public static string ProcessIngredientItemToItemString(ProcessIngredientItem i) => ToItem(i);
 
-    public static ProcessIngredientItem? ParseProcessIngredientItem(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length < 4)
-        {
-            WarnSyntaxError("ProcessIngredientItem", str, "thingDefName|thingCategoryDefName|disallowedThingDefs|countNeeded");
-            return null;
-        }
-        var item = new ProcessIngredientItem();
-        if (!parts[0].NullOrEmpty())
-        {
-            item.thing = DefDatabase<ThingDef>.GetNamedSilentFail(parts[0]);
-            if (item.thing == null)
-            {
-                LogMissingDef("ProcessIngredientItem.thing", parts[0]);
-                return null;
-            }
-        }
-        if (!parts[1].NullOrEmpty())
-        {
-            item.thingCategory = DefDatabase<ThingCategoryDef>.GetNamedSilentFail(parts[1]);
-            if (item.thingCategory == null)
-            {
-                LogMissingDef("ProcessIngredientItem.thingCategory", parts[1]);
-                return null;
-            }
-        }
-        if (parts.Length >= 3 && !parts[2].NullOrEmpty())
-        {
-            var disallowedNames = parts[2].Split(',');
-            item.disallowedThingDefs = new List<ThingDef>();
-            foreach (var name in disallowedNames)
-            {
-                var td = DefDatabase<ThingDef>.GetNamedSilentFail(name.Trim());
-                if (td == null)
-                {
-                    LogMissingDef("ProcessIngredientItem.disallowedThingDefs", name.Trim());
-                    return null;
-                }
-                item.disallowedThingDefs.Add(td);
-            }
-        }
-        if (parts.Length >= 4)
-        {
-            if (!float.TryParse(parts[3], out item.countNeeded))
-            {
-                WarnSyntaxError("ProcessIngredientItem", str, "countNeeded 应为浮点数");
-                return null;
-            }
-        }
-        return item;
-    }
+    public static ProcessIngredientItem? ParseProcessIngredientItem(string str) => FromItem<ProcessIngredientItem>(str);
 
-    public static string? SerializeProcessIngredientItemList(List<ProcessIngredientItem>? list)
-        => SerializeList(list, ProcessIngredientItemToItemString);
+    public static string? SerializeProcessIngredientItemList(List<ProcessIngredientItem>? list) => SerializeItems(list);
 
     public static List<ProcessIngredientItem>? DeserializeProcessIngredientItemList(string? data)
-        => DeserializeList(data, ParseProcessIngredientItem, "DeserializeProcessIngredientItemList");
+        => DeserializeItems<ProcessIngredientItem>(data);
 
     #endregion
 
     #region ProcessResultItem
 
-    public static string ProcessResultItemToItemString(ProcessResultItem r)
-    {
-        var thingStr = r.thing?.defName ?? "";
-        return $"{thingStr}|{r.count}";
-    }
+    public static string ProcessResultItemToItemString(ProcessResultItem r) => ToItem(r);
 
-    public static ProcessResultItem? ParseProcessResultItem(string str)
-    {
-        var parts = str.Split('|');
-        if (parts.Length < 2)
-        {
-            WarnSyntaxError("ProcessResultItem", str, "thingDefName|count");
-            return null;
-        }
-        var item = new ProcessResultItem();
-        if (!parts[0].NullOrEmpty())
-        {
-            item.thing = DefDatabase<ThingDef>.GetNamedSilentFail(parts[0]);
-            if (item.thing == null)
-            {
-                LogMissingDef("ProcessResultItem.thing", parts[0]);
-                return null;
-            }
-        }
-        if (!int.TryParse(parts[1], out item.count) || item.count < 0)
-        {
-            WarnSyntaxError("ProcessResultItem", str, "count 应为非负整数");
-            return null;
-        }
-        return item;
-    }
+    public static ProcessResultItem? ParseProcessResultItem(string str) => FromItem<ProcessResultItem>(str);
 
-    public static string? SerializeProcessResultItemList(List<ProcessResultItem>? list)
-        => SerializeList(list, ProcessResultItemToItemString);
+    public static string? SerializeProcessResultItemList(List<ProcessResultItem>? list) => SerializeItems(list);
 
     public static List<ProcessResultItem>? DeserializeProcessResultItemList(string? data)
-        => DeserializeList(data, ParseProcessResultItem, "DeserializeProcessResultItemList");
+        => DeserializeItems<ProcessResultItem>(data);
 
     #endregion
 
@@ -863,7 +477,7 @@ public static class SerializationHelper
     //  Simple value serialization helpers
     // ============================================================
 
-    #region SimpleCurve
+    #region SimpleCurve（bespoke：数据在 Points，而 CurvePoint.loc 是 private Vector2）
 
     public static string? SerializeSimpleCurve(SimpleCurve? curve)
     {
@@ -905,7 +519,7 @@ public static class SerializationHelper
 
     #endregion
 
-    #region ThingFilter
+    #region ThingFilter（bespoke：反射读写私有字段 + ResolveReferences + 差分补全）
 
     public static string? SerializeThingFilter(ThingFilter? filter)
     {
@@ -1172,7 +786,7 @@ public static class SerializationHelper
     //  BodyPart tree (BodyDef.corePart)
     // ============================================================
 
-    #region BodyPart tree
+    #region BodyPart tree（bespoke：树形 + 行末 customLabel 吸收 '|'）
 
     /// <summary>
     /// 把 <see cref="BodyPartNode"/> 编码为一行字符串。字段以 <c>'|'</c> 分隔：

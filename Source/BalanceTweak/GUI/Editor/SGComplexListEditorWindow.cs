@@ -25,7 +25,7 @@ public class SGComplexListEditorWindow : EditorWindowBase
 
     private readonly Type elementType;
     private readonly List<object> items = new();
-    private readonly IReadOnlyList<StockGeneratorCodec.SgField> fields;
+    private readonly IReadOnlyList<PocoCodec.Field> fields;
     private readonly Action<IList?> onSave;
     private Vector2 scrollPosition;
 

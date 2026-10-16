@@ -10,7 +10,7 @@ using Verse;
 namespace BalanceTweak;
 
 /// <summary>
-/// 库存生成器字段的"表单"渲染：按字段表声明的方式（<see cref="StockGeneratorCodec.SgField.Kind"/>）画控件。
+/// 库存生成器字段的"表单"渲染：按字段表声明的方式（<see cref="PocoCodec.Field.Kind"/>）画控件。
 ///
 /// <para>
 /// 标量走内联控件（文本框 / 复选框 / 下拉菜单）；Def 引用、Def 列表、字符串列表、小对象列表复用现有
@@ -72,46 +72,46 @@ internal static class StockGeneratorFieldUi
     };
 
     /// <summary>已本地化的字段名（缺翻译时退化为 C# 字段名）。</summary>
-    public static string LabelOf(StockGeneratorCodec.SgField field)
+    public static string LabelOf(PocoCodec.Field field)
         => FieldLabelKeys.TryGetValue(field.Name, out var key) && key.TryTranslate(out var text) ? text : field.Name;
 
     /// <summary>画出 <paramref name="field"/> 在 <paramref name="target"/> 上的编辑控件（直接写回 target）。</summary>
-    public static void DrawField(Rect rect, StockGeneratorCodec.SgField field, object target, EditorWindowBase owner)
+    public static void DrawField(Rect rect, PocoCodec.Field field, object target, EditorWindowBase owner)
     {
         var current = StockGeneratorCodec.ReadField(field, target);
 
         Text.Anchor = TextAnchor.MiddleLeft;
         switch (field.Kind)
         {
-            case StockGeneratorCodec.Kind.Float:
-            case StockGeneratorCodec.Kind.Int:
+            case PocoCodec.Kind.Float:
+            case PocoCodec.Kind.Int:
                 DrawNumeric(rect, field, target, current);
                 break;
-            case StockGeneratorCodec.Kind.Bool:
+            case PocoCodec.Kind.Bool:
                 DrawBool(rect, field, target, current);
                 break;
-            case StockGeneratorCodec.Kind.Text:
+            case PocoCodec.Kind.Text:
                 DrawText(rect, field, target, current);
                 break;
-            case StockGeneratorCodec.Kind.IntRange:
+            case PocoCodec.Kind.IntRange:
                 DrawRange(rect, field, target, current, isIntRange: true);
                 break;
-            case StockGeneratorCodec.Kind.FloatRange:
+            case PocoCodec.Kind.FloatRange:
                 DrawRange(rect, field, target, current, isIntRange: false);
                 break;
-            case StockGeneratorCodec.Kind.Enum:
+            case PocoCodec.Kind.Enum:
                 DrawEnum(rect, field, target, current);
                 break;
-            case StockGeneratorCodec.Kind.Def:
+            case PocoCodec.Kind.Def:
                 DrawDefRef(rect, field, target, current, owner);
                 break;
-            case StockGeneratorCodec.Kind.DefList:
+            case PocoCodec.Kind.DefList:
                 DrawDefList(rect, field, target, current, owner);
                 break;
-            case StockGeneratorCodec.Kind.StringList:
+            case PocoCodec.Kind.StringList:
                 DrawStringList(rect, field, target, current, owner);
                 break;
-            case StockGeneratorCodec.Kind.ComplexList:
+            case PocoCodec.Kind.ComplexList:
                 DrawComplexList(rect, field, target, current, owner);
                 break;
             default:
@@ -124,13 +124,13 @@ internal static class StockGeneratorFieldUi
         Text.Anchor = TextAnchor.UpperLeft;
     }
 
-    private static void DrawNumeric(Rect rect, StockGeneratorCodec.SgField field, object target, object? current)
+    private static void DrawNumeric(Rect rect, PocoCodec.Field field, object target, object? current)
     {
         string text = current == null ? "" : Convert.ToString(current, CultureInfo.InvariantCulture) ?? "";
         string next = Widgets.TextField(rect, text);
         if (next == text) return;
 
-        if (field.Kind == StockGeneratorCodec.Kind.Int)
+        if (field.Kind == PocoCodec.Kind.Int)
         {
             if (int.TryParse(next, out int intValue)) StockGeneratorCodec.WriteField(field, target, intValue);
         }
@@ -140,7 +140,7 @@ internal static class StockGeneratorFieldUi
         }
     }
 
-    private static void DrawBool(Rect rect, StockGeneratorCodec.SgField field, object target, object? current)
+    private static void DrawBool(Rect rect, PocoCodec.Field field, object target, object? current)
     {
         bool value = current is bool b && b;
         bool next = value;
@@ -149,14 +149,14 @@ internal static class StockGeneratorFieldUi
         if (next != value) StockGeneratorCodec.WriteField(field, target, next);
     }
 
-    private static void DrawText(Rect rect, StockGeneratorCodec.SgField field, object target, object? current)
+    private static void DrawText(Rect rect, PocoCodec.Field field, object target, object? current)
     {
         string text = current as string ?? "";
         string next = Widgets.TextField(rect, text);
         if (next != text) StockGeneratorCodec.WriteField(field, target, next.Length > 0 ? next : null);
     }
 
-    private static void DrawRange(Rect rect, StockGeneratorCodec.SgField field, object target, object? current, bool isIntRange)
+    private static void DrawRange(Rect rect, PocoCodec.Field field, object target, object? current, bool isIntRange)
     {
         string text = current?.ToString() ?? "";
         string next = Widgets.TextField(rect, text);
@@ -169,7 +169,7 @@ internal static class StockGeneratorFieldUi
             StockGeneratorCodec.WriteField(field, target, value);
     }
 
-    private static void DrawEnum(Rect rect, StockGeneratorCodec.SgField field, object target, object? current)
+    private static void DrawEnum(Rect rect, PocoCodec.Field field, object target, object? current)
     {
         var enumType = field.EnumType!;
         if (!Widgets.ButtonText(rect, EnumValueLabel(enumType, current))) return;
@@ -183,7 +183,7 @@ internal static class StockGeneratorFieldUi
         Find.WindowStack.Add(new FloatMenu(options));
     }
 
-    private static void DrawDefRef(Rect rect, StockGeneratorCodec.SgField field, object target, object? current, EditorWindowBase owner)
+    private static void DrawDefRef(Rect rect, PocoCodec.Field field, object target, object? current, EditorWindowBase owner)
     {
         var def = current as Def;
         string label = def == null
@@ -199,7 +199,7 @@ internal static class StockGeneratorFieldUi
             d => StockGeneratorCodec.WriteField(field, target, d)));
     }
 
-    private static void DrawDefList(Rect rect, StockGeneratorCodec.SgField field, object target, object? current, EditorWindowBase owner)
+    private static void DrawDefList(Rect rect, PocoCodec.Field field, object target, object? current, EditorWindowBase owner)
     {
         var list = current as IList;
         string label = list != null && list.Count > 0 ? $"[{list.Count}]" : "MST.Empty".Translate().RawText;
@@ -213,7 +213,7 @@ internal static class StockGeneratorFieldUi
             result => StockGeneratorCodec.WriteField(field, target, result)));
     }
 
-    private static void DrawStringList(Rect rect, StockGeneratorCodec.SgField field, object target, object? current, EditorWindowBase owner)
+    private static void DrawStringList(Rect rect, PocoCodec.Field field, object target, object? current, EditorWindowBase owner)
     {
         var list = current as IList;
         string label = list != null && list.Count > 0 ? $"[{list.Count}]" : "MST.Empty".Translate().RawText;
@@ -224,7 +224,7 @@ internal static class StockGeneratorFieldUi
             result => StockGeneratorCodec.WriteField(field, target, result)));
     }
 
-    private static void DrawComplexList(Rect rect, StockGeneratorCodec.SgField field, object target, object? current, EditorWindowBase owner)
+    private static void DrawComplexList(Rect rect, PocoCodec.Field field, object target, object? current, EditorWindowBase owner)
     {
         var list = current as IList;
         string label = list != null && list.Count > 0 ? $"[{list.Count}]" : "MST.Empty".Translate().RawText;

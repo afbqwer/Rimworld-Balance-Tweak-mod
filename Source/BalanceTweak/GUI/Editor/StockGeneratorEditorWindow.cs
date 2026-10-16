@@ -20,7 +20,7 @@ public class StockGeneratorEditorWindow : EditorWindowBase
     private const float RowStride = StockGeneratorFieldUi.RowHeight + Spacing;
 
     private readonly StockGenerator gen;
-    private readonly IReadOnlyList<StockGeneratorCodec.SgField> fields;
+    private readonly IReadOnlyList<PocoCodec.Field> fields;
     private Vector2 scrollPosition;
 
     public StockGeneratorEditorWindow(string title, StockGenerator gen)

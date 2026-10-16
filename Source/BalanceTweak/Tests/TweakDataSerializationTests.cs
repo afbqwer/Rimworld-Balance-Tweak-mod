@@ -91,19 +91,13 @@ public static class TweakDataSerializationTests
         RunTest("ResolveProcessResultList 有效数据", () => testResolveProcessResultList_Valid(), ref passed, ref failed);
 
         // ─── TraderKindDef.stockGenerators 的字段编解码与往返 ───
-        RunTest("Trader stockGenerators 字段表：原版全部类型/字段都在表里", () => testStockGen_FieldTableIntegrity(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 往返：全部已加载商人类型", () => testStockGen_RoundTripAllDefs(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 往返：每个原版类型逐字段（全部字段填非默认值）", () => testStockGen_AllTypesFieldRoundTrip(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 往返：Def/区间/枚举/嵌套对象列表/字符串列表", () => testStockGen_FieldValuesRoundTrip(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 转义：值里含分隔符也能原样往返", () => testStockGen_EscapingRoundTrip(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 文本格式：列表两端的转义与省略默认值", () => testStockGen_Format(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 克隆：改副本不影响原对象 / 非原版沿用原实例", () => testStockGen_CloneIsDeep(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 空/null 输入", () => testStockGen_EmptyAndNull(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 未知类型/字段/缺 Def → 解析失败", () => testStockGen_BadInputFails(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 字段表分类与摘要", () => testStockGen_FieldsAndSummary(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 类型菜单只列原版 / 非原版只读透传", () => testStockGen_NonVanillaRules(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 非原版占位标记：按类型名找回 Def 原实例（字段不丢）", () => testStockGen_NonVanillaPassthrough(), ref passed, ref failed);
-        RunTest("Trader stockGenerators 表单区间文本：半成品（1~ / ~4）与千位分隔符必须被拒", () => testStockGen_RangeTextValidation(), ref passed, ref failed);
+        // ─── StockGenerator 编解码 ───
+        // 机制测试（转义 / 格式 / 克隆 / 区间文本 / 字段表 / 非原版透传 / 空值 / 坏输入）已转到**游戏外**：
+        //   Source/BalanceTweak.Tests/StockGeneratorCodecTests.cs —— `dotnet test` 秒级跑完，不启动游戏。
+        // 这里只留**必须真 DefDatabase** 的三条：它们的价值在于"真数据"，游戏外无法等价替代。
+        RunTest("Trader stockGenerators 往返：全部已加载商人类型（真数据整表）", () => testStockGen_RoundTripAllDefs(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 往返：Def / Def 列表字段填真 Def", () => testStockGen_DefFieldsRoundTrip(), ref passed, ref failed);
+        RunTest("Trader stockGenerators 往返：Def 引用（单个 / 列表 / 嵌套元素）", () => testStockGen_DefRefsRoundTrip(), ref passed, ref failed);
 
         // ─── SC11a：全字段 Scribe 往返自检（见 Docs/Architecture_Improvement_Plan.md §3.1）───
         // 行为验证：给每个可测字段灌非默认样本值 → 真实 Scribe 存/读往返 → 逐字段比对。
@@ -252,13 +246,15 @@ public static class TweakDataSerializationTests
 
     // ═══════════════════════ ResolveStatModifierList 测试 ═══════════════════════
 
-    /// <summary>ResolveStatModifierList: 管道分隔符格式 → 应正确解析</summary>
+    /// <summary>ResolveStatModifierList: 正常数据（defName 都解析得到）→ 应正确还原</summary>
     private static void testResolveStatModList_Valid()
     {
         var hediff = new HediffStageData();
         SetSavedLoadData(hediff, new Dictionary<string, object?>
         {
-            ["statOffsets"] = new List<string> { "MoveSpeed|0.2", "MeleeDamageFactor|1.5" }
+            ["statOffsets"] = Encoded(
+                new StatModifier { stat = DefRef<StatDef>("MoveSpeed"), value = 0.2f },
+                new StatModifier { stat = DefRef<StatDef>("MeleeDamageFactor"), value = 1.5f })
         });
         bool ok = hediff.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -270,16 +266,16 @@ public static class TweakDataSerializationTests
         Assert(Math.Abs(hediff.statOffsets![1].value - 1.5f) < 0.001f, $"第二项 value 应为 1.5");
     }
 
-    /// <summary>ResolveStatModifierList: 无效 stat def → 返回 false</summary>
+    /// <summary>ResolveStatModifierList: Def 引用缺失（例如相关模组被移除）→ 返回 false</summary>
     private static void testResolveStatModList_InvalidStat()
     {
         var hediff = new HediffStageData();
         SetSavedLoadData(hediff, new Dictionary<string, object?>
         {
-            ["statOffsets"] = new List<string> { "NonExistentStat_ABC|0.5" }
+            ["statOffsets"] = Encoded(new StatModifier { stat = DefRef<StatDef>("NonExistentStat_ABC"), value = 0.5f })
         });
         bool ok = hediff.ResolveDefs();
-        Assert(!ok, "无效 stat 时应返回 false");
+        Assert(!ok, "Def 引用缺失时应返回 false");
     }
 
     /// <summary>ResolveStatModifierList: 空列表 → 保持 null</summary>
@@ -297,13 +293,17 @@ public static class TweakDataSerializationTests
 
     // ═══════════════════════ ResolvePawnCapacityList 测试 ═══════════════════════
 
-    /// <summary>ResolvePawnCapacityList: 管道分隔符格式 → 应正确解析</summary>
+    /// <summary>ResolvePawnCapacityList: 只写了 capacity / setMax → 其余字段取新实例初值</summary>
     private static void testResolvePawnCapList_Valid()
     {
         var hediff = new HediffStageData();
         SetSavedLoadData(hediff, new Dictionary<string, object?>
         {
-            ["capMods"] = new List<string> { "Consciousness|0|0.5|1||" }
+            ["capMods"] = Encoded(new PawnCapacityModifier
+            {
+                capacity = DefRef<PawnCapacityDef>("Consciousness"),
+                setMax = 0.5f,
+            })
         });
         bool ok = hediff.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -313,33 +313,44 @@ public static class TweakDataSerializationTests
         Assert(Math.Abs(hediff.capMods[0].offset) < 0.001f, "offset 应为 0");
         Assert(Math.Abs(hediff.capMods[0].setMax - 0.5f) < 0.001f, "setMax 应为 0.5");
         Assert(Math.Abs(hediff.capMods[0].postFactor - 1f) < 0.001f, "postFactor 应为 1（默认）");
-        Assert(hediff.capMods[0].statFactorMod == null, "statFactorMod 应为 null（留空）");
-        Assert(hediff.capMods[0].setMaxCurveEvaluateStat == null, "setMaxCurveEvaluateStat 应为 null（留空）");
+        Assert(hediff.capMods[0].statFactorMod == null, "statFactorMod 应为 null（未写）");
+        Assert(hediff.capMods[0].setMaxCurveEvaluateStat == null, "setMaxCurveEvaluateStat 应为 null（未写）");
     }
 
-    /// <summary>ResolvePawnCapacityList: 无效 capacity → 返回 false</summary>
+    /// <summary>ResolvePawnCapacityList: Def 引用缺失 → 返回 false</summary>
     private static void testResolvePawnCapList_Invalid()
     {
         var hediff = new HediffStageData();
         SetSavedLoadData(hediff, new Dictionary<string, object?>
         {
-            ["capMods"] = new List<string> { "NonExistentCapacity_XYZ|0|0.5|1||" }
+            ["capMods"] = Encoded(new PawnCapacityModifier
+            {
+                capacity = DefRef<PawnCapacityDef>("NonExistentCapacity_XYZ"),
+                setMax = 0.5f,
+            })
         });
         bool ok = hediff.ResolveDefs();
-        Assert(!ok, "无效 capacity 时应返回 false");
+        Assert(!ok, "Def 引用缺失时应返回 false");
     }
 
-    /// <summary>ResolvePawnCapacityList: 完整 6 段格式（含 statFactorMod + setMaxCurveEvaluateStat）</summary>
+    /// <summary>ResolvePawnCapacityList: 全部 6 个字段都写上（含 statFactorMod + setMaxCurveEvaluateStat）</summary>
     private static void testResolvePawnCapList_FullFormat()
     {
         var hediff = new HediffStageData();
-        // 格式: capacity|offset|setMax|postFactor|statFactorMod|setMaxCurveEvaluateStat
         SetSavedLoadData(hediff, new Dictionary<string, object?>
         {
-            ["capMods"] = new List<string> { "Moving|0.2|-1|0.8|MoveSpeed|ShootingAccuracyPawn" }
+            ["capMods"] = Encoded(new PawnCapacityModifier
+            {
+                capacity = DefRef<PawnCapacityDef>("Moving"),
+                offset = 0.2f,
+                setMax = -1f,
+                postFactor = 0.8f,
+                statFactorMod = DefRef<StatDef>("MoveSpeed"),
+                setMaxCurveEvaluateStat = DefRef<StatDef>("ShootingAccuracyPawn"),
+            })
         });
         bool ok = hediff.ResolveDefs();
-        Assert(ok, "完整格式 ResolveDefs 应返回 true");
+        Assert(ok, "完整字段 ResolveDefs 应返回 true");
         Assert(hediff.capMods != null, "capMods 不应为 null");
         Assert(hediff.capMods?.Count == 1, $"应包含 1 项，实际 {hediff.capMods?.Count}");
         Assert(hediff.capMods?[0].capacity.defName == "Moving", $"capacity 应为 Moving");
@@ -354,13 +365,15 @@ public static class TweakDataSerializationTests
 
     // ═══════════════════════ ResolveDamageFactorList 测试 ═══════════════════════
 
-    /// <summary>ResolveDamageFactorList: 管道分隔符格式 → 应正确解析</summary>
+    /// <summary>ResolveDamageFactorList: 正常数据 → 应正确还原</summary>
     private static void testResolveDamageFactorList_Valid()
     {
         var hediff = new HediffStageData();
         SetSavedLoadData(hediff, new Dictionary<string, object?>
         {
-            ["damageFactors"] = new List<string> { "Arrow|0.5", "Bullet|0.75" }
+            ["damageFactors"] = Encoded(
+                new DamageFactor { damageDef = DefRef<DamageDef>("Arrow"), factor = 0.5f },
+                new DamageFactor { damageDef = DefRef<DamageDef>("Bullet"), factor = 0.75f })
         });
         bool ok = hediff.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -372,13 +385,13 @@ public static class TweakDataSerializationTests
         Assert(Math.Abs(hediff.damageFactors![1].factor - 0.75f) < 0.001f, "第二项 factor 应为 0.75");
     }
 
-    /// <summary>ResolveDamageFactorList: 无效 damageDef → 返回 false</summary>
+    /// <summary>ResolveDamageFactorList: Def 引用缺失 → 返回 false</summary>
     private static void testResolveDamageFactorList_Invalid()
     {
         var hediff = new HediffStageData();
         SetSavedLoadData(hediff, new Dictionary<string, object?>
         {
-            ["damageFactors"] = new List<string> { "NonExistentDamage_XYZ|0.5" }
+            ["damageFactors"] = Encoded(new DamageFactor { damageDef = DefRef<DamageDef>("NonExistentDamage_XYZ"), factor = 0.5f })
         });
         bool ok = hediff.ResolveDefs();
         Assert(!ok, "无效 damageDef 时应返回 false");
@@ -392,7 +405,9 @@ public static class TweakDataSerializationTests
         var traitDeg = new TraitDegreeNodeData();
         SetSavedLoadData(traitDeg, new Dictionary<string, object?>
         {
-            ["skillGains"] = new List<string> { "Shooting|5", "Cooking|3" }
+            ["skillGains"] = Encoded(
+                new SkillGain { skill = DefRef<SkillDef>("Shooting"), amount = 5 },
+                new SkillGain { skill = DefRef<SkillDef>("Cooking"), amount = 3 })
         });
         bool ok = traitDeg.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -410,7 +425,7 @@ public static class TweakDataSerializationTests
         var traitDeg = new TraitDegreeNodeData();
         SetSavedLoadData(traitDeg, new Dictionary<string, object?>
         {
-            ["skillGains"] = new List<string> { "NonExistentSkill_ZZZ|5" }
+            ["skillGains"] = Encoded(new SkillGain { skill = DefRef<SkillDef>("NonExistentSkill_ZZZ"), amount = 5 })
         });
         bool ok = traitDeg.ResolveDefs();
         Assert(!ok, "无效 skill 时应返回 false");
@@ -424,7 +439,9 @@ public static class TweakDataSerializationTests
         var traitDeg = new TraitDegreeNodeData();
         SetSavedLoadData(traitDeg, new Dictionary<string, object?>
         {
-            ["aptitudes"] = new List<string> { "Shooting|2", "Crafting|1" }
+            ["aptitudes"] = Encoded(
+                new Aptitude { skill = DefRef<SkillDef>("Shooting"), level = 2 },
+                new Aptitude { skill = DefRef<SkillDef>("Crafting"), level = 1 })
         });
         bool ok = traitDeg.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -442,7 +459,7 @@ public static class TweakDataSerializationTests
         var traitDeg = new TraitDegreeNodeData();
         SetSavedLoadData(traitDeg, new Dictionary<string, object?>
         {
-            ["aptitudes"] = new List<string> { "NonExistentSkill_ZZZ|1" }
+            ["aptitudes"] = Encoded(new Aptitude { skill = DefRef<SkillDef>("NonExistentSkill_ZZZ"), level = 1 })
         });
         bool ok = traitDeg.ResolveDefs();
         Assert(!ok, "无效 skill 时应返回 false");
@@ -456,7 +473,9 @@ public static class TweakDataSerializationTests
         var gene = new GeneData();
         SetSavedLoadData(gene, new Dictionary<string, object?>
         {
-            ["forcedTraits"] = new List<string> { "Kind|0", "Industriousness|2" }
+            ["forcedTraits"] = Encoded(
+                new TraitRequirement { def = DefRef<TraitDef>("Kind"), degree = 0 },
+                new TraitRequirement { def = DefRef<TraitDef>("Industriousness"), degree = 2 })
         });
         bool ok = gene.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -474,7 +493,7 @@ public static class TweakDataSerializationTests
         var gene = new GeneData();
         SetSavedLoadData(gene, new Dictionary<string, object?>
         {
-            ["forcedTraits"] = new List<string> { "NonExistentTrait_ZZZ|0" }
+            ["forcedTraits"] = Encoded(new TraitRequirement { def = DefRef<TraitDef>("NonExistentTrait_ZZZ"), degree = 0 })
         });
         bool ok = gene.ResolveDefs();
         Assert(!ok, "无效 trait 时应返回 false");
@@ -488,7 +507,9 @@ public static class TweakDataSerializationTests
         var recipe = new RecipeData();
         SetSavedLoadData(recipe, new Dictionary<string, object?>
         {
-            ["products"] = new List<string> { "Steel||10", "Cloth||5" }
+            ["products"] = Encoded(
+                new ThingDefCountClass { thingDef = DefRef<ThingDef>("Steel"), count = 10 },
+                new ThingDefCountClass { thingDef = DefRef<ThingDef>("Cloth"), count = 5 })
         });
         bool ok = recipe.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -507,7 +528,12 @@ public static class TweakDataSerializationTests
         var recipe = new RecipeData();
         SetSavedLoadData(recipe, new Dictionary<string, object?>
         {
-            ["products"] = new List<string> { "Plasteel|Steel|5" }
+            ["products"] = Encoded(new ThingDefCountClass
+            {
+                thingDef = DefRef<ThingDef>("Plasteel"),
+                stuff = DefRef<ThingDef>("Steel"),
+                count = 5,
+            })
         });
         bool ok = recipe.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -524,7 +550,7 @@ public static class TweakDataSerializationTests
         var recipe = new RecipeData();
         SetSavedLoadData(recipe, new Dictionary<string, object?>
         {
-            ["products"] = new List<string> { "NonExistentThing_XYZ||10" }
+            ["products"] = Encoded(new ThingDefCountClass { thingDef = DefRef<ThingDef>("NonExistentThing_XYZ"), count = 10 })
         });
         bool ok = recipe.ResolveDefs();
         Assert(!ok, "无效 thingDef 时应返回 false");
@@ -538,7 +564,9 @@ public static class TweakDataSerializationTests
         var recipe = new RecipeData();
         SetSavedLoadData(recipe, new Dictionary<string, object?>
         {
-            ["skillRequirements"] = new List<string> { "Crafting|8", "Medicine|6" }
+            ["skillRequirements"] = Encoded(
+                new SkillRequirement { skill = DefRef<SkillDef>("Crafting"), minLevel = 8 },
+                new SkillRequirement { skill = DefRef<SkillDef>("Medicine"), minLevel = 6 })
         });
         bool ok = recipe.ResolveDefs();
         Assert(ok, "ResolveDefs 应返回 true");
@@ -556,7 +584,7 @@ public static class TweakDataSerializationTests
         var recipe = new RecipeData();
         SetSavedLoadData(recipe, new Dictionary<string, object?>
         {
-            ["skillRequirements"] = new List<string> { "NonExistentSkill_ZZZ|5" }
+            ["skillRequirements"] = Encoded(new SkillRequirement { skill = DefRef<SkillDef>("NonExistentSkill_ZZZ"), minLevel = 5 })
         });
         bool ok = recipe.ResolveDefs();
         Assert(!ok, "无效 skill 时应返回 false");
@@ -705,7 +733,9 @@ public static class TweakDataSerializationTests
 
         SetSavedLoadData(recipe, new Dictionary<string, object?>
         {
-            ["processIngredients"] = new List<string> { "Steel|||5", "|ResourcesRaw||3" }
+            ["processIngredients"] = Encoded(
+                new ProcessIngredientItem { thing = DefRef<ThingDef>("Steel"), countNeeded = 5f },
+                new ProcessIngredientItem { thingCategory = DefRef<ThingCategoryDef>("ResourcesRaw"), countNeeded = 3f })
         });
 
         if (!fieldAvailable)
@@ -738,7 +768,12 @@ public static class TweakDataSerializationTests
 
         SetSavedLoadData(recipe, new Dictionary<string, object?>
         {
-            ["processIngredients"] = new List<string> { "Steel||WoodLog,Cloth|10" }
+            ["processIngredients"] = Encoded(new ProcessIngredientItem
+            {
+                thing = DefRef<ThingDef>("Steel"),
+                disallowedThingDefs = new List<ThingDef> { DefRef<ThingDef>("WoodLog"), DefRef<ThingDef>("Cloth") },
+                countNeeded = 10f,
+            })
         });
 
         if (!fieldAvailable)
@@ -772,7 +807,9 @@ public static class TweakDataSerializationTests
 
         SetSavedLoadData(recipe, new Dictionary<string, object?>
         {
-            ["processResults"] = new List<string> { "Steel|5", "Plasteel|3" }
+            ["processResults"] = Encoded(
+                new ProcessResultItem { thing = DefRef<ThingDef>("Steel"), count = 5 },
+                new ProcessResultItem { thing = DefRef<ThingDef>("Plasteel"), count = 3 })
         });
 
         if (!fieldAvailable)
@@ -838,9 +875,11 @@ public static class TweakDataSerializationTests
         // 多个有效字段 + 一个无效
         SetSavedLoadData(gene, new Dictionary<string, object?>
         {
-            ["statOffsets"] = new List<string> { "MoveSpeed|0.5", "MeleeDamageFactor|2.0" },  // 有效
-            ["aptitudes"] = new List<string> { "Shooting|3" },                                 // 有效
-            ["abilities"] = new List<string> { "NonExistentAbility_ZZZ" }                      // 无效
+            ["statOffsets"] = Encoded(                                              // 有效
+                new StatModifier { stat = DefRef<StatDef>("MoveSpeed"), value = 0.5f },
+                new StatModifier { stat = DefRef<StatDef>("MeleeDamageFactor"), value = 2.0f }),
+            ["aptitudes"] = Encoded(new Aptitude { skill = DefRef<SkillDef>("Shooting"), level = 3 }),  // 有效
+            ["abilities"] = new List<string> { "NonExistentAbility_ZZZ" }           // 无效
         });
 
         bool ok = gene.ResolveDefs();
@@ -949,10 +988,14 @@ public static class TweakDataSerializationTests
         // 设置 _savedLoadData（模拟 LoadingVars 阶段 ExposeList 存储了字符串列表）
         SetSavedLoadData(gene, new Dictionary<string, object?>
         {
-            ["statOffsets"] = new List<string> { "MoveSpeed|0.2" },
+            ["statOffsets"] = Encoded(new StatModifier { stat = DefRef<StatDef>("MoveSpeed"), value = 0.2f }),
             ["abilities"] = new List<string> { "EntitySkip" },
-            ["capMods"] = new List<string> { "Consciousness|0|0.5|1||" },
-            ["damageFactors"] = new List<string> { "Arrow|0.5" }
+            ["capMods"] = Encoded(new PawnCapacityModifier
+            {
+                capacity = DefRef<PawnCapacityDef>("Consciousness"),
+                setMax = 0.5f,
+            }),
+            ["damageFactors"] = Encoded(new DamageFactor { damageDef = DefRef<DamageDef>("Arrow"), factor = 0.5f })
         });
 
         // 模拟 BackCompat PostLoadInit 逻辑
@@ -979,7 +1022,7 @@ public static class TweakDataSerializationTests
         SetSavedLoadData(gene, new Dictionary<string, object?>
         {
             ["passionModSkill"] = "Shooting",
-            ["statOffsets"] = new List<string> { "MoveSpeed|0.2" },
+            ["statOffsets"] = Encoded(new StatModifier { stat = DefRef<StatDef>("MoveSpeed"), value = 0.2f }),
             ["abilities"] = new List<string> { "EntitySkip" }
         });
 
@@ -1297,27 +1340,6 @@ public static class TweakDataSerializationTests
         return field!.GetValue(target);
     }
 
-    /// <summary>游戏本体程序集里的全部 StockGenerator 子类（含官方 DLC 的类型；原版与 DLC 编在同一个 Assembly-CSharp.dll 里）。</summary>
-    private static IEnumerable<Type> VanillaGeneratorSubclasses()
-        => typeof(StockGenerator).Assembly.GetTypes()
-            .Where(t => t != typeof(StockGenerator) && typeof(StockGenerator).IsAssignableFrom(t) && !t.IsAbstract);
-
-    /// <summary>原版会写进 Def XML 的实例字段：跳过 static / 编译器生成 / <c>[Unsaved]</c> / 运行期临时表。</summary>
-    private static IEnumerable<FieldInfo> XmlInstanceFields(Type type)
-    {
-        for (var t = type; t != null && t != typeof(object); t = t.BaseType)
-        {
-            foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
-            {
-                if (f.IsDefined(typeof(UnsavedAttribute), false)) continue;
-                if (f.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), false)) continue;
-                if (f.Name.IndexOf('<') >= 0) continue;
-                if (f.Name == "tmpGenerated") continue; // 生成库存时的临时收集表（生成完就 Clear），故意不入字段表
-                yield return f;
-            }
-        }
-    }
-
     private static void testStockGen_RoundTripAllDefs()
     {
         var problems = new List<string>();
@@ -1356,97 +1378,87 @@ public static class TweakDataSerializationTests
     }
 
     /// <summary>
-    /// 字段表与原版对得上：表里声明的字段都能解析到（没有改名 / 拼错），原版每个生成器类型与每个字段
-    /// 都在表里，且字段类型都被支持。原版一旦加了新类型 / 新字段 / 新字段类型，这条会先炸出来 ——
-    /// 而不是等用户存档时静默丢字段。
+    /// 只测 <b>Def / DefList 字段</b>的往返 —— 这部分<b>必须</b>在游戏内跑：解码要 <c>DefDatabase</c>
+    /// 把 defName 查回真 Def 实例，测试进程里做不到。
+    /// <para>
+    /// 生成器的其它字段保持默认值（不写进文本），所以这条只回答"Def 引用能不能原样往返"。
+    /// 非 Def 字段的同类测试在游戏外：<c>StockGeneratorCodecTests.全部原版类型的非Def字段往返</c>。
+    /// </para>
     /// </summary>
-    private static void testStockGen_FieldTableIntegrity()
-    {
-        Assert(StockGeneratorCodec.UnresolvedFields.Count == 0,
-            $"字段表里有解析不到的字段（原版改名 / 移除？）：{string.Join(", ", StockGeneratorCodec.UnresolvedFields)}");
-
-        var problems = new List<string>();
-        foreach (var type in VanillaGeneratorSubclasses())
-        {
-            if (!StockGeneratorCodec.IsVanilla(type))
-            {
-                problems.Add($"{type.Name} 不在字段表里（原版加了新生成器类型？）");
-                continue;
-            }
-
-            var declared = StockGeneratorCodec.FieldsFor(type).Select(f => f.Name).ToHashSet();
-            foreach (var field in XmlInstanceFields(type))
-                if (!declared.Contains(field.Name))
-                    problems.Add($"{type.Name}.{field.Name}（{field.FieldType.Name}）没写进字段表");
-
-            foreach (var field in StockGeneratorCodec.FieldsFor(type))
-                if (field.Kind == StockGeneratorCodec.Kind.Unsupported)
-                    problems.Add($"{type.Name}.{field.Name} 的字段类型不受支持");
-        }
-
-        Assert(problems.Count == 0, $"{problems.Count} 处字段表与原版对不上（列出前 8 条）：\n{string.Join("\n", problems.Take(8))}");
-    }
-
-    /// <summary>每个原版类型的每个字段都填上非默认值，往返后必须逐字段相等（覆盖各类型的全部读写路径）。</summary>
-    private static void testStockGen_AllTypesFieldRoundTrip()
+    private static void testStockGen_DefFieldsRoundTrip()
     {
         var problems = new List<string>();
+        int coveredFields = 0;
+
         foreach (var type in StockGeneratorCodec.VanillaGeneratorTypes())
         {
             var gen = (StockGenerator)Activator.CreateInstance(type)!;
+            int filled = 0;
             foreach (var field in StockGeneratorCodec.FieldsFor(type))
             {
+                if (field.Kind != PocoCodec.Kind.Def && field.Kind != PocoCodec.Kind.DefList) continue;
                 var sample = SampleValueOf(field, StockGeneratorCodec.ReadField(field, gen));
-                Assert(sample != null, $"{type.Name}.{field.Name}（{field.Kind}）造不出样本值");
+                if (sample == null) continue; // 该 Def 类型本次加载里没有任何实例（可选 Mod 未装等）
                 StockGeneratorCodec.WriteField(field, gen, sample);
+                filled++;
             }
+            if (filled == 0) continue;
 
             string line = StockGeneratorCodec.ToItemString(gen);
             Assert(!line.Contains('\n'), $"{type.Name}：一行不得含换行");
-            Assert(StockGeneratorCodec.TryParse(line, out var back) && back != null, $"{type.Name}：解析不了自己编码出来的行：{line}");
+            Assert(StockGeneratorCodec.TryParse(line, out var back) && back != null,
+                $"{type.Name}：Def 字段解析不了自己编码出来的行：{line}");
             if (back!.GetType() != type) { problems.Add($"{type.Name}: 往返后类型变成 {back.GetType().Name}"); continue; }
-            if (StockGeneratorCodec.ToItemString(back) != line) { problems.Add($"{type.Name}: 再编码不一致\n{line}\n{StockGeneratorCodec.ToItemString(back)}"); continue; }
+            if (StockGeneratorCodec.ToItemString(back) != line)
+            {
+                problems.Add($"{type.Name}: 再编码不一致\n{line}\n{StockGeneratorCodec.ToItemString(back)}");
+                continue;
+            }
 
             foreach (var field in StockGeneratorCodec.FieldsFor(type))
             {
+                if (field.Kind != PocoCodec.Kind.Def && field.Kind != PocoCodec.Kind.DefList) continue;
                 var expected = StockGeneratorCodec.ReadField(field, gen);
                 var actual = StockGeneratorCodec.ReadField(field, back);
                 if (!SameValue(expected, actual))
                     problems.Add($"{type.Name}.{field.Name}: {DescribeValueOf(expected)} != {DescribeValueOf(actual)}");
+                coveredFields++;
             }
         }
-        Assert(problems.Count == 0, $"{problems.Count} 处字段没往返一致（列出前 6 条）：\n{string.Join("\n", problems.Take(6))}");
+
+        Assert(coveredFields > 0, "没有覆盖到任何 Def 字段（DefDatabase 为空？）");
+        Assert(problems.Count == 0, $"{problems.Count} 处 Def 字段没往返一致（列出前 6 条）：\n{string.Join("\n", problems.Take(6))}");
     }
 
     /// <summary>按字段表的种类造一个"非默认"的样本值（<paramref name="baselineValue"/> 是新实例上的初始值）。</summary>
-    private static object? SampleValueOf(StockGeneratorCodec.SgField field, object? baselineValue)
+    private static object? SampleValueOf(PocoCodec.Field field, object? baselineValue)
     {
         switch (field.Kind)
         {
-            case StockGeneratorCodec.Kind.Float: return 7.25f;
-            case StockGeneratorCodec.Kind.Int: return 3;
-            case StockGeneratorCodec.Kind.Bool: return !(baselineValue is bool b && b);
-            case StockGeneratorCodec.Kind.Text: return "示例|标签=值;[x]\\y";
-            case StockGeneratorCodec.Kind.IntRange: return new IntRange(2, 5);
-            case StockGeneratorCodec.Kind.FloatRange: return new FloatRange(1.5f, 9.75f);
-            case StockGeneratorCodec.Kind.Enum:
+            case PocoCodec.Kind.Float: return 7.25f;
+            case PocoCodec.Kind.Int: return 3;
+            case PocoCodec.Kind.Bool: return !(baselineValue is bool b && b);
+            case PocoCodec.Kind.Text: return "示例|标签=值;[x]\\y";
+            case PocoCodec.Kind.IntRange: return new IntRange(2, 5);
+            case PocoCodec.Kind.FloatRange: return new FloatRange(1.5f, 9.75f);
+            case PocoCodec.Kind.Enum:
             {
                 foreach (var value in Enum.GetValues(field.EnumType!))
                     if (!Equals(value, baselineValue)) return value;
                 return null;
             }
-            case StockGeneratorCodec.Kind.Def:
+            case PocoCodec.Kind.Def:
                 return GenDefDatabase.GetAllDefsInDatabaseForDef(field.ElementType!).FirstOrDefault();
-            case StockGeneratorCodec.Kind.DefList:
+            case PocoCodec.Kind.DefList:
             {
                 var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(field.ElementType!))!;
                 var def = GenDefDatabase.GetAllDefsInDatabaseForDef(field.ElementType!).FirstOrDefault();
                 if (def != null) list.Add(def);
                 return list.Count > 0 ? list : null;
             }
-            case StockGeneratorCodec.Kind.StringList:
+            case PocoCodec.Kind.StringList:
                 return new List<string> { "first", "second|x" };
-            case StockGeneratorCodec.Kind.ComplexList:
+            case PocoCodec.Kind.ComplexList:
             {
                 var elementType = field.ElementType!;
                 var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
@@ -1490,353 +1502,75 @@ public static class TweakDataSerializationTests
         _ => value.ToString() ?? "<?>",
     };
 
-    /// <summary>字段值要真的来回一致（不只是"文本一致"）：Def 引用、区间、枚举、嵌套对象列表、字符串列表。</summary>
-    private static void testStockGen_FieldValuesRoundTrip()
+    /// <summary>
+    /// 只测 <b>Def 引用</b>的往返：单个 Def、Def 列表、以及<b>嵌套在小对象列表元素里</b>的 Def。
+    /// 三者都要真 <c>DefDatabase</c> 才能解码，所以留在游戏内。
+    ///
+    /// <para>
+    /// 标量 / 区间 / 枚举 / 字符串列表 / 小对象列表的往返在游戏外覆盖
+    /// （<c>StockGeneratorCodecTests.标量与嵌套字段往返</c>）。
+    /// </para>
+    /// <para>
+    /// 第三条值得留意：<c>customCountRanges</c> 的元素类型自带 <c>thingDef</c> —— 它是
+    /// "列表元素<b>内部</b>的 Def 字段"，游戏外那种"跳过顶层 Def 字段"的写法拦不住它，
+    /// 解码照样要去查库。这正是它必须留在游戏内的原因。
+    /// </para>
+    /// </summary>
+    private static void testStockGen_DefRefsRoundTrip()
     {
-        var tag = new StockGenerator_Tag
-        {
-            tradeTag = "ExoticMisc",
-            countRange = new IntRange(1, 4),
-            totalPriceRange = new FloatRange(10f, 99.5f),
-            maxTechLevelBuy = TechLevel.Medieval,
-            price = PriceType.Expensive,
-            customCountRanges = new List<ThingDefCountRangeClass>
-            {
-                new(ThingDefOf.Steel, new IntRange(2, 6)),
-                new(ThingDefOf.Cloth, new IntRange(7, 7)),
-            },
-        };
-        SetGenField(tag, "thingDefCountRange", new IntRange(3, 5));
-        SetGenField(tag, "excludedThingDefs", new List<ThingDef> { ThingDefOf.Steel, ThingDefOf.Cloth });
-
-        var back = RoundTripGen(tag) as StockGenerator_Tag;
-        Assert(back != null, "往返后类型应仍是 StockGenerator_Tag");
-        Assert(back!.tradeTag == "ExoticMisc", $"tradeTag 应保持，实际 {back.tradeTag}");
-        Assert(back.countRange.Equals(new IntRange(1, 4)), "countRange 应保持");
-        Assert(back.totalPriceRange.Equals(new FloatRange(10f, 99.5f)), "totalPriceRange 应保持");
-        Assert(back.maxTechLevelBuy == TechLevel.Medieval, "maxTechLevelBuy（枚举）应保持");
-        Assert(back.price == PriceType.Expensive, "price（枚举）应保持");
-        Assert(back.customCountRanges is { Count: 2 }, "customCountRanges 应保持 2 项");
-        Assert(back.customCountRanges![0].thingDef == ThingDefOf.Steel, "customCountRanges[0].thingDef 应保持");
-        Assert(back.customCountRanges[0].countRange.Equals(new IntRange(2, 6)), "customCountRanges[0].countRange 应保持");
-        Assert(back.customCountRanges[1].countRange.Equals(new IntRange(7, 7)), "customCountRanges[1] 应保持");
-        Assert((IntRange?)GetGenField(back, "thingDefCountRange") is { } range && range.Equals(new IntRange(3, 5)),
-            "私有字段 thingDefCountRange 也应保持");
-        var excluded = GetGenField(back, "excludedThingDefs") as List<ThingDef>;
-        Assert(excluded is { Count: 2 } && excluded[0] == ThingDefOf.Steel && excluded[1] == ThingDefOf.Cloth,
-            "Def 列表 excludedThingDefs 应保持");
-        Assert(back.trader == null, "[Unsaved] 的 trader 不应被编码");
-
-        // 字符串列表（StockGenerator_Animals 的 tradeTagsSell 是 private）
-        var animals = new StockGenerator_Animals();
-        SetGenField(animals, "tradeTagsSell", new List<string> { "AnimalCommon", "AnimalUncommon" });
-        SetGenField(animals, "kindCountRange", new IntRange(1, 3));
-        SetGenField(animals, "minWildness", 0.25f);
-        SetGenField(animals, "checkTemperature", false);
-        var animalsBack = RoundTripGen(animals) as StockGenerator_Animals;
-        Assert(animalsBack != null, "往返后类型应仍是 StockGenerator_Animals");
-        var tagsBack = GetGenField(animalsBack!, "tradeTagsSell") as List<string>;
-        Assert(tagsBack is { Count: 2 } && tagsBack[0] == "AnimalCommon" && tagsBack[1] == "AnimalUncommon",
-            "字符串列表 tradeTagsSell 应保持");
-        Assert((IntRange?)GetGenField(animalsBack!, "kindCountRange") is { } kcr && kcr.Equals(new IntRange(1, 3)),
-            "私有字段 kindCountRange 应保持");
-        Assert((float?)GetGenField(animalsBack!, "minWildness") == 0.25f, "私有字段 minWildness 应保持");
-        Assert((bool?)GetGenField(animalsBack!, "checkTemperature") == false, "私有字段 checkTemperature 应保持");
-
-        // 小对象列表（StockGenerator_Techprints 的 countChances 是 private List<CountChance>）
-        var techprints = new StockGenerator_Techprints();
-        SetGenField(techprints, "countChances", new List<CountChance>
-        {
-            new() { count = 2, chance = 0.5f },
-            new() { count = 3, chance = 1f },
-        });
-        var techprintsBack = RoundTripGen(techprints) as StockGenerator_Techprints;
-        var chances = techprintsBack == null ? null : GetGenField(techprintsBack, "countChances") as List<CountChance>;
-        Assert(chances is { Count: 2 } && chances[0].count == 2 && chances[0].chance == 0.5f && chances[1].count == 3,
-            "小对象列表 countChances 应保持");
-
         // 单个 Def 引用（StockGenerator_SingleDef 的 thingDef 是 private）
         var single = new StockGenerator_SingleDef();
         SetGenField(single, "thingDef", ThingDefOf.Steel);
         var singleBack = RoundTripGen(single) as StockGenerator_SingleDef;
         Assert(singleBack != null && (ThingDef?)GetGenField(singleBack, "thingDef") == ThingDefOf.Steel,
             "单个 Def 引用 thingDef 应保持");
-    }
 
-    /// <summary>字段值里出现分隔符（<c>| = [ ] ; \</c>）时也必须原样往返 —— 转义是这套格式唯一的"复杂"之处。</summary>
-    private static void testStockGen_EscapingRoundTrip()
-    {
-        string nasty = "a|b=c;[d]\\e;f~g,h=i";
-        var tag = new StockGenerator_Tag { tradeTag = nasty };
-        var back = RoundTripGen(tag) as StockGenerator_Tag;
-        Assert(back != null && back.tradeTag == nasty, $"含分隔符的字符串应原样往返，实际 {(back == null ? "<null>" : back.tradeTag)}");
-
-        var animals = new StockGenerator_Animals();
-        SetGenField(animals, "tradeTagsSell", new List<string> { "a|b", "c;d", "[e]", "f\\g", "" });
-        var animalsBack = RoundTripGen(animals) as StockGenerator_Animals;
-        var tags = animalsBack == null ? null : GetGenField(animalsBack, "tradeTagsSell") as List<string>;
-        Assert(tags is { Count: 4 }, $"空字符串元素跳过（其余 4 个保持），实际 {tags?.Count}");
-        Assert(tags!.Contains("a|b") && tags.Contains("c;d") && tags.Contains("[e]") && tags.Contains("f\\g"),
-            "含分隔符的列表元素应原样往返");
-
-        // 转义 / 反转义本身互逆
-        foreach (var s in new[] { "", "a", nasty, "\\", "[[;;]]", "==" })
-            Assert(StockGeneratorCodec.Unescape(StockGeneratorCodec.Escape(s)) == s, $"Escape/Unescape 不互逆：\"{s}\"");
-    }
-
-    /// <summary>克隆：改副本不得影响原对象；非原版（字段表外）子类因为字段复制不了，直接沿用原实例。</summary>
-    private static void testStockGen_CloneIsDeep()
-    {
-        var tag = new StockGenerator_Tag { tradeTag = "Foo" };
-        tag.customCountRanges = new List<ThingDefCountRangeClass> { new(ThingDefOf.Steel, new IntRange(1, 2)) };
-
-        var clone = StockGeneratorCodec.Clone(tag) as StockGenerator_Tag;
-        Assert(clone != null && !ReferenceEquals(clone, tag), "克隆应是新实例");
-        Assert(!ReferenceEquals(clone!.customCountRanges, tag.customCountRanges), "嵌套列表应是新实例");
-        Assert(clone.customCountRanges![0].thingDef == ThingDefOf.Steel, "嵌套元素内容应保持");
-        Assert(!ReferenceEquals(clone.customCountRanges[0], tag.customCountRanges[0]), "嵌套元素也应是新实例");
-
-        clone.tradeTag = "Changed";
-        clone.customCountRanges[0].countRange = new IntRange(9, 9);
-        Assert(tag.tradeTag == "Foo", "改副本不应影响原对象（标量）");
-        Assert(tag.customCountRanges[0].countRange.Equals(new IntRange(1, 2)), "改副本不应影响原对象（嵌套元素）");
-
-        // 列表字段（CountChance 是值类型，装箱即复制）也应独立
-        var techprints = new StockGenerator_Techprints();
-        SetGenField(techprints, "countChances", new List<CountChance> { new() { count = 1, chance = 1f } });
-        var techprintsClone = StockGeneratorCodec.Clone(techprints) as StockGenerator_Techprints;
-        var cloneChances = techprintsClone == null ? null : GetGenField(techprintsClone, "countChances") as List<CountChance>;
-        Assert(cloneChances is { Count: 1 } && cloneChances[0].count == 1, "小对象列表应被克隆");
-        Assert(!ReferenceEquals(cloneChances, GetGenField(techprints, "countChances")), "克隆的列表应是新实例");
-
-        // 字符串列表与 Def 列表也必须跟着克隆（少复制一个字段 = 静默丢数据，克隆宁可失败也不能交出半份副本）
-        var animals = new StockGenerator_Animals();
-        SetGenField(animals, "tradeTagsSell", new List<string> { "AnimalFarm", "AnimalPet" });
-        SetGenField(animals, "tradeTagsBuy", new List<string> { "AnimalExotic" });
-        SetGenField(animals, "createMatingPair", new List<string> { "AnimalFarm" });
-        var animalsClone = StockGeneratorCodec.Clone(animals) as StockGenerator_Animals;
-        Assert(animalsClone != null && !ReferenceEquals(animalsClone, animals), "有字符串列表的生成器也应克隆成新实例");
-        foreach (var name in new[] { "tradeTagsSell", "tradeTagsBuy", "createMatingPair" })
-        {
-            var from = GetGenField(animals, name) as List<string>;
-            var to = GetGenField(animalsClone!, name) as List<string>;
-            Assert(to != null && !ReferenceEquals(from, to) && to.SequenceEqual(from!),
-                $"字符串列表 {name} 应被克隆成内容相同的新实例");
-        }
-        (GetGenField(animalsClone!, "tradeTagsSell") as List<string>)!.Add("OnlyInClone");
-        Assert((GetGenField(animals, "tradeTagsSell") as List<string>)!.Count == 2, "改克隆的字符串列表不应影响原对象");
-
-        var defListGen = new StockGenerator_Tag { tradeTag = "Foo" };
-        SetGenField(defListGen, "excludedThingDefs", new List<ThingDef> { ThingDefOf.Steel });
-        var defListClone = StockGeneratorCodec.Clone(defListGen) as StockGenerator_Tag;
-        var clonedDefs = defListClone == null ? null : GetGenField(defListClone, "excludedThingDefs") as List<ThingDef>;
-        Assert(clonedDefs is { Count: 1 } && clonedDefs[0] == ThingDefOf.Steel, "Def 列表应被克隆");
-        Assert(!ReferenceEquals(clonedDefs, GetGenField(defListGen, "excludedThingDefs")), "克隆的 Def 列表应是新实例");
-
-        // 字段表外的类型不克隆：它自己的字段复制不了，克隆只会丢数据，所以直接沿用原实例
-        var mod = new TestNonVanillaGenerator { tradeTag = "Bar", extraModField = "mod" };
-        Assert(ReferenceEquals(StockGeneratorCodec.Clone(mod), mod), "非原版子类应直接沿用原实例（不克隆）");
-    }
-
-    /// <summary>
-    /// 钉住文本格式：值里的 <c>[ ] ; = | \</c> 都要转义，列表两端必须成对出现。
-    /// （曾经的 bug：`new StringBuilder(ListStart)` 命中"容量"构造函数，开头的 <c>[</c> 被静默丢掉，
-    /// 于是所有带列表字段的生成器都解析不回来 —— 这条用例就是为了让这种回归一眼可查。）
-    /// </summary>
-    private static void testStockGen_Format()
-    {
-        var tag = new StockGenerator_Tag { tradeTag = "Foo" };
-        Assert(StockGeneratorCodec.ToItemString(tag) == "StockGenerator_Tag|tradeTag=Foo",
-            $"默认值应省略、只留类型与非默认字段，实际：{StockGeneratorCodec.ToItemString(tag)}");
-
+        // Def 列表
+        var tag = new StockGenerator_Tag { tradeTag = "ExoticMisc", countRange = new IntRange(1, 4) };
         SetGenField(tag, "excludedThingDefs", new List<ThingDef> { ThingDefOf.Steel, ThingDefOf.Cloth });
-        string line = StockGeneratorCodec.ToItemString(tag);
-        Assert(line.Contains(@"excludedThingDefs=\[Steel\;Cloth\]"), $@"Def 列表应写成 \[a\;b\]，实际：{line}");
+        var tagBack = RoundTripGen(tag) as StockGenerator_Tag;
+        var excluded = tagBack == null ? null : GetGenField(tagBack, "excludedThingDefs") as List<ThingDef>;
+        Assert(excluded is { Count: 2 } && excluded[0] == ThingDefOf.Steel && excluded[1] == ThingDefOf.Cloth,
+            "Def 列表 excludedThingDefs 应保持");
 
-        var animals = new StockGenerator_Animals();
-        SetGenField(animals, "tradeTagsSell", new List<string> { "first", "second|x" });
-        string animalLine = StockGeneratorCodec.ToItemString(animals);
-        Assert(animalLine.Contains(@"tradeTagsSell=\[first\;second\\\|x\]"),
-            $@"字符串列表元素要多转义一层，应写成 \[a\;b\\\|c\]，实际：{animalLine}");
-
-        // 编码出来的行必须能解析回来（格式自洽）
-        Assert(StockGeneratorCodec.TryParse(line, out var back1) && back1 != null, $"格式自洽性：{line}");
-        Assert(StockGeneratorCodec.TryParse(animalLine, out var back2) && back2 != null, $"格式自洽性：{animalLine}");
-    }
-
-    private static void testStockGen_EmptyAndNull()
-    {
-        Assert(StockGeneratorCodec.Serialize(null) == null, "null 列表应编码为 null");
-        Assert(StockGeneratorCodec.Serialize(new List<StockGenerator>()) == null, "空列表应编码为 null");
-        Assert(StockGeneratorCodec.Deserialize(null) == null, "null 输入应还原为 null");
-        Assert(StockGeneratorCodec.Deserialize(new List<string>()) == null, "空输入应还原为 null");
-        Assert(StockGeneratorCodec.CloneAll(null) == null, "克隆 null 应得到 null");
-        Assert(!StockGeneratorCodec.TryParse(null, out _), "null 行应解析失败");
-        Assert(!StockGeneratorCodec.TryParse("", out _), "空行应解析失败");
-    }
-
-    private static void testStockGen_BadInputFails()
-    {
-        Assert(!StockGeneratorCodec.TryParse("StockGenerator_ThisTypeDoesNotExist|a=b", out _), "未知类型应解析失败");
-        Assert(!StockGeneratorCodec.TryParse("StockGenerator_Tag|noSuchField=x", out _), "未知字段应解析失败");
-        Assert(!StockGeneratorCodec.TryParse("StockGenerator_SingleDef|thingDef=__BT_Not_A_Real_Def__", out _),
-            "缺 Def 应解析失败（由调用方保持 Def 现状）");
-        Assert(!StockGeneratorCodec.TryParse("StockGenerator_Tag|countRange=abc", out _), "区间值非法应解析失败");
-        Assert(!StockGeneratorCodec.TryParse("StockGenerator_Tag|tradeTag", out _), "缺 \"=\" 的字段段应解析失败");
-        Assert(!StockGeneratorCodec.TryParse("StockGenerator|tradeTag=x", out _), "抽象基类名应解析失败");
-        Assert(!StockGeneratorCodec.TryParse("StockGenerator_MiscItems|countRange=1~2", out _), "抽象类型应解析失败");
-        Assert(!StockGeneratorCodec.TryParse("CountChance|count=1", out _), "字段表里的小对象类型不是生成器，应解析失败");
-        Assert(!StockGeneratorCodec.TryParse("StockGenerator_Tag|excludedThingDefs=[__BT_Not_A_Real_Def__]", out _),
-            "Def 列表里缺 Def 应解析失败");
-
-        var good = StockGeneratorCodec.ToItemString(new StockGenerator_Tag { tradeTag = "Foo" });
-        Assert(StockGeneratorCodec.Deserialize(new List<string> { good, "StockGenerator_Tag|noSuchField=x" }) == null,
-            "整块里有一条坏行 ⇒ 整块拒绝");
-    }
-
-    /// <summary>
-    /// 表单文本框里的区间文本：<b>"输到一半"必须被拒</b>。
-    /// 判据不能靠 <c>Verse.*.FromString</c> 抛不抛异常 —— <c>IntRange.FromString("1~")</c> 完全不抛，
-    /// 它把缺省的上界当 <c>int.MaxValue</c>，于是"在 "~" 之后离开输入框"会把 <c>countRange</c> 写成
-    /// 1~2147483647，而库存数量直接取自 <c>countRange.RandomInRange</c>（生成时按这个数量造物品）。
-    /// </summary>
-    private static void testStockGen_RangeTextValidation()
-    {
-        // 半成品 / 非数字：一律拒绝（前两个正是 IntRange.FromString 会收下的）
-        foreach (var bad in new[] { "1~", "~4", "1~2~3", "abc", "", " ", "1.5", "1~abc" })
-            Assert(!StockGeneratorCodec.TryParseRangeText(isIntRange: true, bad, out _),
-                $"整数区间不该接受 \"{bad}\"");
-
-        // 单值 = 两端同值：IntRange.ToString() 在 min==max 时只显示一个数，必须能编辑回去
-        Assert(StockGeneratorCodec.TryParseRangeText(true, "5", out var single)
-            && single is IntRange s && s.min == 5 && s.max == 5, "整数区间应接受单值（= min~max）");
-        Assert(StockGeneratorCodec.TryParseRangeText(true, "1~4", out var pair)
-            && pair is IntRange p && p.min == 1 && p.max == 4, "整数区间应接受 min~max");
-
-        // 浮点：显示用 G9，可能带指数写法，必须能读回来
-        Assert(StockGeneratorCodec.TryParseRangeText(false, "1.5~2.5", out var fr)
-            && fr is FloatRange f && f.min == 1.5f && f.max == 2.5f, "浮点区间应接受 min~max");
-        Assert(StockGeneratorCodec.TryParseRangeText(false, "1E-05~2", out var exp)
-            && exp is FloatRange e && e.min == 1E-05f, "浮点区间应接受 G9 可能产出的指数写法");
-        Assert(!StockGeneratorCodec.TryParseRangeText(false, "1~", out _), "浮点区间不该接受 1~");
-
-        // 千位分隔符不算合法数字（NumberStyles.Float 不含 AllowThousands）：
-        // 否则逗号小数点环境下 "1.5" 会被裸 float.TryParse 读成 15
-        Assert(!StockGeneratorCodec.TryParseRangeText(false, "1,5~2", out _), "浮点区间不该接受带千位分隔符的写法");
-    }
-
-    private static void testStockGen_FieldsAndSummary()
-    {
-        var fields = StockGeneratorCodec.FieldsFor(typeof(StockGenerator_Tag));
-        Assert(fields.Any(f => f.Name == "tradeTag" && f.Kind == StockGeneratorCodec.Kind.Text), "tradeTag 应是文本字段");
-        Assert(fields.Any(f => f.Name == "countRange" && f.Kind == StockGeneratorCodec.Kind.IntRange), "countRange 应是整数区间字段");
-        Assert(fields.Any(f => f.Name == "totalPriceRange" && f.Kind == StockGeneratorCodec.Kind.FloatRange), "totalPriceRange 应是浮点区间字段");
-        Assert(fields.Any(f => f.Name == "maxTechLevelBuy" && f.Kind == StockGeneratorCodec.Kind.Enum), "maxTechLevelBuy 应是枚举字段");
-        Assert(fields.Any(f => f.Name == "price" && f.Kind == StockGeneratorCodec.Kind.Enum), "price 应是枚举字段");
-        Assert(fields.Any(f => f.Name == "excludedThingDefs" && f.Kind == StockGeneratorCodec.Kind.DefList), "excludedThingDefs 应是 Def 列表字段");
-        Assert(fields.Any(f => f.Name == "customCountRanges" && f.Kind == StockGeneratorCodec.Kind.ComplexList), "customCountRanges 应是小对象列表字段");
-        Assert(!fields.Any(f => f.Name == "trader"), "字段表不应含 [Unsaved] 的 trader");
-        Assert(!fields.Any(f => f.Name == "tmpGenerated"), "字段表不应含运行期临时表 tmpGenerated");
-
-        // 小对象列表的元素类型也用同一张字段表（SGComplexListEditorWindow 直接读它）
-        Assert(StockGeneratorCodec.FieldsFor(typeof(CountChance)).Any(f => f.Name == "chance" && f.Kind == StockGeneratorCodec.Kind.Float),
-            "CountChance.chance 应是浮点字段");
-        Assert(StockGeneratorCodec.FieldsFor(typeof(ThingDefCountRangeClass)).Any(f => f.Name == "thingDef" && f.Kind == StockGeneratorCodec.Kind.Def),
-            "ThingDefCountRangeClass.thingDef 应是 Def 字段");
-
-        string summary = StockGeneratorCodec.Summarize(new StockGenerator_Tag { tradeTag = "Foo" });
-        Assert(summary.Contains("tradeTag=Foo"), $"摘要应含 tradeTag=Foo，实际：\"{summary}\"");
-        Assert(StockGeneratorCodec.Summarize(new TestNonVanillaGenerator()) == "", "非原版类型不打摘要");
-        Assert(StockGeneratorCodec.TypeLabel(typeof(StockGenerator_Tag)) == "StockGenerator_Tag", "类型显示名应是原版 XML Class 的写法");
-    }
-
-    /// <summary>
-    /// 原版 / 非原版的判据就是"在不在字段表里"：类型菜单只列表里的具体类型；表外（其它 Mod 新增）
-    /// 的子类字段集为空 —— 本工具对它们只做只读展示，不读取也不修改它们的字段。
-    /// </summary>
-    private static void testStockGen_NonVanillaRules()
-    {
-        Assert(StockGeneratorCodec.IsVanilla(typeof(StockGenerator_Tag)), "原版 StockGenerator_Tag 应判定为原版");
-        Assert(!StockGeneratorCodec.IsVanilla(typeof(TestNonVanillaGenerator)), "字段表外的类型应判定为非原版");
-
-        var vanilla = StockGeneratorCodec.VanillaGeneratorTypes();
-        Assert(vanilla.Count > 1, "原版类型列表不应为空");
-        Assert(vanilla.All(StockGeneratorCodec.IsVanilla), "类型菜单里的每一项都必须是原版类型");
-        Assert(vanilla.All(t => !t.IsAbstract && t != typeof(StockGenerator)), "类型菜单不得含抽象类型与基类");
-        Assert(vanilla.Contains(typeof(StockGenerator_Tag)), "StockGenerator_Tag 应在类型菜单里");
-        Assert(vanilla.Contains(typeof(StockGenerator_MarketValue)), "官方的 StockGenerator_MarketValue 也应在类型菜单里");
-        Assert(!vanilla.Contains(typeof(StockGenerator_MiscItems)), "抽象类 StockGenerator_MiscItems 不应出现在类型菜单里");
-        Assert(!vanilla.Contains(typeof(TestNonVanillaGenerator)), "非原版子类不得出现在类型菜单里");
-
-        // 字段表外的类型：本工具只读展示，字段一个都不读不写
-        Assert(StockGeneratorCodec.FieldsFor(typeof(TestNonVanillaGenerator)).Count == 0,
-            "非原版子类的字段表应为空（本工具不读不写它的字段）");
-        Assert(StockGeneratorCodec.Clone(new TestNonVanillaGenerator()) is TestNonVanillaGenerator, "非原版子类应能原样透传");
-
-        // 继承链上的字段也跟着走（表内类型）
-        Assert(StockGeneratorCodec.FieldsFor(typeof(StockGenerator_Tomes)).Any(f => f.Name == "thingDef"),
-            "StockGenerator_Tomes 应含它从 StockGenerator_SingleDef 继承的 thingDef");
-        var marketValue = StockGeneratorCodec.FieldsFor(typeof(StockGenerator_MarketValue)).Select(f => f.Name).ToList();
-        Assert(marketValue.Contains("countRange") && marketValue.Contains("tradeTag")
-            && marketValue.Contains("weaponTag") && marketValue.Contains("apparelTag"),
-            "StockGenerator_MarketValue 应含基类字段与自有的三个标签字段");
-    }
-
-    /// <summary>
-    /// 非原版（其它 Mod 新增）生成器：只读展示 + 占位标记透传。
-    /// 编码只写类型名；回填时按类型名把 Def 里那个原实例原样放回原位 —— 它自己的字段一个都不丢。
-    /// </summary>
-    private static void testStockGen_NonVanillaPassthrough()
-    {
-        var mod = new TestNonVanillaGenerator { tradeTag = "Tag", extraModField = "mod" };
-
-        // 编码：只留类型名（连它继承的 tradeTag 都不写 —— 本工具不读不写它的字段）
-        string line = StockGeneratorCodec.ToItemString(mod);
-        Assert(line == StockGeneratorCodec.TypeLabel(typeof(TestNonVanillaGenerator)),
-            $"非原版条目应只写类型名，实际：{line}");
-        Assert(!line.Contains('|'), "非原版条目的行里不应有任何字段段");
-
-        // 解码：得到一个同类型的"空壳"（字段不还原，只当占位标记）
-        Assert(StockGeneratorCodec.TryParse(line, out var shell) && shell != null, $"类型名占位标记应能解析：{line}");
-        Assert(shell!.GetType() == typeof(TestNonVanillaGenerator), "占位标记应还原出同类型实例");
-        Assert(StockGeneratorCodec.ToItemString(shell) == line, "占位标记应能稳定地再编码");
-
-        // 回填：非原版条目必须换成 Def 里的原实例（身份与字段都不变），顺序保持在原处
-        var defGen1 = new StockGenerator_SingleDef();
-        var defMod1 = new TestNonVanillaGenerator { tradeTag = "Tag", extraModField = "keep-1" };
-        var defGen2 = new StockGenerator_Tag();
-        var defMod2 = new TestNonVanillaGenerator { tradeTag = "Tag", extraModField = "keep-2" };
-        var defList = new List<StockGenerator> { defGen1, defMod1, defGen2, defMod2 };
-
-        var merged = StockGeneratorCodec.MergeWithDef(new List<StockGenerator> { shell, defGen2 }, defList);
-        Assert(merged is { Count: 3 }, $"应得到 1 个原版克隆 + 2 个原实例 共 3 条，实际 {merged?.Count}");
-        // 输出顺序 = picked 顺序（= 用户编辑时的列表顺序），逐项替换、位置保持。
-        // 本用例 picked = [shell, defGen2] ⇒ merged[0] 来自 shell（非原版 → 换回 Def 原实例），
-        //                                  merged[1] 来自 defGen2（原版 → 克隆）。
-        Assert(merged![0] is TestNonVanillaGenerator m1 && m1.extraModField == "keep-1",
-            "非原版条目应按类型名换回 Def 里的原实例（字段不丢），且停在 picked 原位");
-        Assert(!ReferenceEquals(merged[0], shell), "绝不能把空壳塞回 Def");
-        Assert(merged[1].GetType() == typeof(StockGenerator_Tag) && !ReferenceEquals(merged[1], defGen2),
-            "原版条目应是克隆（不与 Def 共享实例）");
-        Assert(merged[2] is TestNonVanillaGenerator m2 && m2.extraModField == "keep-2",
-            "Def 里剩下的非原版生成器应原样保留（追加在末尾，绝不丢）");
-
-        // 清空字段（用户显式清掉整个字段）⇒ 不合并，直接清空
-        Assert(StockGeneratorCodec.MergeWithDef(new List<StockGenerator>(), defList) == null, "空字段应返回 null（清空库存）");
-        Assert(StockGeneratorCodec.MergeWithDef(null, defList) == null, "null 字段应返回 null");
-    }
-
-    /// <summary>
-    /// 测试用的"非原版"生成器：位于本 Mod 程序集，行为等价于其它 Mod 新增的 <see cref="StockGenerator"/> 子类
-    /// （多出一个自有的 <c>extraModField</c>）。直接派生自原版 <see cref="StockGenerator_Tag"/> 是为了免去实现
-    /// 抽象成员；它同时覆盖"字段表外的类型只读透传（占位标记 + 按类型名找回原实例）"这条规则。
-    /// </summary>
-    private class TestNonVanillaGenerator : StockGenerator_Tag
-    {
-        public string extraModField = "mod";
+        // 嵌套在小对象列表元素里的 Def（ThingDefCountRangeClass.thingDef）
+        var ranges = new StockGenerator_Tag
+        {
+            customCountRanges = new List<ThingDefCountRangeClass>
+            {
+                new(ThingDefOf.Steel, new IntRange(2, 6)),
+                new(ThingDefOf.Cloth, new IntRange(7, 7)),
+            },
+        };
+        var rangesBack = RoundTripGen(ranges) as StockGenerator_Tag;
+        Assert(rangesBack != null && rangesBack.customCountRanges is { Count: 2 }, "customCountRanges 应保持 2 项");
+        Assert(rangesBack!.customCountRanges![0].thingDef == ThingDefOf.Steel
+            && rangesBack.customCountRanges[0].countRange.Equals(new IntRange(2, 6)),
+            "嵌套元素里的 Def 引用应保持");
+        Assert(rangesBack.customCountRanges[1].thingDef == ThingDefOf.Cloth
+            && rangesBack.customCountRanges[1].countRange.Equals(new IntRange(7, 7)),
+            "嵌套元素 [1] 里的 Def 引用应保持");
     }
 
     // ═══════════════════════ 辅助方法 ═══════════════════════
+
+    /// <summary>
+    /// 用<b>真实编码器</b>产出 <c>_savedLoadData</c> 里的文本 —— 与 <c>ExposeXxxList</c> 写进存档的东西一致。
+    /// <para>
+    /// ④ 第二步改了文本格式（<c>值|值</c> → <c>字段名=值</c>），这些测试随之不再手写格式字符串：
+    /// 手写既容易写错，也偏离了"存档里真实长什么样"。格式本身由游戏外测试钉住
+    /// （<c>SerializationCodecsTests</c>）。
+    /// </para>
+    /// </summary>
+    private static List<string> Encoded<T>(params T[] items) where T : class
+        => items.Select(item => PocoCodec.Encode(item)).ToList();
+
+    /// <summary>
+    /// 只有 defName 的合成 Def：用来构造"引用了某个 defName"的输入。
+    /// 它只参与<b>编码</b>（编码只需要 defName），解析仍走真 <c>DefDatabase</c> ——
+    /// 所以"故意写一个不存在的 defName"这类用例依然成立。
+    /// </summary>
+    private static T DefRef<T>(string defName) where T : Def, new() => new() { defName = defName };
 
     private static void SetSavedLoadData(TweakData instance, Dictionary<string, object?> data)
     {
