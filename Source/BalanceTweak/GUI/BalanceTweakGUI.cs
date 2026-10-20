@@ -1157,8 +1157,14 @@ public partial class BalanceTweakSettings : ModSettings
                         break;
                     case ColumnStyle.Prec:
                         cellRect.SplitVertically(cellRect.width * 0.8f, out Rect left, out Rect right);
-                        Widgets.Label(right, "%");
+                        // 顺序不能颠倒：GUI.Label 的第一件事就是 ConsumeNextControlName()，
+                        // 把上面 GUI.SetNextControlName(controlName) 设的名字吃掉并丢弃。
+                        // 若先画 "%" 再画输入框，输入框只能退回到按位置算的匿名控件 id，
+                        // GUI.GetNameOfFocusedControl() 就永远不等于 controlName ⇒ isFocused 恒 false
+                        // ⇒ 编辑缓冲不开启、CheckAndApply 永远不被调用，表现为"能点进去、能打字，一失焦就还原"。
+                        // 本体 Widgets.DelayedTextField 用的是同一套规避（先给 Label 一个占位名，再设回自己的名）。
                         newText = Widgets.TextField(left, displayText);
+                        Widgets.Label(right, "%");
                         break;
                     case ColumnStyle.Bool:
                         newText = DrawBoolFieldCell(cellRect, config, data, displayText);
