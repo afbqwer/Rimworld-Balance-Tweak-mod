@@ -101,7 +101,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         // giving StatDef fields priority over list fields.
         foreach (var meta in Fields)
         {
-            if (meta.Field.FieldType == typeof(List<StatModifier>) && (forceResetStats || IsFieldModified(meta.Field.Name)))
+            bool isForceField = IsForceWriteField(meta.Field.Name);
+            if (meta.Field.FieldType == typeof(List<StatModifier>) && (forceResetStats || isForceField || IsFieldModified(meta.Field.Name)))
             {
                 var list = (List<StatModifier>?)meta.Field.GetValue(this);
                 if (list == null)
@@ -112,7 +113,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
                     //      —— 与 Phase 2 对单个 StatDef 字段的"value==null ⇒ 移除"对齐。
                     // 判据用 StateOf(f)==Cleared 而非裸 IsFieldModified：Cleared 只由显式清空写入，
                     // 未显式清空的空列表不会走到这里（Reset 的脏数据由 forceResetStats 兜）。
-                    if (forceResetStats || StateOf(meta.Field.Name) == FieldState.Cleared)
+                    // isForceField：单字段重置该列时，原值可能就是 null，同样要把 def 上的列表清掉。
+                    if (forceResetStats || isForceField || StateOf(meta.Field.Name) == FieldState.Cleared)
                     {
                         anyWrite = true;
                         switch (def)
@@ -176,8 +178,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         // otherwise unmodified fields with old values would undo Phase 1's statBases changes.
         foreach (var meta in Fields)
         {
-            // 「本次被重置的就是这个字段」—— 它有权越过下面的 null 守卫（见 forceResetField 注释）
-            bool isResetTarget = meta.Field.Name == forceResetField;
+            // 「本次被重置的就是这个字段」—— 它有权越过下面的 null 守卫（见 forceWriteFields 注释）
+            bool isResetTarget = IsForceWriteField(meta.Field.Name);
             if (meta.StatDef != null && (forceResetStats || isResetTarget || IsFieldModified(meta.Field.Name)))
             {
                 var value = (float?)meta.Field.GetValue(this);
@@ -279,7 +281,9 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             }
         }
         forceResetStats = false;
-        forceResetField = null;
+        // 注意：这里不能清 forceWriteFields。各数据类的 Apply() 都是先调 ApplyDefStats
+        // 再逐个 ApplyV/ApplyN/ApplyL —— 在这清掉，后面的非 stat 字段就又变回"看三态"了。
+        // 它只由设置方（ResetTo / ApplyAuthoritative）的 finally 撤销。
     }
 
 
@@ -373,15 +377,23 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     }
 
     /// <summary>
+    /// 本次 Apply 中该字段是否按"权威值"写入（不看三态）：
+    /// <see cref="forceWriteAll"/> 覆盖所有字段（整行/完全重置），
+    /// <see cref="forceWriteFields"/> 只覆盖被重置的那一个字段（单元格重置）。
+    /// </summary>
+    protected bool IsForceWriteField(string f)
+        => forceWriteAll || (forceWriteFields != null && forceWriteFields.Contains(f));
+
+    /// <summary>
     /// L0 三态 helper 的访问级别为 <c>protected internal</c>（原计划为 <c>protected</c>）：
     /// 同程序集的静态辅助类 <see cref="RecipeProcessHelper.ApplyProcessDef"/> 需要统一走这几个入口，
     /// 否则 ProcessDef 的字段写入会绕过门控（B 组执行记录里有说明）。
     /// </summary>
     protected internal void ApplyV<TV>(string f, Action<TV> set)
     {
-        // 权威快照（整行/完全重置）：不看三态，字段值即真相。
+        // 权威字段（整行/完全重置，或单字段重置）：不看三态，字段值即真相。
         // 目标是非空值类型而字段为 null 时不写 —— 没有可写的值，保持 Def 现状。
-        if (forceWriteAll)
+        if (IsForceWriteField(f))
         {
             if (RawVal(f) is TV tv) set(tv);
             else if (!typeof(TV).IsValueType) set(default!);
@@ -397,7 +409,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// <summary>目标可空（<c>float?</c> / <c>IntRange?</c> / <c>QualityCategory?</c> 等）：Cleared = 置 null。</summary>
     protected internal void ApplyN<TV>(string f, Action<TV?> set) where TV : struct
     {
-        if (forceWriteAll) { set((TV?)RawVal(f)); return; }
+        if (IsForceWriteField(f)) { set((TV?)RawVal(f)); return; }
         switch (StateOf(f))
         {
             case FieldState.Set: set((TV?)RawVal(f)); break;
@@ -408,7 +420,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// <summary>集合（<c>List&lt;T&gt;</c> / ThingFilter）：Cleared = 清空。</summary>
     protected internal void ApplyL<TV>(string f, Action<List<TV>?> set)
     {
-        if (forceWriteAll) { set(RawVal(f) as List<TV>); return; }
+        if (IsForceWriteField(f)) { set(RawVal(f) as List<TV>); return; }
         switch (StateOf(f))
         {
             case FieldState.Set: set((List<TV>)RawVal(f)!); break;
@@ -419,7 +431,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// <summary>Def 引用：Cleared = 还原原引用。</summary>
     protected internal void ApplyD<TV>(string f, Action<TV?> set) where TV : Def
     {
-        if (forceWriteAll) { set(RawVal(f) as TV); return; }
+        if (IsForceWriteField(f)) { set(RawVal(f) as TV); return; }
         switch (StateOf(f))
         {
             case FieldState.Set: set((TV?)RawVal(f)); break;
@@ -435,8 +447,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// </summary>
     protected internal void ApplyS(string f, Action<string> set)
     {
-        // 权威快照：原来是非 null 的字符串写回原串，原来是 null 的也写回 null（原样照抄）。
-        if (forceWriteAll) { set((RawVal(f) as string)!); return; }
+        // 权威字段：原来是非 null 的字符串写回原串，原来是 null 的也写回 null（原样照抄）。
+        if (IsForceWriteField(f)) { set((RawVal(f) as string)!); return; }
         if (RawVal(f) is not string s) return;
         if (StateOf(f) == FieldState.Cleared) { Revert(f, set); return; }
         set(s);

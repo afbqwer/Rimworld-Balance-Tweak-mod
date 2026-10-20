@@ -459,22 +459,25 @@ public class StatColumnConfig
     ///
     /// <para>
     /// <b>为什么不能只写 <c>ApplyValue(data, originalValue, isModified: false)</c></b>：
-    /// 写法本身没问题，问题在随后的 <c>Apply</c>。值被写回 null 且修改标记被清掉之后，
-    /// <c>ApplyDefStats</c> 的 Phase 2 会用"null 且未修改 ⇒ 跳过"把这次写入吞掉，
-    /// Phase 3 再把 def 上残留的旧值同步回字段 —— 重置被自己的 Apply 撤销。
-    /// 这条只在"原值为 null 的 StatDef 字段"上出现（非 null 原值走的是正常赋值分支）。
+    /// 写法本身没问题，问题在随后的 <c>Apply</c>。值写回原值、修改标记被清掉之后，该字段就是
+    /// <see cref="FieldState.Unset"/>，而写入路径全靠三态判据 —— 于是：
+    /// stat 字段会被 ApplyDefStats Phase 2 的"null 且未修改 ⇒ 跳过"吞掉，Phase 3 再把 def 上的
+    /// 旧值同步回来；非 stat 字段则干脆一个都不写（<c>ApplyV/ApplyN/ApplyL/ApplyD</c> 全是 Unset）。
+    /// 只有整行恰好等于原始数据时，才会由 <c>RemoveData</c> 的整行重置兜回来 ——
+    /// 同行只要还有别的字段是 Set，这条路就走不到。
     /// </para>
     /// <para>
     /// 两个一次性开关分工不同，都必须设：
     /// <see cref="TweakData.forceResetStats"/> 让列表列（StatModList 等）把整份列表写回 def；
-    /// <see cref="TweakData.forceResetField"/> 只让"被重置的这一个字段"越过 Phase 2 的 null 守卫，
-    /// 免得连带删掉其它因同步而为 null 的 stat。
+    /// <see cref="TweakData.forceWriteFields"/> 只把"被重置的这一个字段"标成权威值 ——
+    /// 既越过 Phase 2 的 null 守卫（免得连带删掉其它因同步而为 null 的 stat），
+    /// 也让非 stat 字段无视三态直接落盘。
     /// </para>
     /// </summary>
     public void ResetTo(TweakData data, object? originalValue)
     {
         data.forceResetStats = true;
-        data.forceResetField = fieldName;
+        (data.forceWriteFields ??= new HashSet<string>()).Add(fieldName);
         try
         {
             ApplyValue(data, originalValue, isModified: false);
@@ -484,7 +487,7 @@ public class StatColumnConfig
             // 正常情况下 ApplyDefStats 末尾已经清过了；这里兜住"该数据类的 Apply 不走 ApplyDefStats"
             // 的情况（ThoughtData 之类），别让一次性开关漏到下一次 Apply 上。
             data.forceResetStats = false;
-            data.forceResetField = null;
+            data.forceWriteFields = null;
         }
     }
 

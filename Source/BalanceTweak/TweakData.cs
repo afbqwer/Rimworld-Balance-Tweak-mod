@@ -58,17 +58,24 @@ public abstract partial class TweakData : IExposable
     /// </summary>
     public bool forceResetStats;
     /// <summary>
-    /// 单字段重置用的一次性"权威字段名"：本次 Apply 中，即使该字段已经回到"未修改"、值为 null，
-    /// 也必须按字段值写进 def —— 对 stat 字段来说，null 就等于"把这一项删掉"。
+    /// 单字段重置用的一次性"权威字段集合"：本次 Apply 中，这些字段无视三态、无视 null 守卫，
+    /// 一律按字段当前值写进 def。
+    /// <para>
+    /// <b>为什么需要它</b>：重置做的事是"把字段写回原值 + 清掉修改标记"，于是该字段变成
+    /// <see cref="FieldState.Unset"/>。写作路径完全依赖三态（<c>ApplyV/ApplyN/ApplyL/ApplyD</c>），
+    /// Unset ⇒ 什么都不写 —— 只要同行还有别的字段处于 Set，就走不到 <c>RemoveData</c> 的整行兜底，
+    /// 重置变成"只改了界面"。stat 字段另有 Phase 2 的 null 守卫要越（null 即"删掉这一项"），
+    /// 非 stat 字段只需"照抄值"。两者用同一个集合表达，避免出现两套并列的开关。
+    /// </para>
     /// <para>
     /// <b>为什么不能复用 <see cref="forceResetStats"/></b>：那个是整个数据级的开关。若让它越过
-    /// <c>ApplyDefStats</c> Phase 2 的"null 且未修改 ⇒ 跳过"守卫，同一次 Apply 里所有因 Phase 3
-    /// 同步而为 null 的 stat 字段都会去删 def 上的条目 —— 重置列表列时就会把 Phase 1 刚恢复的条目再删掉。
+    /// Phase 2 的"null 且未修改 ⇒ 跳过"守卫，同一次 Apply 里所有因 Phase 3 同步而为 null 的 stat
+    /// 字段都会去删 def 上的条目 —— 重置列表列时就会把 Phase 1 刚恢复的条目再删掉。
     /// 重置单个字段只应影响那一个字段。
     /// </para>
-    /// <para>由 <c>StatColumnConfig.ResetTo</c> 设置，<c>ApplyDefStats</c> 末尾清空。</para>
+    /// <para>由 <c>StatColumnConfig.ResetTo</c> 设置，<c>ApplyDefStats</c> 末尾与 <c>ResetTo</c> 的 finally 各清一次。</para>
     /// </summary>
-    public string? forceResetField;
+    public HashSet<string>? forceWriteFields;
     /// <summary>
     /// 一次性"权威快照"开关：本次 <c>Apply</c> 中，字段的<b>当前值就是唯一真相</b>，一律写进 Def，
     /// 不再看 <see cref="FieldState"/>。
@@ -380,7 +387,7 @@ public abstract partial class TweakData : IExposable
         {
             forceWriteAll = prevWriteAll;
             forceResetStats = false;
-            forceResetField = null;
+            forceWriteFields = null;
         }
     }
     public abstract bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false);
