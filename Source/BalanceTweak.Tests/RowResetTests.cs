@@ -25,6 +25,7 @@ namespace BalanceTweak.Tests;
 /// 原值存在、以及装备加成（<c>equippedStatOffsets</c>）那一支。
 /// </para>
 /// </summary>
+[Collection(DefDatabaseProbeCollection.Name)]
 public class RowResetTests
 {
     private const string ProbeStatName = "__BT_ProbeRowPct";

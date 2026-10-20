@@ -25,6 +25,7 @@ namespace BalanceTweak.Tests;
 /// 所以修法是"只让被重置的那一个字段越权"（<c>TweakData.forceResetField</c>）。
 /// </para>
 /// </summary>
+[Collection(DefDatabaseProbeCollection.Name)]
 public class ResetToNullTests
 {
     private const string ProbeStatName = "__BT_ProbeNullPct";
