@@ -89,8 +89,7 @@ public partial class BalanceTweakSettings
             foreach ((var key, var data) in TweakDatabase.AllOriginals)
             {
                 var clone = data.Clone();
-                clone.forceResetStats = true;
-                clone.Apply();
+                clone.ApplyAuthoritative();
                 cachedData[key.settingType].SetOrAdd(key, clone);
             }
             filterDirty = true;
@@ -136,8 +135,9 @@ public partial class BalanceTweakSettings
                 cachedData[data.id.settingType].SetOrAdd(data.id, newdata);
                 tweakDatas.Remove(newdata.id);
                 filteredData.Replace(data, newdata);
-                newdata.forceResetStats = true;
-                newdata.Apply();
+                // 整行重置：克隆体是"原始快照"，必须整体写回 —— stat 列表由 forceResetStats 覆盖，
+                // 非 stat 字段靠 ApplyAuthoritative 的 forceWriteAll 才不会被三态判据跳过（见 TweakData.forceWriteAll）。
+                newdata.ApplyAuthoritative();
                 editingControlName = null;
             }
             else

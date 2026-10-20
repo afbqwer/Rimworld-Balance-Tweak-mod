@@ -69,6 +69,24 @@ public abstract partial class TweakData : IExposable
     /// <para>由 <c>StatColumnConfig.ResetTo</c> 设置，<c>ApplyDefStats</c> 末尾清空。</para>
     /// </summary>
     public string? forceResetField;
+    /// <summary>
+    /// 一次性"权威快照"开关：本次 <c>Apply</c> 中，字段的<b>当前值就是唯一真相</b>，一律写进 Def，
+    /// 不再看 <see cref="FieldState"/>。
+    /// <para>
+    /// <b>为什么需要它</b>：整行重置（<c>TweakUtility.RemoveData</c>）与完全重置
+    /// （<c>ApplyFullReset</c>）都是"拿原始数据的一份克隆替换掉当前行，再 Apply"。这份克隆一个修改标记
+    /// 都没有 ⇒ 所有字段都是 <see cref="FieldState.Unset"/> ⇒ <c>ApplyV/ApplyN/ApplyL/ApplyD</c>
+    /// 一个都不会写。stat 字段因为有 <see cref="forceResetStats"/>（Phase 1 整表重写）碰巧是对的，
+    /// 非 stat 字段则被静默跳过：界面换成了原始克隆、看起来"重置成功"，Def 上还是改过的值。
+    /// </para>
+    /// <para>
+    /// 语义是"照抄"，不是 <see cref="FieldState.Cleared"/>：<c>Cleared</c> 对集合写 null、对标量走
+    /// <c>Revert</c> 回查原值，而这里快照本身就是原值 —— 空列表要保持空列表，null 要保持 null。
+    /// 与 <see cref="forceResetStats"/> 一起由 <see cref="ApplyAuthoritative"/> 设置并在 finally 里撤销，
+    /// 不会漏到下一次 Apply。
+    /// </para>
+    /// </summary>
+    public bool forceWriteAll;
     protected string? _idTag; // 缓存 id.ToString()
 
     public struct TweakID(string defName, SettingType settingType) : IExposable
@@ -343,6 +361,28 @@ public abstract partial class TweakData : IExposable
     public virtual int LoadingOrd => 100;
     public abstract int GetPropType();
     public abstract void Apply();
+
+    /// <summary>
+    /// 把当前实例当作"权威快照"整体写回 Def（整行重置 / 完全重置用）：
+    /// stat 列表 + 每个非 stat 字段都按实例里的值落盘，包括 null。
+    /// <para>两个一次性开关都只在这一次 <c>Apply</c> 内有效，finally 保证异常路径也不残留。</para>
+    /// </summary>
+    public void ApplyAuthoritative()
+    {
+        bool prevWriteAll = forceWriteAll;
+        forceWriteAll = true;
+        forceResetStats = true;
+        try
+        {
+            Apply();
+        }
+        finally
+        {
+            forceWriteAll = prevWriteAll;
+            forceResetStats = false;
+            forceResetField = null;
+        }
+    }
     public abstract bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false);
     public abstract void SetDef(Def def, SettingType type, bool tweaked);
     public virtual bool ResolveDefs() => true;

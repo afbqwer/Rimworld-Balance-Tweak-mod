@@ -379,6 +379,14 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// </summary>
     protected internal void ApplyV<TV>(string f, Action<TV> set)
     {
+        // 权威快照（整行/完全重置）：不看三态，字段值即真相。
+        // 目标是非空值类型而字段为 null 时不写 —— 没有可写的值，保持 Def 现状。
+        if (forceWriteAll)
+        {
+            if (RawVal(f) is TV tv) set(tv);
+            else if (!typeof(TV).IsValueType) set(default!);
+            return;
+        }
         switch (StateOf(f))
         {
             case FieldState.Set: set((TV)RawVal(f)!); break;
@@ -389,6 +397,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// <summary>目标可空（<c>float?</c> / <c>IntRange?</c> / <c>QualityCategory?</c> 等）：Cleared = 置 null。</summary>
     protected internal void ApplyN<TV>(string f, Action<TV?> set) where TV : struct
     {
+        if (forceWriteAll) { set((TV?)RawVal(f)); return; }
         switch (StateOf(f))
         {
             case FieldState.Set: set((TV?)RawVal(f)); break;
@@ -399,6 +408,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// <summary>集合（<c>List&lt;T&gt;</c> / ThingFilter）：Cleared = 清空。</summary>
     protected internal void ApplyL<TV>(string f, Action<List<TV>?> set)
     {
+        if (forceWriteAll) { set(RawVal(f) as List<TV>); return; }
         switch (StateOf(f))
         {
             case FieldState.Set: set((List<TV>)RawVal(f)!); break;
@@ -409,6 +419,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// <summary>Def 引用：Cleared = 还原原引用。</summary>
     protected internal void ApplyD<TV>(string f, Action<TV?> set) where TV : Def
     {
+        if (forceWriteAll) { set(RawVal(f) as TV); return; }
         switch (StateOf(f))
         {
             case FieldState.Set: set((TV?)RawVal(f)); break;
@@ -424,6 +435,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// </summary>
     protected internal void ApplyS(string f, Action<string> set)
     {
+        // 权威快照：原来是非 null 的字符串写回原串，原来是 null 的也写回 null（原样照抄）。
+        if (forceWriteAll) { set((RawVal(f) as string)!); return; }
         if (RawVal(f) is not string s) return;
         if (StateOf(f) == FieldState.Cleared) { Revert(f, set); return; }
         set(s);
