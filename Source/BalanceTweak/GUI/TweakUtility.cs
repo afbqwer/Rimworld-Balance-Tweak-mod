@@ -156,8 +156,7 @@ public partial class BalanceTweakSettings
             if (originalData != null)
             {
                 var originalValue = config.GetRawValue(originalData);
-                data.forceResetStats = true;
-                config.ApplyValue(data, originalValue, false);
+                config.ResetTo(data, originalValue);
                 if (data.EqualsData(originalData))
                 {
                     RemoveData(data);
@@ -186,8 +185,7 @@ public partial class BalanceTweakSettings
                 if (originalData != null)
                 {
                     var originalValue = config.GetRawValue(originalData);
-                    data.forceResetStats = true;
-                    config.ApplyValue(data, originalValue, false);
+                    config.ResetTo(data, originalValue);
                     if (data.EqualsData(originalData))
                     {
                         l.Add(data);

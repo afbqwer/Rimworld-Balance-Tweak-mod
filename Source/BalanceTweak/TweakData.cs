@@ -57,6 +57,18 @@ public abstract partial class TweakData : IExposable
     /// 暂保留以兼容既有重置路径（TweakUtility 的 4 处赋值），待 L0 稳定后另开提交删除。</para>
     /// </summary>
     public bool forceResetStats;
+    /// <summary>
+    /// 单字段重置用的一次性"权威字段名"：本次 Apply 中，即使该字段已经回到"未修改"、值为 null，
+    /// 也必须按字段值写进 def —— 对 stat 字段来说，null 就等于"把这一项删掉"。
+    /// <para>
+    /// <b>为什么不能复用 <see cref="forceResetStats"/></b>：那个是整个数据级的开关。若让它越过
+    /// <c>ApplyDefStats</c> Phase 2 的"null 且未修改 ⇒ 跳过"守卫，同一次 Apply 里所有因 Phase 3
+    /// 同步而为 null 的 stat 字段都会去删 def 上的条目 —— 重置列表列时就会把 Phase 1 刚恢复的条目再删掉。
+    /// 重置单个字段只应影响那一个字段。
+    /// </para>
+    /// <para>由 <c>StatColumnConfig.ResetTo</c> 设置，<c>ApplyDefStats</c> 末尾清空。</para>
+    /// </summary>
+    public string? forceResetField;
     protected string? _idTag; // 缓存 id.ToString()
 
     public struct TweakID(string defName, SettingType settingType) : IExposable

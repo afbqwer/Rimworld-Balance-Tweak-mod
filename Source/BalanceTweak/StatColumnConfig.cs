@@ -454,6 +454,40 @@ public class StatColumnConfig
         data.Apply();
     }
 
+    /// <summary>
+    /// 把该列恢复成 <paramref name="originalValue"/>（<c>null</c> = 原值里本来就没有这一项），并回到"未修改"状态。
+    ///
+    /// <para>
+    /// <b>为什么不能只写 <c>ApplyValue(data, originalValue, isModified: false)</c></b>：
+    /// 写法本身没问题，问题在随后的 <c>Apply</c>。值被写回 null 且修改标记被清掉之后，
+    /// <c>ApplyDefStats</c> 的 Phase 2 会用"null 且未修改 ⇒ 跳过"把这次写入吞掉，
+    /// Phase 3 再把 def 上残留的旧值同步回字段 —— 重置被自己的 Apply 撤销。
+    /// 这条只在"原值为 null 的 StatDef 字段"上出现（非 null 原值走的是正常赋值分支）。
+    /// </para>
+    /// <para>
+    /// 两个一次性开关分工不同，都必须设：
+    /// <see cref="TweakData.forceResetStats"/> 让列表列（StatModList 等）把整份列表写回 def；
+    /// <see cref="TweakData.forceResetField"/> 只让"被重置的这一个字段"越过 Phase 2 的 null 守卫，
+    /// 免得连带删掉其它因同步而为 null 的 stat。
+    /// </para>
+    /// </summary>
+    public void ResetTo(TweakData data, object? originalValue)
+    {
+        data.forceResetStats = true;
+        data.forceResetField = fieldName;
+        try
+        {
+            ApplyValue(data, originalValue, isModified: false);
+        }
+        finally
+        {
+            // 正常情况下 ApplyDefStats 末尾已经清过了；这里兜住"该数据类的 Apply 不走 ApplyDefStats"
+            // 的情况（ThoughtData 之类），别让一次性开关漏到下一次 Apply 上。
+            data.forceResetStats = false;
+            data.forceResetField = null;
+        }
+    }
+
     public List<Def> GetAllDefsForSelector()
     {
         if (DefSelectorType == null) return new List<Def>();

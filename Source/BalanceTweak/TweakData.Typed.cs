@@ -176,7 +176,9 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         // otherwise unmodified fields with old values would undo Phase 1's statBases changes.
         foreach (var meta in Fields)
         {
-            if (meta.StatDef != null && (forceResetStats || IsFieldModified(meta.Field.Name)))
+            // 「本次被重置的就是这个字段」—— 它有权越过下面的 null 守卫（见 forceResetField 注释）
+            bool isResetTarget = meta.Field.Name == forceResetField;
+            if (meta.StatDef != null && (forceResetStats || isResetTarget || IsFieldModified(meta.Field.Name)))
             {
                 var value = (float?)meta.Field.GetValue(this);
                 // Skip null-valued StatDef fields that were never directly modified.
@@ -185,7 +187,12 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
                 // the user intentionally set the field to null. Without this guard,
                 // TrySetStat(def, stat, null) would remove the stat from the list even
                 // when Phase 1 just correctly restored it during a reset.
-                if (value == null && !IsFieldModified(meta.Field.Name))
+                //
+                // 例外：isResetTarget。这就是"原值为 null 的字段"重置后回不去的那条路 ——
+                // 重置已把字段写回 null 并清掉修改标记，守卫于是把这次删除吃掉，
+                // 紧接着 Phase 3 又把 def 上的旧值同步回来，重置被自己的 Apply 撤销。
+                // 只有被重置的那一个字段可以越过守卫；其它 stale-null 字段仍按上面的理由跳过。
+                if (value == null && !IsFieldModified(meta.Field.Name) && !isResetTarget)
                     continue;
                 anyWrite = true;
                 if (def is ThingDef td)
@@ -272,6 +279,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             }
         }
         forceResetStats = false;
+        forceResetField = null;
     }
 
 
