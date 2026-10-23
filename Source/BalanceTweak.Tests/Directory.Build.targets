@@ -1,0 +1,13 @@
+<Project>
+  <!--
+    Release 是发布产物构建（1.7/Assemblies/BalanceTweak.dll），测试工程不参与。
+    不能直接覆盖 Build 目标：同名目标被覆盖后，Debug 下的 Build 也会被跳过。
+    改为替换 Build 的依赖链（该属性在 SDK 目标之后再求值），只留下一个空目标，
+    于是 Release 不编译、不产出测试 dll，Debug 仍走正常构建。
+  -->
+  <Target Name="_SkipBuildInRelease" />
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <BuildDependsOn>_SkipBuildInRelease</BuildDependsOn>
+  </PropertyGroup>
+</Project>
