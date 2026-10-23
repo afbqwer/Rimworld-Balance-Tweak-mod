@@ -173,11 +173,19 @@ public class ApparelData : TweakData<ApparelData>
         }
         lmm = isQ.Value ? LArmorMult.Value : 1f;
 
-        var bSharp = Mathf.Pow((limitMaxArmor((float?)GetNormalSharpArmor(data) ?? 0f) * lmm) * 1.3f + 1f, 2f) - 1f;
-        var bBlunt = Mathf.Pow((limitMaxArmor((float?)GetNormalBluntArmor(data) ?? 0f) * lmm) + 1f, 2f) - 1f;
-        var bHeat = Mathf.Pow((limitMaxArmor((float?)GetNormalHeatArmor(data) ?? 0f) * lmm) + 1f, 2f) - 1f;
-        var bTcold = Mathf.Pow(((float?)GetNormalInsulationCold(data) * lmm ?? 0f), 0.5f) / 10f;
-        var bTheat = Mathf.Pow(((float?)GetNormalInsulationHeat(data) * lmm ?? 0f), 0.5f) / 10f;
+        // 复用 SetDef / Apply 已经算好的五个显示字段，只有字段为 null 时才回退重新求值。
+        var ad = data as ApparelData;
+        var nSharp = ad?.normalSharpArmor ?? (float?)GetNormalSharpArmor(data) ?? 0f;
+        var nBlunt = ad?.normalBluntArmor ?? (float?)GetNormalBluntArmor(data) ?? 0f;
+        var nHeat = ad?.normalHeatArmor ?? (float?)GetNormalHeatArmor(data) ?? 0f;
+        var nInsulationCold = ad?.normalInsulationCold ?? (float?)GetNormalInsulationCold(data);
+        var nInsulationHeat = ad?.normalInsulationHeat ?? (float?)GetNormalInsulationHeat(data);
+
+        var bSharp = Mathf.Pow((limitMaxArmor(nSharp) * lmm) * 1.3f + 1f, 2f) - 1f;
+        var bBlunt = Mathf.Pow((limitMaxArmor(nBlunt) * lmm) + 1f, 2f) - 1f;
+        var bHeat = Mathf.Pow((limitMaxArmor(nHeat) * lmm) + 1f, 2f) - 1f;
+        var bTcold = Mathf.Pow((nInsulationCold * lmm ?? 0f), 0.5f) / 10f;
+        var bTheat = Mathf.Pow((nInsulationHeat * lmm ?? 0f), 0.5f) / 10f;
 
         var shield = 0f;
         if (data.def is ThingDef def && def.GetCompProperties<CompProperties_Shield>() != null)
@@ -200,15 +208,8 @@ public class ApparelData : TweakData<ApparelData>
     {
         base.SetDef(def, type, tweaked);
         defLabel ??= def?.label;
-        normalSharpArmor ??= (float?)GetNormalSharpArmor(this);
-        normalBluntArmor ??= (float?)GetNormalBluntArmor(this);
-        normalHeatArmor ??= (float?)GetNormalHeatArmor(this);
-        normalInsulationCold ??= (float?)GetNormalInsulationCold(this);
-        normalInsulationHeat ??= (float?)GetNormalInsulationHeat(this);
-        normalMarketValue ??= (float?)GetNormalMarketValue(this);
         costStuffCount ??= (int?)GetCostStuffCount(this);
         isCompQuality ??= (bool?)GetIsCompQuality(this);
-        equipPower = (float?)GetEquipPower(this, isCompQuality);
         if (def is ThingDef d)
         {
             if (!IsFieldModified(nameof(costList))) costList ??= d.costList?.ToList();
@@ -239,6 +240,20 @@ public class ApparelData : TweakData<ApparelData>
             }
         }
         //equipCP = (float?)GetEquipCP(this, isCompQuality, equipPower);
+    }
+
+    private bool _displayValuesEnsured;
+    public override void EnsureDisplayValues()
+    {
+        if (_displayValuesEnsured) return;
+        _displayValuesEnsured = true;
+        normalSharpArmor ??= (float?)GetNormalSharpArmor(this);
+        normalBluntArmor ??= (float?)GetNormalBluntArmor(this);
+        normalHeatArmor ??= (float?)GetNormalHeatArmor(this);
+        normalInsulationCold ??= (float?)GetNormalInsulationCold(this);
+        normalInsulationHeat ??= (float?)GetNormalInsulationHeat(this);
+        normalMarketValue ??= (float?)GetNormalMarketValue(this);
+        equipPower ??= (float?)GetEquipPower(this, isCompQuality);
     }
 
     private static void OnChangeStuffEffectMultiplierArmor(TweakData data)

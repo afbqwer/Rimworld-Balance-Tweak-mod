@@ -79,11 +79,11 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
 
     private void InitFieldValue()
     {
-        foreach (var meta in Fields)
+        foreach (var meta in DefaultedFields)
         {
             // 用 IsFieldModified（Set ∪ Cleared）：已清空的字段（值为 null）不得被默认值回填复活。
             if (meta.Field.GetValue(this) == null && !IsFieldModified(meta.Field.Name))
-                meta.Field.SetValue(this, meta.DefaultGetter?.Invoke(this));
+                meta.Field.SetValue(this, meta.DefaultGetter!.Invoke(this));
         }
     }
 
@@ -289,6 +289,10 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
 
     private static List<StatFieldMeta>? _fields;
     public static List<StatFieldMeta> Fields => _fields ??= InitStaticFields();
+
+    /// <summary>Fields 中带 DefaultGetter 的字段（惰性初始化一次），InitFieldValue 只遍历这些。</summary>
+    private static List<StatFieldMeta>? _defaultedFields;
+    private static List<StatFieldMeta> DefaultedFields => _defaultedFields ??= Fields.Where(f => f.DefaultGetter != null).ToList();
 
     /// <summary>字段名 → 元数据 的索引，随 <see cref="Fields"/> 的惰性初始化一起建（供 RawVal 用）。</summary>
     private static Dictionary<string, StatFieldMeta>? _fieldIndex;

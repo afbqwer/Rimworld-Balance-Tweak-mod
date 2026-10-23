@@ -32,7 +32,25 @@ public abstract partial class TweakData : IExposable
     public string modPackName = "";
     public string label = "";
     public string searchString = "";
-    public Texture2D? uiIcon;
+    private Texture2D? _uiIcon;
+    private bool _uiIconResolved;
+    public Texture2D? uiIcon
+    {
+        get
+        {
+            if (!_uiIconResolved)
+            {
+                _uiIconResolved = true;
+                _uiIcon = ResolveUiIcon();
+            }
+            return _uiIcon;
+        }
+        set { _uiIcon = value; _uiIconResolved = true; }
+    }
+
+    /// <summary>子类可重写：把图标解析推迟到首次访问。默认不延迟。</summary>
+    protected virtual Texture2D? ResolveUiIcon() => null;
+
     public Color uiIconColor = Color.white;
 
     public string desc = "";
@@ -294,6 +312,8 @@ public abstract partial class TweakData : IExposable
     {
         foreach (var c in AllColumn)
         {
+            // Display 列是派生展示值（可能延迟计算、原值也可能还没算过），不参与"是否已恢复原样"的判定。
+            if (c.columnDataType == ColumnDataType.Display) continue;
             // 三态：先比状态、再比值。否则"Cleared 字段的值恰好与原值相同"会被判成"未改"，
             // 让 ResetSingleItem / ResetSelectedColumn 误删用户的清空意图。
             if (StateOfField(c.fieldName) != other.StateOfField(c.fieldName))
@@ -366,6 +386,8 @@ public abstract partial class TweakData : IExposable
     public abstract List<StatColumnConfig> AllColumn { get; }
     public abstract List<string> TypeStrings { get; }
     public virtual int LoadingOrd => 100;
+    /// <summary>按需计算只用于 UI 显示的派生值；默认无操作。</summary>
+    public virtual void EnsureDisplayValues() { }
     public abstract int GetPropType();
     public abstract void Apply();
 

@@ -235,7 +235,6 @@ class BuildingData : TweakData<BuildingData>
             if (!IsFieldModified(nameof(costList))) costList ??= d.costList;
             if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= d.stuffCategories;
             if (!IsFieldModified(nameof(researchPrerequisites))) researchPrerequisites ??= d.researchPrerequisites;
-            normalMarketValue ??= (float?)GetNormalMarketValue(this);
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
             if (!IsFieldModified(nameof(replaceTags))) replaceTags ??= d.replaceTags;
             // 新增 ThingDef 字段
@@ -352,6 +351,14 @@ class BuildingData : TweakData<BuildingData>
             }
 
         }
+    }
+
+    private bool _displayValuesEnsured;
+    public override void EnsureDisplayValues()
+    {
+        if (_displayValuesEnsured) return;
+        _displayValuesEnsured = true;
+        normalMarketValue ??= (float?)GetNormalMarketValue(this);
     }
 
     public override void Apply()

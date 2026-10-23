@@ -220,7 +220,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     static float? DamageLMultiplier = null;
     static float? APLMultiplier = null;
     static List<Tool>? HumanTool = null;
-    public void GenValues()
+    /// <param name="includeEquipPower">SetDef 首次建数据时为 false，避免启动期跑昂贵的 GetEquipPower；
+    /// Apply / 弹丸 / 招式刷新路径保持默认 true，行为与改动前一致。</param>
+    public void GenValues(bool includeEquipPower = true)
     {
         if (!meleeLQualityMult.HasValue || !AccuracyMediumLMult.HasValue || !DamageLMultiplier.HasValue)
         {
@@ -290,7 +292,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             //    LMeleeDPS *= mm.Value;
             //}
 
-            equipPower = (float?)GetEquipPower(this, HumanTool, isCompQuality.Value, stuff);
+            // SetDef 首次建数据时跳过（启动期不跑昂贵计算）；Apply / 弹丸 / 招式刷新时照常重算。
+            if (includeEquipPower)
+                equipPower = (float?)GetEquipPower(this, HumanTool, isCompQuality.Value, stuff);
             //equipCP = (float?)GetEquipCP(this, equipPower!.Value, isCompQuality);
         }
     }
@@ -365,7 +369,6 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     {
         base.SetDef(def, type, tweaked);
         defLabel ??= def?.label;
-        normalMarketValue ??= (float?)GetNormalMarketValue(this);
         costStuffCount ??= (int?)GetCostStuffCount(this);
         if (def is ThingDef td)
         {
@@ -384,7 +387,20 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
                 reloadableMaxCharges ??= reloadable.maxCharges;
             }
         }
-        GenValues();
+        GenValues(includeEquipPower: false);
+    }
+
+    private bool _displayValuesEnsured;
+    public override void EnsureDisplayValues()
+    {
+        if (_displayValuesEnsured) return;
+        _displayValuesEnsured = true;
+        normalMarketValue ??= (float?)GetNormalMarketValue(this);
+        if (def is ThingDef td)
+        {
+            var stuff = GetDefaultStuffFromDef(td);
+            equipPower ??= (float?)GetEquipPower(this, HumanTool!, isCompQuality ?? false, stuff);
+        }
     }
 
     public override void Apply()

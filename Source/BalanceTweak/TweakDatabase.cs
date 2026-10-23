@@ -159,6 +159,7 @@ public static partial class TweakDatabase
             if (rule.Tab != id.settingType) drifted.Add((id, data));
 
             data.SetDef(def, rule.Tab, true);
+            data.EnsureDisplayValues();
             data.Apply();
             return true;
         }
@@ -212,7 +213,12 @@ public static partial class TweakDatabase
         //    Log.Message($"[BalanceTweak] 兜底 Misc 示例（最多 30）：{string.Join(", ", classify.FallbackSamples)}");
         //if (classify.UncoveredSamples.Count > 0)
         //    Log.Message($"[BalanceTweak] 放弃的 ThingDef 示例（最多 30）：{string.Join(", ", classify.UncoveredSamples)}");
-        var sortedItems = pendingItems.OrderBy(item => item.Item2.LoadingOrd).ToList();
+        // 按 LoadingOrd 升序的稳定桶排序：组内保持 pendingItems 原有相对顺序，组间按键升序。
+        var sortedItems = pendingItems
+            .GroupBy(item => item.Item2.LoadingOrd)
+            .OrderBy(g => g.Key)
+            .SelectMany(g => g)
+            .ToList();
 
         var typeCounts = sortedItems.GroupBy(x => x.Item3)
                                      .Select(g => $"{g.Key}: {g.Count()}")
@@ -333,6 +339,8 @@ public static partial class TweakDatabase
         int notFoundCount = 0;
         var drifted = new List<(TweakID oldKey, TweakData data)>();
 
+        PrepareDeferredDisplayValues();
+
         // 注意：必须先过滤 null 再 OrderBy —— 排序键 p.Value.LoadingOrd 本身就会解引用，
         // 把 null 判断写在循环体内是来不及的（会在 OrderBy 求键时抛 NRE）。
         foreach ((var id, var data) in tweakDatas.Where(p => p.Value != null).OrderBy(p => p.Value.LoadingOrd))
@@ -416,6 +424,7 @@ public static partial class TweakDatabase
                     failedDelayedItems.Add(data);
                     continue;
                 }
+                data.EnsureDisplayValues();
                 data.Apply();
                 lazyApplied++;
             }
@@ -441,6 +450,51 @@ public static partial class TweakDatabase
 
         // C3：运行期自检（SC1–SC6）。Debug 构建里强制开启；发布版默认关闭（零开销）。
         TweakSelfCheck.RunAll();
+    }
+
+    /// <summary>
+    /// 参考值改为按需计算后，必须在 Apply 修改 Def 之前，把"会被改到的 Def"的参考值定格；
+    /// 另外市场价依赖 Recipe/Stuff，武器强度依赖 Projectile —— 这些源类型有改动时，
+    /// 依赖它们的类型也要提前计算，否则会在 Apply 之后算出"改后的参考值"。
+    /// </summary>
+    private static void PrepareDeferredDisplayValues()
+    {
+        if (tweakDatas.Count == 0) return;
+
+        bool recipeOrStuffChanged = false;
+        bool projectileChanged = false;
+        foreach (var id in tweakDatas.Keys)
+        {
+            switch (id.settingType)
+            {
+                case SettingType.Recipe:
+                case SettingType.Stuff:
+                    recipeOrStuffChanged = true;
+                    break;
+                case SettingType.Projectile:
+                    projectileChanged = true;
+                    break;
+            }
+        }
+
+        // 每个已存修改项自身的原始数据（Apply 前定格）
+        foreach (var id in tweakDatas.Keys)
+            GetOriginal(id)?.EnsureDisplayValues();
+
+        if (!recipeOrStuffChanged && !projectileChanged) return;
+
+        foreach (var kv in originalData)
+        {
+            var t = kv.Key.settingType;
+            if (t == SettingType.Building || t == SettingType.Apparel)
+            {
+                if (recipeOrStuffChanged) kv.Value.EnsureDisplayValues();
+            }
+            else if (t == SettingType.Weapon)
+            {
+                if (recipeOrStuffChanged || projectileChanged) kv.Value.EnsureDisplayValues();
+            }
+        }
     }
 
     /// <summary>集合类字段（List&lt;&gt; / ThingFilter）：Cleared 的语义是"清空"；其余是"还原原值"。</summary>

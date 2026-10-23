@@ -78,6 +78,8 @@ class GeneData : TweakData<GeneData>
 
     public override int LoadingOrd => 100;
 
+    private string? iconPath;
+
     public override void SetDef(Def def, SettingType type, bool tweaked = false)
     {
         this.def = def;
@@ -91,7 +93,7 @@ class GeneData : TweakData<GeneData>
             defLabel ??= def?.label;
             desc = d.description ?? "";
             displayCategory = d.displayCategory?.LabelCap ?? "";
-            uiIcon = GetIcon(d.iconPath);
+            iconPath = d.iconPath;
             uiIconColor = d.IconColor;
             searchString = displayCategory + label + d.defName;
             biostatMet ??= d.biostatMet;
@@ -206,6 +208,8 @@ class GeneData : TweakData<GeneData>
         }
         return (int)GeneType.Metabolism;
     }
+
+    protected override Texture2D? ResolveUiIcon() => GetIcon(iconPath);
 
     private static Texture2D? GetIcon(string? iconPath)
     {

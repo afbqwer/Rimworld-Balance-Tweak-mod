@@ -138,6 +138,9 @@ public partial class BalanceTweakSettings
                 // 整行重置：克隆体是"原始快照"，必须整体写回 —— stat 列表由 forceResetStats 覆盖，
                 // 非 stat 字段靠 ApplyAuthoritative 的 forceWriteAll 才不会被三态判据跳过（见 TweakData.forceWriteAll）。
                 newdata.ApplyAuthoritative();
+                // 必须在 Def 已被还原之后再算参考值：否则会从"被用户改过的 Def"读取，
+                // 让本局内重置后的参考列显示偏差（重启后重新初始化就会自愈）。
+                newdata.EnsureDisplayValues();
                 editingControlName = null;
             }
             else
@@ -174,6 +177,9 @@ public partial class BalanceTweakSettings
 
             var config = selectedCol;
             if (config == null) return;
+            // Display 列是只读派生值，没有"重置"语义；且其原值可能延迟计算/为 null，
+            // 不能拿它去覆盖运行数据的展示字段。
+            if (config.columnDataType != ColumnDataType.Field) return;
             var l = new List<TweakData>();
             foreach (var data in filteredData)
             {
@@ -228,6 +234,7 @@ public partial class BalanceTweakSettings
                 foreach (var data in datas.Values)
                 {
                     if (data.propType != filterPropType) continue;
+                    data.EnsureDisplayValues();
                     firstData ??= data;
                     if (!string.IsNullOrEmpty(data.modPackName))
                         tempPacks.Add(data.modPackName);
