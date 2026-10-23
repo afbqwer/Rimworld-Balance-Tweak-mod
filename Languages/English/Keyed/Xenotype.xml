@@ -21,7 +21,11 @@
     <MST.generateWithXenogermReplicatingHediffChance>ReplicCh%</MST.generateWithXenogermReplicatingHediffChance>
     <MST.xenogermReplicatingDurationLeftDaysRange>ReplicDays</MST.xenogermReplicatingDurationLeftDaysRange>
     <MST.xenogermReplicatingDurationLeftDaysRangeComment>Remaining duration (days) of the xenogerm replicating hediff.</MST.xenogermReplicatingDurationLeftDaysRangeComment>
+    <MST.doubleXenotypeChances>DoubleXeno</MST.doubleXenotypeChances>
+    <MST.doubleXenotypeChancesComment>Chance to generate another inheritable xenotype instead of this one (sum should be no more than 1).</MST.doubleXenotypeChancesComment>
     <MST.soundDefOnImplant>ImplantSnd</MST.soundDefOnImplant>
     <MST.displayPriority>Priority</MST.displayPriority>
     <MST.displayPriorityComment>Sort priority in xenotype lists; higher values appear first.</MST.displayPriorityComment>
+    <MST.AddXenotype>Add xenotype</MST.AddXenotype>
+    <MST.SelectXenotype>(Select xenotype)</MST.SelectXenotype>
 </LanguageData>

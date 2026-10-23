@@ -36,6 +36,7 @@
     <MST.BiomePlantList>野生植物列表</MST.BiomePlantList>
     <MST.BiomeAnimalList>野生动物列表</MST.BiomeAnimalList>
     <MST.FishChanceList>鱼类列表</MST.FishChanceList>
+    <MST.XenotypeChanceList>异种人列表</MST.XenotypeChanceList>
     <MST.DiseaseList>疾病列表</MST.DiseaseList>
     <MST.WeatherCommonalityList>天气列表</MST.WeatherCommonalityList>
     <MST.TerrainThresholdList>地形区间列表</MST.TerrainThresholdList>

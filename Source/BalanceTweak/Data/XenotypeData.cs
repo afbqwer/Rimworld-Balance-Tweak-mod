@@ -50,6 +50,9 @@ class XenotypeData : TweakData<XenotypeData>
     [TweakField(Style = ColumnStyle.Range)]
     public FloatRange? xenogermReplicatingDurationLeftDaysRange = null;
 
+    [TweakField(Style = ColumnStyle.XenotypeChanceList)]
+    public List<XenotypeChance>? doubleXenotypeChances = null;
+
     [TweakField(Style = ColumnStyle.DefSelector)]
     public SoundDef? soundDefOnImplant = null;
 
@@ -91,6 +94,7 @@ class XenotypeData : TweakData<XenotypeData>
             // 列表字段：已改/已清空过就不得用 Def 回填（硬约束第 8 行，SC2 会校验）
             if (!IsFieldModified(nameof(genes))) genes ??= d.genes;
             if (!IsFieldModified(nameof(forbiddenWeaponClasses))) forbiddenWeaponClasses ??= d.forbiddenWeaponClasses;
+            if (!IsFieldModified(nameof(doubleXenotypeChances))) doubleXenotypeChances ??= d.doubleXenotypeChances;
         }
     }
 
@@ -119,6 +123,7 @@ class XenotypeData : TweakData<XenotypeData>
         ApplyL<WeaponClassDef>(nameof(forbiddenWeaponClasses), v => def.forbiddenWeaponClasses = v);
         ApplyV<float>(nameof(generateWithXenogermReplicatingHediffChance), v => def.generateWithXenogermReplicatingHediffChance = v);
         ApplyV<FloatRange>(nameof(xenogermReplicatingDurationLeftDaysRange), v => def.xenogermReplicatingDurationLeftDaysRange = v);
+        ApplyL<XenotypeChance>(nameof(doubleXenotypeChances), v => def.doubleXenotypeChances = v);
         ApplyD<SoundDef>(nameof(soundDefOnImplant), v => def.soundDefOnImplant = v);
 
         ApplyV<float>(nameof(displayPriority), v => def.displayPriority = v);

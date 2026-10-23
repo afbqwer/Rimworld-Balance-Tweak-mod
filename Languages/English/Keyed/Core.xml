@@ -37,6 +37,7 @@
     <MST.BiomePlantList>WildPlantList</MST.BiomePlantList>
     <MST.BiomeAnimalList>WildAnimalList</MST.BiomeAnimalList>
     <MST.FishChanceList>FishList</MST.FishChanceList>
+    <MST.XenotypeChanceList>XenoList</MST.XenotypeChanceList>
     <MST.DiseaseList>DiseaseList</MST.DiseaseList>
     <MST.WeatherCommonalityList>WeatherList</MST.WeatherCommonalityList>
     <MST.TerrainThresholdList>TerrainList</MST.TerrainThresholdList>

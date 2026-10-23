@@ -21,7 +21,11 @@
     <MST.generateWithXenogermReplicatingHediffChance>复制几率</MST.generateWithXenogermReplicatingHediffChance>
     <MST.xenogermReplicatingDurationLeftDaysRange>复制天数</MST.xenogermReplicatingDurationLeftDaysRange>
     <MST.xenogermReplicatingDurationLeftDaysRangeComment>异种复制状态剩余的持续天数范围。</MST.xenogermReplicatingDurationLeftDaysRangeComment>
+    <MST.doubleXenotypeChances>双重异种</MST.doubleXenotypeChances>
+    <MST.doubleXenotypeChancesComment>生成角色时改为其他可继承异种人的几率（总和应不超过 1）。</MST.doubleXenotypeChancesComment>
     <MST.soundDefOnImplant>植入音效</MST.soundDefOnImplant>
     <MST.displayPriority>显示排序</MST.displayPriority>
     <MST.displayPriorityComment>在异种人列表中的排序优先级，数值越大越靠前。</MST.displayPriorityComment>
+    <MST.AddXenotype>添加异种人</MST.AddXenotype>
+    <MST.SelectXenotype>（选择异种人）</MST.SelectXenotype>
 </LanguageData>

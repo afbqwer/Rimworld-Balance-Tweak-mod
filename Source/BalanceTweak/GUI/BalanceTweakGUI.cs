@@ -182,6 +182,7 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.BiomePlantList, (c, d) => new BiomePlantListEditorWindow(c, d) },
         { ColumnStyle.BiomeAnimalList, (c, d) => new BiomeAnimalListEditorWindow(c, d) },
         { ColumnStyle.FishChanceList, (c, d) => new FishChanceListEditorWindow(c, d) },
+        { ColumnStyle.XenotypeChanceList, (c, d) => new XenotypeChanceListEditorWindow(c, d) },
         { ColumnStyle.DiseaseList, (c, d) => new DiseaseListEditorWindow(c, d) },
         { ColumnStyle.WeatherCommonalityList, (c, d) => new WeatherCommonalityListEditorWindow(c, d) },
         { ColumnStyle.TerrainThresholdList, (c, d) => new TerrainThresholdListEditorWindow(c, d) },

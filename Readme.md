@@ -247,6 +247,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `BiomePlantList` | `List<BiomePlantRecord>?` | BiomeDef 野生植物列表编辑器（plant + commonality） |
 | `BiomeAnimalList` | `List<BiomeAnimalRecord>?` | BiomeDef 野生动物列表编辑器（animal + commonality） |
 | `FishChanceList` | `List<FishChance>?` | 鱼类列表编辑器（fishDef + chance） |
+| `XenotypeChanceList` | `List<XenotypeChance>?` | 异种人几率列表编辑器（xenotype + chance） |
 | `DiseaseList` | `List<BiomeDiseaseRecord>?` | 疾病列表编辑器（diseaseInc + commonality） |
 | `WeatherCommonalityList` | `List<WeatherCommonalityRecord>?` | 天气列表编辑器（weather + commonality） |
 | `TerrainThresholdList` | `List<TerrainThreshold>?` | 地表肥沃度区间列表（terrain + min/max） |
@@ -462,6 +463,7 @@ dotnet build BalanceTweak.slnx --configuration Debug
 | `BiomePlantList` | 弹出窗口 | `BiomePlantListEditorWindow` | `List<BiomePlantRecord>?` |
 | `BiomeAnimalList` | 弹出窗口 | `BiomeAnimalListEditorWindow` | `List<BiomeAnimalRecord>?` |
 | `FishChanceList` | 弹出窗口 | `FishChanceListEditorWindow` | `List<FishChance>?` |
+| `XenotypeChanceList` | 弹出窗口 | `XenotypeChanceListEditorWindow` | `List<XenotypeChance>?` |
 | `DiseaseList` | 弹出窗口 | `DiseaseListEditorWindow` | `List<BiomeDiseaseRecord>?` |
 | `WeatherCommonalityList` | 弹出窗口 | `WeatherCommonalityListEditorWindow` | `List<WeatherCommonalityRecord>?` |
 | `TerrainThresholdList` | 弹出窗口 | `TerrainThresholdListEditorWindow` | `List<TerrainThreshold>?` |

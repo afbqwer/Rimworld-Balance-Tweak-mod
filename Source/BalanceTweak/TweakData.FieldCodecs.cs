@@ -195,6 +195,7 @@ public abstract partial class TweakData
             PocoList<BiomePlantRecord>("plant", "commonality");
             PocoList<BiomeAnimalRecord>("animal", "commonality");
             PocoList<FishChance>("fishDef", "chance");
+            PocoList<XenotypeChance>("xenotype", "chance");
             PocoList<BiomeDiseaseRecord>("diseaseInc", "commonality");
             PocoList<WeatherCommonalityRecord>("weather", "commonality");
             PocoList<TerrainThreshold>("terrain", "min", "max");
