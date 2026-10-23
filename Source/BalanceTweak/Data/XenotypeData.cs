@@ -30,16 +30,6 @@ class XenotypeData : TweakData<XenotypeData>
     [TweakField(Style = ColumnStyle.Float)]
     public float? factionlessGenerationWeight = null;
 
-    // 命名
-    [TweakField(Style = ColumnStyle.DefSelector)]
-    public RulePackDef? nameMaker = null;
-
-    [TweakField(Style = ColumnStyle.DefSelector)]
-    public RulePackDef? nameMakerFemale = null;
-
-    [TweakField(Style = ColumnStyle.Float)]
-    public float? chanceToUseNameMaker = null;
-
     // 限制与异种复制
     [TweakField(Style = ColumnStyle.DefList)]
     public List<WeaponClassDef>? forbiddenWeaponClasses = null;
@@ -52,9 +42,6 @@ class XenotypeData : TweakData<XenotypeData>
 
     [TweakField(Style = ColumnStyle.XenotypeChanceList)]
     public List<XenotypeChance>? doubleXenotypeChances = null;
-
-    [TweakField(Style = ColumnStyle.DefSelector)]
-    public SoundDef? soundDefOnImplant = null;
 
     // 显示
     [TweakField(Style = ColumnStyle.Float)]
@@ -83,12 +70,8 @@ class XenotypeData : TweakData<XenotypeData>
             combatPowerFactor ??= d.combatPowerFactor;
             canGenerateAsCombatant ??= d.canGenerateAsCombatant;
             factionlessGenerationWeight ??= d.factionlessGenerationWeight;
-            nameMaker ??= d.nameMaker;
-            nameMakerFemale ??= d.nameMakerFemale;
-            chanceToUseNameMaker ??= d.chanceToUseNameMaker;
             generateWithXenogermReplicatingHediffChance ??= d.generateWithXenogermReplicatingHediffChance;
             xenogermReplicatingDurationLeftDaysRange ??= d.xenogermReplicatingDurationLeftDaysRange;
-            soundDefOnImplant ??= d.soundDefOnImplant;
             displayPriority ??= d.displayPriority;
 
             // 列表字段：已改/已清空过就不得用 Def 回填（硬约束第 8 行，SC2 会校验）
@@ -116,15 +99,10 @@ class XenotypeData : TweakData<XenotypeData>
         ApplyV<bool>(nameof(canGenerateAsCombatant), v => def.canGenerateAsCombatant = v);
         ApplyV<float>(nameof(factionlessGenerationWeight), v => def.factionlessGenerationWeight = v);
 
-        ApplyD<RulePackDef>(nameof(nameMaker), v => def.nameMaker = v);
-        ApplyD<RulePackDef>(nameof(nameMakerFemale), v => def.nameMakerFemale = v);
-        ApplyV<float>(nameof(chanceToUseNameMaker), v => def.chanceToUseNameMaker = v);
-
         ApplyL<WeaponClassDef>(nameof(forbiddenWeaponClasses), v => def.forbiddenWeaponClasses = v);
         ApplyV<float>(nameof(generateWithXenogermReplicatingHediffChance), v => def.generateWithXenogermReplicatingHediffChance = v);
         ApplyV<FloatRange>(nameof(xenogermReplicatingDurationLeftDaysRange), v => def.xenogermReplicatingDurationLeftDaysRange = v);
         ApplyL<XenotypeChance>(nameof(doubleXenotypeChances), v => def.doubleXenotypeChances = v);
-        ApplyD<SoundDef>(nameof(soundDefOnImplant), v => def.soundDefOnImplant = v);
 
         ApplyV<float>(nameof(displayPriority), v => def.displayPriority = v);
     }

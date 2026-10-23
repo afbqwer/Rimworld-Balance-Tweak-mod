@@ -13,9 +13,6 @@
     <MST.canGenerateAsCombatant>可战斗</MST.canGenerateAsCombatant>
     <MST.factionlessGenerationWeight>无派系权重</MST.factionlessGenerationWeight>
     <MST.factionlessGenerationWeightComment>生成无派系角色时选中此异种人的权重。</MST.factionlessGenerationWeightComment>
-    <MST.nameMaker>男名</MST.nameMaker>
-    <MST.nameMakerFemale>女名</MST.nameMakerFemale>
-    <MST.chanceToUseNameMaker>用名几率</MST.chanceToUseNameMaker>
     <MST.forbiddenWeaponClasses>禁武器</MST.forbiddenWeaponClasses>
     <MST.forbiddenWeaponClassesComment>生成该异种人时禁止使用的武器类。</MST.forbiddenWeaponClassesComment>
     <MST.generateWithXenogermReplicatingHediffChance>复制几率</MST.generateWithXenogermReplicatingHediffChance>
@@ -23,7 +20,6 @@
     <MST.xenogermReplicatingDurationLeftDaysRangeComment>异种复制状态剩余的持续天数范围。</MST.xenogermReplicatingDurationLeftDaysRangeComment>
     <MST.doubleXenotypeChances>双重异种</MST.doubleXenotypeChances>
     <MST.doubleXenotypeChancesComment>生成角色时改为其他可继承异种人的几率（总和应不超过 1）。</MST.doubleXenotypeChancesComment>
-    <MST.soundDefOnImplant>植入音效</MST.soundDefOnImplant>
     <MST.displayPriority>显示排序</MST.displayPriority>
     <MST.displayPriorityComment>在异种人列表中的排序优先级，数值越大越靠前。</MST.displayPriorityComment>
     <MST.AddXenotype>添加异种人</MST.AddXenotype>
