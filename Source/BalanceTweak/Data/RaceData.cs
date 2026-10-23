@@ -106,9 +106,9 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     [TweakField(Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
     public int? mechFixedSkillLevel = null;
     [TweakField(StatDef = "EMPResistance", MayRequire = "ludeon.rimworld.biotech",Style = ColumnStyle.Prec, Available = nameof(AvailableIfMech))]
-    public int? EMPResistance = null;
+    public float? EMPResistance = null;
     [TweakField(StatDef = "MechEnergyUsageFactor", MayRequire = "ludeon.rimworld.biotech",Style = ColumnStyle.Prec, Available = nameof(AvailableIfMech))]
-    public int? MechEnergyUsageFactor = null;
+    public float? MechEnergyUsageFactor = null;
 
     [TweakField(Style = ColumnStyle.Float)]
     public float? baseHealthScale = null;
