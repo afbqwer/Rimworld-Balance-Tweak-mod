@@ -214,11 +214,21 @@ public static partial class TweakDatabase
         //if (classify.UncoveredSamples.Count > 0)
         //    Log.Message($"[BalanceTweak] 放弃的 ThingDef 示例（最多 30）：{string.Join(", ", classify.UncoveredSamples)}");
         // 按 LoadingOrd 升序的稳定桶排序：组内保持 pendingItems 原有相对顺序，组间按键升序。
-        var sortedItems = pendingItems
-            .GroupBy(item => item.Item2.LoadingOrd)
-            .OrderBy(g => g.Key)
-            .SelectMany(g => g)
-            .ToList();
+        // 手工分桶（而不是 LINQ GroupBy/OrderBy），避免 3 万项上的 Lookup/排序分配。
+        var sortedItems = new List<(Def, TweakData, SettingType)>(pendingItems.Count);
+        var loadingBuckets = new SortedDictionary<int, List<(Def, TweakData, SettingType)>>();
+        foreach (var item in pendingItems)
+        {
+            int ord = item.Item2.LoadingOrd;
+            if (!loadingBuckets.TryGetValue(ord, out var bucket))
+            {
+                bucket = new List<(Def, TweakData, SettingType)>();
+                loadingBuckets.Add(ord, bucket);
+            }
+            bucket.Add(item);
+        }
+        foreach (var bucket in loadingBuckets.Values)
+            sortedItems.AddRange(bucket);
 
         var typeCounts = sortedItems.GroupBy(x => x.Item3)
                                      .Select(g => $"{g.Key}: {g.Count()}")

@@ -75,7 +75,6 @@ class AbilityData : TweakData<AbilityData>
             {
                 uiIcon = d.uiIcon;
             }
-            desc = d.GetTooltip() ?? "";
             psylevel ??= d.level;
             aiCanUse ??= d.aiCanUse;
             cooldownTicksRange ??= d.cooldownTicksRange;
@@ -96,6 +95,17 @@ class AbilityData : TweakData<AbilityData>
         {
             GetVEP();
         }
+        // desc 只用于行 tooltip；GetTooltip 会构建完整 StatSummary，改为首次悬停时再生成。
+        ResetDescCache();
+    }
+
+    protected override string ResolveDesc()
+    {
+        if (def is AbilityDef d) return d.GetTooltip() ?? "";
+        if (def != null && DataUtility.IsTypeOrSubclassOfName(def.GetType(), VefAbilityDefType))
+            return DataUtility.GetByName(def, "description") as string ?? "";
+        // 兜底与 SetProps 原先的通用描述保持一致的文本。
+        return def == null ? string.Empty : $"{def.defName}\n{def.description ?? ""}";
     }
 
     // 可选 Mod 类型一律按全名反射访问：静态引用（含 typeof / 泛型参数 / 捕获进闭包）会让
@@ -109,7 +119,6 @@ class AbilityData : TweakData<AbilityData>
         if (def == null || !DataUtility.IsTypeOrSubclassOfName(def.GetType(), VefAbilityDefType)) return;
 
         if (DataUtility.GetByName(def, "icon") is Texture2D ic && ic != BaseContent.BadTex) uiIcon = ic;
-        desc = DataUtility.GetByName(def, "description") as string ?? "";
         cooldownTime = DataUtility.AsInt(DataUtility.GetByName(def, "cooldownTime"));
         distanceToTarget = DataUtility.AsFloat(DataUtility.GetByName(def, "distanceToTarget"));
         castTime = DataUtility.AsInt(DataUtility.GetByName(def, "castTime"));
@@ -138,7 +147,7 @@ class AbilityData : TweakData<AbilityData>
         {
             ApplyS(nameof(defLabel), v => this.def.label = v);
             ApplyDefStats(def);
-            desc = def.GetTooltip() ?? "";
+            ResetDescCache();
             // 应用基础属性
             ApplyV<int>(nameof(psylevel), v => def.level = v);
             ApplyV<bool>(nameof(aiCanUse), v => def.aiCanUse = v);

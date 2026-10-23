@@ -295,6 +295,41 @@ public class RecipeData : TweakData<RecipeData>
         Process,
     }
 
+    /// <summary>
+    /// 一次性整理"手术配方"集合，替代逐配方调用 <see cref="RecipeDef.IsSurgery"/>。
+    /// 后者的 AllRecipeUsers 会为每个配方扫描全部 ThingDef（本档约 2 万个），
+    /// 5388 个配方累计上亿次迭代；这里改成一次 O(ThingDef + 配方引用数) 的建表。
+    /// 语义与 IsSurgery 一致：recipeUsers 里有 Pawn 用户，或某个 Pawn 类 ThingDef 的 recipes 含该配方。
+    /// </summary>
+    private static HashSet<RecipeDef>? _surgeryRecipes;
+    private static HashSet<RecipeDef> SurgeryRecipes
+    {
+        get
+        {
+            if (_surgeryRecipes != null) return _surgeryRecipes;
+            var set = new HashSet<RecipeDef>();
+            foreach (var td in DefDatabase<ThingDef>.AllDefsListForReading)
+            {
+                if (td.category != ThingCategory.Pawn || td.recipes == null) continue;
+                foreach (var r in td.recipes) set.Add(r);
+            }
+            foreach (var recipe in DefDatabase<RecipeDef>.AllDefsListForReading)
+            {
+                if (recipe.recipeUsers == null) continue;
+                foreach (var u in recipe.recipeUsers)
+                {
+                    if (u.category == ThingCategory.Pawn)
+                    {
+                        set.Add(recipe);
+                        break;
+                    }
+                }
+            }
+            _surgeryRecipes = set;
+            return set;
+        }
+    }
+
     public override int GetPropType()
     {
         if (this.def is RecipeDef def)
@@ -303,7 +338,7 @@ public class RecipeData : TweakData<RecipeData>
             {
                 return (int)RecipeCategory.Mechanoid;
             }
-            if (def.IsSurgery || def.addsHediff != null)
+            if (SurgeryRecipes.Contains(def) || def.addsHediff != null)
             {
                 return (int)RecipeCategory.Surgery;
             }

@@ -53,7 +53,31 @@ public abstract partial class TweakData : IExposable
 
     public Color uiIconColor = Color.white;
 
-    public string desc = "";
+    private string? _desc;
+    private bool _descResolved;
+    public string desc
+    {
+        get
+        {
+            if (!_descResolved)
+            {
+                _descResolved = true;
+                _desc = ResolveDesc();
+            }
+            return _desc ?? string.Empty;
+        }
+        set { _desc = value; _descResolved = true; }
+    }
+
+    /// <summary>子类可重写：把只用于 tooltip 的描述推迟到首次访问。默认不延迟。</summary>
+    protected virtual string ResolveDesc() => string.Empty;
+
+    /// <summary>丢弃已解析的描述，让下一次访问重新走 ResolveDesc（用于延迟生成昂贵 Tooltip 的子类）。</summary>
+    protected void ResetDescCache()
+    {
+        _desc = null;
+        _descResolved = false;
+    }
     /// 是否显示重置按钮
     public bool tweaked = false;
     public TweakID? parentTweakId;

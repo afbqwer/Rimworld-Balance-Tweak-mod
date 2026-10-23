@@ -345,7 +345,42 @@ public static class DataUtility
         int start = (int)Math.Max(1.0, Math.Ceiling(MinRange));
         int count = (int)Math.Floor(MaxRange);
         if (count <= 0) return MinRange;
-        return Enumerable.Range(start, count).MaxBy((int range) => GetHitChanceFactor(weapon, range));
+
+        // 四个精度只求一次；原实现对每个距离都重新 GetStatValueAbstract，
+        // 一把 30 射程的武器要重复求值数十次。
+        float touch = AdjustedAccuracy(RangeCategory.Touch, weapon);
+        float shortAcc = AdjustedAccuracy(RangeCategory.Short, weapon);
+        float medium = AdjustedAccuracy(RangeCategory.Medium, weapon);
+        float longAcc = AdjustedAccuracy(RangeCategory.Long, weapon);
+
+        int bestRange = start;
+        float bestChance = HitChance(touch, shortAcc, medium, longAcc, start);
+        for (int i = 1; i < count; i++)
+        {
+            int range = start + i;
+            float chance = HitChance(touch, shortAcc, medium, longAcc, range);
+            // 严格大于：与 MaxBy 在并列时取首个元素的语义一致。
+            if (chance > bestChance)
+            {
+                bestChance = chance;
+                bestRange = range;
+            }
+        }
+        return bestRange;
+    }
+
+    private static float HitChance(float touch, float shortAcc, float medium, float longAcc, float dist)
+    {
+        float value = dist <= 3f
+            ? touch
+            : dist <= 12f
+                ? Mathf.Lerp(touch, shortAcc, (dist - 3f) / 9f)
+                : dist <= 25f
+                    ? Mathf.Lerp(shortAcc, medium, (dist - 12f) / 13f)
+                    : dist <= 40f
+                        ? Mathf.Lerp(medium, longAcc, (dist - 25f) / 15f)
+                        : longAcc;
+        return Mathf.Clamp(value, 0.01f, 1f);
     }
 
     /// <summary>
