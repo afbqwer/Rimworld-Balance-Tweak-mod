@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Xenotype>异种人</MST.Xenotype>
+    <MST.Inheritable>可继承</MST.Inheritable>
+    <MST.NonInheritable>不可继承</MST.NonInheritable>
+    <MST.genes>基因</MST.genes>
+    <MST.genesComment>此异种人的基因列表；修改会立即生效。</MST.genesComment>
+    <MST.inheritable>可继承</MST.inheritable>
+    <MST.inheritableComment>此异种人的基因能否遗传给后代。</MST.inheritableComment>
+    <MST.descriptionShort>简短描述</MST.descriptionShort>
+    <MST.combatPowerFactor>战力系数</MST.combatPowerFactor>
+    <MST.combatPowerFactorComment>生成该异种人时用于计算战斗力的倍率。</MST.combatPowerFactorComment>
+    <MST.canGenerateAsCombatant>可战斗</MST.canGenerateAsCombatant>
+    <MST.factionlessGenerationWeight>无派系权重</MST.factionlessGenerationWeight>
+    <MST.factionlessGenerationWeightComment>生成无派系角色时选中此异种人的权重。</MST.factionlessGenerationWeightComment>
+    <MST.nameMaker>男名</MST.nameMaker>
+    <MST.nameMakerFemale>女名</MST.nameMakerFemale>
+    <MST.chanceToUseNameMaker>用名几率</MST.chanceToUseNameMaker>
+    <MST.forbiddenWeaponClasses>禁武器</MST.forbiddenWeaponClasses>
+    <MST.forbiddenWeaponClassesComment>生成该异种人时禁止使用的武器类。</MST.forbiddenWeaponClassesComment>
+    <MST.generateWithXenogermReplicatingHediffChance>复制几率</MST.generateWithXenogermReplicatingHediffChance>
+    <MST.xenogermReplicatingDurationLeftDaysRange>复制天数</MST.xenogermReplicatingDurationLeftDaysRange>
+    <MST.xenogermReplicatingDurationLeftDaysRangeComment>异种复制状态剩余的持续天数范围。</MST.xenogermReplicatingDurationLeftDaysRangeComment>
+    <MST.soundDefOnImplant>植入音效</MST.soundDefOnImplant>
+    <MST.displayPriority>显示排序</MST.displayPriority>
+    <MST.displayPriorityComment>在异种人列表中的排序优先级，数值越大越靠前。</MST.displayPriorityComment>
+</LanguageData>

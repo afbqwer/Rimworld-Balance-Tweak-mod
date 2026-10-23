@@ -194,6 +194,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `BodyDef` | `BodyDef.xml` |
 | `Biome` | `Biome.xml` |
 | `Trader` | `Trader.xml` |
+| `Xenotype` | `Xenotype.xml` |
 
 > 新增 SettingType 枚举值时，需同时创建对应的 XML 文件，并在 `Core.xml` 中添加通用 UI 相关的 key。
 

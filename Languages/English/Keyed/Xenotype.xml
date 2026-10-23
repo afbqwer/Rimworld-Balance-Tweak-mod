@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Xenotype>Xenotype</MST.Xenotype>
+    <MST.Inheritable>Inherit</MST.Inheritable>
+    <MST.NonInheritable>NotInherit</MST.NonInheritable>
+    <MST.genes>Genes</MST.genes>
+    <MST.genesComment>Gene list of this xenotype; changes take effect immediately.</MST.genesComment>
+    <MST.inheritable>Inherit</MST.inheritable>
+    <MST.inheritableComment>Whether this xenotype's genes can be inherited by offspring.</MST.inheritableComment>
+    <MST.descriptionShort>ShortDesc</MST.descriptionShort>
+    <MST.combatPowerFactor>CombatPwr</MST.combatPowerFactor>
+    <MST.combatPowerFactorComment>Combat power multiplier used when this xenotype is selected for pawn generation.</MST.combatPowerFactorComment>
+    <MST.canGenerateAsCombatant>Combatant</MST.canGenerateAsCombatant>
+    <MST.factionlessGenerationWeight>FactionWt</MST.factionlessGenerationWeight>
+    <MST.factionlessGenerationWeightComment>Selection weight when generating a pawn without a faction.</MST.factionlessGenerationWeightComment>
+    <MST.nameMaker>NameMale</MST.nameMaker>
+    <MST.nameMakerFemale>NameFem</MST.nameMakerFemale>
+    <MST.chanceToUseNameMaker>NameUse%</MST.chanceToUseNameMaker>
+    <MST.forbiddenWeaponClasses>ForbidWpn</MST.forbiddenWeaponClasses>
+    <MST.forbiddenWeaponClassesComment>Weapon classes this xenotype is forbidden to spawn with.</MST.forbiddenWeaponClassesComment>
+    <MST.generateWithXenogermReplicatingHediffChance>ReplicCh%</MST.generateWithXenogermReplicatingHediffChance>
+    <MST.xenogermReplicatingDurationLeftDaysRange>ReplicDays</MST.xenogermReplicatingDurationLeftDaysRange>
+    <MST.xenogermReplicatingDurationLeftDaysRangeComment>Remaining duration (days) of the xenogerm replicating hediff.</MST.xenogermReplicatingDurationLeftDaysRangeComment>
+    <MST.soundDefOnImplant>ImplantSnd</MST.soundDefOnImplant>
+    <MST.displayPriority>Priority</MST.displayPriority>
+    <MST.displayPriorityComment>Sort priority in xenotype lists; higher values appear first.</MST.displayPriorityComment>
+</LanguageData>
