@@ -25,15 +25,16 @@ namespace BalanceTweak;
 public static class TweakSelfCheck
 {
 #if DEBUG
-    /// <summary>Debug 构建里强制开启；发布版默认关闭（零性能开销）。</summary>
+    /// <summary>Debug 构建里强制开启；发布版关闭（不跑自检，并清理 Debug 版遗留的快照）。</summary>
     public static bool selfCheckEnabled = true;
 #else
-    /// <summary>Debug 构建里强制开启；发布版默认关闭（零性能开销）。</summary>
+    /// <summary>Debug 构建里强制开启；发布版关闭（不跑自检，并清理 Debug 版遗留的快照）。</summary>
     public static bool selfCheckEnabled = false;
 #endif
 
     private const string Tag = "[BT/SELFCHECK]";
     private const string SnapTag = "[BT/SNAP]";
+    private const string SnapshotFilePrefix = "BalanceTweak_Snapshot_";
     private const int MaxWarnPerCheck = 50;
     private const int MaxOrigSnapLines = 20000;
     private const int SnapshotLogLines = 200;
@@ -49,10 +50,15 @@ public static class TweakSelfCheck
     /// <summary>本次 Init 加载的用户数据（防御式过滤 value 为 null 的条目）。</summary>
     private static IEnumerable<TweakData> Loaded() => tweakDatas.Values.Where(d => d != null);
 
-    /// <summary>SC1–SC6 入口。由 <see cref="TweakDatabase.Init"/> 末尾调用；开关关闭时零开销。</summary>
+    /// <summary>SC1–SC10 入口。由 <see cref="TweakDatabase.Init"/> 末尾调用。</summary>
     public static void RunAll()
     {
-        if (!selfCheckEnabled) return;
+        if (!selfCheckEnabled)
+        {
+            // 发布版不写快照；顺手清掉 Debug 版遗留的文件（曾误发布 Debug 构建，玩家 Config 目录会堆积）。
+            RemoveStaleSnapshots();
+            return;
+        }
 
         R r = default;
         r += Guard("SC1", SC1_States);
@@ -68,6 +74,27 @@ public static class TweakSelfCheck
             Log.Message($"{Tag} SC1–SC10 全部通过（共 {r.Checks} 项检查）。");
         else
             Log.Warning($"{Tag} SC1–SC10 完成：检查 {r.Checks} 项，异常 {r.Issues} 项（详见上方 [BT/SELFCHECK] 警告）。");
+    }
+
+    /// <summary>
+    /// 发布版专用：删除 Config 目录里 Debug 版遗留的 <c>BalanceTweak_Snapshot_*.txt</c>。
+    /// 只删本模组自己的快照命名，异常一律吞掉（清理失败绝不能影响启动）。
+    /// </summary>
+    private static void RemoveStaleSnapshots()
+    {
+        try
+        {
+            string dir = GenFilePaths.ConfigFolderPath;
+            if (!Directory.Exists(dir)) return;
+            var files = Directory.GetFiles(dir, SnapshotFilePrefix + "*.txt");
+            foreach (var file in files) File.Delete(file);
+            if (files.Length > 0)
+                Log.Message($"{SnapTag} 已清理调试快照 {files.Length} 个：{dir}");
+        }
+        catch (Exception e)
+        {
+            Log.Warning($"{SnapTag} 清理调试快照失败（不影响游戏）：{e.Message}");
+        }
     }
 
     /// <summary>自检本身绝不允许影响游戏：任何异常都吞掉并记 error。</summary>
@@ -347,7 +374,7 @@ public static class TweakSelfCheck
 
         string text = string.Join("\n", lines);
         string file = Path.Combine(GenFilePaths.ConfigFolderPath,
-            $"BalanceTweak_Snapshot_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+            $"{SnapshotFilePrefix}{DateTime.Now:yyyyMMdd_HHmmss}.txt");
         try { File.WriteAllText(file, text); }
         catch (Exception e) { Log.Error($"{SnapTag} 写盘失败：{file}: {e.Message}"); }
 

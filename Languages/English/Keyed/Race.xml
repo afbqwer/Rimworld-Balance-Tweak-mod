@@ -61,4 +61,6 @@
     <MST.milkFemaleOnly>Milk♀Only</MST.milkFemaleOnly>
     <MST.shearIntervalDays>ShrDays</MST.shearIntervalDays>
     <MST.woolAmount>WoolAmt</MST.woolAmount>
+    <MST.EMPResistance>EMPRes</MST.EMPResistance>
+    <MST.MechEnergyUsageFactor>EngUse</MST.MechEnergyUsageFactor>
 </LanguageData>

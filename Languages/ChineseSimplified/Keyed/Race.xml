@@ -61,4 +61,6 @@
     <MST.milkFemaleOnly>仅雌产奶</MST.milkFemaleOnly>
     <MST.shearIntervalDays>剪毛间隔</MST.shearIntervalDays>
     <MST.woolAmount>产毛量</MST.woolAmount>
+    <MST.EMPResistance>EMP抗性</MST.EMPResistance>
+    <MST.MechEnergyUsageFactor>能耗系数</MST.MechEnergyUsageFactor>
 </LanguageData>
