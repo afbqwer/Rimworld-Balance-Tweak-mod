@@ -201,6 +201,8 @@ public abstract partial class TweakData
             PocoList<TerrainThreshold>("terrain", "min", "max");
             PocoList<ProcessIngredientItem>("thing", "thingCategory", "disallowedThingDefs", "countNeeded");
             PocoList<ProcessResultItem>(r => r.count >= 0, "thing", "count");
+            // FactionCurve.selectionWeightPerPointsCurve 是 private 的 SimpleCurve，由 PocoCodec 的 Kind.Curve 编解码
+            PocoList<FactionCurve>("faction", "selectionWeightPerPointsCurve");
 
             // ── bespoke：各有不走字段表的硬理由 ──
             // IngredientCount 挂在 ThingFilter + GetBaseCount/SetBaseCount 上，不是普通字段；

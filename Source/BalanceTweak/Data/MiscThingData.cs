@@ -28,6 +28,8 @@ class MiscThingData : TweakData<MiscThingData>
     public int? stackLimit = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statBases = null;
+    [TweakField(Style = ColumnStyle.ThingSetTags)]
+    public List<string>? thingSetMakerTags = null;
     [TweakField(Style = ColumnStyle.Int)]
     public int? pathCost = null;
     [TweakField(Style = ColumnStyle.Bool)]
@@ -51,6 +53,7 @@ class MiscThingData : TweakData<MiscThingData>
             searchString = label + d.defName;
             stackLimit ??= d.stackLimit;
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(thingSetMakerTags))) thingSetMakerTags ??= d.thingSetMakerTags;
             pathCost ??= d.pathCost;
             useHitPoints ??= d.useHitPoints;
             destroyable ??= d.destroyable;
@@ -66,6 +69,8 @@ class MiscThingData : TweakData<MiscThingData>
         }
         ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyDefStats(def);
+        ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
+        if (IsFieldModified(nameof(thingSetMakerTags))) DataUtility.RefreshThingSetMakerFilters();
         ApplyV<int>(nameof(stackLimit), v => def.stackLimit = v);
         ApplyV<int>(nameof(pathCost), v => def.pathCost = v);
         ApplyV<bool>(nameof(useHitPoints), v => def.useHitPoints = v);

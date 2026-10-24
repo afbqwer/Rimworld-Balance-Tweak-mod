@@ -195,6 +195,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `Biome` | `Biome.xml` |
 | `Trader` | `Trader.xml` |
 | `Xenotype` | `Xenotype.xml` |
+| `ArrivalMode` | `ArrivalMode.xml` |
 
 > 新增 SettingType 枚举值时，需同时创建对应的 XML 文件，并在 `Core.xml` 中添加通用 UI 相关的 key。
 
@@ -252,6 +253,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `WeatherCommonalityList` | `List<WeatherCommonalityRecord>?` | 天气列表编辑器（weather + commonality） |
 | `TerrainThresholdList` | `List<TerrainThreshold>?` | 地表肥沃度区间列表（terrain + min/max） |
 | `StockGenList` | `List<StockGenerator>?` | 库存生成器列表编辑器（每行一个生成器，按字段表声明的种类给出输入框/下拉/子列表；类型菜单只列原版类型，非原版条目只读展示类型名）；字段直接持有对象，见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist) |
+| `FactionCurveList` | `List<FactionCurve>?` | 派系曲线列表编辑器（faction + selectionWeightPerPointsCurve）；曲线值文本为 `[x~y;x~y]`（PocoCodec `Kind.Curve`），faction 解码需 DefDatabase |
 
 ---
 
@@ -468,4 +470,5 @@ dotnet build BalanceTweak.slnx --configuration Debug
 | `WeatherCommonalityList` | 弹出窗口 | `WeatherCommonalityListEditorWindow` | `List<WeatherCommonalityRecord>?` |
 | `TerrainThresholdList` | 弹出窗口 | `TerrainThresholdListEditorWindow` | `List<TerrainThreshold>?` |
 | `StockGenList` | 弹出窗口 | `StockGeneratorListEditorWindow`（+ `StockGeneratorEditorWindow` / `SGComplexListEditorWindow`） | `List<StockGenerator>?`（字段即对象列表，字段表见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist)） |
+| `FactionCurveList` | 弹出窗口 | `FactionCurveListEditorWindow` | `List<FactionCurve>?`（每行 = 派系选择 + 曲线编辑按钮；`selectionWeightPerPointsCurve` 为 private，克隆/编解码走 PocoCodec 字段表） |
 | `DefSelector` | 弹出窗口 | `DefSelectionWindow` | `T? where T : Def` |

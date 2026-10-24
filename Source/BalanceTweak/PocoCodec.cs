@@ -54,6 +54,8 @@ internal static class PocoCodec
         IntRange,
         FloatRange,
         Enum,
+        /// <summary><see cref="SimpleCurve"/>（文本为 <c>[x~y;x~y]</c>）。</summary>
+        Curve,
         /// <summary>单个 <see cref="Def"/> 引用。</summary>
         Def,
         /// <summary><c>List&lt;T&gt; where T : Def</c>。</summary>
@@ -213,6 +215,7 @@ internal static class PocoCodec
         if (type == typeof(IntRange)) { field.Kind = Kind.IntRange; return; }
         if (type == typeof(FloatRange)) { field.Kind = Kind.FloatRange; return; }
         if (type.IsEnum) { field.Kind = Kind.Enum; field.EnumType = type; return; }
+        if (type == typeof(SimpleCurve)) { field.Kind = Kind.Curve; return; }
         if (typeof(Def).IsAssignableFrom(type)) { field.Kind = Kind.Def; field.ElementType = type; return; }
         if (type == typeof(List<string>)) { field.Kind = Kind.StringList; field.ElementType = typeof(string); return; }
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
@@ -264,6 +267,7 @@ internal static class PocoCodec
             case Kind.IntRange: return IntRangeText((IntRange)value);
             case Kind.FloatRange: return FloatRangeText((FloatRange)value);
             case Kind.Enum: return value.ToString() ?? "";
+            case Kind.Curve: return CurveText((SimpleCurve)value);
             case Kind.Def: return ((Def)value).defName ?? "";
             case Kind.DefList: return JoinList(((IEnumerable)value).Cast<Def>().Select(d => d.defName ?? ""));
             case Kind.StringList: return JoinList(((IEnumerable)value).Cast<string>());
@@ -313,6 +317,15 @@ internal static class PocoCodec
     /// <summary>浮点区间 → <c>min~max</c>。用 "G9" 而不是默认的 "G7"，保证不丢精度。</summary>
     private static string FloatRangeText(FloatRange range)
         => range.min.ToString("G9", CultureInfo.InvariantCulture) + "~" + range.max.ToString("G9", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// 曲线 → <c>[x~y;x~y]</c>（点序即存储序）。与 <see cref="FloatRangeText"/> 同口径（G9 + 不变文化）；
+    /// 复用 <see cref="JoinList"/> 的列表包装与转义 —— <c>~</c> 不是特殊字符，原样保留。
+    /// 空曲线返回空串：外层 <see cref="Encode"/> 会跳过空文本字段（空曲线 = 无信息，解码端还原为空曲线）。
+    /// </summary>
+    private static string CurveText(SimpleCurve curve)
+        => JoinList(curve.Points.Select(p =>
+            p.x.ToString("G9", CultureInfo.InvariantCulture) + "~" + p.y.ToString("G9", CultureInfo.InvariantCulture)));
 
     /// <summary>
     /// 字段值是否等于"新实例上的初始值"：是则不写进文本，读回来由新实例的初始值给出同样的值。
@@ -520,6 +533,22 @@ internal static class PocoCodec
                     return Fail(field, text, $"{field.EnumType!.Name} 的枚举名");
                 value = parsed;
                 return true;
+
+            case Kind.Curve:
+            {
+                if (!TrySplitList(text, out var pointTexts)) return Fail(field, text, "[x~y;x~y]");
+                var curve = new SimpleCurve();
+                foreach (var pt in pointTexts)
+                {
+                    if (!TrySplitRange(pt, out var xText, out var yText)
+                        || !float.TryParse(xText, NumberStyles.Float, CultureInfo.InvariantCulture, out var x)
+                        || !float.TryParse(yText, NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
+                        return Fail(field, pt, "x~y");
+                    curve.Add(x, y);
+                }
+                value = curve;
+                return true;
+            }
 
             case Kind.Def:
             {
@@ -747,6 +776,15 @@ internal static class PocoCodec
                     list.Add(copy);
                 }
                 cloned = list;
+                return true;
+            }
+            case Kind.Curve:
+            {
+                // 曲线是可变引用类型，必须换新实例 —— 否则"编辑克隆"会落回原对象。
+                var source = (SimpleCurve)value;
+                var copy = new SimpleCurve();
+                foreach (var point in source.Points) copy.Add(point.x, point.y);
+                cloned = copy;
                 return true;
             }
             default:

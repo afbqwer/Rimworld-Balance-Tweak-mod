@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.ArrivalMode>Arrival Mode</MST.ArrivalMode>
+    <MST.WalkIn>Walk-in</MST.WalkIn>
+    <MST.selectionWeightCurve>Selection weight curve</MST.selectionWeightCurve>
+    <MST.selectionWeightCurveComment>Curve of this arrival mode's selection weight over raid points. X axis: points, Y axis: weight.</MST.selectionWeightCurveComment>
+    <MST.pointsFactorCurve>Points factor curve</MST.pointsFactorCurve>
+    <MST.pointsFactorCurveComment>Actual points spent = event points × curve value (interpolated by points).</MST.pointsFactorCurveComment>
+    <MST.selectionWeightCurvesPerFaction>Faction weight curves</MST.selectionWeightCurvesPerFaction>
+    <MST.selectionWeightCurvesPerFactionComment>Per-faction override of the selection weight curve: listed factions use their own curve, others fall back to the selection weight curve.</MST.selectionWeightCurvesPerFactionComment>
+    <MST.minTechLevel>Min tech level</MST.minTechLevel>
+    <MST.forQuickMilitaryAid>Quick military aid</MST.forQuickMilitaryAid>
+    <MST.forQuickMilitaryAidComment>When enabled, this mode can be used as a quick response for "call military aid".</MST.forQuickMilitaryAidComment>
+    <MST.walkIn>Walk in</MST.walkIn>
+    <MST.canBeBackup>Can be backup</MST.canBeBackup>
+    <MST.canBeBackupComment>Whether this mode may be chosen as a backup when the preferred mode is unavailable (tech/biome/layer restrictions, etc.).</MST.canBeBackupComment>
+    <MST.minSpaceSelectionWeight>Min space selection weight</MST.minSpaceSelectionWeight>
+    <MST.minSpaceSelectionWeightComment>Minimum weight required to be selected on a vacuum (space) planet layer; -1 = not applicable (vanilla default).</MST.minSpaceSelectionWeightComment>
+    <MST.biomeWhitelist>Biome whitelist</MST.biomeWhitelist>
+    <MST.biomeWhitelistComment>Only allowed in these biomes.</MST.biomeWhitelistComment>
+    <MST.biomeBlacklist>Biome blacklist</MST.biomeBlacklist>
+    <MST.biomeBlacklistComment>Never used in these biomes.</MST.biomeBlacklistComment>
+    <MST.layerWhitelist>Layer whitelist</MST.layerWhitelist>
+    <MST.layerWhitelistComment>Only allowed on these planet layers.</MST.layerWhitelistComment>
+    <MST.layerBlacklist>Layer blacklist</MST.layerBlacklist>
+    <MST.layerBlacklistComment>Never used on these planet layers.</MST.layerBlacklistComment>
+    <MST.textEnemy>Enemy text</MST.textEnemy>
+    <MST.textEnemyComment>Letter text used when a hostile faction arrives with this mode.</MST.textEnemyComment>
+    <MST.textFriendly>Friendly text</MST.textFriendly>
+    <MST.textFriendlyComment>Letter text used when a friendly faction arrives with this mode.</MST.textFriendlyComment>
+    <MST.textWillArrive>Will-arrive text</MST.textWillArrive>
+    <MST.textWillArriveComment>Text used in the "X will arrive" letter.</MST.textWillArriveComment>
+    <MST.AddFactionCurve>Add faction curve</MST.AddFactionCurve>
+    <MST.SelectFaction>(Select faction)</MST.SelectFaction>
+</LanguageData>

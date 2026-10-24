@@ -9,7 +9,7 @@ using Xunit;
 namespace BalanceTweak.Tests;
 
 /// <summary>
-/// ④ 第二步（17 个类型从手写 <c>split('|')</c> 迁到 <see cref="PocoCodec"/> 字段表）的验证。
+/// ④ 第二步（各类型从手写 <c>split('|')</c> 迁到 <see cref="PocoCodec"/> 字段表）的验证。
 ///
 /// <para>
 /// <b>能在游戏外测什么</b>：字段声明是否解析得到、编码出的文本形状（字段名 / 顺序 / 默认值省略）、
@@ -22,7 +22,7 @@ namespace BalanceTweak.Tests;
 /// </summary>
 public class SerializationCodecsTests
 {
-    /// <summary>迁移到字段表的 17 个类型。</summary>
+    /// <summary>迁移到字段表的 18 个类型。</summary>
     private static readonly Type[] MigratedTypes =
     {
         typeof(StatModifier), typeof(PawnCapacityModifier), typeof(DamageFactor), typeof(SkillGain),
@@ -30,7 +30,7 @@ public class SerializationCodecsTests
         typeof(SkillRequirement), typeof(TraitRequirement),
         typeof(BiomePlantRecord), typeof(BiomeAnimalRecord), typeof(FishChance),
         typeof(BiomeDiseaseRecord), typeof(WeatherCommonalityRecord), typeof(TerrainThreshold),
-        typeof(ProcessIngredientItem), typeof(ProcessResultItem),
+        typeof(ProcessIngredientItem), typeof(ProcessResultItem), typeof(FactionCurve),
     };
 
     /// <summary>
@@ -71,7 +71,7 @@ public class SerializationCodecsTests
     }
 
     /// <summary>
-    /// 逐个钉住 17 个类型的字段声明。
+    /// 逐个钉住全部类型的字段声明。
     ///
     /// <para>
     /// 这既是"迁移前后字段覆盖一致"的核对记录（旧手写格式的段数与这些名字一一对应），
@@ -109,6 +109,7 @@ public class SerializationCodecsTests
             (typeof(TerrainThreshold), new[] { "terrain", "min", "max" }),
             (typeof(ProcessIngredientItem), new[] { "thing", "thingCategory", "disallowedThingDefs", "countNeeded" }),
             (typeof(ProcessResultItem), new[] { "thing", "count" }),
+            (typeof(FactionCurve), new[] { "faction", "selectionWeightPerPointsCurve" }),
         };
 
         Assert.Equal(MigratedTypes.Length, expected.Length);
@@ -119,18 +120,18 @@ public class SerializationCodecsTests
     // ═══════════════════════ 登记覆盖与包装一致 ═══════════════════════
 
     /// <summary>
-    /// 登记表把 17 个类型都登记成了 <c>List&lt;T&gt;</c> 的收发对 —— 缺登记 ⇒ 该字段**静默不落盘**。
+    /// 登记表把全部类型都登记成了 <c>List&lt;T&gt;</c> 的收发对 —— 缺登记 ⇒ 该字段**静默不落盘**。
     ///
     /// <para>
     /// <b>原先这里还有一条"列表包装与逐条编码一致"的断言</b>（比 <c>SerializeXxxList</c> 与
-    /// <c>PocoCodec.Encode</c> 的产出是否相同）。GUI 去样板之后那 17 对 <c>SerializeXxxList</c>
+    /// <c>PocoCodec.Encode</c> 的产出是否相同）。GUI 去样板之后那批 <c>SerializeXxxList</c>
     /// 已删：存档侧（<c>ExposePocoList</c>）、剪贴板（<c>EncodeList</c>）、编辑器窗口的默认实现
     /// <b>共用同一个 <c>PocoCodec</c> 入口</b>，"两份实现分叉"这个失效模式从结构上消失了 ——
     /// 断言随之成了恒真，故删除。
     /// </para>
     /// </summary>
     [Fact]
-    public void 登记表覆盖17个列表类型()
+    public void 登记表覆盖全部列表类型()
     {
         EnsureDeclared();
 
@@ -250,6 +251,41 @@ public class SerializationCodecsTests
 
         var pr = RoundTrip(new ProcessResultItem { count = 5 });
         Assert.Equal(5, pr!.count);
+    }
+
+    /// <summary>
+    /// <see cref="Kind.Curve"/>（<see cref="FactionCurve.selectionWeightPerPointsCurve"/>，private 字段）的往返。
+    /// faction 留空（Def 解码要 DefDatabase），曲线部分必须完整保序、保精度。
+    /// </summary>
+    [Fact]
+    public void 曲线字段往返()
+    {
+        EnsureDeclared();
+
+        var curveField = PocoCodec.FieldsFor(typeof(FactionCurve)).First(f => f.Name == "selectionWeightPerPointsCurve");
+        var curve = new SimpleCurve();
+        curve.Add(0f, 1f);
+        curve.Add(5f, 0.5f);
+        var fc = new FactionCurve();
+        curveField.Info.SetValue(fc, curve);
+
+        var text = Item(fc);
+        // 列表包装符是结构字符：外层按字段值整体转义（\[ 与 \;），值文本本身不被破坏
+        Assert.Contains("selectionWeightPerPointsCurve=" + PocoCodec.Escape("[0~1;5~0.5]"), text);
+
+        var back = Parse<FactionCurve>(text);
+        Assert.NotNull(back);
+        var backCurve = Assert.IsType<SimpleCurve>(curveField.Info.GetValue(back));
+        Assert.Equal(2, backCurve.PointsCount);
+        Assert.Equal((0f, 1f), (backCurve[0].x, backCurve[0].y));
+        Assert.Equal((5f, 0.5f), (backCurve[1].x, backCurve[1].y));
+
+        // 空曲线：编码时省略（与"等于新实例初值不写"一致），解码还原为空曲线
+        var empty = Item(new FactionCurve());
+        Assert.DoesNotContain("selectionWeightPerPointsCurve", empty);
+        var emptyBack = Parse<FactionCurve>(empty);
+        Assert.NotNull(emptyBack);
+        Assert.Null(curveField.Info.GetValue(emptyBack));
     }
 
     /// <summary>

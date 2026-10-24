@@ -37,5 +37,6 @@ public partial class BalanceTweakSettings
         Biome = 29,
         Trader = 30,
         Xenotype = 31,
+        ArrivalMode = 32,
     }
 }

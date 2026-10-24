@@ -51,6 +51,8 @@ class StuffData : TweakData<StuffData>
 
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statBases = null;
+    [TweakField(Style = ColumnStyle.ThingSetTags)]
+    public List<string>? thingSetMakerTags = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statOffsets = null;
     [TweakField(Style = ColumnStyle.StatModList)]
@@ -74,6 +76,7 @@ class StuffData : TweakData<StuffData>
             deepCountPerCell ??= d.deepCountPerCell;
             deepLumpSizeRange ??= d.deepLumpSizeRange;
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(thingSetMakerTags))) thingSetMakerTags ??= d.thingSetMakerTags;
             if (!IsFieldModified(nameof(statOffsets))) statOffsets ??= d.stuffProps?.statOffsets;
             if (!IsFieldModified(nameof(statFactors))) statFactors ??= d.stuffProps?.statFactors;
         }
@@ -88,6 +91,8 @@ class StuffData : TweakData<StuffData>
         }
         ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyDefStats(def);
+        ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
+        if (IsFieldModified(nameof(thingSetMakerTags))) DataUtility.RefreshThingSetMakerFilters();
         ApplyV<float>(nameof(deepCommonality), v => def.deepCommonality = v);
         ApplyV<int>(nameof(deepCountPerPortion), v => def.deepCountPerPortion = v);
         ApplyV<int>(nameof(deepCountPerCell), v => def.deepCountPerCell = v);

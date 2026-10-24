@@ -81,8 +81,87 @@ public static class DataUtility
 
     #endregion
 
-    #region ThingDef 分类谓词
+    #region thingSetMakerTags 缓存刷新
 
+    // ThingFilter.allowedDefs 在 ResolveReferences 时一次性构建，且 ResolveReferences 只做
+    // 增量 SetAllow（不清空旧集合）—— 因此 ThingDef.thingSetMakerTags 改动后：
+    //   新增标签不刷新也能命中（SetAllow 会加），但删除标签永远不会从缓存里消失。
+    // 必须先清掉引用了 thingSetMakerTags 的过滤器缓存，再重新 Resolve。
+    // thingSetMakerTags 的原版消费方全部在 ThingSetMakerDef 树里
+    // （Reward_ItemsStandard、物品藏匿点、各类 MapGen/Reward 表），只刷这一处即可。
+    private static FieldInfo? ThingFilterAllowedDefsField;
+
+    /// <summary>在任何 ThingDef.thingSetMakerTags 写回之后调用，重建 ThingSetMaker 过滤器缓存。</summary>
+    public static void RefreshThingSetMakerFilters()
+    {
+        var defs = DefDatabase<ThingSetMakerDef>.AllDefsListForReading;
+        if (defs.Count == 0) return;
+
+        var filters = new HashSet<ThingFilter>();
+        foreach (var def in defs)
+        {
+            CollectThingSetMakerFilters(def.root, filters);
+        }
+        if (filters.Count == 0) return;
+
+        ThingFilterAllowedDefsField ??= Reflect.Field(typeof(ThingFilter), "allowedDefs");
+        foreach (var filter in filters)
+        {
+            if (ThingFilterAllowedDefsField.GetValue(filter) is HashSet<ThingDef> allowedDefs)
+            {
+                allowedDefs.Clear();
+            }
+        }
+        foreach (var def in defs)
+        {
+            def.ResolveReferences();
+        }
+    }
+
+    /// <summary>
+    /// 收集一个 ThingSetMaker 树里的全部 ThingFilter（含各层 fixedParams.filter）。
+    /// 走公共字段反射而不是硬编码组合类型，Sum/RandomOption 的 Option、Conditional 的子节点都能覆盖。
+    /// </summary>
+    private static void CollectThingSetMakerFilters(ThingSetMaker? maker, HashSet<ThingFilter> filters)
+    {
+        if (maker == null) return;
+        if (maker.fixedParams.filter != null)
+        {
+            filters.Add(maker.fixedParams.filter);
+        }
+        foreach (var field in maker.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (field.GetValue(maker) is ThingSetMaker child)
+            {
+                CollectThingSetMakerFilters(child, filters);
+                continue;
+            }
+            // Sum.Option / RandomOption.Option 这类"承载子 maker 的选项对象"
+            if (field.GetValue(maker) is System.Collections.IEnumerable list
+                && field.FieldType.IsGenericType
+                && field.FieldType.GetGenericArguments()[0] is { IsClass: true } elemType
+                && elemType != typeof(string)
+                && elemType.GetFields(BindingFlags.Public | BindingFlags.Instance)
+                    .Any(f => typeof(ThingSetMaker).IsAssignableFrom(f.FieldType)))
+            {
+                foreach (var item in list)
+                {
+                    if (item == null) continue;
+                    foreach (var optionField in item.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
+                    {
+                        if (optionField.GetValue(item) is ThingSetMaker optionChild)
+                        {
+                            CollectThingSetMakerFilters(optionChild, filters);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #endregion
+
+    #region ThingDef 分类谓词
     // 由各 Data 类上的 [TweakFor(Match = nameof(...))] 引用。
     // 逐一对应原 TweakDatabase.Init() 的 if/else-if 链，抢占顺序由 Priority 还原：
     // Race(700) > Apparel(600) > Building(500) > Projectile(400) > Stuff(300) > Weapon(200) > Food(100) > Misc(兜底)。

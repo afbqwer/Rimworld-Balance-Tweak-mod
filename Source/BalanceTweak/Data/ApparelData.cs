@@ -117,6 +117,8 @@ public class ApparelData : TweakData<ApparelData>
     public List<ApparelLayerDef>? layers = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statBases = null;
+    [TweakField(Style = ColumnStyle.ThingSetTags)]
+    public List<string>? thingSetMakerTags = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? equippedStatOffsets = null;
     [TweakField(Style = ColumnStyle.Bool)]
@@ -222,6 +224,7 @@ public class ApparelData : TweakData<ApparelData>
             gender ??= d.apparel.gender;
             developmentalStageFilter ??= d.apparel.developmentalStageFilter;
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(thingSetMakerTags))) thingSetMakerTags ??= d.thingSetMakerTags;
             if (!IsFieldModified(nameof(equippedStatOffsets))) equippedStatOffsets ??= d.equippedStatOffsets;
             var shield = d.GetCompProperties<CompProperties_Shield>();
             if (shield != null)
@@ -305,6 +308,8 @@ public class ApparelData : TweakData<ApparelData>
     private void ApplyApparelProp(ThingDef def)
     {
         ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
+        ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
+        if (IsFieldModified(nameof(thingSetMakerTags))) DataUtility.RefreshThingSetMakerFilters();
         bool costChanged = false;
         ApplyV<int>(nameof(costStuffCount), v => { def.costStuffCount = v; costChanged = true; });
         ApplyL<ThingDefCountClass>(nameof(costList), v => { def.costList = v; costChanged = true; });

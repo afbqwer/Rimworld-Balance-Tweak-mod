@@ -41,6 +41,7 @@
     <MST.WeatherCommonalityList>天气列表</MST.WeatherCommonalityList>
     <MST.TerrainThresholdList>地形区间列表</MST.TerrainThresholdList>
     <MST.StockGenList>库存列表</MST.StockGenList>
+    <MST.FactionCurveList>派系曲线列表</MST.FactionCurveList>
     <MST.empty>空</MST.empty>
     <MST.ColumnConfig>列配置</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>列配置</MST.ColumnSelectorTitle>
@@ -259,5 +260,8 @@
     <MST.studiableFrequencyTicks>研究频率</MST.studiableFrequencyTicks>
     <MST.stuffCategories>材料类别</MST.stuffCategories>
     <MST.stuffCategoriesComment>可以用于制作该物品的材料类别。影响工单选择时的可选材料。</MST.stuffCategoriesComment>
+    <MST.ThingSetTags>任务标签</MST.ThingSetTags>
+    <MST.thingSetMakerTags>任务标签</MST.thingSetMakerTags>
+    <MST.thingSetMakerTagsComment>控制该物品参与任务奖励、物品藏匿点等 ThingSetMaker 随机内容时所属的类别。可增删 RewardStandardCore、RewardStandardHighFreq、RewardStandardMidFreq、RewardStandardLowFreq、RewardStandardQualitySuper、Techprint 等标签；清空后不参与这些类别。</MST.thingSetMakerTagsComment>
     <MST.visible>可见性</MST.visible>
 </LanguageData>

@@ -171,6 +171,7 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.AptitudeList, (c, d) => new AptitudeListEditorWindow(c, d) },
         { ColumnStyle.GeneticTraitList, (c, d) => new GeneticTraitListEditorWindow(c, d) },
         { ColumnStyle.StringList, (c, d) => new StringListEditorWindow(c, d) },
+        { ColumnStyle.ThingSetTags, (c, d) => new StringListEditorWindow(c, d, clearWhenEmpty: true) },
         { ColumnStyle.StockGenList, (c, d) => new StockGeneratorListEditorWindow(c, d) },
         { ColumnStyle.IntList, (c, d) => new IntListEditorWindow(c, d) },
         { ColumnStyle.ThingDefCountList, (c, d) => new ThingDefCountListEditorWindow(c, d) },
@@ -186,6 +187,7 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.DiseaseList, (c, d) => new DiseaseListEditorWindow(c, d) },
         { ColumnStyle.WeatherCommonalityList, (c, d) => new WeatherCommonalityListEditorWindow(c, d) },
         { ColumnStyle.TerrainThresholdList, (c, d) => new TerrainThresholdListEditorWindow(c, d) },
+        { ColumnStyle.FactionCurveList, (c, d) => new FactionCurveListEditorWindow(c, d) },
         { ColumnStyle.BodyPartTree, (c, d) => new BodyPartTreeEditorWindow(c, d) },
     };
     #endregion

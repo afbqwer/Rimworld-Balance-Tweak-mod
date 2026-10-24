@@ -59,6 +59,8 @@ class BuildingData : TweakData<BuildingData>
 
     [TweakField(Style = ColumnStyle.StringList)]
     public List<string>? replaceTags = null;
+    [TweakField(Style = ColumnStyle.ThingSetTags)]
+    public List<string>? thingSetMakerTags = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statBases = null;
 
@@ -237,6 +239,7 @@ class BuildingData : TweakData<BuildingData>
             if (!IsFieldModified(nameof(researchPrerequisites))) researchPrerequisites ??= d.researchPrerequisites;
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
             if (!IsFieldModified(nameof(replaceTags))) replaceTags ??= d.replaceTags;
+            if (!IsFieldModified(nameof(thingSetMakerTags))) thingSetMakerTags ??= d.thingSetMakerTags;
             // 新增 ThingDef 字段
             //passability ??= d.passability;
             constructionSkillPrerequisite ??= d.constructionSkillPrerequisite;
@@ -392,6 +395,8 @@ class BuildingData : TweakData<BuildingData>
         ApplyV<bool>(nameof(selectable), v => def.selectable = v);
         ApplyV<float>(nameof(fertility), v => def.fertility = v);
         ApplyL<string>(nameof(replaceTags), v => def.replaceTags = v);
+        ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
+        if (IsFieldModified(nameof(thingSetMakerTags))) DataUtility.RefreshThingSetMakerFilters();
         if (def.building != null)
         {
             ApplyV<bool>(nameof(isTargetable), v => def.building.isTargetable = v);

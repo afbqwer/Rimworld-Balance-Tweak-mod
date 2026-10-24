@@ -42,6 +42,7 @@
     <MST.WeatherCommonalityList>WeatherList</MST.WeatherCommonalityList>
     <MST.TerrainThresholdList>TerrainList</MST.TerrainThresholdList>
     <MST.StockGenList>StockGen</MST.StockGenList>
+    <MST.FactionCurveList>FactionCurves</MST.FactionCurveList>
     <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>
@@ -259,5 +260,8 @@
     <MST.studiableFrequencyTicks>StudyFreq</MST.studiableFrequencyTicks>
     <MST.stuffCategories>MatCat</MST.stuffCategories>
     <MST.stuffCategoriesComment>Which categories of materials can be used to craft this item. Affects available materials when selecting Bills.</MST.stuffCategoriesComment>
+    <MST.ThingSetTags>QTags</MST.ThingSetTags>
+    <MST.thingSetMakerTags>QTags</MST.thingSetMakerTags>
+    <MST.thingSetMakerTagsComment>ThingSetMaker tags controlling which quest reward, item stash and other random loot categories this item can appear in. Add or remove tags such as RewardStandardCore, RewardStandardHighFreq, RewardStandardMidFreq, RewardStandardLowFreq, RewardStandardQualitySuper and Techprint. Empty means it is excluded from those categories.</MST.thingSetMakerTagsComment>
     <MST.visible>Visibility</MST.visible>
 </LanguageData>

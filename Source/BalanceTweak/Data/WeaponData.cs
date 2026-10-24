@@ -122,6 +122,8 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     public float? rangeMultiplier = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statBases = null;
+    [TweakField(Style = ColumnStyle.ThingSetTags)]
+    public List<string>? thingSetMakerTags = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? equippedStatOffsets = null;
 
@@ -152,6 +154,8 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     private void ApplyWeaponProp(ThingDef def)
     {
         ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
+        ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
+        if (IsFieldModified(nameof(thingSetMakerTags))) DataUtility.RefreshThingSetMakerFilters();
         bool costChanged = false;
         ApplyV<int>(nameof(costStuffCount), v => { def.costStuffCount = v; costChanged = true; });
         ApplyL<ThingDefCountClass>(nameof(costList), v => { def.costList = v?.ToList(); costChanged = true; });
@@ -375,6 +379,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             if (!IsFieldModified(nameof(costList))) costList ??= td.costList;
             if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= td.stuffCategories;
             if (!IsFieldModified(nameof(statBases))) statBases ??= td.statBases;
+            if (!IsFieldModified(nameof(thingSetMakerTags))) thingSetMakerTags ??= td.thingSetMakerTags;
             if (!IsFieldModified(nameof(equippedStatOffsets))) equippedStatOffsets ??= td.equippedStatOffsets;
             var reloadable = td.GetCompProperties<CompProperties_ApparelReloadable>();
             if (reloadable != null)

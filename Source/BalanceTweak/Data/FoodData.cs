@@ -99,6 +99,8 @@ class FoodData : TweakData<FoodData>
     public Pollution? pollution = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statBases = null;
+    [TweakField(Style = ColumnStyle.ThingSetTags)]
+    public List<string>? thingSetMakerTags = null;
 
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
@@ -125,6 +127,7 @@ class FoodData : TweakData<FoodData>
             }
             canRot = false;
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (!IsFieldModified(nameof(thingSetMakerTags))) thingSetMakerTags ??= d.thingSetMakerTags;
             foreach (var cp in d.comps)
             {
                 if (cp is CompProperties_Rottable cr)
@@ -188,6 +191,8 @@ class FoodData : TweakData<FoodData>
         }
         ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyDefStats(def);
+        ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
+        if (IsFieldModified(nameof(thingSetMakerTags))) DataUtility.RefreshThingSetMakerFilters();
         if (def.ingestible != null)
         {
             ApplyV<int>(nameof(baseIngestTicks), v => def.ingestible.baseIngestTicks = v);
