@@ -2,33 +2,33 @@
 <LanguageData>
     <MST.ArrivalMode>抵达方式</MST.ArrivalMode>
     <MST.WalkIn>步行抵达</MST.WalkIn>
-    <MST.selectionWeightCurve>选择权重曲线</MST.selectionWeightCurve>
+    <MST.selectionWeightCurve>权重曲线</MST.selectionWeightCurve>
     <MST.selectionWeightCurveComment>该抵达方式被选中的概率随袭击点数变化的曲线。横轴为点数，纵轴为权重。</MST.selectionWeightCurveComment>
-    <MST.pointsFactorCurve>点数系数曲线</MST.pointsFactorCurve>
+    <MST.pointsFactorCurve>点数系数</MST.pointsFactorCurve>
     <MST.pointsFactorCurveComment>实际消耗点数 = 事件点数 × 曲线取值（按点数插值）。</MST.pointsFactorCurveComment>
-    <MST.selectionWeightCurvesPerFaction>派系权重曲线</MST.selectionWeightCurvesPerFaction>
+    <MST.selectionWeightCurvesPerFaction>派系权重</MST.selectionWeightCurvesPerFaction>
     <MST.selectionWeightCurvesPerFactionComment>按派系覆盖选择权重曲线：列表里有的派系用各自的曲线，未列出的派系用选择权重曲线。</MST.selectionWeightCurvesPerFactionComment>
-    <MST.minTechLevel>最低科技等级</MST.minTechLevel>
+    <MST.minTechLevel>最低科技</MST.minTechLevel>
     <MST.forQuickMilitaryAid>快速军援</MST.forQuickMilitaryAid>
     <MST.forQuickMilitaryAidComment>勾选后，该方式可用于"请求军事援助"的快速响应。</MST.forQuickMilitaryAidComment>
     <MST.walkIn>步行抵达</MST.walkIn>
     <MST.canBeBackup>可作备用</MST.canBeBackup>
     <MST.canBeBackupComment>首选方式不可用（科技/生态/层级不满足等）时，是否允许该方式作为备用被选中。</MST.canBeBackupComment>
-    <MST.minSpaceSelectionWeight>太空层最低权重</MST.minSpaceSelectionWeight>
+    <MST.minSpaceSelectionWeight>太空层权重</MST.minSpaceSelectionWeight>
     <MST.minSpaceSelectionWeightComment>在太空（真空）星球层被选中所需的最低权重；-1 表示不参与（保持原版默认）。</MST.minSpaceSelectionWeightComment>
     <MST.biomeWhitelist>生态白名单</MST.biomeWhitelist>
     <MST.biomeWhitelistComment>只允许在这些生态类型使用该抵达方式。</MST.biomeWhitelistComment>
     <MST.biomeBlacklist>生态黑名单</MST.biomeBlacklist>
     <MST.biomeBlacklistComment>禁止在这些生态类型使用该抵达方式。</MST.biomeBlacklistComment>
-    <MST.layerWhitelist>星球层白名单</MST.layerWhitelist>
+    <MST.layerWhitelist>层级白名单</MST.layerWhitelist>
     <MST.layerWhitelistComment>只允许在这些星球层使用该抵达方式。</MST.layerWhitelistComment>
-    <MST.layerBlacklist>星球层黑名单</MST.layerBlacklist>
+    <MST.layerBlacklist>层级黑名单</MST.layerBlacklist>
     <MST.layerBlacklistComment>禁止在这些星球层使用该抵达方式。</MST.layerBlacklistComment>
-    <MST.textEnemy>敌对抵达文本</MST.textEnemy>
+    <MST.textEnemy>敌对文本</MST.textEnemy>
     <MST.textEnemyComment>敌对派系以该方式抵达时，信件中使用的文本。</MST.textEnemyComment>
-    <MST.textFriendly>友好抵达文本</MST.textFriendly>
+    <MST.textFriendly>友好文本</MST.textFriendly>
     <MST.textFriendlyComment>友好派系以该方式抵达时，信件中使用的文本。</MST.textFriendlyComment>
-    <MST.textWillArrive>即将抵达文本</MST.textWillArrive>
+    <MST.textWillArrive>抵达预告</MST.textWillArrive>
     <MST.textWillArriveComment>"XX即将抵达"提示中使用的文本。</MST.textWillArriveComment>
     <MST.AddFactionCurve>添加派系曲线</MST.AddFactionCurve>
     <MST.SelectFaction>(选择派系)</MST.SelectFaction>

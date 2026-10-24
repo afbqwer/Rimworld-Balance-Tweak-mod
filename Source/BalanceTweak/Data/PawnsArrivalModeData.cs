@@ -114,11 +114,12 @@ class PawnsArrivalModeData : TweakData<PawnsArrivalModeData>
     public override List<string> TypeStrings => typeStrings;
     private static readonly List<string> typeStrings = typeof(ArrivalCategory).GetEnumNames().Select(s => "MST." + s).ToList();
 
-    // 分类键：MST.Other 复用 Core.xml 的共享定义（与 BiomeCategory 同款），此处只新增 MST.WalkIn
+    // 分类键：MST.Other 复用 Core.xml 的共享定义（与 BiomeCategory 同款），此处只新增 MST.WalkIn。
+    // 声明顺序 = 页签内分组顺序（WalkIn 在上、Other 在下）。
     private enum ArrivalCategory
     {
-        Other,
         WalkIn,
+        Other,
     }
 
     public override int GetPropType()
