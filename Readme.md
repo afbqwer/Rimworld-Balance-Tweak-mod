@@ -254,6 +254,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `TerrainThresholdList` | `List<TerrainThreshold>?` | 地表肥沃度区间列表（terrain + min/max） |
 | `StockGenList` | `List<StockGenerator>?` | 库存生成器列表编辑器（每行一个生成器，按字段表声明的种类给出输入框/下拉/子列表；类型菜单只列原版类型，非原版条目只读展示类型名）；字段直接持有对象，见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist) |
 | `FactionCurveList` | `List<FactionCurve>?` | 派系曲线列表编辑器（faction + selectionWeightPerPointsCurve）；曲线值文本为 `[x~y;x~y]`（PocoCodec `Kind.Curve`），faction 解码需 DefDatabase |
+| `SkillRangeList` | `List<SkillRange>?` | 技能区间列表编辑器（skill + IntRange）；`SkillRange` 两个字段都是 private，读写走 PocoCodec 字段表 |
 
 ---
 
@@ -326,36 +327,55 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 
 添加字段时，**不是**通过 `def.stages[i].fieldName` 访问，而是通过 `stage.fieldName`（已缓存的子对象引用）。
 
-### 7.4 列表字段序列化
+### 7.4 列表 / 复合字段的接线清单
 
-各列表类型的序列化在 `TweakData.ExposeField()` 中自动完成，声明字段即可：
+**存档文本与剪贴板格式只有一处定义**：`TweakData.FieldCodecs.cs` 的字段表（`PocoList<T>(...)`）。
+字段表里登记的列表格式恒为 `字段名=值|字段名=值`，顺序即声明顺序；等于"新实例初值"的字段省略；列表值写成 `[a;b]`。
+`PocoCodec` 负责编解码、转义、任一条失败即整块拒绝。**不要再写逐类型的手写编码器** ——
+元素类型进了字段表，格式就自动有了；`SerializationHelper` 里现存的 `SerializeXxxList` 只剩 bespoke 用途
+（`IngredientCount` / `List<int>` / `List<Def>` / 部位树），新增 POCO 列表不必碰它。
 
-| 列表类型 | 序列化格式 | 存储示例 |
-|---------|-----------|---------|
-| `List<StatModifier>?` | `"defName\|value"` 字符串列表 | `"MoveSpeed\|0.2"` |
-| `List<PawnCapacityModifier>?` | `"defName\|offset\|setMax\|postFactor\|statFactor\|evalStat"` 字符串列表 | `"Moving\|0.1\|-1\|1\|\|"` |
-| `List<DamageFactor>?` | `"damageDefName\|factor"` 字符串列表 | `"Bullet\|0.5"` |
-| `List<T>?` where T : Def | `defName` 字符串列表 | `"Gunshot"`, `"Flu"` |
-| `List<string>?` | 纯字符串列表 | `"tag1"`, `"tag2"` |
-| `List<int>?` | 整数列表 | `"1"`, `"2"`, `"3"` |
-| `List<ThingDefCountClass>?` | `"thingDefName\|stuffDefName\|count"` 字符串列表 | `"Steel\|\|5"`, `"WoodLog\|Wood\|3"` |
-| `List<BiomePlantRecord>?` | `"plantDefName\|commonality"` 字符串列表 | `"PlantGrass\|1"`, `"PlantBush\|0.5"` |
-| `List<BiomeAnimalRecord>?` | `"animalKindDefName\|commonality"` 字符串列表 | `"Deer\|0.5"`, `"Muffalo\|0.7"` |
-| `List<FishChance>?` | `"fishDefName\|chance"` 字符串列表 | `"FishHerring\|1"` |
-| `List<BiomeDiseaseRecord>?` | `"diseaseIncidentDefName\|commonality"` 字符串列表 | `"Flu\|100"` |
-| `List<WeatherCommonalityRecord>?` | `"weatherDefName\|commonality"` 字符串列表 | `"Clear\|1"`, `"Fogy\|0.5"` |
-| `List<TerrainThreshold>?` | `"terrainDefName\|min\|max"` 字符串列表 | `"Soil\|-999\|0.87"`, `"SoilRich\|0.87\|999"` |
+判据只有一条：字段 / 元素类型能不能进字段表。先看 [ColumnStyle 与字段类型对照](#columnstyle-与字段类型对照)，
+能复用现成样式就别新增 —— `DefList`（`List<T> where T : Def`）、`StringList`、`IntList`、`StatModList` 这几类都已有。
 
-新增列表类型时，需在 `StatColumnConfig.IsListStyle()` 静态方法中添加对应枚举值，以便 `GetString()` 等方法统一处理。
+#### A. 元素类型是普通 POCO —— 绝大多数情况（`SkillRange` / `TerrainThreshold` / `SkillRequirement`）
 
-> **新增列表/复合字段类型（ColumnStyle）的接线清单**（参考 `TraitReqList` / `SkillReqList`）：
->
-> 1. **`StatColumnConfig.cs`**：`ColumnStyle` 枚举加成员；加入 `ValidStyleMap`（FieldType.List 数组）与 `IsListStyle()`；在 `GetCopyData()` 的序列化 switch、`TryPasteData()` 的剪贴板解析、`GetString()` 的单元格摘要 case 中各加一个分支。
-> 2. **`SerializationHelper.cs`**：新增 `{Type}ToItemString` / `Parse{Type}` / `Serialize{Type}List` / `Deserialize{Type}List`（管道 `|` 分隔格式；Def 解析不到时用 `LogMissingDef` 并返回 null）。
-> 3. **`TweakData.Serialization.cs`**：`ExposeField()` 加类型分发分支 + `ExposeXxxList()`（存档读写）。
-> 4. **`TweakData.Resolution.cs`**：加类型分发分支 + `ResolveXxxList()`（任一条解析失败返回 `(null, false)`，整条数据放弃）。
-> 5. **编辑器窗口**：新建 `GUI/Editor/{Style}EditorWindow`（继承 `ListEditorWindow<T>`），并在 `BalanceTweakGUI.cs` 的窗口工厂表注册。
-> 6. **本地化**：`MST.{Style}`（枚举标签，放 `Core.xml`）；字段标题 `MST.{字段名}(+Comment)`；窗口内按钮键（如 `MST.AddXxx`，可复用已有的 `MST.SelectXxx`）。
+1. **`TweakData.FieldCodecs.cs`**：`Build()` 里加一行 `PocoList<T>("字段1", "字段2", ...)`。
+   这一行同时完成三件事：声明字段表（**顺序即文本顺序**）、把 `List<T>` 登记进落盘/读档、让剪贴板与窗口的默认实现可用。
+   字段是 `private` 也没问题（按 `FieldInfo` 读写，`SkillRange` 就是先例）；要校验取值范围就写 `PocoList<T>(validate, ...)`。
+2. **`StatColumnConfig.cs`**：`ColumnStyle` 加成员 → 加进 `ValidStyleMap` 的 `FieldType.List` 那行 → 加进 `IsListStyle()`
+   → 在 `GetString()` 的单元素摘要 `switch` 里加一个 case（只影响"列表恰好一条"时表格里的短标签，不加则显示 `[1]`）。
+   ⚠️ `GetCopyData()` / `TryPasteData()` **不用动** —— 元素类型已进字段表就走通用编解码。
+3. **编辑器窗口**：一般都要（见 C）。
+4. **本地化**：`MST.{Style}`（枚举标签，放 `Core.xml`）；字段标题 `MST.{字段名}`，含义不直观再加 `MST.{字段名}Comment`。
+5. **测试**：`Tests/SerializationCodecsTests.cs` 的 `MigratedTypes` 与 `字段声明逐个钉住` 各加一条；
+   `Tests/FieldCodecsTests.cs` 的 `精确类型都能查到` 加一条 `InlineData(typeof(List<T>))`。
+
+#### B. 类型本身进不了字段表（`IngredientCount` / `ThingFilter` / 多态列表）
+
+只有三种情况走这条：元素带 `GetBaseCount` 语义（`IngredientCount`）、字段本身是过滤器（`ThingFilter`）、
+元素是多态子类（`List<StockGenerator>`，见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist)）。
+在 `FieldCodecs.Build()` 里用 `Exact(typeof(List<T>), "诊断名", ExposeXxx, ResolveXxx)` 手写一对：
+
+- 落盘：`ExposeList(data, meta, v => 对象列表 → List<string>)`；
+- 读档：`ResolveList(data, meta, strList => (result, success))`，返回 `false` ⇒ 整字段标损坏、保持 Def 现状（**绝不写半截**）。
+
+照 `ExposeIngredientList` / `ResolveIngredientList` 抄即可。
+
+#### C. 新增编辑窗口的接线清单
+
+1. 新建 `GUI/Editor/{Style}EditorWindow.cs`，继承 `ListEditorWindow<T>`，写**两个构造**：
+   `(StatColumnConfig config, TweakData data)` 与 `(string title, List<T> initialList, Action<List<T>?> onSave)`。
+2. 构造里把 `originalList` / `workingList` 换成**新实例**（`PocoCodec.CloneElement` 或逐字段复制）。
+   直接引用字段里的对象 ⇒ 窗口里改到一半点取消，数据已经被改脏。
+3. 实现 `AddButtonLabel` / `OnAddItem` / `DrawEntry`，需要时覆写 `IsItemValid`（无效行在保存时被丢弃）；
+   行内宽度从 `rect.width` 里先扣掉删除按钮与间距再按比例分配，别写死像素。
+4. **不要覆写 `SerializeList` / `DeserializeList`** —— 元素类型已进字段表时默认实现就是完整实现（存档、剪贴板、
+   拖拽涂抹同源）。多覆写一个会被 `ListEditorWindowContractTests` 判成"多余转发"；确需覆写要登记进
+   `IntentionalOverrides` 并写理由（目前只有 `StockGeneratorListEditorWindow`）。
+5. `GUI/BalanceTweakGUI.cs` 的窗口工厂表加一行 `{ ColumnStyle.Xxx, (c, d) => new XxxEditorWindow(c, d) }`。
+6. 本地化：`MST.AddXxx`（添加按钮）；选择类按钮优先复用已有的 `MST.SelectXxx`（`MST.SelectSkill` / `MST.SelectTerrain` …）。
+7. 验收：`dotnet build` + `dotnet test` + `dotnet run --project Source/CheckLoc`（缺键、重复键、列宽一把过）。
 
 ### 7.5 添加本地化
 
@@ -370,54 +390,32 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 
 ### 7.6 多态列表：字段直接持有对象 + 列表窗口编辑（StockGenList）
 
-有的字段是**多态列表**，元素类型各不相同、每个子类字段也不一样，无法用「一个列表编辑器 + 固定列」表达。
-典型例子：`TraderKindDef.stockGenerators`（`List<StockGenerator>`，原版 15 个子类）。这类字段用
-`ColumnStyle.StockGenList`：**字段值就是真实对象**，UI 上是结构化的列表窗口 —— 每行一个生成器
-（类型名 + 关键字段摘要），可添加（类型菜单）/ 编辑 / 上下移动 / 删除；**其它 Mod 新增的生成器只读展示**
-（灰字 + 鼠标悬停说明），编辑 / 移动 / 删除都禁用（见下表"类型菜单"/"非原版子类"两行）。
+**目前只有 `StockGenList` 走这条路**（`TraderKindDef.stockGenerators`，`List<StockGenerator>`，原版 15 个子类）：
+元素类型各不相同、每个子类的字段也不一样，没法用"一个固定列的列表编辑器"表达。
 
-> **编辑路径上没有任何文本格式**：既不用过时的"整块 XML 文本框"（`ColumnStyle.TextBlock`，已删除），
-> 也不用"字段值是 XML 文本、Apply 时再解析回来"那种绕法 —— 窗口直接读写 `StockGenerator` 的字段，
-> Apply 把同一批对象交给 Def。文本只出现在两个边界上（存档读写、跨行复制粘贴），由
-> `Data/StockGeneratorCodec.cs` 做紧凑编码（`字段名=值`，**非 XML**，转义安全）。
+四条不变式，改这一列时别破：
 
-```csharp
-[TweakField(Style = ColumnStyle.StockGenList)]
-public List<StockGenerator>? stockGenerators = null;
+- **字段值就是真实对象**，且字段与 Def 的活对象永不共享实例：`SetDef` 克隆进字段、`Apply` 再克隆一份交给 Def，
+  所以"编辑 → 再编辑 → 重复 Apply"不会互相污染。
 
-// SetDef：Def → 克隆进字段（必须带 !IsFieldModified 守卫，否则 Cleared 字段会被回填"复活"）
-if (!IsFieldModified(nameof(stockGenerators)))
-    stockGenerators ??= StockGeneratorCodec.CloneAll(d.stockGenerators);
+  ```csharp
+  if (!IsFieldModified(nameof(stockGenerators)))
+      stockGenerators ??= StockGeneratorCodec.CloneAll(d.stockGenerators);
+  ApplyL<StockGenerator>(nameof(stockGenerators), ApplyStockGenerators);
+  ```
 
-// Apply：字段 → Def（Cleared ⇒ null ⇒ 清空库存）；原版条目克隆写回，非原版条目按类型名换回
-// Def 里的原实例（MergeWithDef），最后每个生成器还要 ResolveReferences(def)
-ApplyL<StockGenerator>(nameof(stockGenerators), ApplyStockGenerators);
-```
+- **字段表是唯一信息源**（`StockGeneratorCodec.ownFieldNames`，显式模式匹配原版类型）。表里没有的类型一律按"非原版"处理：
+  **只读**（字段一个都不读不写，编辑 / 移动 / 删除全禁用），存档只留类型名占位，`Apply` 时按"类型相同 + 出现次序相同"
+  从 Def 里找回原实例放回原位置 —— 改了这个商人再读档，既不会弄丢、也不会误改其它 Mod 的数据。
+- **文本只出现在两个边界**（存档、剪贴板），由 `StockGeneratorCodec` 编码
+  （`StockGenerator_Tag|countRange=1~4|tradeTag=ExoticMisc`，转义安全、**非 XML**）。编辑路径上没有任何文本格式 ——
+  窗口直接读写对象字段；粘贴先整体解析，任一条失败即整块拒绝。
+- `Apply` 写完列表后对每个生成器调 `ResolveReferences(def)`（`trader` 是 `[Unsaved]`，必须靠它写回）。
 
-字段类型是 `List<StockGenerator>`，走的是与其它列表列完全相同的框架路径；只是这些类型没有现成的
-codec，所以新增了两处分支 —— `TweakData.Serialization.cs` 的 `ExposeStockGeneratorList`
-（`ExposeList` + `Serialize`）与 `TweakData.Resolution.cs` 的 `ResolveStockGeneratorList`
-（`ResolveList` + `Deserialize`，任一条失败即整字段回滚、保持 Def 现状）。
-
-**字段表是本列的唯一信息源**（`StockGeneratorCodec.ownFieldNames`）：**显式模式匹配**原版类型、逐字段
-声明，类型不在这张表里的一律按"非原版"处理。**不要**退回"反射遍历字段 + 按 C# 类型猜写法"那套：
-原版字段不少是 `private`、语义也没有泛化规律，猜出来的写法既难审计，也容易在版本更迭时静默写错。
-
-| 关注点 | 做法 |
-|--------|------|
-| 字段表 | `Data/StockGeneratorCodec.cs` 的 `ownFieldNames`：**类型 → 它自己声明的字段名**（继承来的不重复列，由继承链上那一项给出），按名字经 `Reflect.Field` 一次性解析成 `FieldInfo`（私有字段也拿得到）。新增原版类型 / 字段只改这一处 |
-| 字段种类 | `Kind`：`Float / Int / Bool / Text / IntRange / FloatRange / Enum / Def / DefList / StringList / ComplexList`，由字段的 C# 类型在 `Classify` 里显式匹配得出，**文本写法与表单控件都看它**。类型不在列表里 ⇒ `Log.Error` + `Kind.Unsupported`（编解码跳过、表单提示"暂不支持"），由 `testStockGen_FieldTableIntegrity` 先炸出来 |
-| 字段值 | 真实对象（`List<StockGenerator>`）。`SetDef` 克隆一份、`Apply` 时再克隆一份交给 Def：字段与 Def 的活对象永不共享实例，重复 Apply / 再次编辑不会互相影响 |
-| 文本格式 | 一行一个生成器：`StockGenerator_Tag\|countRange=1~4\|tradeTag=ExoticMisc\|excludedThingDefs=[Steel;Cloth]`。Def 写 `defName`、数值/枚举/区间写文本（不变文化，浮点用 "G9"）、列表写 `[a;b]`、小对象列表写 `[字段名=值;…]`；每段内容拼进上层结构前整体转义（`\` 转义 `\ \| = [ ] ;`），列表元素再各自多转义一层 —— **值里出现任何分隔符都不会破坏结构**；等于"新实例初始值"的字段不写。**非原版条目只写类型名**（`NewRatkin.StockGenerator_UniqueWeapon`），不带任何字段段 |
-| 解码失败 | 任一条解析不了（类型不存在 / 字段不认识 / 值非法 / Def 缺失）⇒ `Deserialize` 返回 null ⇒ 框架按既有"损坏字段"路径保持 Def 现状并保留原文，绝不写入半截数据 |
-| 克隆 | `Clone` 按字段表复制（**不**经过文本），因此 `customCountRanges`、字符串列表、Def 列表这类嵌套列表也都换成新实例；复制中的任何一步失败都**不**交出"半份副本"（那等于静默丢字段），而是沿用原实例并 `Log.Error`；列表窗口打开时克隆副本，字段编辑不会直接落到 Def 的活对象上 |
-| 打开子生成的实例 | Apply 写完列表后要对每个生成器调 `ResolveReferences(def)`（`trader` 是 `[Unsaved]` 不序列化，必须靠它写回） |
-| 字段表单 | `GUI/Editor/StockGeneratorFieldUi.cs` 按 `Kind` 画控件（文本框 / 复选框 / 下拉菜单 / `DefSelectionWindow` / `DefListEditorWindow` / `StringListEditorWindow` / `SGComplexListEditorWindow`），读写统一走 `StockGeneratorCodec.ReadField` / `WriteField`；`SGComplexListEditorWindow` 的元素字段（`CountChance` / `ThingDefCountRangeClass`）读同一张字段表 |
-| 字段标签 | 字段名 → key 用 `StockGeneratorFieldUi.FieldLabelKeys` 的**显式字面量字典**声明（不是拼 `"MST." + 字段名`）：CheckLoc 是静态正则，拼接出来的键它看不见，会把 XML 里那些键全判成"多余"。表里没有的字段直接显示 C# 字段名 |
-| 类型菜单 | 只列字段表里的**具体**原版类型：`StockGeneratorCodec.VanillaGeneratorTypes()`（按名字排序，排除抽象类）。判据就是"在不在 `ownFieldNames` 里" —— 原版与官方 DLC 的生成器都编在 Core 程序集里，Mod 新增的子类必然不在表内 |
-| 非原版子类 | 其它 Mod 新增的生成器（只可能来自既有 Def 数据）：**只读**。`IsVanilla` = false ⇒ `FieldsFor` 返回空（字段一个都不读不写），列表行灰字只显示类型名、编辑/移动/删除全禁用；存档只留类型名的**占位标记**，Apply 时 `MergeWithDef` 按"类型相同、出现次序相同"从 Def 里找回那个原实例原样放回原位置，认领不到的非原版生成器追加在末尾。于是"改了这个商人 + 存档读档"绝不会弄丢其它 Mod 的数据，也不会误改它 |
-| 剪贴板 | 复制/粘贴按"一行一条"处理（同一套 codec）；粘贴先整体解析，任一条失败就整块拒绝，不把半截数据写进字段 |
-| 回归测试 | `Tests/TweakDataSerializationTests.cs` 的 `testStockGen_*`：**编码 → 解码 → 再编码必须逐行一致**（覆盖全部已加载商人类型，含其它 Mod 的商人）；`testStockGen_FieldTableIntegrity` 校验"原版每个生成器类型、每个 XML 字段都在表里，字段类型都受支持"（原版加类型 / 加字段 / 换字段类型的第一道警报）；`testStockGen_AllTypesFieldRoundTrip` 逐类型把所有字段填成非默认值再逐字段比对；`testStockGen_Format` 把文本格式钉死（列表两端转义、省略默认值）；`testStockGen_NonVanillaPassthrough` 校验"占位标记 + 按类型名找回 Def 原实例（字段不丢、位置不变）"；另有字段值往返（Def/区间/枚举/嵌套对象列表/字符串列表）、转义往返、克隆独立性（含字符串列表、Def 列表）、坏输入拒绝、字段分类等 |
+实现细节不在这里重复，读三处就够：`Data/StockGeneratorCodec.cs`（字段表 / 编解码 / 克隆 / `MergeWithDef`）、
+`GUI/Editor/StockGeneratorFieldUi.cs`（按 `Kind` 画控件 + 字段标签字典，标签必须用显式字面量 —— CheckLoc 是静态正则，
+看不见拼接出来的键）、`Tests/TweakDataSerializationTests.cs` 的 `testStockGen_*`
+（`testStockGen_FieldTableIntegrity` 是"原版加类型 / 加字段"的第一道警报）。
 
 ### 7.7 构建验证
 
@@ -471,4 +469,5 @@ dotnet build BalanceTweak.slnx --configuration Debug
 | `TerrainThresholdList` | 弹出窗口 | `TerrainThresholdListEditorWindow` | `List<TerrainThreshold>?` |
 | `StockGenList` | 弹出窗口 | `StockGeneratorListEditorWindow`（+ `StockGeneratorEditorWindow` / `SGComplexListEditorWindow`） | `List<StockGenerator>?`（字段即对象列表，字段表见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist)） |
 | `FactionCurveList` | 弹出窗口 | `FactionCurveListEditorWindow` | `List<FactionCurve>?`（每行 = 派系选择 + 曲线编辑按钮；`selectionWeightPerPointsCurve` 为 private，克隆/编解码走 PocoCodec 字段表） |
+| `SkillRangeList` | 弹出窗口 | `SkillRangeListEditorWindow` | `List<SkillRange>?`（每行 = 技能选择 + 最低/最高等级；`skill` / `range` 均为 private，经 PocoCodec `ReadField` / `WriteField` 读写） |
 | `DefSelector` | 弹出窗口 | `DefSelectionWindow` | `T? where T : Def` |
