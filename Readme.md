@@ -2,12 +2,12 @@
 
 ## 硬约束（改代码前必读）
 
-存档里每条修改的身份是三元组 `(数据类 FullName, defName, SettingType 枚举名)`，三者任一变动都会让旧数据失配（完整分析见 `ThingDefCoverage_Design.md` §10）：
+存档里每条修改的身份是三元组 `(数据类 FullName, defName, SettingType 枚举名)`，三者任一变动都会让旧数据失配：
 
 | 禁止 | 原因 |
 |------|------|
 | 重命名 / 改 namespace / 删除仍在用的 `XxxData` 类 | 存档每条都写 `Class="BalanceTweak.XxxData"`；解析失败整条数据变 null（`Init` 里已加 null 防御，但数据仍会丢） |
-| 重命名 / 删除 `SettingType` 枚举成员 | 存档按**名称**写入，解析失败退化为 `None` 并失效。**重排序号是安全的** |
+| 重命名 / 删除 `SettingType` 枚举成员 | 存档按**名称**写入（`SettingType.cs` 里是显式赋值 `= 1..32`），解析失败退化为 `None` 并失效。重排**声明顺序**是安全的，前提是保留每个成员原有的显式数值；改数值才危险 |
 | 重命名 `[TweakField]` 字段 | 字段名 = XML 元素名，改名即丢该字段的修改（新增字段安全） |
 | 直接删除还在使用的 `[TweakFor]` 规则 | 先确认没有已存数据落在该页签；确需删除时保留一个继承它的空壳子类 |
 | 用「值 == null / 值为空」反推"用户清空了该字段" | L0 三态只认两个**显式**集合（`TweakData.StateOf`）：`_modifiedFieldNames`（Set）与 `_clearedFieldNames`（Cleared）。清空**只能**由编辑器的清空动作（`MarkFieldCleared`）写入；判定不清空/不写入一律走 `ApplyV/ApplyN/ApplyL/ApplyD/ApplyS/ApplyF` 门控 |
@@ -82,10 +82,18 @@
 | **子对象字段** | `def.ingestible.字段名`，SetDef/Apply 中判空 | `baseIngestTicks` |
 | **Enum 字段** | `[TweakField(Style = ColumnStyle.Enum, EnumType = typeof(XxxEnum))]` | FoodPreferability |
 | **Def 引用字段** | `[TweakField(Style = ColumnStyle.DefSelector)]`，`??=` 从 def 读取 | `spawnThingOnRemoved` |
-| **`List<T>`** | `[TweakField(Style = ColumnStyle.DefList)]`，`??= def.list` | `makeImmuneTo`、`enablesNeeds` |
+| **`List<T>`** | `[TweakField(Style = ColumnStyle.DefList)]`，**带守卫** `??= def.list`（见下） | `makeImmuneTo`、`enablesNeeds` |
 
 
-所有字段用 `??=` 从 def 读取默认值。
+默认值来源按字段类型分三种，**不要一律写 `??=`**：
+
+- **`[TweakField(StatDef = "...")]` 字段**：**不写** `??=`。`StatFieldMeta` 的 `DefaultGetter` + `InitFieldValue`（在 `SetProps` 里）会自动从 def 取默认值，已改 / 已清空的字段不会被回填。
+- **标量 / `string` / Def 引用 / 子对象字段**：`field ??= def.字段名;`
+- **`List<T>` / `ThingFilter`**：必须带守卫，否则已清空的字段读档后会被 def 回填"复活"（硬约束表第 7 行）：
+  ```csharp
+  if (!IsFieldModified(nameof(makeImmuneTo))) makeImmuneTo ??= stage.makeImmuneTo;
+  ```
+  先例：`HediffStageData.cs:243`、`FoodData.cs:129`、`TraderData.cs:87`。
 
 > **Def 的 private 字段与懒加载缓存**：目标字段是 private（如 `BiomeDef.wildAnimals`）时，用 `AccessTools.Field(typeof(XxxDef), "字段名")` 缓存 `FieldInfo` 读写（先例见 `SerializationHelper.cs` 的 ThingFilter 内部字段）。
 > 若 Def 把派生数据缓存在私有字段里（如 BiomeDef 的 `cachedAnimalCommonalities` / `cachedPlantCommonalities` / `cachedDiseaseCommonalities` / `cachedWildPlants` 等，懒加载且无失效机制），Apply 写完列表后需反射把这些缓存字段置 `null` 强制重建，否则运行中修改不生效。参考 `BiomeData.cs`。
@@ -108,7 +116,7 @@
 class WeatherData : TweakData<WeatherData> { /* ... */ }
 ```
 
-**四种声明方式：**
+**五种声明方式：**
 
 - **专用 Def 类型**：`DefType` 直接写 Def 类型即可，该类全部 Def 都归它管。
 - **ThingDef 子类别**：`DefType = typeof(ThingDef)` + `MatchMethod` 指定判定方法，`Priority` 决定抢占顺序（大者先匹配，等价于原 `else if` 链的先后）。判定方法可以写在自己的 Data 类里，也可以复用 `DataUtility.MatchXxx`：
@@ -151,7 +159,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 
 在 `Languages/English/Keyed/` 和 `Languages/ChineseSimplified/Keyed/` 目录下，根据新增 Def 类型对应的功能分类，在相应的 XML 文件中添加 key（格式 `<MST.名称>值</MST.名称>`）。
 
-**文件映射规则**：每个 SettingType 对应一个 XML 文件，新增枚举值时需创建对应的新文件。
+**文件映射规则**：多数 SettingType 一个对应一个 XML 文件；子项页签与父页签共用同一文件（`ThoughtStage` / `HediffStage` / `TraitDegree`），`Misc` 归入 `Core.xml`。新增枚举值时需创建对应的新文件。
 
 > **共享键不要重复定义**：`defLabel` / `statBases` / `pathCost` / `stackLimit` / `destroyable` / `Misc`
 > 这类被多个类型共用的键，直接复用已有定义（多数在 `Core.xml`），**不要在新类型的 XML 里再写一遍**。
@@ -189,6 +197,11 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `Food` | `Food.xml` |
 | `Hediff` | `Hediff.xml` |
 | `HediffStage` | `Hediff.xml`（合并于 Hediff 文件） |
+| `Trait` | `Trait.xml` |
+| `TraitDegree` | `Trait.xml`（合并于 Trait 文件） |
+| `Terrain` | `Terrain.xml` |
+| `Recipe` | `Recipe.xml` |
+| `Misc` | `Core.xml` |
 | `Damage` | `Damage.xml` |
 | `BodyPart` | `BodyPart.xml` |
 | `BodyDef` | `BodyDef.xml` |
@@ -209,6 +222,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `MayRequire` | 需要某 Mod 才显示 | `"ceteam.combatextended"` |
 | `IsEquippedStat` | 是否为装备 stat | `true` |
 | `IsStuffFactorStat` | 是否为材料倍率 stat | `true` |
+| `IsStuffOffsetStat` | 是否为材料加成 stat（`stuffProps.statOffsets`） | `true` |
 | `DataType` | `Field`（可编辑）或 `Display`（只读） | `ColumnDataType.Display` |
 | `Available` | 显示条件方法名 | `"AvailableMethodName"` |
 | `GetAbstract` | 获取抽象值方法名 | `"GetAbstractMethodName"` |
@@ -225,6 +239,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `Enum` | `Nullable<Enum>` | 下拉菜单，需配合 `EnumType` |
 | `Flags` | `Nullable<Enum>`（带 `[Flags]`） | 标志位多选编辑器 |
 | `Prec` | `float?` | 高精度浮点（值/100） |
+| `Range` | `FloatRange?` / `IntRange?` | 区间输入，文本写成 `min~max`（内联文本框） |
 | `Curve` | `SimpleCurve` | 曲线编辑器 |
 | `Link` | `TweakID?` | 跳转到关联子项目链接 |
 | `RaceLinks` | `TweakID?` | 只读关联入口：点击列出反向关联的种族数据（见 [附2](#附2-关联列racelinks--bodylinks)） |
@@ -238,13 +253,18 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `MentalStateGiverList` | `List<MentalStateGiver>?` | MentalStateGiver 列表编辑器 |
 | `SkillGainList` | `List<SkillGain>?` | SkillGain 列表编辑器 |
 | `SkillReqList` | `List<SkillRequirement>?` | SkillRequirement 列表编辑器 |
+| `TraitReqList` | `List<TraitRequirement>?` | TraitRequirement 列表编辑器（trait + degree） |
 | `AptitudeList` | `List<Aptitude>?` | Aptitude 列表编辑器 |
 | `GeneticTraitList` | `List<GeneticTraitData>?` | GeneticTraitData 列表编辑器 |
 | `StringList` | `List<string>?` | 字符串列表编辑器（添加/编辑/删除） |
+| `ThingSetTags` | `List<string>?` | 同 `StringList` 的编辑器（`StringListEditorWindow(clearWhenEmpty: true)`）：保存时先去空白 / 去重，**清空则走显式 Cleared 路径**（`MarkFieldCleared` + `Apply`），否则空列表会被判 `Unset`、`ApplyL` 静默跳过，旧标签删不干净。用于 `thingSetMakerTags` 这类删了就必须生效的标签列 |
 | `IntList` | `List<int>?` | 整数列表编辑器（添加/编辑/删除） |
 | `ThingDefCountList` | `List<ThingDefCountClass>?` | ThingDefCountClass 列表编辑器 |
 | `IngredientList` | `List<IngredientCount>?` | IngredientCount 列表编辑器 |
 | `IngredientFilter` | `ThingFilter?` | ThingFilter 过滤器编辑器 |
+| `ProcessIngredientList` | `List<ProcessIngredientItem>?` | ProcessDef 原料列表编辑器（PipeSystem / VEF） |
+| `ProcessResultList` | `List<ProcessResultItem>?` | ProcessDef 产物列表编辑器（PipeSystem / VEF） |
+| `BodyPartTree` | `List<string>?` | 部位树编辑器：字段存的是前缀序遍历编码，经 `BodyPartTreeCodec.Encode / SetCorePart` 与 `BodyDef.corePart` 互转（见 `BodyData`） |
 | `BiomePlantList` | `List<BiomePlantRecord>?` | BiomeDef 野生植物列表编辑器（plant + commonality） |
 | `BiomeAnimalList` | `List<BiomeAnimalRecord>?` | BiomeDef 野生动物列表编辑器（animal + commonality） |
 | `FishChanceList` | `List<FishChance>?` | 鱼类列表编辑器（fishDef + chance） |
@@ -275,8 +295,8 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 [TweakField(Style = ColumnStyle.DefList)]
 public List<HediffDef>? makeImmuneTo = null;
 
-// 2. 初始化（SetDef / SetParentTweak 中从 def 读取默认值）
-makeImmuneTo ??= stage.makeImmuneTo;
+// 2. 初始化（SetDef / SetParentTweak 中从 def 读取默认值；列表字段必须带守卫）
+if (!IsFieldModified(nameof(makeImmuneTo))) makeImmuneTo ??= stage.makeImmuneTo;
 
 // 3. 写入（Apply 中写回 def）—— 用三态门控 helper，不要手写 `if`
 ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
@@ -284,8 +304,9 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 
 **初始化规则：**
 - 值类型（`float?`/`int?`/`bool?`）：`field ??= def.fieldName;`
-- 引用类型（`string?`、Def 引用）：`field ??= def.fieldName;`
-- 列表类型（`List<T>?`）：`field ??= def.fieldName;`
+- 引用类型（`string?`、Def 引用、子对象字段）：`field ??= def.fieldName;`
+- 列表类型（`List<T>?` / `ThingFilter`）：**必须带守卫** —— `if (!IsFieldModified(nameof(field))) field ??= def.fieldName;`。裸 `??=` 会让已清空的字段读档后被 def 回填"复活"（硬约束表第 7 行，运行期 SC2 会报 `[BT/SELFCHECK] 复活:`）。
+- `[TweakField(StatDef = "...")]` 字段：**不写** `??=`，由 `InitFieldValue` 统一回填（见 §3）。
 
 **写入规则：** 一律走 **Apply 门控 helper**（见文首《Apply 门控与可选 Mod 反射 helper 索引》），**不要手写 `if (field != null)`** —— 那会绕过 `Set`/`Cleared` 判定（硬约束表第 5 行），把用户的清空意图吃掉。按目标选 helper：
 - 标量（非空目标）：`ApplyV<float>(nameof(f), v => def.f = v);`
@@ -294,23 +315,23 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 - 列表：`ApplyL<HediffDef>(nameof(f), v => def.list = v);`
 - 字符串：`ApplyS(nameof(f), v => def.f = v);`
 
-> **对于 `[TweakField(StatDef = "...")]` 标记的 StatDef 字段**，写入步骤**不要手写 `if` 块**，而是在 `Apply()` 中**直接调用基类方法**一行完成：
-> - `ApplyThingDefStats(def)` — ThingDef 及其子类（Race、Apparel、Weapon、Building、Food、Stuff 等）
-> - `ApplyAbilityDefStats(def)` — AbilityDef
-> - `ApplyTerrainDefStats(def)` — TerrainDef
-> 
-> 基类方法会自动遍历所有 `[TweakField(StatDef)]` 字段，根据 `IsEquippedStat` / `IsStuffFactorStat` 属性选择正确的 `TrySetStat*` 方法写入。参考现有实现如 `RaceData.Apply()` 或 `ApparelData.Apply()`。
+> **对于 `[TweakField(StatDef = "...")]` 标记的 StatDef 字段**，写入步骤**不要手写 `if` 块**，在 `Apply()` 中**直接调用基类 `ApplyDefStats(def)` 一行**即可（`TweakData.Typed.cs`）：
+> - 按 def 的实际类型分派：`ThingDef`（Race / Apparel / Weapon / Building / Food / Stuff 都是它）、`BuildableDef`（含 `TerrainDef`）、`AbilityDef`；
+> - 按 `IsEquippedStat` / `IsStuffOffsetStat` / `IsStuffFactorStat` 选择 `TrySetStatFromEquippedStat` / `TrySetStatFromStuffOffsetStat` / `TrySetStatFromStuffFactorStat`，否则走 `TrySetStat`。
 >
-> **对于 `[TweakField(Style = ColumnStyle.StatModList)]` 标记的 `List<StatModifier>` 字段**（如 `statBases`、`equippedStatOffsets`），写入步骤也不需要手写 `if` 块。`ApplyThingDefStats(def)` 已通过 `StatDef` 写入单个 Stat 值到 def 的对应列表，之后在 `Apply()` 中**调用 `SyncStatModListsFromDef(def)`** 将 def 上的最终列表状态同步回 Data 字段，保证 UI 与 def 双向一致：
+> 它内部是三段：Phase 1 先把 `statBases` / `equippedStatOffsets` / `statOffsets` / `statFactors` 这些 `List<StatModifier>` 字段写回 def；Phase 2 用单个 StatDef 的值覆盖对应条目；Phase 3 再把 def 上的最终列表与值**同步回 Data 字段**（保证 UI 与 def 双向一致）。
+>
+> 所以 `[TweakField(Style = ColumnStyle.StatModList)]` 的列表字段（`statBases`、`equippedStatOffsets` 等）**也由这一行一并处理完** —— 不存在、也不需要任何额外的 Sync 方法：
+>
 > ```csharp
 > public override void Apply()
 > {
 >     if (this.def is not ThingDef def) return;
->     ApplyThingDefStats(def);      // 写入单个 StatDef 字段到 def.statBases / def.equippedStatOffsets
->     SyncStatModListsFromDef(def); // 将 def.statBases / def.equippedStatOffsets 同步回 List<StatModifier> 字段
+>     ApplyDefStats(def);   // Stat 字段 + statBases/equippedStatOffsets 写入，并双向同步
+>     // …其余非 stat 字段照常 ApplyV / ApplyN / ApplyL / ApplyD
 > }
 > ```
-> 参考实现：`StuffData.Apply()`。
+> 参考实现：`FoodData.Apply()`、`StuffData.Apply()`、`RaceData.Apply()`。
 
 ### 7.3 子项目（Sub-item）Data 特殊模式
 
@@ -404,7 +425,7 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
   ApplyL<StockGenerator>(nameof(stockGenerators), ApplyStockGenerators);
   ```
 
-- **字段表是唯一信息源**（`StockGeneratorCodec.ownFieldNames`，显式模式匹配原版类型）。表里没有的类型一律按"非原版"处理：
+- **字段表是唯一信息源**（`StockGeneratorCodec` 静态构造里逐类型写 `PocoCodec.Declare(typeof(...), "字段", ...)`，每个原版子类显式列出自己的字段；"是不是原版"由 `PocoCodec.IsDeclared` / `StockGeneratorCodec.IsVanilla` 判定）。表里没有的类型一律按"非原版"处理：
   **只读**（字段一个都不读不写，编辑 / 移动 / 删除全禁用），存档只留类型名占位，`Apply` 时按"类型相同 + 出现次序相同"
   从 Def 里找回原实例放回原位置 —— 改了这个商人再读档，既不会弄丢、也不会误改其它 Mod 的数据。
 - **文本只出现在两个边界**（存档、剪贴板），由 `StockGeneratorCodec` 编码
@@ -412,10 +433,10 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
   窗口直接读写对象字段；粘贴先整体解析，任一条失败即整块拒绝。
 - `Apply` 写完列表后对每个生成器调 `ResolveReferences(def)`（`trader` 是 `[Unsaved]`，必须靠它写回）。
 
-实现细节不在这里重复，读三处就够：`Data/StockGeneratorCodec.cs`（字段表 / 编解码 / 克隆 / `MergeWithDef`）、
-`GUI/Editor/StockGeneratorFieldUi.cs`（按 `Kind` 画控件 + 字段标签字典，标签必须用显式字面量 —— CheckLoc 是静态正则，
-看不见拼接出来的键）、`Tests/TweakDataSerializationTests.cs` 的 `testStockGen_*`
-（`testStockGen_FieldTableIntegrity` 是"原版加类型 / 加字段"的第一道警报）。
+实现细节不在这里重复，读这几处就够：`Data/StockGeneratorCodec.cs`（字段表 / 编解码 / 克隆 / `MergeWithDef`）、
+`GUI/Editor/StockGeneratorFieldUi.cs`（按 `PocoCodec.Kind` 画控件 + 字段标签字典，标签必须用显式字面量 —— CheckLoc 是静态正则，
+看不见拼接出来的键）、`BalanceTweak.Tests/StockGeneratorCodecTests.cs` 的 `字段表无未解析项` / `字段表覆盖原版全部类型与字段`
+（"原版加类型 / 加字段"的第一道警报）、`Tests/TweakDataSerializationTests.cs` 的 `testStockGen_*`（真实商人数据的整表往返）。
 
 ### 7.7 构建验证
 
@@ -436,6 +457,7 @@ dotnet build BalanceTweak.slnx --configuration Debug
 | `Int` | 内联文本框 | — | `int?` |
 | `String` | 弹出窗口 | `StringEditorWindow` | `string?` |
 | `Prec` | 内联文本框 + % | — | `float?`（值/100） |
+| `Range` | 内联文本框 | — | `FloatRange?` / `IntRange?`，文本 `min~max` |
 | `Bool` | 内联复选框 | — | `bool?` |
 | `Enum` | FloatMenu 下拉菜单 | — | `Nullable<Enum>`，需 `EnumType` 或 `OptionsList` |
 | `Link` | 内联跳转链接 | — | `TweakID?`，`DataType=Display` |
@@ -451,15 +473,18 @@ dotnet build BalanceTweak.slnx --configuration Debug
 | `MentalStateGiverList` | 弹出窗口 | `MentalStateGiverListEditorWindow` | `List<MentalStateGiver>?` |
 | `SkillGainList` | 弹出窗口 | `SkillGainListEditorWindow` | `List<SkillGain>?` |
 | `SkillReqList` | 弹出窗口 | `SkillReqListEditorWindow` | `List<SkillRequirement>?` |
+| `TraitReqList` | 弹出窗口 | `TraitReqListEditorWindow` | `List<TraitRequirement>?` |
 | `AptitudeList` | 弹出窗口 | `AptitudeListEditorWindow` | `List<Aptitude>?` |
 | `GeneticTraitList` | 弹出窗口 | `GeneticTraitListEditorWindow` | `List<GeneticTraitData>?` |
 | `StringList` | 弹出窗口 | `StringListEditorWindow` | `List<string>?` |
+| `ThingSetTags` | 弹出窗口 | `StringListEditorWindow`（`clearWhenEmpty: true`） | `List<string>?`，清空走显式 Cleared 路径 |
 | `IntList` | 弹出窗口 | `IntListEditorWindow` | `List<int>?` |
 | `ThingDefCountList` | 弹出窗口 | `ThingDefCountListEditorWindow` | `List<ThingDefCountClass>?` |
 | `IngredientList` | 弹出窗口 | `IngredientListEditorWindow` | `List<IngredientCount>?` |
 | `IngredientFilter` | 弹出窗口 | `IngredientFilterEditorWindow` | `ThingFilter?` |
 | `ProcessIngredientList` | 弹出窗口 | `ProcessIngredientListEditorWindow` | `List<ProcessIngredientItem>?` |
 | `ProcessResultList` | 弹出窗口 | `ProcessResultListEditorWindow` | `List<ProcessResultItem>?` |
+| `BodyPartTree` | 弹出窗口 | `BodyPartTreeEditorWindow` | `List<string>?`（部位树编码） |
 | `BiomePlantList` | 弹出窗口 | `BiomePlantListEditorWindow` | `List<BiomePlantRecord>?` |
 | `BiomeAnimalList` | 弹出窗口 | `BiomeAnimalListEditorWindow` | `List<BiomeAnimalRecord>?` |
 | `FishChanceList` | 弹出窗口 | `FishChanceListEditorWindow` | `List<FishChance>?` |

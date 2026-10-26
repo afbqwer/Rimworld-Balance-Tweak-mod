@@ -317,7 +317,7 @@ public static partial class TweakDatabase
         foreach ((var id, var data) in tweakDatas)
         {
             // 防御：数据类被改名/删除后，ScribeExtractor.SaveableFromNode 会返回 null，
-            // 字典里会留下 value 为 null 的条目（见 Docs/ThingDefCoverage_Design.md §10.3）。
+            // 字典里会留下 value 为 null 的条目。
             // 不加判断会在下面的 data.ResolveDefs() 抛 NRE 并中断整个 Init，导致全部已存修改失效。
             if (data == null)
             {
@@ -388,7 +388,7 @@ public static partial class TweakDatabase
             Log.Message($"[BalanceTweak] 有 {notFoundCount} 个修改项未找到对应的 Def（可能因 Mod 变动导致），已跳过。");
         Mark($"直接修改项 Apply ({appliedModified} 已应用)");
 
-        // 分类规则调整会让旧存档里的 settingType 与新规则不一致（见 Docs/ThingDefCoverage_Design.md §11.2）。
+        // 分类规则调整会让旧存档里的 settingType 与新规则不一致。
         // 数据本身已按新规则正确落到对应 def 上，这里只把字典键一并归一化 —— 否则
         // TweakUtility.InitAndUpdateData 按新键查找会落空，UI 会把已修改项显示成"未修改"。
         if (drifted.Count > 0)

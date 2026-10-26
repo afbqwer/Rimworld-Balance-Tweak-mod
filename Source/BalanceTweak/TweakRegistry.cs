@@ -214,7 +214,7 @@ public static class TweakRegistry
 
     /// <summary>
     /// 取某个 Data 类型适用的规则（按优先级降序）。会沿继承链向上找，
-    /// 以兼容"为旧存档保留的空壳子类"（见 Docs/ThingDefCoverage_Design.md §10.4）。
+    /// 以兼容"为旧存档保留的空壳子类"。
     /// </summary>
     public static List<TweakRule> RulesOf(Type dataType)
     {
