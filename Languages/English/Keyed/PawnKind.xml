@@ -65,6 +65,7 @@
 
     <!-- Second Priority: List<string> -->
     <MST.weaponTags>Wpn Tags</MST.weaponTags>
+    <MST.weaponTagsComment>Tags used to pick this kind's weapon on spawn; empty means no weapon. Candidates are also capped by weapon money.</MST.weaponTagsComment>
     <MST.apparelTags>Gear Tags</MST.apparelTags>
     <MST.apparelDisallowTags>Gear Excl</MST.apparelDisallowTags>
     <MST.techHediffsTags>Tech Tags</MST.techHediffsTags>

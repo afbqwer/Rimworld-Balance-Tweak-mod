@@ -63,4 +63,8 @@
     <MST.woolAmount>产毛量</MST.woolAmount>
     <MST.EMPResistance>EMP抗性</MST.EMPResistance>
     <MST.MechEnergyUsageFactor>能耗系数</MST.MechEnergyUsageFactor>
+    <MST.butcherProducts>屠宰产物</MST.butcherProducts>
+    <MST.butcherProductsComment>屠宰（拆解）该机械时产出的物品与数量。</MST.butcherProductsComment>
+    <MST.turretDef>炮塔武器</MST.turretDef>
+    <MST.turretDefComment>机械炮塔（CompProperties_TurretGun）使用的武器。修改后需重新生成该机械才生效。</MST.turretDefComment>
 </LanguageData>

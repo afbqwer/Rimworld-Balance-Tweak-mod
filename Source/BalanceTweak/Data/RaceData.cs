@@ -69,7 +69,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     public float? energyShieldEnergyMax = null;
     [TweakField(StatDef = "EnergyShieldRechargeRate", Style = ColumnStyle.Prec, Available = nameof(AvailableIfMech))]
     public float? energyShieldRechargeRate = null;
-    [TweakField(StatDef = "PsychicSensitivity", Available = nameof(AvailableIfLive))]
+    [TweakField(StatDef = "PsychicSensitivity")]
     public float? psychicSensitivity = null;
     [TweakField(StatDef = "Flammability", Style = ColumnStyle.Prec, Available = nameof(AvailableIfLive))]
     public float? flammability = null;
@@ -139,6 +139,18 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
+    // ── 机械专属：屠宰产物 / 炮塔武器 ──
+    // butcherProducts 在 ThingDef 上；炮塔武器在 CompProperties_TurretGun.turretDef 上。
+    // 机械的自带武器（weaponTags / weaponMoney）不在这里 —— 那是 PawnKind 侧的字段。
+
+    /// <summary>屠宰（拆解）该机械时产出的物品（<c>ThingDef.butcherProducts</c>）。</summary>
+    [TweakField(Style = ColumnStyle.ThingDefCountList, Available = nameof(AvailableIfMech))]
+    public List<ThingDefCountClass>? butcherProducts = null;
+
+    /// <summary>炮塔武器（<c>CompProperties_TurretGun.turretDef</c>）。</summary>
+    [TweakField(Style = ColumnStyle.DefSelector, Available = nameof(AvailableIfMech))]
+    public ThingDef? turretDef = null;
+
     // EggLayer comp
     [TweakField(Available = nameof(AvailableIfAnimal))]
     public float? eggLayIntervalDays = null;
@@ -190,6 +202,11 @@ class RaceData : TweakData<RaceData>, ISubItemHost
             baseHungerRate ??= d.race?.baseHungerRate;
             lifeExpectancy ??= d.race?.lifeExpectancy;
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
+            if (d.race?.IsMechanoid == true)
+            {
+                if (!IsFieldModified(nameof(butcherProducts))) butcherProducts ??= d.butcherProducts;
+                turretDef ??= d.GetCompProperties<CompProperties_TurretGun>()?.turretDef;
+            }
             foreach (var cp in d.comps)
             {
                 if (cp is CompProperties_ProducesBioferrite bioferrite)
@@ -249,9 +266,24 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         }
         ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyRaceProp(def);
+        ApplyMechProps(def);
         ApplyDefStats(def);
         ApplyEntityCompProps(def);
         ApplyAnimalCompProps(def);
+    }
+
+    /// <summary>
+    /// 机械专属两项：屠宰产物（ThingDef）、炮塔武器（CompProperties_TurretGun）。
+    /// 全部走三态门控；未设置（Unset）的字段不写，所以非机械行调用也无副作用。
+    /// </summary>
+    private void ApplyMechProps(ThingDef def)
+    {
+        ApplyL<ThingDefCountClass>(nameof(butcherProducts), v => def.butcherProducts = v);
+        ApplyD<ThingDef>(nameof(turretDef), v =>
+        {
+            var props = def.GetCompProperties<CompProperties_TurretGun>();
+            if (props != null) props.turretDef = v;
+        });
     }
 
     private void ApplyRaceProp(ThingDef def)

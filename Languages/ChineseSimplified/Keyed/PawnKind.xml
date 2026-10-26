@@ -65,6 +65,7 @@
 
     <!-- Second Priority: List<string> -->
     <MST.weaponTags>武器标签</MST.weaponTags>
+    <MST.weaponTagsComment>生成该单位时按这些标签挑一把武器；留空则不生成武器。候选武器的价格还受“武器预算”限制。</MST.weaponTagsComment>
     <MST.apparelTags>服装标签</MST.apparelTags>
     <MST.apparelDisallowTags>禁用服装</MST.apparelDisallowTags>
     <MST.techHediffsTags>植入物标签</MST.techHediffsTags>

@@ -63,4 +63,8 @@
     <MST.woolAmount>WoolAmt</MST.woolAmount>
     <MST.EMPResistance>EMPRes</MST.EMPResistance>
     <MST.MechEnergyUsageFactor>EngUse</MST.MechEnergyUsageFactor>
+    <MST.butcherProducts>ButchrPr</MST.butcherProducts>
+    <MST.butcherProductsComment>Items produced when this mech is butchered.</MST.butcherProductsComment>
+    <MST.turretDef>TurretGun</MST.turretDef>
+    <MST.turretDefComment>Weapon used by the mech's turret (CompProperties_TurretGun). Takes effect on newly spawned mechs.</MST.turretDefComment>
 </LanguageData>

@@ -29,7 +29,7 @@ class PawnKindData : TweakData<PawnKindData>
     [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHuman))]
     public FloatRange? initialResistanceRange = null;
 
-    [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHuman))]
+    [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHumanOrMech))]
     public FloatRange? weaponMoney = null;
     [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHuman))]
     public FloatRange? apparelMoney = null;
@@ -151,7 +151,7 @@ class PawnKindData : TweakData<PawnKindData>
     public bool? factionLeader = null;
 
     // === Second Priority: List<string> Fields ===
-    [TweakField(Style = ColumnStyle.StringList, Available = nameof(AvailableIfHuman))]
+    [TweakField(Style = ColumnStyle.StringList, Available = nameof(AvailableIfHumanOrMech))]
     public List<string>? weaponTags = null;
     [TweakField(Style = ColumnStyle.StringList, Available = nameof(AvailableIfHuman))]
     public List<string>? apparelTags = null;
@@ -487,6 +487,14 @@ class PawnKindData : TweakData<PawnKindData>
     public static bool AvailableIfHuman(TweakData data) => data.propType switch
     {
         (int)RaceType.Humanlike => true,
+        _ => false,
+    };
+
+    /// <summary>武器标签 / 武器预算：人类与机械共用（机械没有 ThingDef 侧的武器字段，只能在这里改）。</summary>
+    public static bool AvailableIfHumanOrMech(TweakData data) => data.propType switch
+    {
+        (int)RaceType.Humanlike => true,
+        (int)RaceType.Mechanoid => true,
         _ => false,
     };
 
