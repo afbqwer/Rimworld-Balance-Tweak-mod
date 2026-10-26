@@ -43,6 +43,7 @@ public class FieldCodecsTests
     [InlineData(typeof(List<ThingDefCountClass>))]
     [InlineData(typeof(List<IngredientCount>))]
     [InlineData(typeof(List<SkillRequirement>))]
+    [InlineData(typeof(List<SkillRange>))]
     [InlineData(typeof(List<TraitRequirement>))]
     [InlineData(typeof(List<ProcessIngredientItem>))]
     [InlineData(typeof(List<ProcessResultItem>))]

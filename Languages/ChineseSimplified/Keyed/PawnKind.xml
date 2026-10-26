@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
     <MST.PawnKind>单位类型</MST.PawnKind>
+    <MST.skills>技能</MST.skills>
+    <MST.skillsComment>生成该单位时的技能等级区间：每行 = 技能 + 最低/最高等级。</MST.skillsComment>
+    <MST.AddSkillRange>添加技能区间</MST.AddSkillRange>
     <MST.weaponMoney>武器预算</MST.weaponMoney>
     <MST.apparelMoney>服装预算</MST.apparelMoney>
     <MST.gearHealthRange>耐久范围</MST.gearHealthRange>

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
     <MST.PawnKind>PnKnd</MST.PawnKind>
+    <MST.skills>Skills</MST.skills>
+    <MST.skillsComment>Skill level range for generated pawns: each row = skill + min/max level.</MST.skillsComment>
+    <MST.AddSkillRange>Add Skill</MST.AddSkillRange>
     <MST.weaponMoney>Wpn $</MST.weaponMoney>
     <MST.apparelMoney>Apparel $</MST.apparelMoney>
     <MST.gearHealthRange>Gear HP</MST.gearHealthRange>

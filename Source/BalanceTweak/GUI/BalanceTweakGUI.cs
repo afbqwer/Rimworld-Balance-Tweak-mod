@@ -177,6 +177,7 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.ThingDefCountList, (c, d) => new ThingDefCountListEditorWindow(c, d) },
         { ColumnStyle.IngredientList, (c, d) => new IngredientListEditorWindow(c, d) },
         { ColumnStyle.SkillReqList, (c, d) => new SkillReqListEditorWindow(c, d) },
+        { ColumnStyle.SkillRangeList, (c, d) => new SkillRangeListEditorWindow(c, d) },
         { ColumnStyle.TraitReqList, (c, d) => new TraitReqListEditorWindow(c, d) },
         { ColumnStyle.ProcessIngredientList, (c, d) => new ProcessIngredientListEditorWindow(c, d) },
         { ColumnStyle.ProcessResultList, (c, d) => new ProcessResultListEditorWindow(c, d) },

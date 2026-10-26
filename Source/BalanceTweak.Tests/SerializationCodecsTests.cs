@@ -22,12 +22,12 @@ namespace BalanceTweak.Tests;
 /// </summary>
 public class SerializationCodecsTests
 {
-    /// <summary>迁移到字段表的 18 个类型。</summary>
+    /// <summary>迁移到字段表的 19 个类型。</summary>
     private static readonly Type[] MigratedTypes =
     {
         typeof(StatModifier), typeof(PawnCapacityModifier), typeof(DamageFactor), typeof(SkillGain),
         typeof(Aptitude), typeof(GeneticTraitData), typeof(ThingDefCountClass),
-        typeof(SkillRequirement), typeof(TraitRequirement),
+        typeof(SkillRequirement), typeof(TraitRequirement), typeof(SkillRange),
         typeof(BiomePlantRecord), typeof(BiomeAnimalRecord), typeof(FishChance),
         typeof(BiomeDiseaseRecord), typeof(WeatherCommonalityRecord), typeof(TerrainThreshold),
         typeof(ProcessIngredientItem), typeof(ProcessResultItem), typeof(FactionCurve),
@@ -100,6 +100,7 @@ public class SerializationCodecsTests
             (typeof(GeneticTraitData), new[] { "def", "degree" }),
             (typeof(ThingDefCountClass), new[] { "thingDef", "stuff", "count" }),
             (typeof(SkillRequirement), new[] { "skill", "minLevel" }),
+            (typeof(SkillRange), new[] { "skill", "range" }),
             (typeof(TraitRequirement), new[] { "def", "degree" }),
             (typeof(BiomePlantRecord), new[] { "plant", "commonality" }),
             (typeof(BiomeAnimalRecord), new[] { "animal", "commonality" }),
@@ -191,6 +192,19 @@ public class SerializationCodecsTests
 
         var tt = new TerrainThreshold { terrain = Def<TerrainDef>("Soil"), min = 1.5f, max = 9f };
         Assert.Equal("terrain=Soil|min=1.5|max=9", Item(tt));
+
+        // SkillRange 的两个字段都是 private（对外只有只读属性），编码仍然走同一张字段表
+        Assert.Equal("skill=Shooting|range=2~8", Item(NewSkillRange(Def<SkillDef>("Shooting"), new IntRange(2, 8))));
+    }
+
+    /// <summary>构造 <c>SkillRange</c>：它没有公开的 setter，只能经字段表写入（与编辑器窗口同一路径）。</summary>
+    private static SkillRange NewSkillRange(SkillDef? skill, IntRange range)
+    {
+        var sr = new SkillRange();
+        var fields = PocoCodec.FieldsFor(typeof(SkillRange));
+        PocoCodec.WriteField(fields.First(f => f.Name == "skill"), sr, skill);
+        PocoCodec.WriteField(fields.First(f => f.Name == "range"), sr, range);
+        return sr;
     }
 
     /// <summary>旧格式是 <c>a|b|c</c>（位置敏感），新格式自带字段名 —— 顺带钉住"值带转义"这一点。</summary>
@@ -251,6 +265,11 @@ public class SerializationCodecsTests
 
         var pr = RoundTrip(new ProcessResultItem { count = 5 });
         Assert.Equal(5, pr!.count);
+
+        // SkillRange：字段全 private，往返靠字段表；skill 留空（Def 解码要 DefDatabase）
+        var skr = RoundTrip(NewSkillRange(null, new IntRange(2, 8)));
+        Assert.Equal(new IntRange(2, 8), skr!.Range);
+        Assert.Null(skr.Skill);
     }
 
     /// <summary>

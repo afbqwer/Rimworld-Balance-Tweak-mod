@@ -23,6 +23,10 @@ class PawnKindData : TweakData<PawnKindData>
     [TweakField(Style = ColumnStyle.Bool, Available = nameof(AvailableIfMech))]
     public bool? allowInMechClusters = null;
 
+    /// <summary>技能等级区间（<c>PawnKindDef.skills</c>）：每项 = 技能 + 生成时的等级范围。</summary>
+    [TweakField(Style = ColumnStyle.SkillRangeList)]
+    public List<SkillRange>? skills = null;
+
 
     [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHuman))]
     public FloatRange? initialWillRange = null;
@@ -316,6 +320,9 @@ class PawnKindData : TweakData<PawnKindData>
             hostileToAll ??= d.hostileToAll;
             factionLeader ??= d.factionLeader;
 
+            // Skills：技能等级区间（元素是 private 字段的 SkillRange，编解码走字段表）
+            if (!IsFieldModified(nameof(skills))) skills ??= d.skills;
+
             // Second Priority: List<string>
             if (!IsFieldModified(nameof(weaponTags))) weaponTags ??= d.weaponTags;
             if (!IsFieldModified(nameof(apparelTags))) apparelTags ??= d.apparelTags;
@@ -439,6 +446,9 @@ class PawnKindData : TweakData<PawnKindData>
         ApplyV<bool>(nameof(factionHostileOnDeath), v => def.factionHostileOnDeath = v);
         ApplyV<bool>(nameof(hostileToAll), v => def.hostileToAll = v);
         ApplyV<bool>(nameof(factionLeader), v => def.factionLeader = v);
+
+        // Skills
+        ApplyL<SkillRange>(nameof(skills), v => def.skills = v);
 
         // Second Priority: List<string>
         ApplyL<string>(nameof(weaponTags), v => def.weaponTags = v);

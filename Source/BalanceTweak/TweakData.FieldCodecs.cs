@@ -199,6 +199,8 @@ public abstract partial class TweakData
             PocoList<BiomeDiseaseRecord>("diseaseInc", "commonality");
             PocoList<WeatherCommonalityRecord>("weather", "commonality");
             PocoList<TerrainThreshold>("terrain", "min", "max");
+            // SkillRange.skill / .range 都是 private（只有只读属性），字段表按 FieldInfo 读写 —— 与 FactionCurve 同路数
+            PocoList<SkillRange>("skill", "range");
             PocoList<ProcessIngredientItem>("thing", "thingCategory", "disallowedThingDefs", "countNeeded");
             PocoList<ProcessResultItem>(r => r.count >= 0, "thing", "count");
             // FactionCurve.selectionWeightPerPointsCurve 是 private 的 SimpleCurve，由 PocoCodec 的 Kind.Curve 编解码

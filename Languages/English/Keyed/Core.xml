@@ -43,6 +43,7 @@
     <MST.TerrainThresholdList>TerrainList</MST.TerrainThresholdList>
     <MST.StockGenList>StockGen</MST.StockGenList>
     <MST.FactionCurveList>FactionCurves</MST.FactionCurveList>
+    <MST.SkillRangeList>SkillRanges</MST.SkillRangeList>
     <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>
