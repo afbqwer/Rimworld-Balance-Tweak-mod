@@ -310,7 +310,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         var aim = warmup;
         if (!dmg.HasValue || dmg.Value == -1)
         {
-            if (d.projectile?.damageDef == DamageDefOf.Extinguish)
+            if (d.projectile?.damageDef is DamageDef dd && !dd.causeStun && !dd.harmsHealth)
             {
                 MaxRangedDPS = 0f;
                 AverageRangedDPS = 0f;
