@@ -57,4 +57,6 @@
     <MST.canOpenAnyDoorComment>单位是否可以无视门的限制打开任何的门。</MST.canOpenAnyDoorComment>
     <MST.equippedStatOffsets>装备加成</MST.equippedStatOffsets>
     <MST.equippedStatOffsetsComment>装备该武器时对角色属性的偏移加成。</MST.equippedStatOffsetsComment>
+    <MST.weaponTagList>武器标签</MST.weaponTagList>
+    <MST.weaponTagListComment>该武器自身的武器标签。角色生成时，单位会从与本单位武器标签有交集的武器中挑选；按标签筛选的交易与随机生成也依赖它。清空后该武器不会再被按标签挑中。</MST.weaponTagListComment>
 </LanguageData>

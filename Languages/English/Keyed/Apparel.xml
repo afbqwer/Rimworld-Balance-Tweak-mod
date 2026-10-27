@@ -44,4 +44,6 @@
     <MST.developmentalStageFilterComment>
         Which developmental stages can wear this apparel. Newborn/Baby/Child/Adult.</MST.developmentalStageFilterComment>
     <MST.blocksRangedWeapons>BlkRng</MST.blocksRangedWeapons>
+    <MST.apparelTagList>App Tags</MST.apparelTagList>
+    <MST.apparelTagListComment>Tags this apparel carries. Pawn generation only picks apparel sharing a tag with the pawn kind's apparel tags; tag-filtered requirements and random loot rely on it too. Empty means it is never picked by tag.</MST.apparelTagListComment>
 </LanguageData>

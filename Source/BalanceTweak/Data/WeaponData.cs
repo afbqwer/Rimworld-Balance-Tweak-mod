@@ -124,6 +124,12 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     public List<StatModifier>? statBases = null;
     [TweakField(Style = ColumnStyle.ThingSetTags)]
     public List<string>? thingSetMakerTags = null;
+    /// <summary>
+    /// 武器自身的标签（<c>ThingDef.weaponTags</c>，原版允许为 null）。
+    /// 角色生成时按 <c>PawnKindDef.weaponTags</c> 与这里的交集挑武器，交易与随机生成也按它归类。
+    /// </summary>
+    [TweakField(Style = ColumnStyle.ThingSetTags)]
+    public List<string>? weaponTagList = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? equippedStatOffsets = null;
 
@@ -207,6 +213,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
         ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
         if (IsFieldModified(nameof(thingSetMakerTags))) DataUtility.RefreshThingSetMakerFilters();
+        ApplyL<string>(nameof(weaponTagList), v => def.weaponTags = v);
         bool costChanged = false;
         ApplyV<int>(nameof(costStuffCount), v => { def.costStuffCount = v; costChanged = true; });
         ApplyL<ThingDefCountClass>(nameof(costList), v => { def.costList = v?.ToList(); costChanged = true; });
@@ -491,6 +498,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             if (!IsFieldModified(nameof(stuffCategories))) stuffCategories ??= td.stuffCategories;
             if (!IsFieldModified(nameof(statBases))) statBases ??= td.statBases;
             if (!IsFieldModified(nameof(thingSetMakerTags))) thingSetMakerTags ??= td.thingSetMakerTags;
+            if (!IsFieldModified(nameof(weaponTagList))) weaponTagList ??= td.weaponTags;
             if (!IsFieldModified(nameof(equippedStatOffsets))) equippedStatOffsets ??= td.equippedStatOffsets;
             var reloadable = td.GetCompProperties<CompProperties_ApparelReloadable>();
             if (reloadable != null)

@@ -44,4 +44,6 @@
     <MST.developmentalStageFilterComment>
         可以穿着该装备的发育阶段。Newborn/Baby/Child/Adult。</MST.developmentalStageFilterComment>
     <MST.blocksRangedWeapons>阻止远程</MST.blocksRangedWeapons>
+    <MST.apparelTagList>衣物标签</MST.apparelTagList>
+    <MST.apparelTagListComment>该衣物自身的标签。角色生成时，单位会从与本单位衣物标签有交集的衣物中挑选；按标签筛选的诉求与随机生成也依赖它。清空后该衣物不会再被按标签挑中。</MST.apparelTagListComment>
 </LanguageData>

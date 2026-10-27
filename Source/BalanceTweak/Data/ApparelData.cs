@@ -115,6 +115,12 @@ public class ApparelData : TweakData<ApparelData>
     public List<BodyPartGroupDef>? bodyPartGroups = null;
     [TweakField(Style = ColumnStyle.DefList)]
     public List<ApparelLayerDef>? layers = null;
+    /// <summary>
+    /// 衣物自身的标签（<c>ApparelProperties.tags</c>，原版默认空列表、不允许为 null）。
+    /// 角色生成时按 <c>PawnKindDef.apparelTags</c> 匹配这些标签挑衣服，派系与诉求筛选也按它归类。
+    /// </summary>
+    [TweakField(Style = ColumnStyle.ThingSetTags)]
+    public List<string>? apparelTagList = null;
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statBases = null;
     [TweakField(Style = ColumnStyle.ThingSetTags)]
@@ -219,6 +225,7 @@ public class ApparelData : TweakData<ApparelData>
             techLevel ??= d.techLevel;
             if (!IsFieldModified(nameof(bodyPartGroups))) bodyPartGroups ??= d.apparel.bodyPartGroups;
             if (!IsFieldModified(nameof(layers))) layers ??= d.apparel.layers;
+            if (!IsFieldModified(nameof(apparelTagList))) apparelTagList ??= d.apparel.tags;
             careIfWornByCorpse ??= d.apparel.careIfWornByCorpse;
             careIfDamaged ??= d.apparel.careIfDamaged;
             gender ??= d.apparel.gender;
@@ -367,6 +374,8 @@ public class ApparelData : TweakData<ApparelData>
         }
         ApplyL<BodyPartGroupDef>(nameof(bodyPartGroups), v => def.apparel.bodyPartGroups = v);
         ApplyL<ApparelLayerDef>(nameof(layers), v => def.apparel.layers = v);
+        // ApparelProperties.tags 原版默认是空列表且运行期直接 .Count / .Contains，清空必须写成空列表而不是 null。
+        ApplyL<string>(nameof(apparelTagList), v => def.apparel.tags = v ?? new List<string>());
         ApplyV<bool>(nameof(careIfWornByCorpse), v => def.apparel.careIfWornByCorpse = v);
         ApplyV<bool>(nameof(careIfDamaged), v => def.apparel.careIfDamaged = v);
         ApplyV<Gender>(nameof(gender), v => def.apparel.gender = v);

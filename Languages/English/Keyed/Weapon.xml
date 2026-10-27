@@ -57,4 +57,6 @@
     <MST.canOpenAnyDoorComment>Whether the pawn can open any door regardless of restrictions.</MST.canOpenAnyDoorComment>
     <MST.equippedStatOffsets>EqpOff</MST.equippedStatOffsets>
     <MST.equippedStatOffsetsComment>Offset bonuses to pawn stats when this weapon is equipped.</MST.equippedStatOffsetsComment>
+    <MST.weaponTagList>Wpn Tags</MST.weaponTagList>
+    <MST.weaponTagListComment>Weapon tags this weapon carries. Pawn generation only picks weapons sharing a tag with the pawn kind's weapon tags; tag-filtered trading and random loot rely on it too. Empty means it is never picked by tag.</MST.weaponTagListComment>
 </LanguageData>
