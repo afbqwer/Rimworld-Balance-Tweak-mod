@@ -19,6 +19,9 @@
     <MST.slotComment>该背景所属的人生阶段：童年或成年。</MST.slotComment>
     <MST.workDisables>禁工作</MST.workDisables>
     <MST.workDisablesComment>该背景禁止角色从事的工作类型（按工作标签判定）。</MST.workDisablesComment>
+    <!-- forcedTraits / forcedTraitsComment 复用 Gene.xml，disallowedTraits 复用 PawnKind.xml（跨文件不得重复定义） -->
+    <MST.possessions>随身物品</MST.possessions>
+    <MST.possessionsComment>角色创建时发放的物品。数量是区间（最小~最大），每个角色随机一次，并会被夹到 1~堆叠上限之间。原版每个角色最多取用 2 件。</MST.possessionsComment>
     <MST.spawnCategories>生成类</MST.spawnCategories>
     <MST.spawnCategoriesComment>决定该背景可出现在哪些角色组中的分类标签（如海盗、部落、儿童）。可随机分配的背景至少需要一个。</MST.spawnCategoriesComment>
     <MST.bodyTypeGlobal>体型</MST.bodyTypeGlobal>
@@ -33,4 +36,6 @@
     <MST.shuffleableComment>该背景是否参与新角色的随机分配。关闭即从随机池中移除。</MST.shuffleableComment>
     <MST.requiresSpawnCategory>需生成类</MST.requiresSpawnCategory>
     <MST.requiresSpawnCategoryComment>是否必须有生成分类才能使用该背景。</MST.requiresSpawnCategoryComment>
+    <MST.AddBackstoryTrait>添加特性</MST.AddBackstoryTrait>
+    <MST.AddPossession>添加物品</MST.AddPossession>
 </LanguageData>

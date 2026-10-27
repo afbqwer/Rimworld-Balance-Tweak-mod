@@ -55,7 +55,7 @@ public class StatColumnConfig
         { FieldType.IntRange, new[] { ColumnStyle.Range } },
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
-        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList, ColumnStyle.XenotypeChanceList, ColumnStyle.ThingSetTags, ColumnStyle.FactionCurveList, ColumnStyle.SkillRangeList } },
+        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList, ColumnStyle.XenotypeChanceList, ColumnStyle.ThingSetTags, ColumnStyle.FactionCurveList, ColumnStyle.SkillRangeList, ColumnStyle.BackstoryTraitList, ColumnStyle.PossessionList } },
         { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks } },
     };
 
@@ -149,7 +149,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -167,7 +167,9 @@ public class StatColumnConfig
             or ColumnStyle.XenotypeChanceList
             or ColumnStyle.ThingSetTags
             or ColumnStyle.FactionCurveList
-            or ColumnStyle.SkillRangeList;
+            or ColumnStyle.SkillRangeList
+            or ColumnStyle.BackstoryTraitList
+            or ColumnStyle.PossessionList;
     }
 
     private void ValidateFieldTypeStyle()
@@ -1081,6 +1083,32 @@ public class StatColumnConfig
                             var label = fcv.faction?.label;
                             if (!label.NullOrEmpty())
                                 return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
+                        }
+                        break;
+                    case ColumnStyle.BackstoryTraitList:
+                        if (element is BackstoryTrait bst)
+                        {
+                            var label = bst.def?.label;
+                            if (!label.NullOrEmpty())
+                            {
+                                var degStr = $"*{bst.degree}";
+                                return label!.Length > LabelTruncateLength
+                                    ? $"[{label[..LabelTruncateLength]}..{degStr}]"
+                                    : $"[{label}{degStr}]";
+                            }
+                        }
+                        break;
+                    case ColumnStyle.PossessionList:
+                        if (element is PossessionThingDefCountClass pos)
+                        {
+                            var label = pos.key?.label;
+                            if (!label.NullOrEmpty())
+                            {
+                                var rng = $"*{pos.value.min}~{pos.value.max}";
+                                return label!.Length > LabelTruncateLength
+                                    ? $"[{label[..LabelTruncateLength]}..{rng}]"
+                                    : $"[{label}{rng}]";
+                            }
                         }
                         break;
                 }

@@ -45,6 +45,8 @@ public class FieldCodecsTests
     [InlineData(typeof(List<SkillRequirement>))]
     [InlineData(typeof(List<SkillRange>))]
     [InlineData(typeof(List<TraitRequirement>))]
+    [InlineData(typeof(List<BackstoryTrait>))]
+    [InlineData(typeof(List<PossessionThingDefCountClass>))]
     [InlineData(typeof(List<ProcessIngredientItem>))]
     [InlineData(typeof(List<ProcessResultItem>))]
     [InlineData(typeof(List<BiomePlantRecord>))]

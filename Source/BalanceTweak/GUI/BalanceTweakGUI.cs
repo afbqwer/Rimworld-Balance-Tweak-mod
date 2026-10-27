@@ -179,6 +179,8 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.SkillReqList, (c, d) => new SkillReqListEditorWindow(c, d) },
         { ColumnStyle.SkillRangeList, (c, d) => new SkillRangeListEditorWindow(c, d) },
         { ColumnStyle.TraitReqList, (c, d) => new TraitReqListEditorWindow(c, d) },
+        { ColumnStyle.BackstoryTraitList, (c, d) => new BackstoryTraitListEditorWindow(c, d) },
+        { ColumnStyle.PossessionList, (c, d) => new PossessionListEditorWindow(c, d) },
         { ColumnStyle.ProcessIngredientList, (c, d) => new ProcessIngredientListEditorWindow(c, d) },
         { ColumnStyle.ProcessResultList, (c, d) => new ProcessResultListEditorWindow(c, d) },
         { ColumnStyle.BiomePlantList, (c, d) => new BiomePlantListEditorWindow(c, d) },

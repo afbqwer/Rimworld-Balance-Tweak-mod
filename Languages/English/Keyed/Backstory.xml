@@ -19,6 +19,9 @@
     <MST.slotComment>Which life stage this backstory fills: Childhood or Adulthood.</MST.slotComment>
     <MST.workDisables>DisWork</MST.workDisables>
     <MST.workDisablesComment>Work types (by WorkTags) this backstory forbids the pawn from doing.</MST.workDisablesComment>
+    <!-- forcedTraits / forcedTraitsComment 复用 Gene.xml，disallowedTraits 复用 PawnKind.xml（跨文件不得重复定义） -->
+    <MST.possessions>Possess</MST.possessions>
+    <MST.possessionsComment>Items handed out at character creation. The count is a range (min~max) rolled per pawn and clamped to 1..stack limit. Vanilla uses at most 2 of them per pawn.</MST.possessionsComment>
     <MST.spawnCategories>SpawnCat</MST.spawnCategories>
     <MST.spawnCategoriesComment>Category tags deciding which pawn groups this backstory may appear in (e.g. Pirate, Tribal, Child). A shuffleable backstory needs at least one.</MST.spawnCategoriesComment>
     <MST.bodyTypeGlobal>BodyType</MST.bodyTypeGlobal>
@@ -33,4 +36,6 @@
     <MST.shuffleableComment>Whether this backstory is randomly assigned to new pawns. Turn off to remove it from the random pool.</MST.shuffleableComment>
     <MST.requiresSpawnCategory>ReqSpawn</MST.requiresSpawnCategory>
     <MST.requiresSpawnCategoryComment>Whether a spawn category is mandatory for this backstory to be used at all.</MST.requiresSpawnCategoryComment>
+    <MST.AddBackstoryTrait>Add trait</MST.AddBackstoryTrait>
+    <MST.AddPossession>Add possession</MST.AddPossession>
 </LanguageData>

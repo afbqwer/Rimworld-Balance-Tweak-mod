@@ -43,6 +43,8 @@
     <MST.StockGenList>库存列表</MST.StockGenList>
     <MST.FactionCurveList>派系曲线列表</MST.FactionCurveList>
     <MST.SkillRangeList>技能区间列表</MST.SkillRangeList>
+    <MST.BackstoryTraitList>背景特性列表</MST.BackstoryTraitList>
+    <MST.PossessionList>随身物品列表</MST.PossessionList>
     <MST.empty>空</MST.empty>
     <MST.ColumnConfig>列配置</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>列配置</MST.ColumnSelectorTitle>

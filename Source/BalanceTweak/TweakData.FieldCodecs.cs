@@ -192,6 +192,10 @@ public abstract partial class TweakData
             PocoList<ThingDefCountClass>(c => c.count >= 0, "thingDef", "stuff", "count");
             PocoList<SkillRequirement>("skill", "minLevel");
             PocoList<TraitRequirement>("def", "degree");
+            // BackstoryTrait 与 TraitRequirement 字段形状相同但是两个原版类型（强制/禁止特性的载体）
+            PocoList<BackstoryTrait>("def", "degree");
+            // 随身物品：ThingDef + 数量区间（value 默认 IntRange.One，等于默认值时省略）
+            PocoList<PossessionThingDefCountClass>("key", "value");
             PocoList<BiomePlantRecord>("plant", "commonality");
             PocoList<BiomeAnimalRecord>("animal", "commonality");
             PocoList<FishChance>("fishDef", "chance");

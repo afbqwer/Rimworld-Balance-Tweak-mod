@@ -276,6 +276,8 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `StockGenList` | `List<StockGenerator>?` | 库存生成器列表编辑器（每行一个生成器，按字段表声明的种类给出输入框/下拉/子列表；类型菜单只列原版类型，非原版条目只读展示类型名）；字段直接持有对象，见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist) |
 | `FactionCurveList` | `List<FactionCurve>?` | 派系曲线列表编辑器（faction + selectionWeightPerPointsCurve）；曲线值文本为 `[x~y;x~y]`（PocoCodec `Kind.Curve`），faction 解码需 DefDatabase |
 | `SkillRangeList` | `List<SkillRange>?` | 技能区间列表编辑器（skill + IntRange）；`SkillRange` 两个字段都是 private，读写走 PocoCodec 字段表 |
+| `BackstoryTraitList` | `List<BackstoryTrait>?` | 背景特性列表编辑器（trait + degree）；与 `TraitReqList` 形状相同但元素类型不同 |
+| `PossessionList` | `List<PossessionThingDefCountClass>?` | 随身物品列表编辑器（ThingDef + 数量区间 `value`） |
 
 ---
 
@@ -496,4 +498,6 @@ dotnet build BalanceTweak.slnx --configuration Debug
 | `StockGenList` | 弹出窗口 | `StockGeneratorListEditorWindow`（+ `StockGeneratorEditorWindow` / `SGComplexListEditorWindow`） | `List<StockGenerator>?`（字段即对象列表，字段表见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist)） |
 | `FactionCurveList` | 弹出窗口 | `FactionCurveListEditorWindow` | `List<FactionCurve>?`（每行 = 派系选择 + 曲线编辑按钮；`selectionWeightPerPointsCurve` 为 private，克隆/编解码走 PocoCodec 字段表） |
 | `SkillRangeList` | 弹出窗口 | `SkillRangeListEditorWindow` | `List<SkillRange>?`（每行 = 技能选择 + 最低/最高等级；`skill` / `range` 均为 private，经 PocoCodec `ReadField` / `WriteField` 读写） |
+| `BackstoryTraitList` | 弹出窗口 | `BackstoryTraitListEditorWindow` | `List<BackstoryTrait>?`（每行 = 特性选择 + 程度） |
+| `PossessionList` | 弹出窗口 | `PossessionListEditorWindow` | `List<PossessionThingDefCountClass>?`（每行 = 物品选择 + 数量区间 min/max） |
 | `DefSelector` | 弹出窗口 | `DefSelectionWindow` | `T? where T : Def` |

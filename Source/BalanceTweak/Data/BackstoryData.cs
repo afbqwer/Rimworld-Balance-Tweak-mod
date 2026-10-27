@@ -11,13 +11,11 @@ namespace BalanceTweak;
 /// 角色背景（<see cref="BackstoryDef"/>）。
 ///
 /// <para>
-/// 本类只覆盖**不需要新增编辑窗口**的字段：标量 / 字符串 / 枚举 / 已有窗口的列表
-/// （SkillGain / Flags / StringList / DefSelector）。
-/// </para>
-/// <para>
-/// <b>尚未覆盖</b>（都需要新建列表编辑器，见 Readme §7.4 C）：
-/// <c>forcedTraits</c> / <c>disallowedTraits</c>（<c>List&lt;BackstoryTrait&gt;</c>）、
-/// <c>possessions</c>（<c>List&lt;PossessionThingDefCountClass&gt;</c>）。
+/// <b>覆盖范围</b>：全部可编辑字段 —— 标量 / 字符串 / 枚举 / 列表。
+/// 其中 <c>forcedTraits</c> / <c>disallowedTraits</c>（<c>List&lt;BackstoryTrait&gt;</c>，窗口
+/// <see cref="BackstoryTraitListEditorWindow"/>）与 <c>possessions</c>
+/// （<c>List&lt;PossessionThingDefCountClass&gt;</c>，窗口 <see cref="PossessionListEditorWindow"/>）
+/// 的元素类型已进 <c>PocoCodec</c> 字段表，存档与剪贴板走通用编解码。
 /// </para>
 /// <para>
 /// <b>为什么改 <c>description</c> 而不是 <c>baseDesc</c></b>：<c>baseDesc</c> 只在
@@ -52,6 +50,18 @@ class BackstoryData : TweakData<BackstoryData>
     /// <summary>技能增益（技能 + 数值）；窗口复用 <c>SkillGainListEditorWindow</c>。</summary>
     [TweakField(Style = ColumnStyle.SkillGainList)]
     public List<SkillGain>? skillGains = null;
+
+    /// <summary>该背景强制赋予的特性（特性 + 程度）。</summary>
+    [TweakField(Style = ColumnStyle.BackstoryTraitList)]
+    public List<BackstoryTrait>? forcedTraits = null;
+
+    /// <summary>该背景禁止角色拥有的特性（特性 + 程度）。</summary>
+    [TweakField(Style = ColumnStyle.BackstoryTraitList)]
+    public List<BackstoryTrait>? disallowedTraits = null;
+
+    /// <summary>随身物品（物品 + 数量区间）：角色生成时直接放进背包。</summary>
+    [TweakField(Style = ColumnStyle.PossessionList)]
+    public List<PossessionThingDefCountClass>? possessions = null;
 
     [TweakField(Style = ColumnStyle.Flags, EnumType = typeof(WorkTags))]
     public WorkTags? workDisables = null;
@@ -101,6 +111,9 @@ class BackstoryData : TweakData<BackstoryData>
             identifier ??= d.identifier;
             slot ??= d.slot;
             if (!IsFieldModified(nameof(skillGains))) skillGains ??= d.skillGains;
+            if (!IsFieldModified(nameof(forcedTraits))) forcedTraits ??= d.forcedTraits;
+            if (!IsFieldModified(nameof(disallowedTraits))) disallowedTraits ??= d.disallowedTraits;
+            if (!IsFieldModified(nameof(possessions))) possessions ??= d.possessions;
             workDisables ??= d.workDisables;
             requiredWorkTags ??= d.requiredWorkTags;
             if (!IsFieldModified(nameof(spawnCategories))) spawnCategories ??= d.spawnCategories;
@@ -127,9 +140,14 @@ class BackstoryData : TweakData<BackstoryData>
         ApplyS(nameof(description), v => def.description = v);
         ApplyS(nameof(identifier), v => def.identifier = v);
         ApplyV<BackstorySlot>(nameof(slot), v => def.slot = v);
-        // 这两个列表原版是无条件解引用的（FullDescriptionFor 遍历 skillGains、按 spawnCategories
-        // 查冥想焦点，ConfigErrors 里也直接 .Contains），清空时必须给空列表而不是 null，否则看角色生平直接 NRE。
+        // 列表清空时一律写空列表而非 null：原版对这些字段大量无条件解引用
+        // （FullDescriptionFor 遍历 skillGains、按 spawnCategories 查冥想焦点、
+        //  StartingPawnUtility 遍历 possessions，ConfigErrors 里也直接 .Contains），
+        // null 会让"查看角色生平 / 生成角色"直接 NRE。
         ApplyL<SkillGain>(nameof(skillGains), v => def.skillGains = v ?? new List<SkillGain>());
+        ApplyL<BackstoryTrait>(nameof(forcedTraits), v => def.forcedTraits = v ?? new List<BackstoryTrait>());
+        ApplyL<BackstoryTrait>(nameof(disallowedTraits), v => def.disallowedTraits = v ?? new List<BackstoryTrait>());
+        ApplyL<PossessionThingDefCountClass>(nameof(possessions), v => def.possessions = v ?? new List<PossessionThingDefCountClass>());
         ApplyV<WorkTags>(nameof(workDisables), v => def.workDisables = v);
         ApplyV<WorkTags>(nameof(requiredWorkTags), v => def.requiredWorkTags = v);
         ApplyL<string>(nameof(spawnCategories), v => def.spawnCategories = v ?? new List<string>());

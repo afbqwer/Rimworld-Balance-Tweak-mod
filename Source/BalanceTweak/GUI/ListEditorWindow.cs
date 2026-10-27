@@ -17,6 +17,9 @@ public abstract class ListEditorWindow<T> : EditorWindowBase
     protected const float DeleteButtonWidth = 30f;
     protected const float ButtonHeight = 30f;
 
+    /// <summary>行内固定标签（Degree / Count 这类短词）占的宽度。按中英双语里较长的那一侧留的。</summary>
+    protected const float StyleLabelWidth = 44f;
+
     protected ListEditorWindow() { }
 
     protected ListEditorWindow(StatColumnConfig config, TweakData data)

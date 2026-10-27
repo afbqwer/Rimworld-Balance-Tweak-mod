@@ -44,6 +44,8 @@
     <MST.StockGenList>StockGen</MST.StockGenList>
     <MST.FactionCurveList>FactionCurves</MST.FactionCurveList>
     <MST.SkillRangeList>SkillRanges</MST.SkillRangeList>
+    <MST.BackstoryTraitList>BstoryTraits</MST.BackstoryTraitList>
+    <MST.PossessionList>Possessions</MST.PossessionList>
     <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>
