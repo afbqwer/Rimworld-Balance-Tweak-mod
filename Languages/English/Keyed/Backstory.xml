@@ -13,10 +13,6 @@
     <MST.titleShortFemaleComment>Abbreviated title for female pawns; falls back to the plain short title when empty.</MST.titleShortFemaleComment>
     <MST.description>Desc</MST.description>
     <MST.descriptionComment>Backstory text shown in the character creation panel and the pawn's bio.</MST.descriptionComment>
-    <MST.identifier>Ident</MST.identifier>
-    <MST.identifierComment>Stable identifier used by the translation pipeline (language export/import). It has no effect on gameplay.</MST.identifierComment>
-    <MST.slot>Slot</MST.slot>
-    <MST.slotComment>Which life stage this backstory fills: Childhood or Adulthood.</MST.slotComment>
     <MST.workDisables>DisWork</MST.workDisables>
     <MST.workDisablesComment>Work types (by WorkTags) this backstory forbids the pawn from doing.</MST.workDisablesComment>
     <!-- forcedTraits / forcedTraitsComment 复用 Gene.xml，disallowedTraits 复用 PawnKind.xml（跨文件不得重复定义） -->
@@ -30,12 +26,10 @@
     <MST.bodyTypeFemaleComment>Body type granted to female pawns (ignored while the global body type is set).</MST.bodyTypeFemaleComment>
     <MST.bodyTypeMale>BodyM</MST.bodyTypeMale>
     <MST.bodyTypeMaleComment>Body type granted to male pawns (ignored while the global body type is set).</MST.bodyTypeMaleComment>
-    <MST.nameMaker>NameMaker</MST.nameMaker>
-    <MST.nameMakerComment>Rule pack used to generate names for pawns carrying this backstory.</MST.nameMakerComment>
     <MST.shuffleable>Shuffle</MST.shuffleable>
     <MST.shuffleableComment>Whether this backstory is randomly assigned to new pawns. Turn off to remove it from the random pool.</MST.shuffleableComment>
     <MST.requiresSpawnCategory>ReqSpawn</MST.requiresSpawnCategory>
-    <MST.requiresSpawnCategoryComment>Whether a spawn category is mandatory for this backstory to be used at all.</MST.requiresSpawnCategoryComment>
+    <MST.requiresSpawnCategoryComment>Whether a spawn category is mandatory for this backstory to be used at all. Read-only - it is only validated at load time.</MST.requiresSpawnCategoryComment>
     <MST.AddBackstoryTrait>Add trait</MST.AddBackstoryTrait>
     <MST.AddPossession>Add possession</MST.AddPossession>
 </LanguageData>

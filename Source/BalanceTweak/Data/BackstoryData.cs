@@ -11,11 +11,17 @@ namespace BalanceTweak;
 /// 角色背景（<see cref="BackstoryDef"/>）。
 ///
 /// <para>
-/// <b>覆盖范围</b>：全部可编辑字段 —— 标量 / 字符串 / 枚举 / 列表。
+/// <b>覆盖范围</b>：除 <c>requiresSpawnCategory</c>（只读展示列）外的全部字段 ——
+/// 字符串 / 列表 / Def 引用 / 布尔。
 /// 其中 <c>forcedTraits</c> / <c>disallowedTraits</c>（<c>List&lt;BackstoryTrait&gt;</c>，窗口
 /// <see cref="BackstoryTraitListEditorWindow"/>）与 <c>possessions</c>
 /// （<c>List&lt;PossessionThingDefCountClass&gt;</c>，窗口 <see cref="PossessionListEditorWindow"/>）
 /// 的元素类型已进 <c>PocoCodec</c> 字段表，存档与剪贴板走通用编解码。
+/// </para>
+/// <para>
+/// <b>刻意不开放的四个字段</b>：<c>identifier</c>（只服务翻译导出，改了没有游戏内效果）、
+/// <c>nameMaker</c>（起名规则包）、<c>slot</c>（分组键已经由 <see cref="GetPropType"/> 表达，
+/// 单独一列只是重复信息）、<c>requiresSpawnCategory</c>（原版只在加载期校验）—— 都不建列。
 /// </para>
 /// <para>
 /// <b>为什么改 <c>description</c> 而不是 <c>baseDesc</c></b>：<c>baseDesc</c> 只在
@@ -39,13 +45,6 @@ class BackstoryData : TweakData<BackstoryData>
     /// <summary>背景描述正文（= Def 的 <c>description</c>，角色创建面板里显示的那段）。</summary>
     [TweakField(Style = ColumnStyle.String)]
     public string? description = null;
-
-    /// <summary>翻译用的稳定标识；只影响语言包导出/导入，不影响游戏内表现。</summary>
-    [TweakField(Style = ColumnStyle.String)]
-    public string? identifier = null;
-
-    [TweakField(Style = ColumnStyle.Enum, EnumType = typeof(BackstorySlot))]
-    public BackstorySlot? slot = null;
 
     /// <summary>技能增益（技能 + 数值）；窗口复用 <c>SkillGainListEditorWindow</c>。</summary>
     [TweakField(Style = ColumnStyle.SkillGainList)]
@@ -78,13 +77,11 @@ class BackstoryData : TweakData<BackstoryData>
     [TweakField(Style = ColumnStyle.DefSelector)]
     public BodyTypeDef? bodyTypeMale = null;
 
-    /// <summary>名字生成器规则包（决定该背景的角色起名风格）。</summary>
-    [TweakField(Style = ColumnStyle.DefSelector)]
-    public RulePackDef? nameMaker = null;
-
     [TweakField(Style = ColumnStyle.Bool)]
     public bool? shuffleable = null;
-    [TweakField(Style = ColumnStyle.Bool)]
+
+    /// <summary>是否需要生成分类才可使用，只读：原版只在加载期校验，运行中改了只会让 Def 自相矛盾。</summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Bool)]
     public bool? requiresSpawnCategory = null;
 
     /// <summary>
@@ -108,8 +105,6 @@ class BackstoryData : TweakData<BackstoryData>
             titleShort ??= d.titleShort;
             titleShortFemale ??= d.titleShortFemale;
             description ??= d.description;
-            identifier ??= d.identifier;
-            slot ??= d.slot;
             if (!IsFieldModified(nameof(skillGains))) skillGains ??= d.skillGains;
             if (!IsFieldModified(nameof(forcedTraits))) forcedTraits ??= d.forcedTraits;
             if (!IsFieldModified(nameof(disallowedTraits))) disallowedTraits ??= d.disallowedTraits;
@@ -120,7 +115,6 @@ class BackstoryData : TweakData<BackstoryData>
             bodyTypeGlobal ??= d.bodyTypeGlobal;
             bodyTypeFemale ??= d.bodyTypeFemale;
             bodyTypeMale ??= d.bodyTypeMale;
-            nameMaker ??= d.nameMaker;
             shuffleable ??= d.shuffleable;
             requiresSpawnCategory ??= d.requiresSpawnCategory;
         }
@@ -138,8 +132,7 @@ class BackstoryData : TweakData<BackstoryData>
         ApplyS(nameof(titleShort), v => def.titleShort = v);
         ApplyS(nameof(titleShortFemale), v => def.titleShortFemale = v);
         ApplyS(nameof(description), v => def.description = v);
-        ApplyS(nameof(identifier), v => def.identifier = v);
-        ApplyV<BackstorySlot>(nameof(slot), v => def.slot = v);
+        // requiresSpawnCategory 是 Display 列（只读），不写回 Def。
         // 列表清空时一律写空列表而非 null：原版对这些字段大量无条件解引用
         // （FullDescriptionFor 遍历 skillGains、按 spawnCategories 查冥想焦点、
         //  StartingPawnUtility 遍历 possessions，ConfigErrors 里也直接 .Contains），
@@ -154,9 +147,7 @@ class BackstoryData : TweakData<BackstoryData>
         ApplyD<BodyTypeDef>(nameof(bodyTypeGlobal), v => def.bodyTypeGlobal = v);
         ApplyD<BodyTypeDef>(nameof(bodyTypeFemale), v => def.bodyTypeFemale = v);
         ApplyD<BodyTypeDef>(nameof(bodyTypeMale), v => def.bodyTypeMale = v);
-        ApplyD<RulePackDef>(nameof(nameMaker), v => def.nameMaker = v);
         ApplyV<bool>(nameof(shuffleable), v => def.shuffleable = v);
-        ApplyV<bool>(nameof(requiresSpawnCategory), v => def.requiresSpawnCategory = v);
 
         // 缓存失效：DisabledWorkTypes 只在首次访问时按 workDisables 算一次，之后永不重算。
         if (StateOf(nameof(workDisables)) != FieldState.Unset || IsForceWriteField(nameof(workDisables)))

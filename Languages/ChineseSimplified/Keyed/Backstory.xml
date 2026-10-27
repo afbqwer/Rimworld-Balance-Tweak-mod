@@ -13,10 +13,6 @@
     <MST.titleShortFemaleComment>女性角色使用的缩写名称；留空则回退到普通短标题。</MST.titleShortFemaleComment>
     <MST.description>描述</MST.description>
     <MST.descriptionComment>角色创建界面与角色生平中显示的背景故事正文。</MST.descriptionComment>
-    <MST.identifier>标识</MST.identifier>
-    <MST.identifierComment>翻译流程（语言包导出/导入）使用的稳定标识，不影响游戏内表现。</MST.identifierComment>
-    <MST.slot>槽位</MST.slot>
-    <MST.slotComment>该背景所属的人生阶段：童年或成年。</MST.slotComment>
     <MST.workDisables>禁工作</MST.workDisables>
     <MST.workDisablesComment>该背景禁止角色从事的工作类型（按工作标签判定）。</MST.workDisablesComment>
     <!-- forcedTraits / forcedTraitsComment 复用 Gene.xml，disallowedTraits 复用 PawnKind.xml（跨文件不得重复定义） -->
@@ -30,12 +26,10 @@
     <MST.bodyTypeFemaleComment>女性角色获得的体型（全局体型有值时忽略此项）。</MST.bodyTypeFemaleComment>
     <MST.bodyTypeMale>男体型</MST.bodyTypeMale>
     <MST.bodyTypeMaleComment>男性角色获得的体型（全局体型有值时忽略此项）。</MST.bodyTypeMaleComment>
-    <MST.nameMaker>取名规则</MST.nameMaker>
-    <MST.nameMakerComment>为该背景的角色生成姓名时使用的规则包。</MST.nameMakerComment>
     <MST.shuffleable>可随机</MST.shuffleable>
     <MST.shuffleableComment>该背景是否参与新角色的随机分配。关闭即从随机池中移除。</MST.shuffleableComment>
     <MST.requiresSpawnCategory>需生成类</MST.requiresSpawnCategory>
-    <MST.requiresSpawnCategoryComment>是否必须有生成分类才能使用该背景。</MST.requiresSpawnCategoryComment>
+    <MST.requiresSpawnCategoryComment>是否必须有生成分类才能使用该背景。只读——原版只在加载期校验这一项。</MST.requiresSpawnCategoryComment>
     <MST.AddBackstoryTrait>添加特性</MST.AddBackstoryTrait>
     <MST.AddPossession>添加物品</MST.AddPossession>
 </LanguageData>
