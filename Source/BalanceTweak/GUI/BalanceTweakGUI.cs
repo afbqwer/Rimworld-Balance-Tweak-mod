@@ -1334,7 +1334,7 @@ public partial class BalanceTweakSettings : ModSettings
                     Event.current.Use();
                 }
             }
-            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks)
+            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks)
             {
                 // 只读的关联入口：点击打开链接列表窗口。
                 Text.Font = GameFont.Tiny;
@@ -1346,7 +1346,12 @@ public partial class BalanceTweakSettings : ModSettings
                 if (!DragPaint.SuppressClick && Event.current.type == EventType.MouseUp && Event.current.button == 0 && cellRect.Contains(Event.current.mousePosition))
                 {
                     Event.current.Use();
-                    if (config.columnType == ColumnStyle.BodyLinks)
+                    if (config.columnType == ColumnStyle.WeaponLinks)
+                    {
+                        if (data.def is ThingDef projectile)
+                            Find.WindowStack.Add(new TweakLinksWindow(data, "MST.weaponLinks", ProjectileData.FindWeaponLinks(projectile)));
+                    }
+                    else if (config.columnType == ColumnStyle.BodyLinks)
                     {
                         if (data.def is BodyPartDef bodyPart)
                             Find.WindowStack.Add(new TweakLinksWindow(data, "MST.bodyLinks", BodyPartData.FindBodyLinks(bodyPart)));
@@ -1456,7 +1461,7 @@ public partial class BalanceTweakSettings : ModSettings
         // 「显示结果值」是批量运算的预览态，该列此刻的编辑本身就被 CheckAndApply 禁用了
         if (showChanged && ReferenceEquals(selectedCol, config)) return false;
         // 关联跳转列没有「值」可复制，GetCopyData / TryPasteData 都不支持
-        if (config.columnType is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks) return false;
+        if (config.columnType is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks) return false;
         return true;
     }
 

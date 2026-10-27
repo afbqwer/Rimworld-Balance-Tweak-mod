@@ -5,4 +5,6 @@
     <MST.BeamProjectile>BmProj</MST.BeamProjectile>
     <MST.ExplosionProjectile>ExpProj</MST.ExplosionProjectile>
     <MST.SpecialProjectile>SpcProj</MST.SpecialProjectile>
+    <MST.weaponLinks>Weapons</MST.weaponLinks>
+    <MST.RangedWeaponComment>Click to list every weapon that fires this projectile; click an entry to jump. One projectile can be shared by several weapons.</MST.RangedWeaponComment>
 </LanguageData>

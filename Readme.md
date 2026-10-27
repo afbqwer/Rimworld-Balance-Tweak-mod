@@ -217,7 +217,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 
 | 参数 | 用途 | 示例 |
 |------|------|------|
-| `Style` | 列显示样式 | `ColumnStyle.Float / String / Enum / Int / Bool / Prec / Link / RaceLinks / BodyLinks / StatModList / CapModList / DamageModList / DefList / DefSelector / StringList / IntList / StockGenList` |
+| `Style` | 列显示样式 | `ColumnStyle.Float / String / Enum / Int / Bool / Prec / Link / RaceLinks / BodyLinks / WeaponLinks / StatModList / CapModList / DamageModList / DefList / DefSelector / StringList / IntList / StockGenList` |
 | `EnumType` | Enum 类型（下拉菜单） | `typeof(FoodPreferability)` |
 | `StatDef` | 关联 StatDef 名称 | `"Nutrition"` |
 | `MayRequire` | 需要某 Mod 才显示 | `"ceteam.combatextended"` |
@@ -243,8 +243,9 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `Range` | `FloatRange?` / `IntRange?` | 区间输入，文本写成 `min~max`（内联文本框） |
 | `Curve` | `SimpleCurve` | 曲线编辑器 |
 | `Link` | `TweakID?` | 跳转到关联子项目链接 |
-| `RaceLinks` | `TweakID?` | 只读关联入口：点击列出反向关联的种族数据（见 [附2](#附2-关联列racelinks--bodylinks)） |
-| `BodyLinks` | `TweakID?` | 只读关联入口：点击列出反向关联的身体数据（见 [附2](#附2-关联列racelinks--bodylinks)） |
+| `RaceLinks` | `TweakID?` | 只读关联入口：点击列出反向关联的种族数据（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
+| `BodyLinks` | `TweakID?` | 只读关联入口：点击列出反向关联的身体数据（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
+| `WeaponLinks` | `TweakID?` | 只读关联入口：点击列出使用该投射物的武器（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
 | `DefSelector` | `T?` where T : Def | Def 选择器（弹出搜索窗口） |
 | `StatModList` | `List<StatModifier>?` | StatModifier 列表编辑器 |
 | `CapModList` | `List<PawnCapacityModifier>?` | PawnCapacityModifier 列表编辑器 |
@@ -466,6 +467,7 @@ dotnet build BalanceTweak.slnx --configuration Debug
 | `Link` | 内联跳转链接 | — | `TweakID?`，`DataType=Display` |
 | `RaceLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
 | `BodyLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
+| `WeaponLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
 | `Curve` | 弹出窗口 | `CurveEditorWindow` | `SimpleCurve?` |
 | `Flags` | 弹出窗口 | `FlagsEditorWindow` | `Nullable<Enum>`（带 `[Flags]`） |
 | `StatModList` | 弹出窗口 | `StatModListEditorWindow` | `List<StatModifier>?` |
@@ -501,3 +503,31 @@ dotnet build BalanceTweak.slnx --configuration Debug
 | `BackstoryTraitList` | 弹出窗口 | `BackstoryTraitListEditorWindow` | `List<BackstoryTrait>?`（每行 = 特性选择 + 程度） |
 | `PossessionList` | 弹出窗口 | `PossessionListEditorWindow` | `List<PossessionThingDefCountClass>?`（每行 = 物品选择 + 数量区间 min/max） |
 | `DefSelector` | 弹出窗口 | `DefSelectionWindow` | `T? where T : Def` |
+---
+
+## 附2. 关联列（RaceLinks / BodyLinks / WeaponLinks）
+
+反向关联（"谁在用我"）没法用 `Link` 列表达：`Link` 指向的是**字段里存的那个 TweakID**，一对一；
+而身体被多个种族用、弹丸被多把武器用，都是多对一。这类列统一走"只读触发列 + 打开时实时反查"：
+
+| 列 | 所在 Data | 点击后列出 | 反查方法 |
+| --- | --- | --- | --- |
+| `RaceLinks` | `BodyData` | 使用该 `BodyDef` 的种族 | `BodyData.FindRaceLinks` |
+| `RaceLinks` | `BodyPartData` | 身体含该部位的种族 | `BodyPartData.FindRaceLinks` |
+| `BodyLinks` | `BodyPartData` | 部位树含该部位的 `BodyDef` | `BodyPartData.FindBodyLinks` |
+| `WeaponLinks` | `ProjectileData` | 发射该投射物的武器 | `ProjectileData.FindWeaponLinks` |
+
+四条不变式：
+
+- **字段只是触发器，不存值**：`[TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.XxxLinks)] public TweakID? xxxLinks = null;`
+  值永远为 null，`GetString` 直接返回按钮文字（`MST.xxxLinks`），不在绘制阶段扫 Def —— 否则每帧全库查询。
+- **反查在窗口打开时做一次**，结果交给 `TweakLinksWindow`（构造时预计算行数据，绘制阶段不查 Def）。不缓存：数据可能刚被改过。
+- **只列真的有数据行的对象**（`TweakDatabase.GetOriginal(id) != null`），否则点了跳不过去，等于给个死链接。
+- **新加一个 Links 样式要动 5 处**：`ColumnStyle` 枚举（**末尾追加**）→ `ValidStyleMap` 的 `FieldType.TweakID` 行 →
+  `StatColumnConfig.GetString` 的按钮文字分支 → `BalanceTweakGUI.DrawDisplayCell` 的点击分发 →
+  `IsPaintableColumn` 的排除列表；再补 `MST.XxxLinks`（`Core.xml`，列样式枚举标签）与
+  字段名对应的 `MST.{字段名}Comment` tooltip。
+
+> 弹丸这条是例外中的例外：`ProjectileData.RangedWeapon` 字段名保留旧名（改名会让旧档的 XML 节点失配），
+> 但值已不再由武器端写入 —— 武器端只在 `ProjectileData` 的**共享索引**（运行期，不序列化）里登记自己，
+> 用于"改弹丸时刷新所有共用武器"。

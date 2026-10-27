@@ -256,6 +256,44 @@ public abstract partial class TweakData : IExposable
     }
 
     /// <summary>
+    /// 取"当前生效"的实例：UI 缓存（克隆）优先 → 存档里的修改实例 → 原始快照。
+    /// <para>
+    /// 与 <see cref="GetData(TweakID?)"/> 的区别只有一个，但很致命：那个不查 <c>tweakDatas</c>。
+    /// 初始化期 UI 缓存还是空的，它于是返回原始快照 —— 读到的是改动前的值。
+    /// 跨行读依赖（武器读弹丸）必须用这个。
+    /// </para>
+    /// </summary>
+    public static TweakData? GetLiveData(TweakID? id)
+    {
+        if (id == null) return null;
+        var d = cachedData[id.Value.settingType];
+        if (d.TryGetValue(id.Value, out var data) && data != null) return data;
+        if (tweakDatas.TryGetValue(id.Value, out var t) && t != null) return t;
+        return GetOriginal(id.Value);
+    }
+
+    /// <summary>
+    /// 取一个<b>可以安全写入</b>的实例：保证不是原始快照。
+    /// <para>
+    /// 跨行写（在武器行改属于弹丸的伤害/穿透）时，弹丸那一行可能还没被 UI 建过缓存，
+    /// 此时直接拿 <see cref="GetOriginal"/> 会写脏原始数据 —— 之后"还原原值"就会还原成改后的值。
+    /// 这里克隆一份登记进缓存再返回。
+    /// </para>
+    /// </summary>
+    public static TweakData? GetEditableData(TweakID? id)
+    {
+        if (id == null) return null;
+        var d = cachedData[id.Value.settingType];
+        if (d.TryGetValue(id.Value, out var data) && data != null) return data;
+        if (tweakDatas.TryGetValue(id.Value, out var t) && t != null) return t;
+        var original = GetOriginal(id.Value);
+        if (original == null) return null;
+        var clone = original.Clone();
+        d.SetOrAdd(id.Value, clone);
+        return clone;
+    }
+
+    /// <summary>
     /// 根据 Def 自动检测归属类型并取回对应的 TweakData。
     ///
     /// 分类完全走 TweakRegistry 的规则表 —— 与 TweakDatabase.Init() 用的是同一份声明，
@@ -371,6 +409,25 @@ public abstract partial class TweakData : IExposable
     {
         _modifiedFieldNames.Remove(fieldName);
         _clearedFieldNames.Remove(fieldName);
+    }
+
+    /// <summary>
+    /// 把"被间接改动"的这条数据登记为修改项（<see cref="BalanceTweakSettings.tweakDatas"/>）。
+    /// <para>
+    /// 典型场景：武器行上的伤害/穿透其实是关联弹丸的镜像，在武器行改这两格 = 改弹丸。
+    /// 改动必须落在弹丸那条数据上才会被 Scribe 保存，否则重启游戏就丢。
+    /// </para>
+    /// <para>
+    /// 原始快照（<see cref="TweakDatabase.GetOriginal"/> 返回的那份）不得登记 ——
+    /// 它一旦进了修改表就会被序列化，之后"还原原值"拿到的也是被改过的值。
+    /// 调用方须先用 <see cref="GetEditableData"/> 拿到可写的实例。
+    /// </para>
+    /// </summary>
+    public void MarkIndirectlyModified()
+    {
+        if (CountFieldModified() == 0) return;
+        if (ReferenceEquals(TweakDatabase.GetOriginal(id), this)) return;
+        tweakDatas.SetOrAdd(id, this);
     }
     /// <summary>Set ∪ Cleared 的字段数（<c>tweaked</c> 的判据）。</summary>
     public int CountFieldModified() => _modifiedFieldNames.Count + _clearedFieldNames.Count;

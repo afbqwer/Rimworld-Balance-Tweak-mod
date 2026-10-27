@@ -5,4 +5,6 @@
     <MST.BeamProjectile>光束投射</MST.BeamProjectile>
     <MST.ExplosionProjectile>爆炸投射</MST.ExplosionProjectile>
     <MST.SpecialProjectile>特殊投射</MST.SpecialProjectile>
+    <MST.weaponLinks>武器关联</MST.weaponLinks>
+    <MST.RangedWeaponComment>点击查看所有使用此投射物的武器，点击条目可跳转。同一投射物可能被多把武器共用。</MST.RangedWeaponComment>
 </LanguageData>

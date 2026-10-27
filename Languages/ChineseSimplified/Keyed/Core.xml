@@ -30,6 +30,7 @@
     <MST.BodyPartTree>部位树</MST.BodyPartTree>
     <MST.RaceLinks>种族链接</MST.RaceLinks>
     <MST.BodyLinks>身体链接</MST.BodyLinks>
+    <MST.WeaponLinks>武器链接</MST.WeaponLinks>
     <MST.Range>范围</MST.Range>
     <MST.SkillReqList>技能需求列表</MST.SkillReqList>
     <MST.TraitReqList>特征需求列表</MST.TraitReqList>

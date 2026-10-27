@@ -151,6 +151,43 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     static FieldInfo ForcedMissRadius = Reflect.Field(typeof(VerbProperties), "forcedMissRadius");
     public override int LoadingOrd => 300;
 
+    /// <summary>
+    /// 解析本武器关联的弹丸。必须由 GenValues / Apply 共用：SetDef 阶段
+    /// <see cref="TweakDatabase.projectileDatas"/> 还没建好（ProjectileData 的 LoadingOrd 更大），
+    /// 只靠 GenValues 解析会让"读了存档的武器行"在 Apply 时还拿不到弹丸。
+    /// </summary>
+    /// <param name="forWrite">
+    /// 要往弹丸上写东西时传 true：此时必须拿"可写实例"（<see cref="TweakData.GetEditableData"/>），
+    /// 初始化期 UI 缓存还没建，只读路径拿到的原始快照写进去既不落盘、又会污染原值。
+    /// </param>
+    private ProjectileData? ResolveProjectile(VerbProperties? v, bool forWrite = false)
+    {
+        if (Projectile == null && v?.defaultProjectile != null
+            && TweakDatabase.projectileDatas.TryGetValue(v.defaultProjectile.defName, out var pid))
+        {
+            Projectile = pid;
+        }
+        return (forWrite ? GetEditableData(Projectile) : GetLiveData(Projectile)) as ProjectileData;
+    }
+
+    /// <summary>用户是否显式改过武器行的伤害 / 穿透（这两格是弹丸的镜像，改它们等于改弹丸）。</summary>
+    private bool HasWeaponDamageEdit
+        => StateOf(nameof(damageAmountBase)) != FieldState.Unset
+        || StateOf(nameof(armorPenetrationBase)) != FieldState.Unset;
+
+    /// <summary>
+    /// 登记"这把武器引用这个弹丸"，供 <see cref="ProjectileData.RefreshSharedWeapons"/> 反查刷新。
+    /// <para>
+    /// 弹丸页的武器关联列是<b>实时反查</b>（<see cref="ProjectileData.FindWeaponLinks"/>），不靠这个索引，
+    /// 所以这里只维护"改动弹丸时该刷新谁"。
+    /// </para>
+    /// <para>
+    /// 必须每次 GenValues 都登记，不能只在首次解析时做 —— 读了存档的武器行 <c>Projectile</c> 已序列化，
+    /// 走不到"首次解析"分支，漏登记就会在弹丸改动时不被刷新。
+    /// </para>
+    /// </summary>
+    private void LinkProjectile(ProjectileData projectile) => projectile.RegisterSharedWeapon(id);
+
     private void ApplyWeaponProp(ThingDef def)
     {
         ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
@@ -209,14 +246,88 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             ApplyV<int>(nameof(ticksBetweenBurstShots), v => verb.ticksBetweenBurstShots = v);
             ApplyV<int>(nameof(burstShotCount), v => verb.burstShotCount = v);
             ApplyV<float>(nameof(forcedMissRadius), v => ForcedMissRadius.SetValue(verb, v));
-            var p = (ProjectileData?)GetData(Projectile);
-            if (p != null && p.def is ThingDef pdef)
+            // 用户动过伤害/穿透这两格时直接取"可写实例"，省掉一次只读解析；
+            // 没动过就只读，弹丸自己的 Apply 才是它那些字段的权威写入方，这里重复写只会制造竞态。
+            bool damageEdited = HasWeaponDamageEdit;
+            var p = ResolveProjectile(verb, forWrite: damageEdited);
+            if (p != null)
             {
-                p.damageAmountBase = damageAmountBase;
-                p.armorPenetrationBase = armorPenetrationBase;
-                p.SetProjectileProp(pdef);
+                LinkProjectile(p);
+                if (damageEdited && p.def is ThingDef pdef)
+                {
+                    PushWeaponEditsToProjectile(p);
+                    p.SetProjectileProp(pdef, refreshWeapons: true);
+                }
             }
         }
+    }
+
+    /// <summary>
+    /// 把武器行上的伤害 / 穿透（本质是关联弹丸的镜像）写回弹丸。
+    /// <para>
+    /// <b>只在用户显式改过这两格时写。</b>这两列在 <see cref="GenValues"/> 里被无条件同步成弹丸的值，
+    /// 属于派生镜像；若每次 Apply 都照镜像盖回去，任何一把共用同一弹丸的武器（原版
+    /// <c>Bullet_Shotgun</c> 就同时供泵动霰弹枪与链式霰弹枪）在改自身其它字段时，
+    /// 都会把自己那份陈旧镜像盖回共享弹丸，把另一把武器的修改静默撤销。
+    /// </para>
+    /// <para>
+    /// 改动还要标记到弹丸那一行并登记进已修改表：否则弹丸的 <c>ApplyV</c> 会因三态未改而跳过，
+    /// 值只停在内存里，def 不落盘、存档也带不走。
+    /// </para>
+    /// <para>
+    /// 写成功后武器行会主动放弃这两格的修改标记（见方法末尾）：改动既然存进了弹丸，
+    /// "已修改"与重置入口就都该出现在弹丸行 —— 否则武器行那个重置按钮按下去不会回写弹丸，是假的。
+    /// 因此重置只可能发生在弹丸行，也就不会出现"重置武器行顺手撤销别人的修改"这种事。
+    /// </para>
+    /// </summary>
+    /// <returns>是否真的动过弹丸（决定要不要重算整组枪的强度）。</returns>
+    private bool PushWeaponEditsToProjectile(ProjectileData p)
+    {
+        bool touched = false;
+
+        switch (StateOf(nameof(damageAmountBase)))
+        {
+            case FieldState.Set when damageAmountBase.HasValue:
+                p.damageAmountBase = damageAmountBase;
+                p.MarkFieldModified(nameof(damageAmountBase));
+                touched = true;
+                break;
+            case FieldState.Cleared:
+                // 让弹丸自己按"显式清空"还原原值（ApplyV 会走 Revert），不必在这里抄原值。
+                p.MarkFieldCleared(nameof(damageAmountBase));
+                touched = true;
+                break;
+        }
+
+        switch (StateOf(nameof(armorPenetrationBase)))
+        {
+            case FieldState.Set when armorPenetrationBase.HasValue:
+                p.armorPenetrationBase = armorPenetrationBase;
+                p.MarkFieldModified(nameof(armorPenetrationBase));
+                touched = true;
+                break;
+            case FieldState.Cleared:
+                p.MarkFieldCleared(nameof(armorPenetrationBase));
+                touched = true;
+                break;
+        }
+
+        if (!touched) return false;
+
+        p.MarkIndirectlyModified();
+
+        // 改动归属已经转移到弹丸那一行，武器行自己不再持有这两格的修改标记。
+        // 不撤的话武器行会亮"已修改"并给出重置入口，而那个重置按"只重置本行"的规则不会回写弹丸
+        // —— 点了没反应，是个假按钮。可见归属与可撤销入口都必须落在弹丸行。
+        RemoveFieldModified(nameof(damageAmountBase));
+        RemoveFieldModified(nameof(armorPenetrationBase));
+        if (CountFieldModified() == 0)
+        {
+            tweaked = false;
+            // 一行都没改了，就别再占一个存档条目 —— 否则读档时 SetDef(tweaked: true) 又会把"已修改"点亮。
+            tweakDatas.Remove(id);
+        }
+        return true;
     }
 
     static float? meleeLQualityMult = null;
@@ -247,24 +358,10 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             verb ??= d.Verbs.FirstOrDefault(v => !v.IsMeleeAttack);
             if (verb != null)
             {
-                ProjectileData? projectile = null;
-                if (Projectile == null && verb.defaultProjectile != null
-                    && TweakDatabase.projectileDatas.TryGetValue(verb.defaultProjectile.defName, out var pid))
-                {
-                    Projectile = pid;
-                    var l = GetAllData(pid);
-                    projectile = (ProjectileData?)l.FirstOrDefault();
-                    foreach (var item in l)
-                    {
-                        ((ProjectileData)item).RangedWeapon = id;
-                    }
-                }
-                else
-                {
-                    projectile = (ProjectileData?)GetData(Projectile);
-                }
+                var projectile = ResolveProjectile(verb);
                 if (projectile != null)
                 {
+                    LinkProjectile(projectile);
                     // 与关联弹丸保持同步：弹丸的伤害/穿透被编辑后，武器行需跟随刷新（DPS 由这两个字段算出）。
                     // 不能用 ??=：武器在 SetDef 阶段已填过值，??= 会让弹丸改动永远刷不进来。
                     damageAmountBase = projectile.damageAmountBase;
