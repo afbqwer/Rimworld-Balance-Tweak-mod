@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Backstory>Backstory</MST.Backstory>
+    <MST.Childhood>Childhood</MST.Childhood>
+    <MST.Adulthood>Adulthood</MST.Adulthood>
+    <MST.title>Title</MST.title>
+    <MST.titleComment>Title shown for this backstory. Leave the female variants empty to use this one for both genders.</MST.titleComment>
+    <MST.titleFemale>TitleF</MST.titleFemale>
+    <MST.titleFemaleComment>Title used for female pawns; falls back to the plain title when empty.</MST.titleFemaleComment>
+    <MST.titleShort>TitleS</MST.titleShort>
+    <MST.titleShortComment>Abbreviated title (used where space is tight), e.g. in the social log.</MST.titleShortComment>
+    <MST.titleShortFemale>TitleSF</MST.titleShortFemale>
+    <MST.titleShortFemaleComment>Abbreviated title for female pawns; falls back to the plain short title when empty.</MST.titleShortFemaleComment>
+    <MST.description>Desc</MST.description>
+    <MST.descriptionComment>Backstory text shown in the character creation panel and the pawn's bio.</MST.descriptionComment>
+    <MST.identifier>Ident</MST.identifier>
+    <MST.identifierComment>Stable identifier used by the translation pipeline (language export/import). It has no effect on gameplay.</MST.identifierComment>
+    <MST.slot>Slot</MST.slot>
+    <MST.slotComment>Which life stage this backstory fills: Childhood or Adulthood.</MST.slotComment>
+    <MST.workDisables>DisWork</MST.workDisables>
+    <MST.workDisablesComment>Work types (by WorkTags) this backstory forbids the pawn from doing.</MST.workDisablesComment>
+    <MST.spawnCategories>SpawnCat</MST.spawnCategories>
+    <MST.spawnCategoriesComment>Category tags deciding which pawn groups this backstory may appear in (e.g. Pirate, Tribal, Child). A shuffleable backstory needs at least one.</MST.spawnCategoriesComment>
+    <MST.bodyTypeGlobal>BodyType</MST.bodyTypeGlobal>
+    <MST.bodyTypeGlobalComment>Body type forced regardless of gender. When empty, the gender-specific entries below are used.</MST.bodyTypeGlobalComment>
+    <MST.bodyTypeFemale>BodyF</MST.bodyTypeFemale>
+    <MST.bodyTypeFemaleComment>Body type granted to female pawns (ignored while the global body type is set).</MST.bodyTypeFemaleComment>
+    <MST.bodyTypeMale>BodyM</MST.bodyTypeMale>
+    <MST.bodyTypeMaleComment>Body type granted to male pawns (ignored while the global body type is set).</MST.bodyTypeMaleComment>
+    <MST.nameMaker>NameMaker</MST.nameMaker>
+    <MST.nameMakerComment>Rule pack used to generate names for pawns carrying this backstory.</MST.nameMakerComment>
+    <MST.shuffleable>Shuffle</MST.shuffleable>
+    <MST.shuffleableComment>Whether this backstory is randomly assigned to new pawns. Turn off to remove it from the random pool.</MST.shuffleableComment>
+    <MST.requiresSpawnCategory>ReqSpawn</MST.requiresSpawnCategory>
+    <MST.requiresSpawnCategoryComment>Whether a spawn category is mandatory for this backstory to be used at all.</MST.requiresSpawnCategoryComment>
+</LanguageData>

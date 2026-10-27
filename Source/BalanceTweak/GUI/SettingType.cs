@@ -38,5 +38,6 @@ public partial class BalanceTweakSettings
         Trader = 30,
         Xenotype = 31,
         ArrivalMode = 32,
+        Backstory = 33,
     }
 }
