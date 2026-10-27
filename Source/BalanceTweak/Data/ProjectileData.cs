@@ -178,23 +178,26 @@ class ProjectileData : TweakData<ProjectileData>
         {
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
         }
-        if (tweaked == false)
-        {
-            GetProjectileProp(def);
-        }
+        // 基线回填<b>不分 tweaked</b>。
+        // 存档里只写"用户改过的字段"，其余字段连 XML 节点都没有 —— 读档走 tweaked=true 时若跳过回填，
+        // 那条数据的其它字段就永远是 null。踩过的坑：弹丸条目由武器侧推送创建（只带 armorPenetrationBase），
+        // 读档后 damageAmountBase 是 null → 武器行的镜像跟着变 null（显示 Null、DPS/批量/复制全拿不到值）。
+        GetProjectileProp(def);
     }
 
     private void GetProjectileProp(Def? def)
     {
         if (def is ThingDef d && d.projectile is ProjectileProperties p)
         {
-            projectileSpeed ??= p.speed;
-            stoppingPower ??= p.stoppingPower;
-            explosionRadius ??= p.explosionRadius;
-            //OnChangeDamage(this);
-            damageAmountBase ??= damageAmountBaseField.GetValue(p) as int?;
-            armorPenetrationBase ??= armorPenetrationBaseField.GetValue(p) as float?;
-            damageType = p.damageDef;
+            // 只填"用户没动过"的字段：Set 的不能被 def 覆盖，Cleared 的必须保持空
+            // （Readme 硬约束：回填点不带 IsFieldModified 守卫，清空意图重启即失效）。
+            if (!IsFieldModified(nameof(projectileSpeed))) projectileSpeed ??= p.speed;
+            if (!IsFieldModified(nameof(stoppingPower))) stoppingPower ??= p.stoppingPower;
+            if (!IsFieldModified(nameof(explosionRadius))) explosionRadius ??= p.explosionRadius;
+            if (!IsFieldModified(nameof(damageAmountBase))) damageAmountBase ??= damageAmountBaseField.GetValue(p) as int?;
+            if (!IsFieldModified(nameof(armorPenetrationBase))) armorPenetrationBase ??= armorPenetrationBaseField.GetValue(p) as float?;
+            // damageType 原来是裸赋值：读档时会拿 def 的值盖掉刚 Resolve 出来的用户改动。
+            if (!IsFieldModified(nameof(damageType))) damageType = p.damageDef;
         }
         else
         {
