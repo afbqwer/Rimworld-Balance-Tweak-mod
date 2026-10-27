@@ -15,11 +15,19 @@ public partial class BalanceTweakSettings
     public static class TweakUtility
     {
         /// <summary>修改一整列</summary>
+        /// <remarks>
+        /// <b>先算后写，不能边算边写。</b>镜像列（武器行的伤害/穿透，值实际存在关联弹丸上）在写入时会立刻
+        /// 刷新所有共用该弹丸的行；边算边写会让排在后面的行拿"已被刷新的值"再算一遍 ——
+        /// 共用一颗弹丸的两把枪（原版 Bullet_Shotgun 那样）就会把 +1 叠加成 +2，而只有一把枪的弹丸只 +1。
+        /// 先把新值全部算完（此时读到的都是同一份基准）再逐行落盘，各行结果才一致。
+        /// </remarks>
         public static void ApplyBatchOperation()
         {
             var config = selectedCol;
             if (config == null) return;
             showChanged = false;
+
+            var pending = new List<(TweakData data, object value)>();
             foreach (var data in filteredData)
             {
                 var org = config.GetRawValue(data);
@@ -29,15 +37,13 @@ public partial class BalanceTweakSettings
                 {
                     float newMin = ApplyBatchToValue(fr.min);
                     float newMax = ApplyBatchToValue(fr.max);
-                    var newRange = new FloatRange(newMin, newMax);
-                    config.ApplyValue(data, newRange);
+                    pending.Add((data, new FloatRange(newMin, newMax)));
                 }
                 else if (org is IntRange ir)
                 {
                     int newMin = (int)ApplyBatchToValue(ir.min);
                     int newMax = (int)ApplyBatchToValue(ir.max);
-                    var newRange = new IntRange(newMin, newMax);
-                    config.ApplyValue(data, newRange);
+                    pending.Add((data, new IntRange(newMin, newMax)));
                 }
                 else
                 {
@@ -48,14 +54,16 @@ public partial class BalanceTweakSettings
                     float newVal = ApplyBatchToValue(rawNum.Value);
                     if (org is int)
                     {
-                        config.ApplyValue(data, (int?)newVal);
+                        pending.Add((data, (int)newVal));
                     }
                     else // float
                     {
-                        config.ApplyValue(data, (float?)newVal);
+                        pending.Add((data, newVal));
                     }
                 }
             }
+
+            foreach (var (data, value) in pending) config.ApplyValue(data, value);
         }
 
 

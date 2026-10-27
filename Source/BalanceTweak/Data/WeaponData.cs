@@ -170,10 +170,24 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         return (forWrite ? GetEditableData(Projectile) : GetLiveData(Projectile)) as ProjectileData;
     }
 
+    /// <summary>
+    /// 这一格是否正被「还原」（<see cref="StatColumnConfig.ResetTo"/>：右键重置此格 / 重置整列）。
+    /// <para>
+    /// <c>ResetTo</c> 把原值写回字段并清掉修改标记，字段状态因此必然回到 <see cref="FieldState.Unset"/> ——
+    /// 只看三态的话，"重置"和"没动过"没有区别，镜像列的重置就会静默失效。
+    /// </para>
+    /// <para>
+    /// 整行重置（<see cref="TweakData.forceWriteAll"/>）不算：那是"我这一行全恢复"，
+    /// 不该顺手把别人对同一颗弹丸的修改一起撤销。
+    /// </para>
+    /// </summary>
+    private bool IsFieldBeingReset(string field)
+        => !forceWriteAll && forceWriteFields?.Contains(field) == true;
+
     /// <summary>用户是否显式改过武器行的伤害 / 穿透（这两格是弹丸的镜像，改它们等于改弹丸）。</summary>
     private bool HasWeaponDamageEdit
-        => StateOf(nameof(damageAmountBase)) != FieldState.Unset
-        || StateOf(nameof(armorPenetrationBase)) != FieldState.Unset;
+        => StateOf(nameof(damageAmountBase)) != FieldState.Unset || IsFieldBeingReset(nameof(damageAmountBase))
+        || StateOf(nameof(armorPenetrationBase)) != FieldState.Unset || IsFieldBeingReset(nameof(armorPenetrationBase));
 
     /// <summary>
     /// 登记"这把武器引用这个弹丸"，供 <see cref="ProjectileData.RefreshSharedWeapons"/> 反查刷新。
@@ -265,8 +279,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     /// <summary>
     /// 把武器行上的伤害 / 穿透（本质是关联弹丸的镜像）写回弹丸。
     /// <para>
-    /// <b>只在用户显式改过这两格时写。</b>这两列在 <see cref="GenValues"/> 里被无条件同步成弹丸的值，
-    /// 属于派生镜像；若每次 Apply 都照镜像盖回去，任何一把共用同一弹丸的武器（原版
+    /// <b>只在用户显式动过这两格时写</b>：改过（Set）就写新值，清空或"重置此格/此列"（Cleared / 还原）
+    /// 就让弹丸自己恢复原值。<b>没动过就什么都不写</b> —— 这两列在 <see cref="GenValues"/> 里被无条件
+    /// 同步成弹丸的值，属于派生镜像；若每次 Apply 都照镜像盖回去，任何一把共用同一弹丸的武器（原版
     /// <c>Bullet_Shotgun</c> 就同时供泵动霰弹枪与链式霰弹枪）在改自身其它字段时，
     /// 都会把自己那份陈旧镜像盖回共享弹丸，把另一把武器的修改静默撤销。
     /// </para>
@@ -276,8 +291,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     /// </para>
     /// <para>
     /// 写成功后武器行会主动放弃这两格的修改标记（见方法末尾）：改动既然存进了弹丸，
-    /// "已修改"与重置入口就都该出现在弹丸行 —— 否则武器行那个重置按钮按下去不会回写弹丸，是假的。
-    /// 因此重置只可能发生在弹丸行，也就不会出现"重置武器行顺手撤销别人的修改"这种事。
+    /// "已修改"与撤销入口就都该出现在弹丸行 —— 否则武器行那个重置按钮按下去不会回写弹丸，是假的。
     /// </para>
     /// </summary>
     /// <returns>是否真的动过弹丸（决定要不要重算整组枪的强度）。</returns>
@@ -285,31 +299,31 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     {
         bool touched = false;
 
-        switch (StateOf(nameof(damageAmountBase)))
+        if (IsFieldBeingReset(nameof(damageAmountBase))
+            || StateOf(nameof(damageAmountBase)) == FieldState.Cleared)
         {
-            case FieldState.Set when damageAmountBase.HasValue:
-                p.damageAmountBase = damageAmountBase;
-                p.MarkFieldModified(nameof(damageAmountBase));
-                touched = true;
-                break;
-            case FieldState.Cleared:
-                // 让弹丸自己按"显式清空"还原原值（ApplyV 会走 Revert），不必在这里抄原值。
-                p.MarkFieldCleared(nameof(damageAmountBase));
-                touched = true;
-                break;
+            // 让弹丸自己按"显式清空 / 还原"恢复原值（ApplyV 会走 Revert），不必在这里抄原值。
+            p.MarkFieldCleared(nameof(damageAmountBase));
+            touched = true;
+        }
+        else if (StateOf(nameof(damageAmountBase)) == FieldState.Set && damageAmountBase.HasValue)
+        {
+            p.damageAmountBase = damageAmountBase;
+            p.MarkFieldModified(nameof(damageAmountBase));
+            touched = true;
         }
 
-        switch (StateOf(nameof(armorPenetrationBase)))
+        if (IsFieldBeingReset(nameof(armorPenetrationBase))
+            || StateOf(nameof(armorPenetrationBase)) == FieldState.Cleared)
         {
-            case FieldState.Set when armorPenetrationBase.HasValue:
-                p.armorPenetrationBase = armorPenetrationBase;
-                p.MarkFieldModified(nameof(armorPenetrationBase));
-                touched = true;
-                break;
-            case FieldState.Cleared:
-                p.MarkFieldCleared(nameof(armorPenetrationBase));
-                touched = true;
-                break;
+            p.MarkFieldCleared(nameof(armorPenetrationBase));
+            touched = true;
+        }
+        else if (StateOf(nameof(armorPenetrationBase)) == FieldState.Set && armorPenetrationBase.HasValue)
+        {
+            p.armorPenetrationBase = armorPenetrationBase;
+            p.MarkFieldModified(nameof(armorPenetrationBase));
+            touched = true;
         }
 
         if (!touched) return false;

@@ -217,6 +217,14 @@ class ProjectileData : TweakData<ProjectileData>
             ApplyV<int>(nameof(damageAmountBase), v => damageAmountBaseField.SetValue(p, v));
             ApplyV<float>(nameof(armorPenetrationBase), v => armorPenetrationBaseField.SetValue(p, v));
             ApplyD<DamageDef>(nameof(damageType), v => p.damageDef = v);
+
+            // Cleared（含"重置此格/此列"）写的是"还原原值"，落在 def 上；字段里留的还是旧值。
+            // 武器行的镜像是从字段同步的，不回读一次的话，重置完武器行会立刻被刷回改后的值。
+            if (StateOf(nameof(damageAmountBase)) == FieldState.Cleared)
+                damageAmountBase = damageAmountBaseField.GetValue(p) as int?;
+            if (StateOf(nameof(armorPenetrationBase)) == FieldState.Cleared)
+                armorPenetrationBase = armorPenetrationBaseField.GetValue(p) as float?;
+
             if (refreshWeapons) RefreshSharedWeapons();
         }
         else
