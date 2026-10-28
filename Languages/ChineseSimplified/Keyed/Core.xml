@@ -63,7 +63,7 @@
     <MST.BatchStepRound>四舍五入</MST.BatchStepRound>
     <MST.BatchStepCeil>向上取整</MST.BatchStepCeil>
     <MST.BatchStepFloor>向下取整</MST.BatchStepFloor>
-    <MST.BatchStepTooltip>步长取整：把 (值+增减)×倍率 的结果对齐到步长的整数倍，再按已启用的上下限截断。当前取整方式：{0}。步长填 0 表示不取整。例：步长 0.5 + 四舍五入 → 40.2 得 40.0、40.3 得 40.5；步长 50 + 向下取整 → 325 得 300。</MST.BatchStepTooltip>
+    <MST.BatchStepTooltip>点击切换是否按步长取整：把 (值+增减)×倍率 的结果对齐到步长的整数倍，再按已启用的上下限截断。当前状态：{0}，取整方式：{1}。例：步长 0.5 + 四舍五入 → 40.2 得 40.0、40.3 得 40.5；步长 50 + 向下取整 → 325 得 300。</MST.BatchStepTooltip>
     <MST.Apply>统一修改</MST.Apply>
     <MST.ResetCur>重置显示项</MST.ResetCur>
     <MST.Openconfigfolder>打开配置目录（在关闭mod配置窗口时才会保存配置）</MST.Openconfigfolder>
@@ -77,7 +77,7 @@
     <MST.JumpToDesc>点击名称，可跳转到其所属的数据。</MST.JumpToDesc>
     <MST.JumpToDefData>跳转到：</MST.JumpToDefData>
     <MST.ResetCurTooltip>重置目前所显示的全部数据。不会重置未显示在列表中的数据。</MST.ResetCurTooltip>
-    <MST.ApplyToolTip>修改选中列的所有值。只会修改显示在目前列表中的数据。数值的结果=(值+增减)*倍率，按步长取整，再按已启用的上下限截断。</MST.ApplyToolTip>
+    <MST.ApplyToolTip>修改选中列的所有值。只会修改显示在目前列表中的数据。数值的结果=(值+增减)*倍率，启用步长时按步长取整，再按已启用的上下限截断。</MST.ApplyToolTip>
     <MST.HelpTooltip>操作说明
 - 表头：左键 选中并排序，右键 仅排序，拖动 调整列顺序，悬浮 查看列说明。
 - 顶栏：统一修改 =(值+增减)*倍率 → 按步长取整 → 按已启用的上下限截断（点击 下限/上限 标签可切换是否启用，标签底色高亮表示启用），作用于选中列的可见数据；另有 重置选中列/重置显示项。

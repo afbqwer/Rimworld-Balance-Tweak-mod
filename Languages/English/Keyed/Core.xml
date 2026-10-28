@@ -63,7 +63,7 @@
     <MST.BatchStepRound>Round</MST.BatchStepRound>
     <MST.BatchStepCeil>Ceil</MST.BatchStepCeil>
     <MST.BatchStepFloor>Floor</MST.BatchStepFloor>
-    <MST.BatchStepTooltip>Step snapping: the result of (value + flat) * multiplier is aligned to a multiple of the step, then clamped by the enabled limits. Current rounding: {0}. Step 0 disables snapping. E.g. step 0.5 + Round turns 40.2 into 40.0 and 40.3 into 40.5; step 50 + Floor turns 325 into 300.</MST.BatchStepTooltip>
+    <MST.BatchStepTooltip>Click to toggle step snapping: the result of (value + flat) * multiplier is aligned to a multiple of the step, then clamped by the enabled limits. Current state: {0}, rounding: {1}. E.g. step 0.5 + Round turns 40.2 into 40.0 and 40.3 into 40.5; step 50 + Floor turns 325 into 300.</MST.BatchStepTooltip>
     <MST.Apply>ApGlob</MST.Apply>
     <MST.ResetCur>RstDspI</MST.ResetCur>
     <MST.Openconfigfolder>Open Config Folder (Configuration only saved when window closed)</MST.Openconfigfolder>
@@ -77,7 +77,7 @@
     <MST.JumpToDesc>Click the name to jump to its associated data.</MST.JumpToDesc>
     <MST.JumpToDefData>Jump to: </MST.JumpToDefData>
     <MST.ResetCurTooltip>Reset all data currently displayed. Does not reset data not displayed in the list.</MST.ResetCurTooltip>
-    <MST.ApplyToolTip>Modify all values in the selected column. Only modifies data displayed in the current list. The result is (Value + Flat Change) * Multiplier, snapped to the step, then clamped by the enabled limits.</MST.ApplyToolTip>
+    <MST.ApplyToolTip>Modify all values in the selected column. Only modifies data displayed in the current list. The result is (Value + Flat Change) * Multiplier, snapped to the step when step snapping is on, then clamped by the enabled limits.</MST.ApplyToolTip>
     <MST.HelpTooltip>Operations
 - Header: left-click selects + sorts, right-click sorts only, drag reorders columns, hover shows the column description.
 - Top bar: Apply computes (value + flat) * multiplier over the selected column's visible data, snaps it to the step, and clamps to the enabled limits (click the Min / Max label to toggle a limit; a highlighted label means enabled); also Reset Column / Reset Shown Items.

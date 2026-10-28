@@ -22,6 +22,7 @@ public class BatchStepTests : System.IDisposable
     private readonly bool _lowerOn = BalanceTweakSettings.batchLowerLimitEnabled;
     private readonly bool _upperOn = BalanceTweakSettings.batchUpperLimitEnabled;
     private readonly float _step = BalanceTweakSettings.batchStep;
+    private readonly bool _stepOn = BalanceTweakSettings.batchStepEnabled;
     private readonly BalanceTweakSettings.BatchStepMode _mode = BalanceTweakSettings.batchStepMode;
 
     public BatchStepTests()
@@ -33,6 +34,7 @@ public class BatchStepTests : System.IDisposable
         BalanceTweakSettings.batchLowerLimitEnabled = false;
         BalanceTweakSettings.batchUpperLimitEnabled = false;
         BalanceTweakSettings.batchStep = 0f;
+        BalanceTweakSettings.batchStepEnabled = false;
         BalanceTweakSettings.batchStepMode = BalanceTweakSettings.BatchStepMode.Round;
     }
 
@@ -45,15 +47,25 @@ public class BatchStepTests : System.IDisposable
         BalanceTweakSettings.batchLowerLimitEnabled = _lowerOn;
         BalanceTweakSettings.batchUpperLimitEnabled = _upperOn;
         BalanceTweakSettings.batchStep = _step;
+        BalanceTweakSettings.batchStepEnabled = _stepOn;
         BalanceTweakSettings.batchStepMode = _mode;
     }
 
     private static float Apply(float value) => BalanceTweakSettings.ApplyBatchToValue(value);
 
     [Fact]
-    public void 步长为零等于不取整()
+    public void 开关关闭时不取整()
+    {
+        BalanceTweakSettings.batchStep = Step;
+        BalanceTweakSettings.batchStepEnabled = false;
+        Assert.Equal(40.2345f, Apply(40.2345f), 3);
+    }
+
+    [Fact]
+    public void 开关打开但步长为零等于不取整()
     {
         BalanceTweakSettings.batchStep = 0f;
+        BalanceTweakSettings.batchStepEnabled = true;
         Assert.Equal(40.2345f, Apply(40.2345f), 3);
     }
 
@@ -61,6 +73,7 @@ public class BatchStepTests : System.IDisposable
     public void 步长0点5加四舍五入_按最近的倍数靠()
     {
         BalanceTweakSettings.batchStep = Step;
+        BalanceTweakSettings.batchStepEnabled = true;
         BalanceTweakSettings.batchStepMode = BalanceTweakSettings.BatchStepMode.Round;
 
         Assert.Equal(40.0f, Apply(40.2f), 3);   // 80.4 → 80
@@ -71,6 +84,7 @@ public class BatchStepTests : System.IDisposable
     public void 步长50加向下取整()
     {
         BalanceTweakSettings.batchStep = 50f;
+        BalanceTweakSettings.batchStepEnabled = true;
         BalanceTweakSettings.batchStepMode = BalanceTweakSettings.BatchStepMode.Floor;
 
         Assert.Equal(300f, Apply(325f), 3);     // 6.5 → 6
@@ -81,6 +95,7 @@ public class BatchStepTests : System.IDisposable
     public void 步长50加向上取整()
     {
         BalanceTweakSettings.batchStep = 50f;
+        BalanceTweakSettings.batchStepEnabled = true;
         BalanceTweakSettings.batchStepMode = BalanceTweakSettings.BatchStepMode.Ceil;
 
         Assert.Equal(350f, Apply(325f), 3);     // 6.5 → 7
@@ -95,6 +110,7 @@ public class BatchStepTests : System.IDisposable
     public void 四舍五入取远离零而不是银行家舍入()
     {
         BalanceTweakSettings.batchStep = Step;
+        BalanceTweakSettings.batchStepEnabled = true;
         BalanceTweakSettings.batchStepMode = BalanceTweakSettings.BatchStepMode.Round;
 
         Assert.Equal(40.5f, Apply(40.25f), 3);  // 80.5 → 81（银行家舍入会给 80）
@@ -109,6 +125,7 @@ public class BatchStepTests : System.IDisposable
     public void 取整在上下限截断之前()
     {
         BalanceTweakSettings.batchStep = 50f;
+        BalanceTweakSettings.batchStepEnabled = true;
         BalanceTweakSettings.batchStepMode = BalanceTweakSettings.BatchStepMode.Ceil;
         BalanceTweakSettings.batchUpperLimit = 325f;
         BalanceTweakSettings.batchUpperLimitEnabled = true;
@@ -122,6 +139,7 @@ public class BatchStepTests : System.IDisposable
         BalanceTweakSettings.batchFlat = 0.1f;
         BalanceTweakSettings.batchPrec = 2f;
         BalanceTweakSettings.batchStep = Step;
+        BalanceTweakSettings.batchStepEnabled = true;
         BalanceTweakSettings.batchStepMode = BalanceTweakSettings.BatchStepMode.Round;
 
         // (40 + 0.1) * 2 = 80.2 → 160.4 → 160 → 80

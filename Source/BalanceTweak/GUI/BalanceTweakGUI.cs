@@ -23,14 +23,18 @@ public partial class BalanceTweakSettings : ModSettings
     private const float IconSizePadded = 35f;
     private const float ResetButtonWidth = 30f;
     private const float Contracted = 2f;
-    /// <summary>标题行右侧要留给窗口关闭 X 的宽度：X 距右 22px、18px 见方，换算到内容坐标约吃掉 40px。</summary>
-    private const float TitleCloseReserve = 44f;
+    /// <summary>标题行高度：取顶部控制栏的一行（控制栏 60 分两行），这样标题行按钮和下面的按钮一样大。</summary>
+    private const float TitleBarHeight = TabTopHeight / 2f;
+    /// <summary>
+    /// 标题行右侧要给窗口关闭 X 让出的宽度。
+    /// X 画在 <c>windowRect</c> 距右 4px、18px 见方，而内容区两边各内缩 18px ——
+    /// 换算到内容坐标只剩最右侧 4px 被它压住，留 12px 即有 8px 透气，不必按 X 的整宽去让。
+    /// </summary>
+    private const float TitleCloseReserve = 12f;
     /// <summary>标题行按钮之间的间距。</summary>
     private const float TitleButtonGap = 4f;
     /// <summary>后退/前进历史最多留多少条，够用即可，免得长时间跳转后无限增长。</summary>
     private const int NavHistoryLimit = 64;
-    /// <summary>筛选行右侧的固定留白（原先那个位置摆着「?」帮助按钮）。</summary>
-    private const float FilterRowRightSlack = 64f;
     #endregion
 
     #region 数据与状态
@@ -72,8 +76,10 @@ public partial class BalanceTweakSettings : ModSettings
     public static bool batchLowerLimitEnabled = false;
     /// <summary>是否对统一修改的结果应用上限截断（点击「上限」标签切换）。默认关闭。</summary>
     public static bool batchUpperLimitEnabled = false;
-    /// <summary>步长：把结果对齐到它的整数倍。0（或负数）= 不取整，默认关闭。</summary>
+    /// <summary>步长：把结果对齐到它的整数倍。0（或负数）= 不取整，另外还要 <see cref="batchStepEnabled"/> 打开。</summary>
     public static float batchStep = 0f;
+    /// <summary>是否按步长取整（点击「步长」标签切换）。默认关闭，与上下限的开关保持一致。</summary>
+    public static bool batchStepEnabled = false;
     /// <summary>对齐到步长时的取整方式。默认四舍五入。</summary>
     public static BatchStepMode batchStepMode = BatchStepMode.Round;
 
@@ -98,7 +104,7 @@ public partial class BalanceTweakSettings : ModSettings
         => Mathf.Clamp(SnapToStep((value + batchFlat) * batchPrec), EffectiveBatchLowerLimit, EffectiveBatchUpperLimit);
 
     /// <summary>
-    /// 把值对齐到 <see cref="batchStep"/> 的整数倍（步长 ≤ 0 时原样返回）。
+    /// 把值对齐到 <see cref="batchStep"/> 的整数倍（开关未开、或步长 ≤ 0 时原样返回）。
     /// 例：步长 0.5 + 四舍五入 → 40.2 得 40.0、40.3 得 40.5；步长 50 + 向下取整 → 325 得 300。
     /// <para>
     /// 取整放在截断<b>之前</b>：上下限是硬边界，取整若在它后面就可能把结果顶出边界。
@@ -106,7 +112,7 @@ public partial class BalanceTweakSettings : ModSettings
     /// </summary>
     private static float SnapToStep(float value)
     {
-        if (batchStep <= 0f) return value;
+        if (!batchStepEnabled || batchStep <= 0f) return value;
         float ratio = value / batchStep;
         ratio = batchStepMode switch
         {
@@ -365,10 +371,10 @@ public partial class BalanceTweakSettings : ModSettings
         GUI.BeginGroup(inRect);
 
         // 0. 标题行（窗口壳只负责边框，标题和右上角那排按钮都在这里画）
-        DrawTitleBar(new Rect(0, 0, inRect.width, LineHeight));
+        DrawTitleBar(new Rect(0, 0, inRect.width, TitleBarHeight));
 
         // 表格整体下移一行：用嵌套 group，里面所有坐标仍是 0 基，原有布局一行都不用改
-        Rect tableRect = new(0, LineHeight, inRect.width, inRect.height - LineHeight);
+        Rect tableRect = new(0, TitleBarHeight, inRect.width, inRect.height - TitleBarHeight);
         GUI.BeginGroup(tableRect);
 
         // 1. 顶部控制栏
@@ -396,7 +402,7 @@ public partial class BalanceTweakSettings : ModSettings
 
     /// <summary>
     /// 标题行：左边标题，右边一排「后退 / 前进 / 列配置 / 总体设置 / ?」。
-    /// 高度只有一行（<see cref="LineHeight"/>），所以按钮高度也压在这一行里。
+    /// 高度取顶部控制栏的一行（<see cref="TitleBarHeight"/>），按钮与下面两行同高，视觉上连成一体。
     /// </summary>
     private static void DrawTitleBar(Rect rect)
     {
@@ -434,11 +440,14 @@ public partial class BalanceTweakSettings : ModSettings
         Text.Font = GameFont.Small;
     }
 
+    /// <summary>禁用按钮的压暗色（底纹和文字一起变暗）</summary>
+    private static readonly Color DisabledButtonColor = new(0.55f, 0.55f, 0.55f);
+
     /// <summary>
     /// 标题行按钮：宽度按文字实测（中英文都不会被裁），从 <paramref name="right"/> 往左排。
     /// </summary>
     /// <param name="tooltipKey">悬浮提示的翻译键，传 null 则不带提示。</param>
-    /// <param name="enabled">false 时置灰且不可点（后退/前进没有历史时用）。</param>
+    /// <param name="enabled">false 时压暗且不可点（后退/前进没有历史时用）。</param>
     private static void DrawTitleButton(ref float right, float top, float height,
         string labelKey, string? tooltipKey, Action onClick, bool enabled = true)
     {
@@ -447,10 +456,13 @@ public partial class BalanceTweakSettings : ModSettings
         Rect btnRect = new(right - width, top, width, height);
         right = btnRect.x - TitleButtonGap;
 
-        bool prevEnabled = GUI.enabled;
-        GUI.enabled = prevEnabled && enabled;
-        if (Widgets.ButtonText(btnRect, label)) onClick();
-        GUI.enabled = prevEnabled;
+        // 不能用 GUI.enabled：Widgets.ButtonText 的底纹和文字都是自己画的，GUI.enabled 只吞点击、
+        // 外观一模一样，看不出被禁用。改用 active:false 挡点击 + 手动压暗。
+        Color prevColor = GUI.color;
+        if (!enabled) GUI.color = DisabledButtonColor;
+        bool clicked = Widgets.ButtonText(btnRect, label, active: enabled);
+        GUI.color = prevColor;
+        if (clicked) onClick();
 
         if (tooltipKey != null) TooltipHandler.TipRegion(btnRect, tooltipKey.Translate().RawText);
     }
@@ -559,8 +571,8 @@ public partial class BalanceTweakSettings : ModSettings
             batchLowerLimit = batchUpperLimit;
         }
 
-        // 步长：把结果对齐到步长的整数倍（0 = 不取整），取整方式用下拉列表选
-        Rect StepRect = new Rect(curX, toprow.y, toprow.width * 0.14f + Contracted, toprow.height).ContractedBy(Contracted);
+        // 步长：把结果对齐到步长的整数倍（标签可点击切换启停），取整方式用下拉列表选
+        Rect StepRect = new Rect(curX, toprow.y, toprow.width * 0.18f + Contracted, toprow.height).ContractedBy(Contracted);
         curX += DrawBatchStepInput(StepRect, "MST.BatchStep".Translate().RawText, ref batchStep) + 4f;
 
         // 批量应用按钮
@@ -606,10 +618,8 @@ public partial class BalanceTweakSettings : ModSettings
         // 搜索框
         Rect searchInputTexture = new Rect(curX, bottomrow.y, bottomrow.height, bottomrow.height).ContractedBy(Contracted);
         curX += searchInputTexture.width;
-        // 右侧留白：这一行的控件加起来本就贴着右边界（原先这个位置正好摆着「?」），
-        // 不留这 64px，最后一个「查看模式」勾选框会被窗口右边裁掉。
-        // 搜索框是整行唯一的弹性元素，留白从它身上扣。
-        float searchWidth = Mathf.Max(80f, bottomrow.width * 0.21f - FilterRowRightSlack);
+        // 搜索框是整行唯一的弹性元素，剩余宽度都由它吸收
+        float searchWidth = Mathf.Max(80f, bottomrow.width * 0.21f);
         Rect searchInputRect = new Rect(curX, bottomrow.y, searchWidth + Contracted, bottomrow.height).ContractedBy(Contracted);
 
         const string SearchControlName = "SearchBox";
@@ -699,11 +709,11 @@ public partial class BalanceTweakSettings : ModSettings
         Widgets.CheckboxLabeled(showAbstractRect, "MST.showAbstract".Translate().RawText, ref showAbstract);
         curX += showAbstractRect.width;
 
-        // 数据查看模式
-        Rect showDisplayModeRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.1f + Contracted, bottomrow.height).ContractedBy(Contracted);
+        // 数据查看模式：本行最后一个控件，宽度直接吃到行尾 —— 否则右侧会留一条空格。
+        // 下限 60 是防窗口被拖到极窄时的负宽度（那时整行本来也摆不下了，画出去会被 group 裁掉）。
+        Rect showDisplayModeRect = new Rect(curX, bottomrow.y, Mathf.Max(60f, bottomrow.xMax - curX), bottomrow.height).ContractedBy(Contracted);
         TooltipHandler.TipRegion(showDisplayModeRect, "MST.showDisplayModeTooltip".Translate().RawText);
         Widgets.CheckboxLabeled(showDisplayModeRect, "MST.showDisplayMode".Translate().RawText, ref showDisplayMode);
-        curX += showDisplayModeRect.width;
     }
 
     /// <summary>
@@ -1747,30 +1757,53 @@ public partial class BalanceTweakSettings : ModSettings
         => (batchStepModeKeyOf.TryGetValue(mode, out string? key) ? key : mode.ToString()).Translate().RawText;
 
     /// <summary>
-    /// 步长控件：标签 + 数值输入 + 取整方式下拉。
-    /// 步长填 0 即不取整，所以不另设开关；算法说明与「当前取整方式」都放进悬浮提示，
-    /// 与上下限那两个可点标签的提示风格保持一致。
+    /// 步长控件：可点标签（底色表示启停，与上下限同款）+ 数值输入 + 取整方式下拉。
+    /// 停用时输入框与下拉都退化成灰色的「不适用」，与上下限的停用表现一致。
     /// </summary>
     private static float DrawBatchStepInput(Rect rect, string label, ref float value)
     {
         Text.Anchor = TextAnchor.MiddleCenter;
         float labelWidth = 40f;
         Rect labelRect = new(rect.x, rect.y, labelWidth, rect.height);
-        Widgets.Label(labelRect, label);
 
-        // 提示挂在整块控件上：标签、输入框、下拉任意处悬浮都能看到
-        TooltipHandler.TipRegion(rect,
-            "MST.BatchStepTooltip".Translate(BatchStepModeLabel(batchStepMode)).RawText);
+        // 状态底色 + 悬浮高光（照抄 DrawLabeledInputToggle）
+        Widgets.DrawBoxSolid(labelRect, batchStepEnabled ? LimitLabelOnColor : LimitLabelOffColor);
+        if (Mouse.IsOver(labelRect)) Widgets.DrawHighlight(labelRect);
+        if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && labelRect.Contains(Event.current.mousePosition))
+        {
+            batchStepEnabled = !batchStepEnabled;
+            Event.current.Use();
+        }
+
+        Color prevColor = GUI.color;
+        GUI.color = batchStepEnabled ? Color.white : new Color(0.68f, 0.68f, 0.68f);
+        Widgets.Label(labelRect, label);
+        GUI.color = prevColor;
+
+        // 提示挂在整块控件上：标签、输入框、下拉任意处悬浮都能看到，并带上当前状态与取整方式
+        TooltipHandler.TipRegion(rect, "MST.BatchStepTooltip".Translate(
+            (batchStepEnabled ? "MST.LimitEnabled" : "MST.LimitDisabled").Translate().RawText,
+            BatchStepModeLabel(batchStepMode)).RawText);
 
         const float inputWidth = 42f;
         Rect inputRect = new(rect.x + labelWidth, rect.y, inputWidth, rect.height);
+        Rect modeRect = new(inputRect.xMax + 2f, rect.y, rect.width - labelWidth - inputWidth - 2f, rect.height);
+
+        if (!batchStepEnabled)
+        {
+            GUI.color = new Color(0.6f, 0.6f, 0.6f);
+            Widgets.Label(inputRect, "MST.NotApplicable".Translate().RawText);
+            Widgets.Label(modeRect, BatchStepModeLabel(batchStepMode));
+            GUI.color = prevColor;
+            return rect.width;
+        }
+
         string text = Widgets.TextField(inputRect, value.ToString("0.###"));
         if (float.TryParse(text, out float newVal))
         {
             value = Mathf.Max(newVal, 0f);
         }
 
-        Rect modeRect = new(inputRect.xMax + 2f, rect.y, rect.width - labelWidth - inputWidth - 2f, rect.height);
         if (Widgets.ButtonText(modeRect, BatchStepModeLabel(batchStepMode)))
         {
             OpenFilterMenu(batchStepModeOptionKeys, i => batchStepMode = batchStepModes[i]);
@@ -1778,9 +1811,9 @@ public partial class BalanceTweakSettings : ModSettings
         return rect.width;
     }
 
-    /// <summary>启用状态下标签的底色（绿色高亮，表示该项会参与截断）</summary>
+    /// <summary>可点标签的启用底色（绿色高亮：上限/下限/步长 启用时表示该项参与运算）</summary>
     private static readonly Color LimitLabelOnColor = new(0.26f, 0.58f, 0.30f);
-    /// <summary>停用状态下标签的底色（灰色，表示该项不参与截断）</summary>
+    /// <summary>可点标签的停用底色（灰色，表示该项不参与运算）</summary>
     private static readonly Color LimitLabelOffColor = new(0.30f, 0.30f, 0.30f);
 
     /// <summary>
