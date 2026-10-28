@@ -494,10 +494,10 @@ dotnet build -p:SelfCheck=true
 
 炮塔的"枪"只是挂件，`Building_TurretGun` 的射击节奏**完全由建筑决定**，两条都要照抄，不能按普通枪算：
 
-| 量 | 取法（`GenRangeDPS`） | 原版依据 |
-|---|---|---|
-| 冷却 | `def.building.turretBurstCooldownTime >= 0` 用它，否则才回落到枪的 `cooldown` / verb 默认 | `Building_TurretGun.BurstCooldownTime()` |
-| 预热 | **总是** `def.building.turretBurstWarmupTime.Average` | `TryStartShootSomething`；`Verb.TryStartCastOn` 的 warmup 只在 `CasterIsPawn` 时生效，炮塔不是 pawn |
+| 量 | 取法（`GenRangeDPS`） | 原版依据 | 可编辑字段（BuildingData） |
+|---|---|---|---|
+| 冷却 | `def.building.turretBurstCooldownTime >= 0` 用它，否则才回落到枪的 `cooldown` / verb 默认 | `Building_TurretGun.BurstCooldownTime()` | `turretBurstCooldownTime`（`Prec`） |
+| 预热 | **总是** `def.building.turretBurstWarmupTime.Average` | `TryStartShootSomething`；`Verb.TryStartCastOn` 的 warmup 只在 `CasterIsPawn` 时生效，炮塔不是 pawn | `turretBurstWarmupTime`（`Range`，写 `min~max`） |
 
 两个容易踩的坑：
 
@@ -507,7 +507,10 @@ dotnet build -p:SelfCheck=true
   另有 3 个（AutoMiniTurret 枪 5.1/建筑 2.5、Rocketswarm 3.5/0.1、Tactical 4.8/2.4）枪与建筑不一致，
   游戏里用的是建筑值。
 - 建筑改完要主动刷挂载的枪（`BuildingData.RefreshTurretGun`），否则武器页签停在旧值。
-  与弹丸刷新同一条规矩：跳过快照、跳过未 SetDef 的行。
+  与弹丸刷新同一条规矩：跳过快照、跳过未 SetDef 的行。触发判据是**预热 / 冷却任一**被改动，
+  且必须比三态多判 `forceWriteAll` / `forceWriteFields`（重置是先写回原值再清标记，那一刻三态已是 Unset）。
+- `turretBurstWarmupTime` 是 `FloatRange?`（`ColumnStyle.Range`，编辑框写 `min~max`）。
+  Cleared（清空输入）走 `ApplyV` 的 `Revert` 还原原区间 —— def 上这个字段不可空，没有"写成 null"这个游戏状态。
 
 > 未纳入：`ShootingAccuracyTurret`（默认 0.96，原版按 `0.96^距离` 乘进命中率）。
 > 手持武器同样没乘 `ShootingAccuracyPawn` —— "射手因子统一视为 1"是这张表的既有口径，

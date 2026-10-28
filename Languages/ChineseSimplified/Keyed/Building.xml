@@ -63,6 +63,8 @@
     <MST.bed_caravansCanUse>远征可用</MST.bed_caravansCanUse>
 
     <!-- Turret 字段 -->
+    <MST.turretBurstWarmupTime>炮塔预热</MST.turretBurstWarmupTime>
+    <MST.turretBurstWarmupTimeComment>炮塔瞄准时长（秒），写成 min~max；原版每次开火在区间内随机取值。炮塔枪自己的 verb 预热对它不生效。</MST.turretBurstWarmupTimeComment>
     <MST.turretBurstCooldownTime>爆发冷却</MST.turretBurstCooldownTime>
     <MST.turretInitialCooldownTime>初始冷却</MST.turretInitialCooldownTime>
 

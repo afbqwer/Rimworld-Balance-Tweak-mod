@@ -50,6 +50,13 @@ class BuildingData : TweakData<BuildingData>
     public bool? isAirtight = null;
 
     // --- Turret 字段 ---
+    /// <summary>
+    /// 炮塔瞄准（预热）时长区间，单位秒。原版 <c>Building_TurretGun</c> 每次开火前取 <c>RandomInRange</c>；
+    /// 枪自己的 <c>verb.warmupTime</c> 对炮塔**不生效**（<c>Verb.TryStartCastOn</c> 的 warmup 只在
+    /// <c>CasterIsPawn</c> 时应用，炮塔不是 pawn）。武器页签里炮塔枪的 DPS 就按这里的平均值算。
+    /// </summary>
+    [TweakField(Available = nameof(AvailableIfTurret), Style = ColumnStyle.Range)]
+    public FloatRange? turretBurstWarmupTime = null;
     [TweakField(Available = nameof(AvailableIfTurret), Style = ColumnStyle.Prec)]
     public float? turretBurstCooldownTime = null;
     [TweakField(Available = nameof(AvailableIfTurret), Style = ColumnStyle.Prec)]
@@ -269,6 +276,7 @@ class BuildingData : TweakData<BuildingData>
                 bed_maxBodySize ??= d.building.bed_maxBodySize;
                 bed_caravansCanUse ??= d.building.bed_caravansCanUse;
                 // 炮塔字段
+                turretBurstWarmupTime ??= d.building.turretBurstWarmupTime;
                 turretBurstCooldownTime ??= d.building.turretBurstCooldownTime;
                 turretInitialCooldownTime ??= d.building.turretInitialCooldownTime;
                 combatPower ??= d.building.combatPower;
@@ -381,7 +389,7 @@ class BuildingData : TweakData<BuildingData>
     }
 
     /// <summary>
-    /// 本次 Apply 是否动过"决定炮塔射速"的那一格。
+    /// 本次 Apply 是否动过"决定炮塔射速"的字段（预热 / 冷却）。
     /// <para>
     /// 比三态多判两项，是因为"重置"（<see cref="StatColumnConfig.ResetTo"/> 的单格还原、
     /// 整行重置 <see cref="TweakData.forceWriteAll"/>）都是先把字段写回原值、再清掉标记，
@@ -389,9 +397,10 @@ class BuildingData : TweakData<BuildingData>
     /// </para>
     /// </summary>
     private bool TurretRateTouched
-        => IsFieldModified(nameof(turretBurstCooldownTime))
-           || forceWriteAll
-           || forceWriteFields?.Contains(nameof(turretBurstCooldownTime)) == true;
+        => RateFieldTouched(nameof(turretBurstWarmupTime)) || RateFieldTouched(nameof(turretBurstCooldownTime));
+
+    private bool RateFieldTouched(string field)
+        => IsFieldModified(field) || forceWriteAll || forceWriteFields?.Contains(field) == true;
 
     /// <summary>
     /// 刷新挂载武器（<see cref="TurretGun"/>）的派生值：DPS / 强度。
@@ -454,6 +463,9 @@ class BuildingData : TweakData<BuildingData>
             ApplyV<float>(nameof(bed_maxBodySize), v => def.building.bed_maxBodySize = v);
             ApplyV<bool>(nameof(bed_caravansCanUse), v => def.building.bed_caravansCanUse = v);
             // Turret
+            // 区间：Cleared（清空）走 ApplyV 的 Revert —— 还原原区间，而不是写成 null，
+            // 因为 def 上的这个字段是不可空的 FloatRange，null 没有对应的游戏状态。
+            ApplyV<FloatRange>(nameof(turretBurstWarmupTime), v => def.building.turretBurstWarmupTime = v);
             ApplyV<float>(nameof(turretBurstCooldownTime), v => def.building.turretBurstCooldownTime = v);
             ApplyV<float>(nameof(turretInitialCooldownTime), v => def.building.turretInitialCooldownTime = v);
             ApplyV<float>(nameof(combatPower), v => def.building.combatPower = v);

@@ -63,6 +63,8 @@
     <MST.bed_caravansCanUse>Caravans</MST.bed_caravansCanUse>
 
     <!-- Turret 字段 -->
+    <MST.turretBurstWarmupTime>Warmup</MST.turretBurstWarmupTime>
+    <MST.turretBurstWarmupTimeComment>Turret aim time in seconds, written as min~max; the game rolls a random value in range for each shot. The gun's own verb warmup has no effect on turrets.</MST.turretBurstWarmupTimeComment>
     <MST.turretBurstCooldownTime>BurstCD</MST.turretBurstCooldownTime>
     <MST.turretInitialCooldownTime>InitCD</MST.turretInitialCooldownTime>
 
