@@ -444,11 +444,24 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 
 ### 7.7 构建验证
 
-修改完成后执行 `dotnet build` 验证编译通过：
-
 ```powershell
 cd Source
-dotnet build BalanceTweak.slnx --configuration Debug
+dotnet build          # 等价于 dotnet build BalanceTweak.slnx：产物直接落 1.7/Assemblies/
+dotnet test           # 只有测试工程需要 Debug（InternalsVisibleTo 只在 Debug 授权）
+dotnet run --project CheckLoc
+```
+
+**Debug / Release 产物等价**：`OutputPath` 与配置无关（都直接覆盖 `1.7/Assemblies/BalanceTweak.dll`），
+且 Debug 也开 `/optimize+`、也不含自检 —— 所以**构建一次就能发布**，不需要再补一次 `-c Release`。
+
+之所以不把默认配置改成 Release：解决方案 / IDE 构建会把 `Configuration=Debug` 当**全局属性**传给每个工程，
+csproj 的默认值改不动它（`Directory.Build.props` 也挡不住），所以只能让 Debug 本身就是发布质量。
+`DEBUG` 常量仍然保留，它只用于给测试程序集开 `InternalsVisibleTo`。
+
+**要跑启动期自检**（SC1–SC10，会往 `Config` 写 `BalanceTweak_Snapshot_*.txt`）：
+
+```powershell
+dotnet build -p:SelfCheck=true
 ```
 
 ---

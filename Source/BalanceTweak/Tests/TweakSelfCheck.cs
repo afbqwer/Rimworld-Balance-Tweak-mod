@@ -24,11 +24,11 @@ namespace BalanceTweak;
 /// </summary>
 public static class TweakSelfCheck
 {
-#if DEBUG
-    /// <summary>Debug 构建里强制开启；发布版关闭（不跑自检，并清理 Debug 版遗留的快照）。</summary>
+#if BT_SELFCHECK
+    /// <summary>只有显式 <c>-p:SelfCheck=true</c> 才编入自检（见 BalanceTweak.csproj）。发布产物恒为 false。</summary>
     public static bool selfCheckEnabled = true;
 #else
-    /// <summary>Debug 构建里强制开启；发布版关闭（不跑自检，并清理 Debug 版遗留的快照）。</summary>
+    /// <summary>只有显式 <c>-p:SelfCheck=true</c> 才编入自检（见 BalanceTweak.csproj）。发布产物恒为 false。</summary>
     public static bool selfCheckEnabled = false;
 #endif
 

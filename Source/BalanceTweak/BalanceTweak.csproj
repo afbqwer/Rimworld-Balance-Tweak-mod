@@ -18,6 +18,38 @@
 		<FileVersion></FileVersion>
 		<!-- 类库不需要 *.deps.json，避免污染模组 Assemblies 目录 -->
 		<GenerateDependencyFile>false</GenerateDependencyFile>
+		<!--
+			自检只在显式 -p:SelfCheck=true 时编进去。
+			原来是 #if DEBUG：于是随手 build 一次（IDE / slnx 默认 Debug）落进 1.7/Assemblies 的
+			就是带自检、会往 Config 写 BalanceTweak_Snapshot_*.txt 的调试版 —— 每次发版还得记得再编一次 Release。
+			现在默认关闭，任何配置构建出来的都是公开版行为。
+		-->
+		<SelfCheck Condition="'$(SelfCheck)' == ''">false</SelfCheck>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(SelfCheck)' == 'true'">
+		<DefineConstants>$(DefineConstants);BT_SELFCHECK</DefineConstants>
+	</PropertyGroup>
+
+	<!--
+		模组内的手动测试（整文件包在 #if BT_SELFCHECK 里）只在开启自检时参与编译，
+		免得发布产物里留一堆没人调用的死代码。
+		TweakSelfCheck.cs 不在此列：TweakDatabase.Init 要调它，必须常驻。
+	-->
+	<ItemGroup Condition="'$(SelfCheck)' != 'true'">
+		<Compile Remove="Tests/TweakDataSerializationTests.cs" />
+		<Compile Remove="Tests/TweakFieldScribeRoundTripTests.cs" />
+	</ItemGroup>
+
+	<!--
+		Debug 与 Release 的产物等价（Debug 也开优化）。
+		为什么不是"把默认配置改成 Release"：OutputPath 与配置无关（两者都直接覆盖 1.7/Assemblies/BalanceTweak.dll），
+		而解决方案 / IDE 构建会把 Configuration=Debug 作为**全局属性**传给每个工程 —— csproj 里的默认值改不动它，
+		Directory.Build.props 也挡不住。所以让"一次构建即可发布"成立的唯一可靠做法，是让 Debug 本身按发布质量编译。
+		DEBUG 常量仍然保留：它只用于主工程给测试程序集开 InternalsVisibleTo（见 AssemblyInfo.cs）。
+	-->
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<Optimize>true</Optimize>
 	</PropertyGroup>
 
 	<!--
