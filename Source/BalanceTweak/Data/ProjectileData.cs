@@ -86,7 +86,9 @@ class ProjectileData : TweakData<ProjectileData>
         int count = list.Count;
         for (int i = 0; i < count; i++)
         {
-            if (GetLiveData(list[i]) is WeaponData wd) wd.GenValues();
+            // 跳过尚未 SetDef 的行（def 还没绑定）：弹丸的 LoadingOrd 是 100，早于武器的 300，
+            // 对读档里还没绑定的武器行跑 GenValues 只会算出错的派生值，白算还留坑。
+            if (GetLiveData(list[i]) is WeaponData wd && wd.def != null) wd.GenValues();
         }
     }
 

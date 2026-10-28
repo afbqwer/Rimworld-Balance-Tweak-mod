@@ -372,7 +372,11 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             var humanreference = DefDatabase<ThingDef>.GetNamed("Human");
             HumanTool = humanreference.tools;
         }
-        if (!isCompQuality.HasValue) { isCompQuality = (bool?)GetIsCompQuality(this) ?? false; }
+        // 只在 def 已绑定时推断，且不要用 ?? false 兜底：
+        // def 为 null 时 GetIsCompQuality 返回 null，兜成 false 会把这个派生字段永久写坏
+        // （详见 SetDef 里的说明）。
+        if (!isCompQuality.HasValue && def is ThingDef)
+            isCompQuality = (bool?)GetIsCompQuality(this) ?? false;
         if (def is ThingDef d)
         {
             techLevel ??= d.techLevel;
@@ -416,7 +420,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
 
             // SetDef 首次建数据时跳过（启动期不跑昂贵计算）；Apply / 弹丸 / 招式刷新时照常重算。
             if (includeEquipPower)
-                equipPower = (float?)GetEquipPower(this, HumanTool, isCompQuality.Value, stuff);
+                equipPower = (float?)GetEquipPower(this, HumanTool, isCompQuality.GetValueOrDefault(), stuff);
             //equipCP = (float?)GetEquipCP(this, equipPower!.Value, isCompQuality);
         }
     }
@@ -511,6 +515,15 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
                 reloadableMaxCharges ??= reloadable.maxCharges;
             }
         }
+        // 品质影响是**派生值**（def 上有没有 CompQuality），未修改时一律按 def 重算，不信存档里的旧值。
+        // 为什么不能只靠 GenValues 的"没有值才填"：那个值一旦是错的就会被永久固化。
+        // 实测路径：共享投射物的弹丸行（LoadingOrd 100）先于武器行（300）应用，它触发的
+        // RefreshSharedWeapons 会调到尚未 SetDef、def 还是 null 的武器行 —— 那里 GetIsCompQuality
+        // 返回 null 被兜成 false，此后 SetDef 见到"已有值"就不再重新推断。
+        // 症状：UI 的"品质影响"显示关闭，而 def 从未被写（三态仍是 Unset），游戏里品质其实还在。
+        if (!IsFieldModified(nameof(isCompQuality)))
+            isCompQuality = (bool?)GetIsCompQuality(this) ?? false;
+
         GenValues(includeEquipPower: false);
     }
 
