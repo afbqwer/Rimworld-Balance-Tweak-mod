@@ -19,6 +19,9 @@ public partial class BalanceTweakSettings : ModSettings
     public static int DataColWidth = 76;
     public static int MainWindowWidth = 1280;
     public static int MainWindowHeight = 720;
+    /// <summary>上次关闭时的窗口左上角；<see cref="int.MinValue"/> = 还没记录过（首次打开居中）。</summary>
+    public static int MainWindowX = int.MinValue;
+    public static int MainWindowY = int.MinValue;
     private const float IconSize = 30f;
     private const float IconSizePadded = 35f;
     private const float ResetButtonWidth = 30f;
@@ -361,6 +364,8 @@ public partial class BalanceTweakSettings : ModSettings
         Scribe_Values.Look(ref DataColWidth, "dataColWidth", 76);
         Scribe_Values.Look(ref MainWindowWidth, "mainWindowWidth", 1280);
         Scribe_Values.Look(ref MainWindowHeight, "mainWindowHeight", 720);
+        Scribe_Values.Look(ref MainWindowX, "mainWindowX", int.MinValue);
+        Scribe_Values.Look(ref MainWindowY, "mainWindowY", int.MinValue);
         Scribe_Values.Look(ref showMainButton, "showMainButton", false);
         base.ExposeData();
     }
@@ -439,6 +444,11 @@ public partial class BalanceTweakSettings : ModSettings
         GUI.color = Color.white;
         Widgets.Label(new Rect(rect.x, rect.y, Mathf.Max(0f, right - rect.x - TitleButtonGap), rect.height),
             "MST.SimpleDefEditer".Translate().RawText);
+
+        // 拖动窗口：上报标题行左侧这段「文字区」，右侧那排按钮不算（否则点「后退 / 列配置」时窗口会跟着跑）。
+        // 真正搬窗口的是 DefEditorWindow.UpdateTitleDrag，它会把这块往左上各撑到窗口边缘。
+        // 每帧上报是因为按钮宽度随语言变化，可拖区的右边界只能当场算。
+        DefEditorWindow.NotifyTitleDragArea(new Rect(rect.x, rect.y, Mathf.Max(0f, right - rect.x), rect.height));
 
         // 与表格里「控制栏 / 表头」之间同款的分隔线
         GUI.color = Color.gray;

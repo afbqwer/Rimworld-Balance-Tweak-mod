@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -29,7 +31,10 @@ public class DefEditorWindow : Window
     {
         doCloseX = true;
         doCloseButton = false;              // 表格要占满下沿，不给底部关闭按钮留 55px
-        draggable = true;
+        // 不用 Window 自带的全窗拖动：它在 InnerWindowOnGUI 末尾对整窗调 GUI.DragWindow，
+        // 而表格里的左键手势（Shift 涂抹）在按下时刻意不消费事件 —— 结果一按就被判成拖窗口，涂抹起不来。
+        // 拖动改由标题行左侧那块区域自己做（见下面的 UpdateTitleDrag）。
+        draggable = false;
         resizeable = true;
         forcePause = true;
         absorbInputAroundWindow = true;
@@ -41,27 +46,132 @@ public class DefEditorWindow : Window
     public override Vector2 InitialSize
         => new(Mathf.Max(MinWidth, MainWindowWidth), Mathf.Max(MinHeight, MainWindowHeight));
 
+    // ── 标题行拖动（自己实现，直接改 windowRect）────────────────────────────
+    // 为什么不用 Window.draggable / GUI.DragWindow：
+    //  · 前者按「整窗矩形」判定按下点，会把表格里「按下但不消费事件」的 Shift 涂抹手势判成拖窗口；
+    //  · 后者在这个 IMGUI 后端里靠 mousePosition + windowRect.xy 每帧累积位移，
+    //    内容 group 带来的坐标偏移会被反复计入，拖动会越拖越快 / 位置发飘。
+    // 自己算「按下点 → 当前点」的屏幕像素差，没有累积、也不依赖 group 坐标。
+    private bool draggingTitle;
+    private Vector2 titleDragStartMouse;
+    private Vector2 titleDragStartWindowPos;
+    /// <summary>标题行里可拖动的区域（内容坐标）。按钮宽度随语言变化，所以由 DrawTitleBar 每帧写进来。</summary>
+    private Rect titleDragArea;
+
+    /// <summary>DrawTitleBar 每帧把「标题行左侧到按钮之前」这段告诉窗口。</summary>
+    public static void NotifyTitleDragArea(Rect areaInContentSpace)
+    {
+        if (Find.WindowStack.WindowOfType<DefEditorWindow>() is { } win)
+            win.titleDragArea = areaInContentSpace;
+    }
+
+    public override void WindowUpdate()
+    {
+        base.WindowUpdate();
+        UpdateTitleDrag();
+    }
+
+    /// <summary>
+    /// 鼠标在 UI 坐标系里的位置（左上原点，与 <see cref="Window.windowRect"/> 同一单位）。
+    /// <c>Input.mousePosition</c> 是像素、且原点在左下，而窗口坐标是 <c>Screen.height / Prefs.UIScale</c> 那一套，
+    /// 两者中间差着 UI 缩放 —— 不换算的话缩放非 1 时拖动会跑偏。
+    /// </summary>
+    private static Vector2 MousePosUi()
+        => new(Input.mousePosition.x / Prefs.UIScale, UI.screenHeight - Input.mousePosition.y / Prefs.UIScale);
+
+    private void UpdateTitleDrag()
+    {
+        Vector2 mouseUi = MousePosUi();
+
+        if (draggingTitle)
+        {
+            if (!Input.GetMouseButton(0))
+            {
+                draggingTitle = false;
+                return;
+            }
+            // 位移按「按下点 → 当前点」直接算，不累积，所以不会越拖越快
+            windowRect.x = titleDragStartWindowPos.x + (mouseUi.x - titleDragStartMouse.x);
+            windowRect.y = titleDragStartWindowPos.y + (mouseUi.y - titleDragStartMouse.y);
+            return;
+        }
+
+        // 只在「按下」那一帧起手，且必须这扇窗真的能接输入（上面压着子窗口时不动）
+        if (!Input.GetMouseButtonDown(0) || !Find.WindowStack.GetsInput(this)) return;
+
+        // 可拖区：从**窗口左上角**算起，向右到按钮群之前、向下到标题行底部。
+        // 内容区左上角本身内缩了 Margin，若只认内容区，边框那 18px 是死区 —— 用户没法判断
+        // 「到底哪一像素才开始能拖」。窗口的缩放只认右下角 24×24（WindowResizer），左上角是空的，并进来没有冲突。
+        Rect dragScreen = new(
+            windowRect.x,
+            windowRect.y,
+            Margin + titleDragArea.xMax,
+            Margin + titleDragArea.yMax);
+        if (!dragScreen.Contains(mouseUi)) return;
+
+        draggingTitle = true;
+        titleDragStartMouse = mouseUi;
+        titleDragStartWindowPos = new Vector2(windowRect.x, windowRect.y);
+    }
+
     public override void DoWindowContents(Rect inRect)
     {
         // 窗口壳只提供边框和关闭 X；标题行 + 表格全在 DoEditorContents 里（标题行要放按钮，得能访问表格的私有状态）
         BalanceTweakMod.settings?.DoEditorContents(inRect);
     }
 
+    /// <summary>
+    /// 用上次关闭时的位置打开；没记录过（首次）就居中。
+    /// 位置会被夹到「标题至少露出 160px」——换分辨率或把窗口拖出屏幕后，它还抓得回来。
+    /// </summary>
+    protected override void SetInitialSizeAndPosition()
+    {
+        if (MainWindowX == int.MinValue || MainWindowY == int.MinValue)
+        {
+            base.SetInitialSizeAndPosition();
+            return;
+        }
+        Vector2 size = InitialSize;
+        float x = Mathf.Clamp(MainWindowX, 0f, Mathf.Max(0f, UI.screenWidth - 160f));
+        float y = Mathf.Clamp(MainWindowY, 0f, Mathf.Max(0f, UI.screenHeight - 40f));
+        windowRect = new Rect(x, y, size.x, size.y).Rounded();
+    }
+
     public override void PreClose()
     {
         base.PreClose();
-        // 用拖拽缩放定下的尺寸回写设置：下次打开还是这个大小，
-        // 并且与「总体设置」里的宽高滑条共用同一份数据，两边不会各说各话。
-        // 必须先写尺寸再关 Mod 设置页 —— 那一页关掉时会落盘，顺序反了就会把旧尺寸写进去
+
+        // 1. 先把从属窗口关掉：本窗口一关它们就成了浮在地图上的孤儿，
+        //    而且它们之后的编辑不会再有窗口负责落盘（下面这次写盘已经发生过了）
+        CloseChildWindows();
+
+        // 2. 尺寸与位置回写：下次打开原样恢复，也与「总体设置」里的宽高滑条共用同一份数据。
+        //    必须先写尺寸再关 Mod 设置页 —— 那一页关掉时会落盘，顺序反了就把旧尺寸写进去了
         MainWindowWidth = Mathf.Max(MinWidth, Mathf.RoundToInt(windowRect.width));
         MainWindowHeight = Mathf.Max(MinHeight, Mathf.RoundToInt(windowRect.height));
+        MainWindowX = Mathf.RoundToInt(windowRect.x);
+        MainWindowY = Mathf.RoundToInt(windowRect.y);
         DragPaint.Reset();   // 关窗时抹掉可能残留的涂抹手势
 
-        // 「选项 → Mod 设置」和本窗口同进同出：那一页的 PreClose 会顺带落盘；
-        // 若是从底部主按钮进来的（没经过 Mod 设置），就得自己写 ——
-        // ModSettings 默认只在关闭设置界面时才落盘，不补这一次改动会丢
+        // 3. 落盘：「选项 → Mod 设置」和本窗口同进同出，那一页的 PreClose 会顺带写；
+        //    从底部主按钮进来的（没经过 Mod 设置）就得自己写 ——
+        //    ModSettings 默认只在关闭设置界面时才落盘，不补这一次改动会丢
         if (!BalanceTweakMod.TryCloseModSettings())
             BalanceTweakMod.settings?.Write();
+    }
+
+    /// <summary>
+    /// 关掉所有从属窗口（列配置 / 总体设置 / 各类列表编辑器…）。
+    /// 本 mod 的窗口都在 <c>BalanceTweak</c> 命名空间下，按命名空间认即可，不必逐个列类型。
+    /// </summary>
+    private static void CloseChildWindows()
+    {
+        // 先取快照：TryRemove 会改窗口栈
+        List<Window> children = Find.WindowStack.Windows
+            .Where(w => w is not DefEditorWindow && w.GetType().Namespace == typeof(DefEditorWindow).Namespace)
+            .ToList();
+        foreach (Window child in children)
+            Find.WindowStack.TryRemove(child, doCloseSound: false);
     }
 
     /// <summary>按设置里的宽高重新居中（窗口没开时不用调）。</summary>
