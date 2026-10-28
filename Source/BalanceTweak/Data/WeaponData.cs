@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -168,12 +168,18 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     /// </param>
     private ProjectileData? ResolveProjectile(VerbProperties? v, bool forWrite = false)
     {
-        if (Projectile == null && v?.defaultProjectile != null
+        ProjectileData? live = (forWrite ? GetEditableData(Projectile) : GetLiveData(Projectile)) as ProjectileData;
+        // Projectile 是 Display 字段（用户改不到），随时可以重建，所以"解析不出实例"时就地纠正：
+        // 存档里的 id 可能因为 Mod 变动（弹丸被删 / 改了分类 / 换名）不再指向一份可用的弹丸数据，
+        // 原实现只在 Projectile == null 时才解析 —— 那种情况下会静默失效：伤害镜像不再同步、
+        // 武器侧的修改也无处推送，界面上却看不出任何异常。
+        if (live == null && v?.defaultProjectile != null
             && TweakDatabase.projectileDatas.TryGetValue(v.defaultProjectile.defName, out var pid))
         {
             Projectile = pid;
+            live = (forWrite ? GetEditableData(pid) : GetLiveData(pid)) as ProjectileData;
         }
-        return (forWrite ? GetEditableData(Projectile) : GetLiveData(Projectile)) as ProjectileData;
+        return live;
     }
 
     /// <summary>
@@ -531,12 +537,15 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     public override void EnsureDisplayValues()
     {
         if (_displayValuesEnsured) return;
+        // 环境没就绪就别置标志：normalMarketValue 是"一次定值"的派生列（`??=` 之后不再重算），
+        // 在 def / HumanTool 缺席时算出的 null 会永久留着 —— 与 isCompQuality 踩过的是同一个坑形。
+        if (def == null || HumanTool == null) return;
         _displayValuesEnsured = true;
         normalMarketValue ??= (float?)GetNormalMarketValue(this);
         if (def is ThingDef td)
         {
             var stuff = GetDefaultStuffFromDef(td);
-            equipPower ??= (float?)GetEquipPower(this, HumanTool!, isCompQuality ?? false, stuff);
+            equipPower ??= (float?)GetEquipPower(this, HumanTool, isCompQuality ?? false, stuff);
         }
     }
 
@@ -644,7 +653,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
 
     private static float GetdamageAmountBaseAbstract(TweakData data)
     {
-        if (data is WeaponData wd && GetData(wd.Projectile) is ProjectileData pd
+        if (data is WeaponData wd && GetLiveData(wd.Projectile) is ProjectileData pd
             && pd.def is ThingDef d && d.projectile is ProjectileProperties p)
         {
             if (p.damageDef == null) { return -1f; }
@@ -654,7 +663,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     }
     private static float GetArmorPenetrationAbstract(TweakData data)
     {
-        if (data is WeaponData wd && GetData(wd.Projectile) is ProjectileData pd
+        if (data is WeaponData wd && GetLiveData(wd.Projectile) is ProjectileData pd
             && pd.def is ThingDef d && d.projectile is ProjectileProperties p)
         {
             if (p.damageDef == null) { return -1f; }
