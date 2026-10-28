@@ -559,13 +559,13 @@ public partial class BalanceTweakSettings : ModSettings
 
         Text.Anchor = TextAnchor.MiddleCenter;
         string colName = selectedCol != null ? selectedCol.label.Translate().RawText : "MST.empty".Translate().RawText;   // 修改点
-        Rect colInfoRect = new Rect(curX, toprow.y, toprow.width * 0.16f + Contracted, toprow.height).ContractedBy(Contracted);
+        Rect colInfoRect = new Rect(curX, toprow.y, toprow.width * 0.15f + Contracted, toprow.height).ContractedBy(Contracted);
         Widgets.Label(colInfoRect, "MST.CurrentColumn".Translate().RawText + colName);
         curX += colInfoRect.width;
         // 批量操作区
-        Rect FlatRect = new Rect(curX, toprow.y, toprow.width * 0.09f + Contracted, toprow.height).ContractedBy(Contracted);
+        Rect FlatRect = new Rect(curX, toprow.y, toprow.width * 0.1f + Contracted, toprow.height).ContractedBy(Contracted);
         curX += DrawLabeledInput(FlatRect, "MST.FlatInput".Translate().RawText, ref batchFlat, false);
-        Rect PrecRect = new Rect(curX, toprow.y, toprow.width * 0.09f + Contracted, toprow.height).ContractedBy(Contracted);
+        Rect PrecRect = new Rect(curX, toprow.y, toprow.width * 0.1f + Contracted, toprow.height).ContractedBy(Contracted);
         curX += DrawLabeledInput(PrecRect, "MST.PrecInput".Translate().RawText, ref batchPrec, true) + 4f;
         // 下限输入框（点击「下限」标签切换是否应用下限截断）
         Rect LowerLimitRect = new Rect(curX, toprow.y, toprow.width * 0.12f + Contracted, toprow.height).ContractedBy(Contracted);
@@ -580,7 +580,7 @@ public partial class BalanceTweakSettings : ModSettings
         }
 
         // 步长：把结果对齐到步长的整数倍（标签可点击切换启停），取整方式用下拉列表选
-        Rect StepRect = new Rect(curX, toprow.y, toprow.width * 0.18f + Contracted, toprow.height).ContractedBy(Contracted);
+        Rect StepRect = new Rect(curX, toprow.y, toprow.width * 0.17f + Contracted, toprow.height).ContractedBy(Contracted);
         curX += DrawBatchStepInput(StepRect, "MST.BatchStep".Translate().RawText, ref batchStep) + 4f;
 
         // 批量应用按钮
@@ -1765,6 +1765,24 @@ public partial class BalanceTweakSettings : ModSettings
         => (batchStepModeKeyOf.TryGetValue(mode, out string? key) ? key : mode.ToString()).Translate().RawText;
 
     /// <summary>
+    /// 取整方式下拉需要多宽：按最宽的那个选项实测（中英文不同），只算一次。
+    /// 语言切换在 RimWorld 里要重启，所以缓存安全。
+    /// </summary>
+    private static float cachedStepModeWidth;   // 0 = 还没算过（算出来的宽度必然 > 0）
+    private static float StepModeWidth()
+    {
+        if (cachedStepModeWidth > 0f) return cachedStepModeWidth;
+        GameFont prevFont = Text.Font;
+        Text.Font = GameFont.Small;
+        float widest = 0f;
+        foreach (string key in batchStepModeOptionKeys)
+            widest = Mathf.Max(widest, Text.CalcSize(key.Translate().RawText).x);
+        Text.Font = prevFont;
+        cachedStepModeWidth = Mathf.Clamp(widest + 14f, 48f, 96f);
+        return cachedStepModeWidth;
+    }
+
+    /// <summary>
     /// 步长控件：可点标签（底色表示启停，与上下限同款）+ 数值输入 + 取整方式下拉。
     /// 停用时输入框与下拉都退化成灰色的「不适用」，与上下限的停用表现一致。
     /// </summary>
@@ -1793,9 +1811,12 @@ public partial class BalanceTweakSettings : ModSettings
             (batchStepEnabled ? "MST.LimitEnabled" : "MST.LimitDisabled").Translate().RawText,
             BatchStepModeLabel(batchStepMode)).RawText);
 
-        const float inputWidth = 42f;
-        Rect inputRect = new(rect.x + labelWidth, rect.y, inputWidth, rect.height);
-        Rect modeRect = new(inputRect.xMax + 2f, rect.y, rect.width - labelWidth - inputWidth - 2f, rect.height);
+        // 下拉只占「最宽选项」那么宽，余下的全给输入框 —— 数字比选项更需要地方。
+        // 窗口被拖窄时先压下拉（下限 48），保住输入框至少 44px。
+        float availableWidth = rect.width - labelWidth;
+        float modeWidth = Mathf.Min(StepModeWidth(), Mathf.Max(48f, availableWidth - 46f));
+        Rect modeRect = new(rect.xMax - modeWidth, rect.y, modeWidth, rect.height);
+        Rect inputRect = new(rect.x + labelWidth, rect.y, modeRect.x - rect.x - labelWidth - 2f, rect.height);
 
         if (!batchStepEnabled)
         {
