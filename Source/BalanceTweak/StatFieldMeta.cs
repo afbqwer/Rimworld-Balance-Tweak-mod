@@ -137,6 +137,20 @@ public class TweakFieldAttribute : Attribute
     // ColumnDataType { Field, Display }
     public ColumnStyle Style { get; set; } = ColumnStyle.Float;
     public ColumnDataType DataType { get; set; } = ColumnDataType.Field;
+    /// <summary>
+    /// 镜像字段：值属于<b>另一行</b>（如武器行的伤害/穿透来自关联弹丸），本行只是它的副本。
+    /// <para>
+    /// 它仍是 <see cref="ColumnDataType.Field"/> —— 可编辑、可清空、参与三态，编辑它等于编辑源行。
+    /// 唯一被区别对待的是 <see cref="TweakData.EqualsData"/>：镜像<b>不参与</b>"是否已恢复原样"的判定。
+    /// </para>
+    /// <para>
+    /// 为什么必须排除：源行一改，共享该源行的每一行副本都会被派生同步刷新（原版 <c>Bullet_Shotgun</c>
+    /// 供泵动与链式霰弹枪）。若镜像参与相等判定，那些<b>本来就没改过</b>的行会因为副本值与原值不同
+    /// 而永远"不等于原始数据"，<c>ResetSingleItem</c> / <c>ResetSelectedColumn</c> 末尾的
+    /// <c>RemoveData</c> 就再也不会触发，脏行常驻已修改表（白占存档条目，每次读档还要重放一遍）。
+    /// </para>
+    /// </summary>
+    public bool IsMirror { get; set; }
     /// <summary>检测是否显示时调用的方法名称</summary>
     public string? Available { get; set; }
     /// <summary>数据被改变时调用的方法名称（已弃用，改为在 Apply 中触发）</summary>

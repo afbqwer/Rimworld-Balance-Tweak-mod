@@ -307,7 +307,8 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
                 getAbstract: f.GetAbstractMethod,
                 isSPStat: f.isEquippedStat || f.isStuffFactorStat || f.isStuffOffsetStat,
                 enumType: f.EnumType,
-                optionsListField: f.OptionsListField
+                optionsListField: f.OptionsListField,
+                isMirror: f.Attr.IsMirror
                 ))
             .ToList();
 

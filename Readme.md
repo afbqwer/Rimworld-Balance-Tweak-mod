@@ -225,6 +225,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `IsStuffFactorStat` | 是否为材料倍率 stat | `true` |
 | `IsStuffOffsetStat` | 是否为材料加成 stat（`stuffProps.statOffsets`） | `true` |
 | `DataType` | `Field`（可编辑）或 `Display`（只读） | `ColumnDataType.Display` |
+| `IsMirror` | 值属于**另一行**（镜像列），不参与 `EqualsData` 的"已恢复原样"判定；见 §7.8 | `true` |
 | `Available` | 显示条件方法名 | `"AvailableMethodName"` |
 | `GetAbstract` | 获取抽象值方法名 | `"GetAbstractMethodName"` |
 | `OptionsList` | 静态列表字段名（动态选项） | `"ResearchTabDefs"` |
@@ -463,6 +464,30 @@ csproj 的默认值改不动它（`Directory.Build.props` 也挡不住），所�
 ```powershell
 dotnet build -p:SelfCheck=true
 ```
+
+### 7.8 镜像列（`IsMirror`）与原始快照
+
+有的列**值属于另一行**：武器行的"伤害 / 穿透"其实是关联弹丸的副本（`Bullet_Shotgun` 同时供泵动与链式霰弹枪）。
+这类字段要标 `IsMirror = true`，并遵守两条：
+
+- **编辑即编辑源行**。写的时候把值推到源行、把修改标记转移到源行，本行不留标记
+  （`WeaponData.PushWeaponEditsToProjectile`）——否则本行会亮"已修改"并给出重置按钮，
+  而那个重置按"只重置本行"的规则不会回写源行，点了没反应。
+- **`EqualsData` 跳过它**。源行一改，共享它的每一行副本都会被派生同步刷新，于是"我没改、但副本变了"是常态；
+  若参与相等判定，这些行永远不等于原始数据，`ResetSingleItem` / `ResetSelectedColumn` 末尾的
+  `RemoveData` 就再也不会触发，脏行常驻已修改表。
+
+原始快照（`TweakDatabase.GetOriginal`）是**只读基准**，任何派生同步都不许写它：
+
+- 建快照期间（`SetDef(tweaked: false)`）跨行读取一律走原始层（`WeaponData._buildingOriginal`），
+  否则快照的镜像会读到存档里改过的依赖值，"原值"变成现值；
+- `ProjectileData.RefreshSharedWeapons` 跳过快照，只刷活实例；
+- 代价是快照的镜像可能落后于当前弹丸 → UI 首次打开、从快照克隆出来的行要在
+  `EnsureDisplayValues` 里补一次同步（`WeaponData.SyncMirrorsFromProjectile`），所以 `Clone()` 必须清掉
+  `_displayValuesEnsured`（标记是实例级的，不能跟着抄）。
+
+> 强度刻度（`GetEquipPower`）同理取**原始快照**当基准：刻度必须固定，否则"谁先算谁说了算"。
+> 语义是"原版武器 = 100；改了某颗弹丸，共用它的武器一起变，没共用的纹丝不动"。
 
 ---
 

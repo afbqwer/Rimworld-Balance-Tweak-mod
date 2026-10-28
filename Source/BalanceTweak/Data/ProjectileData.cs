@@ -76,6 +76,16 @@ class ProjectileData : TweakData<ProjectileData>
     /// <summary>
     /// 刷新全部共用本弹丸的武器（镜像伤害/穿透 + DPS + 强度）。
     /// <para>取数走 <see cref="TweakData.GetLiveData"/>：初始化期 UI 缓存还是空的，<c>GetData</c> 只会返回原始快照。</para>
+    /// <para>
+    /// <b>原始快照一律跳过。</b>它是 <c>Revert</c>（<see cref="TweakData{T}"/> 还原原值）与
+    /// <c>ResetTo</c>（重置此格 / 整列）唯一的"原值"来源。派生同步是"跟着当前弹丸走"的写入，
+    /// 写进快照就等于把"原值"改成了"现值" —— 之后重置会还原成改后的值，重置按钮变成摆设。
+    /// 快照的镜像保持建快照那一刻（= 原版值）即可；UI 打开时 <see cref="WeaponData.EnsureDisplayValues"/>
+    /// 会给从快照克隆出来的那一行补一次同步。
+    /// </para>
+    /// <para>
+    /// 活实例（UI 缓存里的克隆 / 已存修改实例）照常刷新 —— 它们才是屏幕上和 def 上的那份数据。
+    /// </para>
     /// </summary>
     public void RefreshSharedWeapons()
     {
@@ -88,7 +98,9 @@ class ProjectileData : TweakData<ProjectileData>
         {
             // 跳过尚未 SetDef 的行（def 还没绑定）：弹丸的 LoadingOrd 是 100，早于武器的 300，
             // 对读档里还没绑定的武器行跑 GenValues 只会算出错的派生值，白算还留坑。
-            if (GetLiveData(list[i]) is WeaponData wd && wd.def != null) wd.GenValues();
+            if (GetLiveData(list[i]) is not WeaponData wd || wd.def == null) continue;
+            if (ReferenceEquals(TweakDatabase.GetOriginal(wd.id), wd)) continue;
+            wd.GenValues();
         }
     }
 

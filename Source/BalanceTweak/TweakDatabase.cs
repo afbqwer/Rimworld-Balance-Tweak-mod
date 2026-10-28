@@ -31,6 +31,17 @@ public static partial class TweakDatabase
     public static Dictionary<string, TweakID> projectileDatas = [];
     public static Dictionary<string, TweakID> raceDatas = [];
 
+    /// <summary>
+    /// 正在建原始快照（<see cref="Init"/> 的 SetDef 循环）。
+    /// <para>
+    /// 期间所有跨行读取都必须走原始层：存档里的修改值此时已经反序列化好了，
+    /// 走"当前生效层"会把现值写进 <see cref="GetOriginal"/> 那份快照，
+    /// 而 Revert / ResetTo / 强度刻度全靠它当原值基准。
+    /// </para>
+    /// <para>不用 `SetDef(tweaked: false)` 判断：自检探针（<c>MakeProbe</c>）也用 false 建实例，那种探针要读的是当前 def。</para>
+    /// </summary>
+    internal static bool buildingOriginals;
+
     // 记录失败的修改项（供 UI 清理使用）
     public static List<TweakData> failedResolveItems = new();
     public static List<TweakData> failedDirectItems = new();
@@ -248,46 +259,58 @@ public static partial class TweakDatabase
         var itemSw = new Stopwatch();
         double subItemMs = 0;
 
-        foreach (var (def, data, settingType) in sortedItems)
+        // 建原始快照阶段：跨行读取必须锁原始层，否则快照里会记住"存档改过的值"，
+        // 而 Revert / ResetTo / 强度刻度全靠它当原值基准。见 WeaponData.ResolveProjectile。
+        // 用静态开关而不是 `tweaked == false` 判断：自检里的探针也会用 false 建实例（MakeProbe），
+        // 那种探针要的是"读当前 def"，不该被顺手切成原始层。
+        buildingOriginals = true;
+        try
         {
-            try
+            foreach (var (def, data, settingType) in sortedItems)
             {
-                itemSw.Restart();
                 try
-                {
-                    data.SetDef(def, settingType, false);
-                    originalData.Add(data.id, data);
-                    originalAdded++;
-                }
-                finally
-                {
-                    setDefMs[settingType] = setDefMs.GetValueOrDefault(settingType) + itemSw.Elapsed.TotalMilliseconds;
-                }
-                setDefCount[settingType] = setDefCount.GetValueOrDefault(settingType) + 1;
-
-                // 子项（武器招式 / 想法阶段 / 健康阶段 / 特性程度）由宿主类自己实现 ISubItemHost 产出，
-                // 这里不再为每种类型维护一段硬编码块 —— 新增子项类型只需宿主类加个方法。
-                if (data is ISubItemHost host)
                 {
                     itemSw.Restart();
                     try
                     {
-                        foreach (var sub in host.CreateSubItems(data, false))
-                        {
-                            originalData.TryAdd(sub.id, sub);
-                            subItemCount[sub.id.settingType] = subItemCount.GetValueOrDefault(sub.id.settingType) + 1;
-                        }
+                        data.SetDef(def, settingType, false);
+                        originalData.Add(data.id, data);
+                        originalAdded++;
                     }
                     finally
                     {
-                        subItemMs += itemSw.Elapsed.TotalMilliseconds;
+                        setDefMs[settingType] = setDefMs.GetValueOrDefault(settingType) + itemSw.Elapsed.TotalMilliseconds;
+                    }
+                    setDefCount[settingType] = setDefCount.GetValueOrDefault(settingType) + 1;
+
+                    // 子项（武器招式 / 想法阶段 / 健康阶段 / 特性程度）由宿主类自己实现 ISubItemHost 产出，
+                    // 这里不再为每种类型维护一段硬编码块 —— 新增子项类型只需宿主类加个方法。
+                    if (data is ISubItemHost host)
+                    {
+                        itemSw.Restart();
+                        try
+                        {
+                            foreach (var sub in host.CreateSubItems(data, false))
+                            {
+                                originalData.TryAdd(sub.id, sub);
+                                subItemCount[sub.id.settingType] = subItemCount.GetValueOrDefault(sub.id.settingType) + 1;
+                            }
+                        }
+                        finally
+                        {
+                            subItemMs += itemSw.Elapsed.TotalMilliseconds;
+                        }
                     }
                 }
+                catch (Exception e)
+                {
+                    Log.Error($"[BalanceTweak]初始化 TweakData 时出错，def={def.defName} (类型 {settingType}): {e}");
+                }
             }
-            catch (Exception e)
-            {
-                Log.Error($"[BalanceTweak]初始化 TweakData 时出错，def={def.defName} (类型 {settingType}): {e}");
-            }
+        }
+        finally
+        {
+            buildingOriginals = false;
         }
 
         var totalMs = setDefMs.Values.Sum() + subItemMs;

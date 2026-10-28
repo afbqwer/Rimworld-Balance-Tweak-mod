@@ -376,6 +376,12 @@ public abstract partial class TweakData : IExposable
         {
             // Display 列是派生展示值（可能延迟计算、原值也可能还没算过），不参与"是否已恢复原样"的判定。
             if (c.columnDataType == ColumnDataType.Display) continue;
+            // 镜像列的值属于另一行（武器行的伤害/穿透来自弹丸）。源行一改，共享它的每一行副本都会被同步刷新，
+            // 于是"我这一行什么都没改、但副本值与原值不同"成了常态 —— 若让它参与判定，这些行永远不等于原始数据，
+            // ResetSingleItem / ResetSelectedColumn 末尾的 RemoveData 就不再触发，脏行常驻已修改表。
+            // 用户真的改过镜像时，改动会被转移到源行（见 WeaponData.PushWeaponEditsToProjectile），
+            // 本行不留标记，因此跳过它不会漏掉任何"用户意图"。
+            if (c.isMirror) continue;
             // 三态：先比状态、再比值。否则"Cleared 字段的值恰好与原值相同"会被判成"未改"，
             // 让 ResetSingleItem / ResetSelectedColumn 误删用户的清空意图。
             if (StateOfField(c.fieldName) != other.StateOfField(c.fieldName))

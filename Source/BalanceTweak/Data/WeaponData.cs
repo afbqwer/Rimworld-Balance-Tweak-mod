@@ -48,9 +48,12 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     [TweakField(StatDef = "RangedWeapon_Cooldown", Available = nameof(AvailableIfRanged))]
     public float? cooldown = null;
 
-    [TweakField(Style = ColumnStyle.Int, Available = nameof(AvailableIfRanged), GetAbstract = nameof(GetdamageAmountBaseAbstract))]
+    // 这两格是关联弹丸的镜像：值属于弹丸那一行，这里只是副本（编辑它们 = 编辑弹丸，见 PushWeaponEditsToProjectile）。
+    // IsMirror 让它们不参与 EqualsData 的"是否已恢复原样"判定 —— 否则共享同一颗弹丸的武器一旦有人改了弹丸，
+    // 没改过的那些行也会"永远不等于原始数据"，重置后的 RemoveData 永远不触发。
+    [TweakField(Style = ColumnStyle.Int, Available = nameof(AvailableIfRanged), GetAbstract = nameof(GetdamageAmountBaseAbstract), IsMirror = true)]
     public int? damageAmountBase = null;// -1
-    [TweakField(Available = nameof(AvailableIfRanged), GetAbstract = nameof(GetArmorPenetrationAbstract))]
+    [TweakField(Available = nameof(AvailableIfRanged), GetAbstract = nameof(GetArmorPenetrationAbstract), IsMirror = true)]
     public float? armorPenetrationBase = null;// -1
     [TweakField(Available = nameof(AvailableIfRanged))]
     public float? warmup = null;// -1
@@ -168,18 +171,64 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     /// </param>
     private ProjectileData? ResolveProjectile(VerbProperties? v, bool forWrite = false)
     {
-        ProjectileData? live = (forWrite ? GetEditableData(Projectile) : GetLiveData(Projectile)) as ProjectileData;
+        // Projectile 是 Display 字段、不落盘，每次会话都要按当前 def 重新解析。
+        if (Projectile == null && v?.defaultProjectile != null)
+        {
+            if (TweakDatabase.projectileDatas.TryGetValue(v.defaultProjectile.defName, out var resolved))
+                Projectile = resolved;
+            else
+                WarnProjectileUnresolved(v.defaultProjectile);
+        }
+        if (Projectile is not TweakID pid) return null;
+
+        // 建原始快照期间（TweakDatabase.Init）必须读<b>原始</b>弹丸。
+        // 存档里改过的弹丸值此刻已经反序列化好了，走 GetLiveData 会命中那份修改实例，
+        // 于是"原值基准"里的伤害/DPS 变成现值 —— 之后 Revert / ResetTo 还原出来的是改后的值。
+        if (TweakDatabase.buildingOriginals)
+            return (TweakDatabase.GetOriginal(pid) ?? GetLiveData(pid)) as ProjectileData;
+
+        ProjectileData? live = (forWrite ? GetEditableData(pid) : GetLiveData(pid)) as ProjectileData;
         // Projectile 是 Display 字段（用户改不到），随时可以重建，所以"解析不出实例"时就地纠正：
         // 存档里的 id 可能因为 Mod 变动（弹丸被删 / 改了分类 / 换名）不再指向一份可用的弹丸数据，
         // 原实现只在 Projectile == null 时才解析 —— 那种情况下会静默失效：伤害镜像不再同步、
         // 武器侧的修改也无处推送，界面上却看不出任何异常。
         if (live == null && v?.defaultProjectile != null
-            && TweakDatabase.projectileDatas.TryGetValue(v.defaultProjectile.defName, out var pid))
+            && TweakDatabase.projectileDatas.TryGetValue(v.defaultProjectile.defName, out var reId))
         {
-            Projectile = pid;
-            live = (forWrite ? GetEditableData(pid) : GetLiveData(pid)) as ProjectileData;
+            Projectile = reId;
+            live = (forWrite ? GetEditableData(reId) : GetLiveData(reId)) as ProjectileData;
         }
         return live;
+    }
+
+    /// <summary>
+    /// 已告警过的弹丸 defName（每局一次，避免刷屏）。
+    /// <para>
+    /// 只在"武器有默认投射物、但投射物页签里没有这份数据"时触发：要么该 Def 的 ThingCategory
+    /// 不是 Projectile（<see cref="DataUtility.MatchProjectile"/> 没收录），要么
+    /// <see cref="ProjectileData"/> 的 <c>LoadingOrd</c> 不再小于本类的 300 —— 那个先后关系
+    /// 只写在注释里，没有机制拦。踩过一次：弹丸先应用时武器行还没 SetDef，派生值按"没有弹丸"算出并被固化。
+    /// </para>
+    /// <para>两条都是静默失效（镜像不刷新、武器侧修改无处落盘，界面看不出异常），所以宁可吵一次。</para>
+    /// </summary>
+    private static readonly HashSet<string> _warnedUnresolvedProjectiles = new();
+    private static bool _warnedProjectileTableEmpty;
+
+    private static void WarnProjectileUnresolved(ThingDef projectile)
+    {
+        // 整张表为空 = 投射物页签根本没建起来。这时每个远程武器都会命中，逐条报就是几百行日志，
+        // 只报一次"总因"。
+        if (TweakDatabase.projectileDatas.Count == 0)
+        {
+            if (_warnedProjectileTableEmpty) return;
+            _warnedProjectileTableEmpty = true;
+            Log.Error("[BalanceTweak] 投射物索引为空：所有武器的伤害/穿透镜像都无法同步，武器侧的修改也无处落盘。"
+                + "检查 ProjectileData 的 LoadingOrd 是否仍小于 WeaponData(300)，以及 MatchProjectile 还能否识别投射物。");
+            return;
+        }
+        if (!_warnedUnresolvedProjectiles.Add(projectile.defName)) return;
+        Log.Warning($"[BalanceTweak] 投射物 {projectile.defName} 没有对应的数据行：引用它的武器不会同步伤害/穿透镜像，"
+            + "在武器行改这两格也无处落盘。通常是它的 ThingCategory 不是 Projectile，未被 MatchProjectile 收录。");
     }
 
     /// <summary>
@@ -395,8 +444,10 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
                     LinkProjectile(projectile);
                     // 与关联弹丸保持同步：弹丸的伤害/穿透被编辑后，武器行需跟随刷新（DPS 由这两个字段算出）。
                     // 不能用 ??=：武器在 SetDef 阶段已填过值，??= 会让弹丸改动永远刷不进来。
-                    damageAmountBase = projectile.damageAmountBase;
-                    armorPenetrationBase = projectile.armorPenetrationBase;
+                    // 但**用户在本行改过的那一格不能覆盖**：读档时它的值来自存档（旧版武器侧修改），
+                    // 要等 Apply 里的 PushWeaponEditsToProjectile 推给弹丸；这里覆盖掉等于静默丢弃那条修改。
+                    if (!IsFieldModified(nameof(damageAmountBase))) damageAmountBase = projectile.damageAmountBase;
+                    if (!IsFieldModified(nameof(armorPenetrationBase))) armorPenetrationBase = projectile.armorPenetrationBase;
                 }
                 warmup ??= verb.warmupTime;
                 minRange ??= verb.minRange;
@@ -530,7 +581,40 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         if (!IsFieldModified(nameof(isCompQuality)))
             isCompQuality = (bool?)GetIsCompQuality(this) ?? false;
 
+        // 建原始快照期间的跨行读取锁原始层，见 ResolveProjectile。
         GenValues(includeEquipPower: false);
+    }
+
+    /// <summary>
+    /// 把镜像列（伤害 / 穿透）对齐到关联弹丸的当前值，并重算依赖它们的派生列。
+    /// <para>
+    /// 弹丸改动会主动刷到活实例（<see cref="ProjectileData.RefreshSharedWeapons"/>），但<b>原始快照被刻意排除</b>
+    /// ——它是 Revert / ResetTo 的原值基准。于是 UI 首次打开时，没进过修改表的行是从原始快照克隆来的，
+    /// 带着"建快照那一刻"的旧镜像：弹丸页显示 20，武器行显示 15，DPS / 强度也跟着旧值算。
+    /// </para>
+    /// <para>只在值真的不一致时才重算，平时就是两次字段比较。</para>
+    /// </summary>
+    private void SyncMirrorsFromProjectile()
+    {
+        if (verb == null) return;
+        if (ResolveProjectile(verb) is not ProjectileData p) return;
+        // 弹丸行还没绑定 def（读档失败 / 被跳过的条目）：它的字段可能只填了"武器推送过的那一个"，
+        // 拿它同步会把镜像刷成 null。宁可留旧值 —— 那种情况下武器行本来也没有可信的源。
+        if (p.def == null) return;
+
+        // 只同步"用户没动过"的那一格：动过的要由 Apply 推给弹丸（PushWeaponEditsToProjectile），
+        // 这里覆盖掉就等于把他的输入静默吃掉。
+        bool damageEditable = !IsFieldModified(nameof(damageAmountBase));
+        bool apEditable = !IsFieldModified(nameof(armorPenetrationBase));
+        bool changed = (damageEditable && p.damageAmountBase != damageAmountBase)
+            || (apEditable && p.armorPenetrationBase != armorPenetrationBase);
+        if (!changed) return;
+
+        if (damageEditable) damageAmountBase = p.damageAmountBase;
+        if (apEditable) armorPenetrationBase = p.armorPenetrationBase;
+        // 连同 DPS / 强度一起重算：equipPower 可能已由原始快照定格（PrepareDeferredDisplayValues），
+        // 只刷镜像会让"伤害变了、强度没变"。这里传 true，直接覆盖掉旧值。
+        GenValues();
     }
 
     private bool _displayValuesEnsured;
@@ -541,12 +625,28 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         // 在 def / HumanTool 缺席时算出的 null 会永久留着 —— 与 isCompQuality 踩过的是同一个坑形。
         if (def == null || HumanTool == null) return;
         _displayValuesEnsured = true;
+        // 原始快照不动：它的镜像必须停在"建快照那一刻"，那是重置的原值基准。
+        if (!ReferenceEquals(TweakDatabase.GetOriginal(id), this))
+            SyncMirrorsFromProjectile();
         normalMarketValue ??= (float?)GetNormalMarketValue(this);
         if (def is ThingDef td)
         {
             var stuff = GetDefaultStuffFromDef(td);
             equipPower ??= (float?)GetEquipPower(this, HumanTool, isCompQuality ?? false, stuff);
         }
+    }
+
+    /// <summary>
+    /// 克隆是<b>新实例</b>，"显示值已算过"这个标记不能跟着抄 —— 否则 UI 从原始快照克隆出来的行
+    /// 会直接跳过 <see cref="EnsureDisplayValues"/>，<see cref="SyncMirrorsFromProjectile"/> 也就跟着被跳过，
+    /// 屏幕上留下建快照那一刻的旧镜像（弹丸页显示 20、武器行显示 15）。
+    /// 重置后重新 Ensure 一遍的代价是两次 <c>??=</c>，值已在时什么都不做。
+    /// </summary>
+    public override TweakData Clone()
+    {
+        var clone = (WeaponData)base.Clone();
+        clone._displayValuesEnsured = false;
+        return clone;
     }
 
     public override void Apply()
@@ -573,20 +673,24 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         Mathf.Sqrt(20.33f * 21.18f) * Mathf.Pow(1f + 0.18f * 1.5f, 2f) * Mathf.Log10(30f);
 
     /// <summary>
-    /// 远程强度的<b>唯一取数口</b>：分子（被测武器）与基准（电荷步枪）都走它。
+    /// 远程强度的<b>唯一取数口</b>：分子（被测武器）与基准（原版电荷步枪）都走它。
     /// <para>
-    /// 强度是「以电荷步枪 = 100」的相对刻度，两边必须<b>同源同时刻</b>：DPS 取数据层字段，
-    /// AP 取数据层的镜像值，射程同理。
+    /// 强度 = 被测武器 / 原版电荷步枪 × 100。分子取<b>当前生效层</b>（活实例 + 活弹丸），
+    /// 基准取<b>原始层</b>（原始快照 + 原始弹丸）：两边口径相同（DPS 走数据层字段、AP 走镜像、射程同理），
+    /// 但层不同 —— 刻度固定才有意义，理由见 <see cref="GetEquipPower"/>。
     /// </para>
     /// <para>
-    /// 旧实现两边不同源 —— 分子用 <c>LRangedDPS</c> + 现读 def 的 AP，基准却用
-    /// <c>CalculateRangeDPS(电荷步枪的 def)</c> + 现读 def 的 AP，而且只算一次（<c>CRPower</c> 静态缓存）。
-    /// 共享投射物（原版 <c>Bullet_ChargeRifle</c> 被多把枪共用）在 apply 期间被别的武器写进 def 之后，
+    /// 旧实现两边都从 def 现读，而且基准只算一次（<c>CRPower</c> 静态缓存）。共享投射物
+    /// （原版 <c>Bullet_ChargeRifle</c> 被多把枪共用）在 apply 期间被别的武器写进 def 之后，
     /// 基准停在旧值、分子已经是新值：未修改的电荷步枪于是不再等于 100，偏差量还取决于
     /// 「同时改了哪些共用该弹的武器」—— 这就是强度随 mod 环境漂移的来源。
     /// </para>
     /// </summary>
-    private static float? RangedPower(WeaponData wd, bool legendary)
+    /// <param name="originalLayer">
+    /// 取数是否锁定"原始层"（原始快照 + 原始弹丸）。基准（原版电荷步枪）必须传 true，
+    /// 见 <see cref="GetEquipPower"/> 里关于刻度的说明。
+    /// </param>
+    private static float? RangedPower(WeaponData wd, bool legendary, bool originalLayer = false)
     {
         if (!wd.LRangedDPS.HasValue) return null;
 
@@ -600,13 +704,24 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         if (TweakDatabase.VCTAPDown && ap > 0.5f) ap = 0.5f + Mathf.Log(ap + 0.5f, 5f);
 
         float explosionFactor = 1f;
-        if (GetLiveData(wd.Projectile) is ProjectileData pd && pd.explosionRadius > 0f)
+        // 爆炸因子也必须与 DPS 同层：分子读活弹丸，基准读原始弹丸 ——
+        // 混用会让"改了爆炸半径的弹丸"在两个方向上各算一次。
+        if (ProjectileOf(wd, originalLayer) is ProjectileData pd && pd.explosionRadius > 0f)
             explosionFactor = 1f + Mathf.Log(1f + pd.explosionRadius.Value);
 
         float power = Mathf.Sqrt(wd.LRangedDPS.Value * wd.LMAXRangedDPS.GetValueOrDefault(wd.LRangedDPS.Value))
             * Mathf.Pow(1f + ap, 2f) * explosionFactor;
         if (wd.maxRange > 0f) power *= Mathf.Log10(wd.maxRange.Value);
         return power;
+    }
+
+    /// <summary>取武器关联的弹丸实例；<paramref name="originalLayer"/> 时锁原始层（基准用）。</summary>
+    private static ProjectileData? ProjectileOf(WeaponData wd, bool originalLayer)
+    {
+        if (wd.Projectile is not TweakID pid) return null;
+        return (originalLayer
+            ? TweakDatabase.GetOriginal(pid) ?? GetLiveData(pid)
+            : GetLiveData(pid)) as ProjectileData;
     }
 
     private static object? GetEquipPower(TweakData data, List<Tool> humantool, bool? isQ, ThingDef? stuff)
@@ -638,10 +753,15 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             var rangePower = 0f;
             if (RangedPower(wd, isQ.Value) is float selfPower)
             {
-                // 基准取「当前生效」的电荷步枪数据（与 wd 同一层），且**不缓存**：
-                // 缓存会让刻度停在"第一次算的那一版"，那是强度漂移的另一半原因。
-                float baseline = GetLiveData(ChargeRifleId) is WeaponData refWd
-                    ? RangedPower(refWd, true) ?? FallbackChargePower
+                // 刻度必须<b>固定</b>：基准取"原版电荷步枪"（原始快照 + 原始弹丸），不取当前生效层。
+                // 取活实例会引入两种顺序依赖，都是"同一份数据、不同的强度"：
+                //   1) 初始化期 —— 基准行若还没 SetDef / 还没 Apply，读到的是半成品或原版值；
+                //   2) 首开页签 —— 基准行的镜像可能还没被这一轮派生同步刷新。
+                // 结果是"谁先算谁说了算"，与用户在 mod 环境里看到的漂移是同一件事。
+                // 固定刻度的语义：原版武器 = 100；改了某颗弹丸，就用它的武器一起变（提高多少一眼可见），
+                // 没共用那颗弹的武器纹丝不动 —— 做平衡时需要的是这个，而不是"基准跟着一起漂"。
+                float baseline = TweakDatabase.GetOriginal(ChargeRifleId) is WeaponData refWd
+                    ? RangedPower(refWd, true, originalLayer: true) ?? FallbackChargePower
                     : FallbackChargePower;
                 rangePower = Mathf.Max(0f, selfPower / baseline * 100f);
             }

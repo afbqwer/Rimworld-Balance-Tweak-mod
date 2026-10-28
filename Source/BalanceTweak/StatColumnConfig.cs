@@ -23,6 +23,8 @@ public class StatColumnConfig
     public readonly string columnTypeLabel;
     public readonly ColumnDataType columnDataType;
     public readonly ColumnStyle columnType;
+    /// <summary>镜像列：值属于另一行（见 <see cref="TweakFieldAttribute.IsMirror"/>）。仅用于跳过相等判定。</summary>
+    public readonly bool isMirror;
     // 委托
     public delegate bool IsAvailable(TweakData data);
     public delegate float GetAbstract(TweakData data);
@@ -70,13 +72,15 @@ public class StatColumnConfig
         GetAbstract? getAbstract,
         bool isSPStat,
         Type? enumType,
-        FieldInfo? optionsListField
+        FieldInfo? optionsListField,
+        bool isMirror = false
         )
     {
         this.field = field;
         fieldName = field.Name;
         columnDataType = type;
         columnType = style;
+        this.isMirror = isMirror;
         this.isSPStat = isSPStat;
         isListStyle = IsListStyle(style);
         this.isAvailableDelegate = isAvailable;
