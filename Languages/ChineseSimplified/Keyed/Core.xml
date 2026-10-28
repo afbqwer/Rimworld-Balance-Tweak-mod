@@ -189,6 +189,9 @@
     <MST.ClickTestToPreview>点击"刷新过滤器"以预览</MST.ClickTestToPreview>
     <MST.ShowOnlyAllowed>仅显示允许的Def</MST.ShowOnlyAllowed>
     <MST.GeneralSettings>总体设置</MST.GeneralSettings>
+    <MST.MainButtonSection>底部主按钮</MST.MainButtonSection>
+    <MST.ShowMainButton>显示「Def 编辑器」主按钮</MST.ShowMainButton>
+    <MST.ShowMainButtonTooltip>在屏幕底部的主按钮栏显示「Def 编辑器」入口，方便游戏内随时打开。关闭时仍可从「选项 → Mod 设置」进入。默认关闭。</MST.ShowMainButtonTooltip>
     <MST.NameColWidth>名称列宽度</MST.NameColWidth>
     <MST.DataColWidth>数据列宽度</MST.DataColWidth>
     <MST.DataCleanup>数据清理</MST.DataCleanup>

@@ -9,7 +9,7 @@
   </supportedVersions>
   <url>https://github.com/afbqwer/Rimworld-Balance-Tweak-mod</url>
   <description>
-Edit game Def data in a datatable within its own window, opened from the main button at the bottom of the screen (or from Mod Settings). Supports 20+ Def types including Race, Apparel, Weapon, Ability, Building, Research, Gene, Trait, Faction, Recipe and more. Features batch editing, column configuration, data filtering, and more.
+Edit game Def data in a datatable within its own window, opened from Mod Settings (and optionally from a main button at the bottom of the screen — off by default). Supports 20+ Def types including Race, Apparel, Weapon, Ability, Building, Research, Gene, Trait, Faction, Recipe and more. Features batch editing, column configuration, data filtering, and more.
   </description>
   <modDependencies>
     <li>

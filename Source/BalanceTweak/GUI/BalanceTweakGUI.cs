@@ -91,6 +91,13 @@ public partial class BalanceTweakSettings : ModSettings
         Floor,
     }
 
+    /// <summary>
+    /// 是否在屏幕底部的主按钮栏显示「Def 编辑器」入口。默认关闭。
+    /// 可见性由 <see cref="MainButtonWorker_OpenEditor.Visible"/> 每帧读取，不往 Def 里写字段 ——
+    /// 见该类的注释。
+    /// </summary>
+    public static bool showMainButton = false;
+
     /// <summary>统一修改实际生效的下限；未启用下限时为负无穷，等价于该侧不截断。</summary>
     public static float EffectiveBatchLowerLimit => batchLowerLimitEnabled ? batchLowerLimit : float.NegativeInfinity;
     /// <summary>统一修改实际生效的上限；未启用上限时为正无穷，等价于该侧不截断。</summary>
@@ -354,6 +361,7 @@ public partial class BalanceTweakSettings : ModSettings
         Scribe_Values.Look(ref DataColWidth, "dataColWidth", 76);
         Scribe_Values.Look(ref MainWindowWidth, "mainWindowWidth", 1280);
         Scribe_Values.Look(ref MainWindowHeight, "mainWindowHeight", 720);
+        Scribe_Values.Look(ref showMainButton, "showMainButton", false);
         base.ExposeData();
     }
     #endregion

@@ -42,7 +42,8 @@ public class GeneralSettingsWindow : Window
         Close();
     }
 
-    public override Vector2 InitialSize => new(480f, 600f);
+    // 高度按内容估的：多了「主按钮」一节后 600 会把最下面的「移除所有数据」按钮切掉
+    public override Vector2 InitialSize => new(480f, 670f);
 
     public override void DoWindowContents(Rect inRect)
     {
@@ -65,6 +66,16 @@ public class GeneralSettingsWindow : Window
         {
             BalanceTweakMod.RecenterWindow();
         }
+
+        curY += SectionPadding;
+
+        // === 底部主按钮 ===
+        DrawSectionHeader(ref curY, inRect.width, "MST.MainButtonSection".Translate().RawText);
+        Rect mainButtonRect = new(10f, curY, inRect.width - 20f, RowHeight);
+        // 不需要额外「应用」：主按钮每帧按这个开关重新算可见性
+        Widgets.CheckboxLabeled(mainButtonRect, "MST.ShowMainButton".Translate().RawText, ref showMainButton);
+        TooltipHandler.TipRegion(mainButtonRect, "MST.ShowMainButtonTooltip".Translate().RawText);
+        curY += RowHeight;
 
         curY += SectionPadding;
 

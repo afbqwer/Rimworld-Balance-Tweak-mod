@@ -93,5 +93,17 @@ public class DefEditorWindow : Window
 /// </summary>
 public class MainButtonWorker_OpenEditor : MainButtonWorker
 {
+    /// <summary>
+    /// 可见性直接读「总体设置」里的开关，**不写 <c>def.buttonVisible</c>**。
+    /// <para>
+    /// 这是原版自己用的层次：<c>MainButtonsRoot.DoButtons</c> 每帧问一次 <c>Worker.Visible</c>
+    /// 并按「可见按钮数」重排各自宽度 —— 可见性是**每帧查询**，不是一个要提前写进 Def 的字段。
+    /// 原版 Mech 页签就是这么做的（<c>MainButtonWorker_ToggleMechTab.Visible =&gt; !Disabled</c>，
+    /// 按当前地图上有没有机械体实时算）。跟着写的好处：
+    /// 开关立即生效、不用在启动期摸 Def（省掉一个加载时序问题），也不会把别的 Mod 能看到的 Def 字段改脏。
+    /// </para>
+    /// </summary>
+    public override bool Visible => BalanceTweakSettings.showMainButton;
+
     public override void Activate() => DefEditorWindow.Open();
 }

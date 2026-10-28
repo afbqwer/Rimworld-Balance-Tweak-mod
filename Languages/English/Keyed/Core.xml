@@ -189,6 +189,9 @@
     <MST.ClickTestToPreview>Click "Update Filter" to preview</MST.ClickTestToPreview>
     <MST.ShowOnlyAllowed>Show Allowed Only</MST.ShowOnlyAllowed>
     <MST.GeneralSettings>Settings</MST.GeneralSettings>
+    <MST.MainButtonSection>Main button</MST.MainButtonSection>
+    <MST.ShowMainButton>Show the "Def editor" main button</MST.ShowMainButton>
+    <MST.ShowMainButtonTooltip>Show a "Def editor" entry in the main button bar at the bottom of the screen, so the editor is one click away while playing. When off you can still open it from Options > Mod settings. Off by default.</MST.ShowMainButtonTooltip>
     <MST.NameColWidth>Name Col Width</MST.NameColWidth>
     <MST.DataColWidth>Data Col Width</MST.DataColWidth>
     <MST.DataCleanup>Data Cleanup</MST.DataCleanup>

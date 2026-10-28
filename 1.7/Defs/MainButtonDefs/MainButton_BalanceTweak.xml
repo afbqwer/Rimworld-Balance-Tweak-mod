@@ -13,6 +13,8 @@
     <workerClass>BalanceTweak.MainButtonWorker_OpenEditor</workerClass>
     <!-- 排在原版 Factions(90) 之后、Menu(500) 之前：贴着右下角，不挤占殖民地的日常页签 -->
     <order>95</order>
+    <!-- 可见性不在这里写：MainButtonWorker_OpenEditor.Visible 每帧读「总体设置」里的开关（默认关闭）。
+         写 <buttonVisible> 会和那个开关变成两处真相，还得再写一段启动期改 Def 的代码去同步。 -->
     <!-- 没有地图（世界地图界面）时也能开：编辑的是 Def，与当前殖民地无关 -->
     <validWithoutMap>true</validWithoutMap>
   </MainButtonDef>
