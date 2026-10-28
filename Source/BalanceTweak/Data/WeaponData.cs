@@ -158,9 +158,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     public override int LoadingOrd => 300;
 
     /// <summary>
-    /// 解析本武器关联的弹丸。必须由 GenValues / Apply 共用：SetDef 阶段
-    /// <see cref="TweakDatabase.projectileDatas"/> 还没建好（ProjectileData 的 LoadingOrd 更大），
-    /// 只靠 GenValues 解析会让"读了存档的武器行"在 Apply 时还拿不到弹丸。
+    /// 解析本武器关联的弹丸。GenValues 与 Apply 共用同一个入口：
+    /// SetDef 阶段通常已经能解析（<see cref="ProjectileData"/> 用的是默认 LoadingOrd 100，先于武器的 300），
+    /// 但读档的 <c>Projectile</c> 可能缺席或指向已换掉的实例，Apply 时还要按"当前生效"的那一层再取一次。
     /// </summary>
     /// <param name="forWrite">
     /// 要往弹丸上写东西时传 true：此时必须拿"可写实例"（<see cref="TweakData.GetEditableData"/>），
@@ -543,7 +543,50 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     static float? RDPS = null;
     static float? HumanDPS = null;
 
-    static float? CRPower = null;
+    /// <summary>强度刻度的参照物：原版电荷步枪。</summary>
+    private static readonly TweakID ChargeRifleId = new("Gun_ChargeRifle", SettingType.Weapon);
+
+    /// <summary>电荷步枪数据缺席时的兜底强度（19.52134 × log10(30)，与旧实现同一个常量）。</summary>
+    private static readonly float FallbackChargePower =
+        Mathf.Sqrt(20.33f * 21.18f) * Mathf.Pow(1f + 0.18f * 1.5f, 2f) * Mathf.Log10(30f);
+
+    /// <summary>
+    /// 远程强度的<b>唯一取数口</b>：分子（被测武器）与基准（电荷步枪）都走它。
+    /// <para>
+    /// 强度是「以电荷步枪 = 100」的相对刻度，两边必须<b>同源同时刻</b>：DPS 取数据层字段，
+    /// AP 取数据层的镜像值，射程同理。
+    /// </para>
+    /// <para>
+    /// 旧实现两边不同源 —— 分子用 <c>LRangedDPS</c> + 现读 def 的 AP，基准却用
+    /// <c>CalculateRangeDPS(电荷步枪的 def)</c> + 现读 def 的 AP，而且只算一次（<c>CRPower</c> 静态缓存）。
+    /// 共享投射物（原版 <c>Bullet_ChargeRifle</c> 被多把枪共用）在 apply 期间被别的武器写进 def 之后，
+    /// 基准停在旧值、分子已经是新值：未修改的电荷步枪于是不再等于 100，偏差量还取决于
+    /// 「同时改了哪些共用该弹的武器」—— 这就是强度随 mod 环境漂移的来源。
+    /// </para>
+    /// </summary>
+    private static float? RangedPower(WeaponData wd, bool legendary)
+    {
+        if (!wd.LRangedDPS.HasValue) return null;
+
+        // AP 走数据层镜像（共享弹丸的当前值）。-1 表示弹丸没写 AP，回落到 def 的
+        // GetArmorPenetration，保证与基准同一口径（那边也是 GetArmorPenetration）。
+        float ap = wd.armorPenetrationBase is float mirror && mirror != -1f
+            ? mirror
+            : GetArmorPenetrationAbstract(wd);
+        if (ap == -1f) ap = 0f;
+        if (legendary) ap *= APLMultiplier ?? 1f;
+        if (TweakDatabase.VCTAPDown && ap > 0.5f) ap = 0.5f + Mathf.Log(ap + 0.5f, 5f);
+
+        float explosionFactor = 1f;
+        if (GetLiveData(wd.Projectile) is ProjectileData pd && pd.explosionRadius > 0f)
+            explosionFactor = 1f + Mathf.Log(1f + pd.explosionRadius.Value);
+
+        float power = Mathf.Sqrt(wd.LRangedDPS.Value * wd.LMAXRangedDPS.GetValueOrDefault(wd.LRangedDPS.Value))
+            * Mathf.Pow(1f + ap, 2f) * explosionFactor;
+        if (wd.maxRange > 0f) power *= Mathf.Log10(wd.maxRange.Value);
+        return power;
+    }
+
     private static object? GetEquipPower(TweakData data, List<Tool> humantool, bool? isQ, ThingDef? stuff)
     {
         isQ = (isQ ?? false);
@@ -569,45 +612,16 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             {
                 return meleePower;
             }
-            if (!CRPower.HasValue)
-            {
-                var reference = DefDatabase<ThingDef>.GetNamed("Gun_ChargeRifle");
-                (var a, var b) = CalculateRangeDPS(reference, true);
-                if (a.HasValue && b.HasValue && reference != null)
-                {
-                    var chargeProj = reference.Verbs.FirstOrDefault()?.defaultProjectile?.projectile;
-                    var ap = (chargeProj?.GetArmorPenetration(null, null) ?? 0f) * (APLMultiplier ?? 1f);
-                    if (TweakDatabase.VCTAPDown && ap > 0.5f) { ap = 0.5f + Mathf.Log(ap + 0.5f, 5f); }
-                    CRPower = Mathf.Sqrt(a.Value * b.Value) * Mathf.Pow(
-                        1f + ap,
-                        2f);
-                    var chargeVerb = reference.Verbs.FirstOrDefault(v => !v.IsMeleeAttack);
-                    if (chargeVerb != null && chargeVerb.range > 0f)
-                    {
-                        CRPower *= Mathf.Log10(chargeVerb.range);
-                    }
-                }
-                CRPower ??= Mathf.Sqrt(20.33f * 21.18f) * Mathf.Pow(1f + 0.18f * 1.5f, 2f) * Mathf.Log10(30f);//19.52134 * log10(30)
-            }
+
             var rangePower = 0f;
-            if (wd.LRangedDPS.HasValue)
+            if (RangedPower(wd, isQ.Value) is float selfPower)
             {
-                var ap = GetArmorPenetrationAbstract(wd);
-                if (ap == -1) { ap = 0f; }
-                if (isQ.Value) { ap *= APLMultiplier!.Value; }
-                if (TweakDatabase.VCTAPDown && ap > 0.5f) { ap = 0.5f + Mathf.Log(ap + 0.5f, 5f); }
-                var explosionFactor = 1f;
-                if (wd.Projectile != null && GetData(wd.Projectile) is ProjectileData pd && pd.explosionRadius.HasValue && pd.explosionRadius.Value > 0f)
-                {
-                    explosionFactor = 1f + Mathf.Log(1f + pd.explosionRadius.Value);
-                }
-                var llpower = Mathf.Sqrt(wd.LRangedDPS.Value * wd.LMAXRangedDPS.GetValueOrDefault(wd.LRangedDPS.Value))
-                    * Mathf.Pow(1f + ap, 2f) * explosionFactor;
-                rangePower = Mathf.Max(0f, llpower / CRPower.Value * 100f);
-                if (wd.maxRange.HasValue && wd.maxRange.Value > 0f)
-                {
-                    rangePower *= Mathf.Log10(wd.maxRange.Value);
-                }
+                // 基准取「当前生效」的电荷步枪数据（与 wd 同一层），且**不缓存**：
+                // 缓存会让刻度停在"第一次算的那一版"，那是强度漂移的另一半原因。
+                float baseline = GetLiveData(ChargeRifleId) is WeaponData refWd
+                    ? RangedPower(refWd, true) ?? FallbackChargePower
+                    : FallbackChargePower;
+                rangePower = Mathf.Max(0f, selfPower / baseline * 100f);
             }
             return Mathf.Max(meleePower, rangePower);
 
