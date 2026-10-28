@@ -479,15 +479,39 @@ dotnet build -p:SelfCheck=true
 
 原始快照（`TweakDatabase.GetOriginal`）是**只读基准**，任何派生同步都不许写它：
 
-- 建快照期间（`SetDef(tweaked: false)`）跨行读取一律走原始层（`WeaponData._buildingOriginal`），
-  否则快照的镜像会读到存档里改过的依赖值，"原值"变成现值；
-- `ProjectileData.RefreshSharedWeapons` 跳过快照，只刷活实例；
+- 建快照期间（`TweakDatabase.buildingOriginals`，由 `Init` 的 SetDef 循环持有）跨行读取一律走原始层，
+  否则快照的镜像会读到存档里改过的依赖值，"原值"变成现值。
+  **不要用 `SetDef(tweaked: false)` 反推**：自检探针（`MakeProbe`）也用 false 建实例，那种探针要读的是当前 def。
+- `ProjectileData.RefreshSharedWeapons` / `BuildingData.RefreshTurretGun` 跳过快照，只刷活实例；
 - 代价是快照的镜像可能落后于当前弹丸 → UI 首次打开、从快照克隆出来的行要在
   `EnsureDisplayValues` 里补一次同步（`WeaponData.SyncMirrorsFromProjectile`），所以 `Clone()` 必须清掉
   `_displayValuesEnsured`（标记是实例级的，不能跟着抄）。
 
 > 强度刻度（`GetEquipPower`）同理取**原始快照**当基准：刻度必须固定，否则"谁先算谁说了算"。
 > 语义是"原版武器 = 100；改了某颗弹丸，共用它的武器一起变，没共用的纹丝不动"。
+
+### 7.9 炮塔枪的 DPS：节奏在建筑上
+
+炮塔的"枪"只是挂件，`Building_TurretGun` 的射击节奏**完全由建筑决定**，两条都要照抄，不能按普通枪算：
+
+| 量 | 取法（`GenRangeDPS`） | 原版依据 |
+|---|---|---|
+| 冷却 | `def.building.turretBurstCooldownTime >= 0` 用它，否则才回落到枪的 `cooldown` / verb 默认 | `Building_TurretGun.BurstCooldownTime()` |
+| 预热 | **总是** `def.building.turretBurstWarmupTime.Average` | `TryStartShootSomething`；`Verb.TryStartCastOn` 的 warmup 只在 `CasterIsPawn` 时生效，炮塔不是 pawn |
+
+两个容易踩的坑：
+
+- 4 个原版炮塔枪（`Gun_ChargeBlasterHeavyTurret` / `Gun_InfernoCannonTurret` / `Artillery_AutoMortar` /
+  `Artillery_Mortar`）既没有 `RangedWeapon_Cooldown`，verb 也没设 `defaultCooldownTime`。
+  漏掉建筑冷却 → `cd` 为 null → `GenRangeDPS` 提前 return → 这 4 行**根本没有 DPS / 强度**。
+  另有 3 个（AutoMiniTurret 枪 5.1/建筑 2.5、Rocketswarm 3.5/0.1、Tactical 4.8/2.4）枪与建筑不一致，
+  游戏里用的是建筑值。
+- 建筑改完要主动刷挂载的枪（`BuildingData.RefreshTurretGun`），否则武器页签停在旧值。
+  与弹丸刷新同一条规矩：跳过快照、跳过未 SetDef 的行。
+
+> 未纳入：`ShootingAccuracyTurret`（默认 0.96，原版按 `0.96^距离` 乘进命中率）。
+> 手持武器同样没乘 `ShootingAccuracyPawn` —— "射手因子统一视为 1"是这张表的既有口径，
+> 否则炮塔与手持武器不可比。要改就两边一起改。
 
 ---
 

@@ -482,6 +482,24 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         }
     }
 
+    /// <summary>
+    /// 挂载本枪的炮塔建筑的 <see cref="BuildingProperties"/>（非炮塔返回 null）。
+    /// <para>
+    /// 只用它来定位 <b>def</b> —— 射速 / 预热都写在 def 上，实例层只是去找那个 def 的把手。
+    /// 所以取数用 <see cref="TweakData.GetData"/>（缓存 → 原始快照）而不是 <c>GetLiveData</c>：
+    /// 建快照期间 <c>tweakDatas</c> 里的条目还没 SetDef，<c>def</c> 是 null，
+    /// 走活实例会静默拿不到建筑属性（炮塔就退化成"没有冷却来源 → 没有 DPS"）。
+    /// </para>
+    /// </summary>
+    private BuildingProperties? TurretBuildingProps()
+    {
+        if (GunTurret == null) return null;
+        var bd = GetData(GunTurret) as BuildingData;
+        var buildingDef = bd?.def as ThingDef
+            ?? (TweakDatabase.GetOriginal(GunTurret.Value)?.def as ThingDef);
+        return buildingDef?.building;
+    }
+
     private void GenRangeDPS(ThingDef d, VerbProperties verb)
     {
         var dmg = damageAmountBase;
@@ -507,9 +525,23 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             }
         }
         if (!cd.HasValue && verb.defaultCooldownTime > 0) { cd = verb.defaultCooldownTime; }
-        if (aim == 0f && GunTurret != null && GetData(GunTurret) is BuildingData bd && bd.def is ThingDef builddef)
+
+        // 炮塔：枪只是挂件，射击节奏全部由建筑决定 ——
+        //   冷却：Building_TurretGun.BurstCooldownTime() 在 turretBurstCooldownTime >= 0 时用它，
+        //         否则才回落到 AttackVerb.verbProps.defaultCooldownTime；
+        //   预热：只认 def.building.turretBurstWarmupTime（Verb.TryStartCastOn 的 warmup 仅在
+        //         CasterIsPawn 时生效，炮塔不是 pawn —— 所以枪的 verb.warmupTime 对炮塔是死值）。
+        // 原版 12 个炮塔的实际差异（漏掉这两项就会算错）：
+        //   · Gun_ChargeBlasterHeavyTurret / Gun_InfernoCannonTurret / Artillery_AutoMortar /
+        //     Artillery_Mortar 没有 RangedWeapon_Cooldown，verb 也没设 defaultCooldownTime
+        //     → 旧代码 cd 为 null，直接 return，这 4 行**根本没有 DPS / 强度**；
+        //   · Turret_AutoMiniTurret(枪 5.1/建筑 2.5)、Turret_RocketswarmLauncher(3.5/0.1)、
+        //     Turret_TacticalTurret(4.8/2.4) 枪与建筑不一致，旧代码用了枪的（游戏里不用）；
+        //   · 上面两把电荷爆裂炮塔的 verb 预热是 1.25，建筑预热是默认 0.5 —— 旧代码"枪的非 0 就用枪的"。
+        if (TurretBuildingProps() is BuildingProperties bp)
         {
-            aim = builddef.building?.turretBurstWarmupTime.Average;
+            if (bp.turretBurstCooldownTime >= 0f) cd = bp.turretBurstCooldownTime;
+            aim = bp.turretBurstWarmupTime.Average;
         }
         if (!dmg.HasValue) { dmg = 0; } else { dmg = Math.Max(dmg.Value, 0); }
         if (cd.HasValue && aim.HasValue && burstShotCount.HasValue && cd > 0f)

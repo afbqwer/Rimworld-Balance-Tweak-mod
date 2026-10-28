@@ -374,6 +374,40 @@ class BuildingData : TweakData<BuildingData>
         ApplyS(nameof(defLabel), v => this.def.label = v);
         ApplyBuildingProp(def);
         ApplyDefStats(def);
+        // 炮塔的射击节奏（冷却 / 预热）写在建筑上，挂载的那把枪只是据它算 DPS。
+        // 改完必须主动刷那一行，否则武器页签的 DPS / 强度停在旧值 —— 与弹丸改动后
+        // 刷新共用武器（ProjectileData.RefreshSharedWeapons）是同一条道理。
+        if (TurretRateTouched) RefreshTurretGun();
+    }
+
+    /// <summary>
+    /// 本次 Apply 是否动过"决定炮塔射速"的那一格。
+    /// <para>
+    /// 比三态多判两项，是因为"重置"（<see cref="StatColumnConfig.ResetTo"/> 的单格还原、
+    /// 整行重置 <see cref="TweakData.forceWriteAll"/>）都是先把字段写回原值、再清掉标记，
+    /// 那一刻三态已经是 Unset —— 只看 <c>IsFieldModified</c> 会把重置漏掉。
+    /// </para>
+    /// </summary>
+    private bool TurretRateTouched
+        => IsFieldModified(nameof(turretBurstCooldownTime))
+           || forceWriteAll
+           || forceWriteFields?.Contains(nameof(turretBurstCooldownTime)) == true;
+
+    /// <summary>
+    /// 刷新挂载武器（<see cref="TurretGun"/>）的派生值：DPS / 强度。
+    /// <para>
+    /// <b>原始快照跳过</b>：<see cref="WeaponData.GenValues"/> 会连镜像列（伤害/穿透）一起重写，
+    /// 而快照是 <c>Revert</c> / <c>ResetTo</c> 的原值基准。活实例（UI 缓存里的克隆、已存修改实例）照常刷。
+    /// </para>
+    /// <para>未 SetDef 的枪行也跳过：那时候算出来的是野值（同一类坑见 WeaponData.GenValues 里 isCompQuality 的注释）。</para>
+    /// </summary>
+    private void RefreshTurretGun()
+    {
+        if (TurretGun == null) return;
+        if (GetLiveData(TurretGun) is not WeaponData gun) return;
+        if (gun.def == null) return;
+        if (ReferenceEquals(TweakDatabase.GetOriginal(gun.id), gun)) return;
+        gun.GenValues();
     }
 
     private void ApplyBuildingProp(ThingDef def)
