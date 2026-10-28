@@ -626,8 +626,8 @@ public partial class BalanceTweakSettings : ModSettings
         // 搜索框
         Rect searchInputTexture = new Rect(curX, bottomrow.y, bottomrow.height, bottomrow.height).ContractedBy(Contracted);
         curX += searchInputTexture.width;
-        // 搜索框是整行唯一的弹性元素，剩余宽度都由它吸收
-        float searchWidth = Mathf.Max(80f, bottomrow.width * 0.21f);
+
+        float searchWidth = Mathf.Max(80f, bottomrow.width * 0.17f);
         Rect searchInputRect = new Rect(curX, bottomrow.y, searchWidth + Contracted, bottomrow.height).ContractedBy(Contracted);
 
         const string SearchControlName = "SearchBox";
@@ -673,7 +673,7 @@ public partial class BalanceTweakSettings : ModSettings
         curX += propFilterRect.width;
 
         // Mod 筛选
-        Rect modFilterRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.23f + Contracted, bottomrow.height).ContractedBy(Contracted);
+        Rect modFilterRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.17f + Contracted, bottomrow.height).ContractedBy(Contracted);
         if (Widgets.ButtonText(modFilterRect, filterModPack))
         {
             OpenFilterMenu(availableModPacks, selection =>
@@ -705,14 +705,14 @@ public partial class BalanceTweakSettings : ModSettings
         }
         curX += sortModeRect.width;
         // 显示已修改
-        Rect showChangedRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.1f + Contracted, bottomrow.height).ContractedBy(Contracted);
+        Rect showChangedRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.13f + Contracted, bottomrow.height).ContractedBy(Contracted);
         TooltipHandler.TipRegion(showChangedRect, "MST.showChangedTooltip".Translate().RawText);
 
         Widgets.CheckboxLabeled(showChangedRect, "MST.showChanged".Translate().RawText, ref showChanged);
         curX += showChangedRect.width;
 
         // 显示抽象值
-        Rect showAbstractRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.1f + Contracted, bottomrow.height).ContractedBy(Contracted);
+        Rect showAbstractRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.13f + Contracted, bottomrow.height).ContractedBy(Contracted);
         TooltipHandler.TipRegion(showAbstractRect, "MST.showAbstractTooltip".Translate().RawText);
         Widgets.CheckboxLabeled(showAbstractRect, "MST.showAbstract".Translate().RawText, ref showAbstract);
         curX += showAbstractRect.width;
