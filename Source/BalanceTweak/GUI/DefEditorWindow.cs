@@ -25,12 +25,6 @@ public class DefEditorWindow : Window
     private const int MinWidth = 800;
     private const int MinHeight = 480;
 
-    /// <summary>自绘标题占的高度：正好是顶部控制栏的一行（与表格行高同一个常量）。</summary>
-    private const float TitleHeight = LineHeight;
-
-    /// <summary>标题右侧让给关闭 X 的宽度。X 画在窗口右上角（距右 22px、18px 见方），换算到内容坐标约吃掉 40px。</summary>
-    private const float CloseButtonReserve = 44f;
-
     public DefEditorWindow()
     {
         doCloseX = true;
@@ -41,7 +35,7 @@ public class DefEditorWindow : Window
         absorbInputAroundWindow = true;
         closeOnClickedOutside = true;
         // 不设 optionalTitle：它跟 UI 全局字号（Small）走，在这么大一扇窗口顶端小得像个注脚。
-        // 标题改为 DoWindowContents 里自绘，占掉顶部一行。
+        // 标题由表格自己画在首行（BalanceTweakSettings.DrawTitleBar），右上角还要摆按钮。
     }
 
     public override Vector2 InitialSize
@@ -49,29 +43,8 @@ public class DefEditorWindow : Window
 
     public override void DoWindowContents(Rect inRect)
     {
-        DrawTitle(new Rect(0f, 0f, inRect.width, TitleHeight));
-
-        // 表格本体仍在 BalanceTweakSettings（持久化字段与它绑在一起），这里只提供一个窗口壳；
-        // 整体下移一行给标题让位，表格内部的布局一行都不用改
-        BalanceTweakMod.settings?.DoEditorContents(
-            new Rect(0f, TitleHeight, inRect.width, inRect.height - TitleHeight));
-    }
-
-    private static void DrawTitle(Rect rect)
-    {
-        Text.Font = GameFont.Medium;
-        Text.Anchor = TextAnchor.MiddleLeft;
-        GUI.color = Color.white;
-        Widgets.Label(new Rect(rect.x, rect.y, rect.width - CloseButtonReserve, rect.height),
-            "MST.SimpleDefEditer".Translate().RawText);
-
-        // 与表格里「控制栏 / 表头」之间那两条分隔线同款，把标题和下面的控件隔开
-        GUI.color = Color.gray;
-        Widgets.DrawLineHorizontal(rect.x, rect.yMax - 1f, rect.width);
-        GUI.color = Color.white;
-
-        Text.Anchor = TextAnchor.UpperLeft;
-        Text.Font = GameFont.Small;
+        // 窗口壳只提供边框和关闭 X；标题行 + 表格全在 DoEditorContents 里（标题行要放按钮，得能访问表格的私有状态）
+        BalanceTweakMod.settings?.DoEditorContents(inRect);
     }
 
     public override void PreClose()

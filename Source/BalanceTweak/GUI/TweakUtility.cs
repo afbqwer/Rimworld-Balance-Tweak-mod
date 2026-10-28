@@ -355,6 +355,9 @@ public partial class BalanceTweakSettings
         {
             if (target == null) return;
 
+            // 每次跳转记一条历史：标题行的「后退」靠它还原离开时的筛选 / 搜索词 / 滚动位置
+            PushNavigationHistory();
+
             // 设置筛选条件
             curType = target.id.settingType;
             selectedCol = null;

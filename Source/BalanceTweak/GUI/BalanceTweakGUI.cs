@@ -12,8 +12,8 @@ namespace BalanceTweak;
 public partial class BalanceTweakSettings : ModSettings
 {
     #region 常量定义
-    /// <summary>表格一行的高度。顶部控制栏也是按这个行高切分的，<see cref="DefEditorWindow"/> 的自绘标题同样取这一行。</summary>
-    internal const float LineHeight = 26f;
+    /// <summary>表格一行的高度。顶部控制栏、标题行都按这个行高切分。</summary>
+    private const float LineHeight = 26f;
     private const float TabTopHeight = 60f;
     public static int NameColWidth = 230;
     public static int DataColWidth = 76;
@@ -23,10 +23,14 @@ public partial class BalanceTweakSettings : ModSettings
     private const float IconSizePadded = 35f;
     private const float ResetButtonWidth = 30f;
     private const float Contracted = 2f;
-    /// <summary>筛选行最右侧「?」帮助按钮的边长（不可点击，只有悬浮提示）</summary>
-    private const float HelpButtonSize = 26f;
-    /// <summary>为「?」帮助按钮在筛选行右侧预留的宽度：搜索栏是整行唯一的弹性元素，从它身上扣</summary>
-    private const float HelpButtonReserve = 64f;
+    /// <summary>标题行右侧要留给窗口关闭 X 的宽度：X 距右 22px、18px 见方，换算到内容坐标约吃掉 40px。</summary>
+    private const float TitleCloseReserve = 44f;
+    /// <summary>标题行按钮之间的间距。</summary>
+    private const float TitleButtonGap = 4f;
+    /// <summary>后退/前进历史最多留多少条，够用即可，免得长时间跳转后无限增长。</summary>
+    private const int NavHistoryLimit = 64;
+    /// <summary>筛选行右侧的固定留白（原先那个位置摆着「?」帮助按钮）。</summary>
+    private const float FilterRowRightSlack = 64f;
     #endregion
 
     #region 数据与状态
@@ -68,6 +72,18 @@ public partial class BalanceTweakSettings : ModSettings
     public static bool batchLowerLimitEnabled = false;
     /// <summary>是否对统一修改的结果应用上限截断（点击「上限」标签切换）。默认关闭。</summary>
     public static bool batchUpperLimitEnabled = false;
+    /// <summary>步长：把结果对齐到它的整数倍。0（或负数）= 不取整，默认关闭。</summary>
+    public static float batchStep = 0f;
+    /// <summary>对齐到步长时的取整方式。默认四舍五入。</summary>
+    public static BatchStepMode batchStepMode = BatchStepMode.Round;
+
+    /// <summary>步长取整方式。枚举名会被拼成 <c>MST.BatchStep{Name}</c> 翻译键，改名要同步改语言文件。</summary>
+    public enum BatchStepMode
+    {
+        Round,
+        Ceil,
+        Floor,
+    }
 
     /// <summary>统一修改实际生效的下限；未启用下限时为负无穷，等价于该侧不截断。</summary>
     public static float EffectiveBatchLowerLimit => batchLowerLimitEnabled ? batchLowerLimit : float.NegativeInfinity;
@@ -75,11 +91,33 @@ public partial class BalanceTweakSettings : ModSettings
     public static float EffectiveBatchUpperLimit => batchUpperLimitEnabled ? batchUpperLimit : float.PositiveInfinity;
 
     /// <summary>
-    /// 统一修改的数值变换：(值 + 增减) * 倍率，再按已启用的上下限截断。
+    /// 统一修改的数值变换：(值 + 增减) * 倍率 → 按步长取整 → 按已启用的上下限截断。
     /// 「统一修改」按钮与「显示结果值」预览共用此方法，确保两者结果一致。
     /// </summary>
     public static float ApplyBatchToValue(float value)
-        => Mathf.Clamp((value + batchFlat) * batchPrec, EffectiveBatchLowerLimit, EffectiveBatchUpperLimit);
+        => Mathf.Clamp(SnapToStep((value + batchFlat) * batchPrec), EffectiveBatchLowerLimit, EffectiveBatchUpperLimit);
+
+    /// <summary>
+    /// 把值对齐到 <see cref="batchStep"/> 的整数倍（步长 ≤ 0 时原样返回）。
+    /// 例：步长 0.5 + 四舍五入 → 40.2 得 40.0、40.3 得 40.5；步长 50 + 向下取整 → 325 得 300。
+    /// <para>
+    /// 取整放在截断<b>之前</b>：上下限是硬边界，取整若在它后面就可能把结果顶出边界。
+    /// </para>
+    /// </summary>
+    private static float SnapToStep(float value)
+    {
+        if (batchStep <= 0f) return value;
+        float ratio = value / batchStep;
+        ratio = batchStepMode switch
+        {
+            BatchStepMode.Ceil => Mathf.Ceil(ratio),
+            BatchStepMode.Floor => Mathf.Floor(ratio),
+            // Mathf.Round 是银行家舍入（.5 往偶数靠），这里要的是真正的四舍五入
+            _ => (float)Math.Round(ratio, MidpointRounding.AwayFromZero),
+        };
+        // 乘法会把浮点误差放大（0.1 × 3 = 0.30000001），收一下尾，免得写进 XML 的是一串尾数
+        return (float)Math.Round(ratio * batchStep, 4);
+    }
 
     private static TweakData? needRemove = null;
     private static string? editingControlName = null;
@@ -117,6 +155,30 @@ public partial class BalanceTweakSettings : ModSettings
     private static Vector2 dataScrollPosition = Vector2.zero;
     private static Vector2 headerScrollPosition = Vector2.zero;
     private static float jumpdataScrollY = -1;
+
+    // 后退 / 前进历史（只活在本局内存里，不落盘）
+    // navBack：离开过的视图，越靠后越近；navForward：后退之后被推下去、还能再前进回去的视图。
+    // 每次跳转只往 navBack 记一条（见 TweakUtility.JumpToData），前进栈随之作废。
+    private static readonly List<NavState> navBack = new();
+    private static readonly List<NavState> navForward = new();
+
+    /// <summary>
+    /// 一份「视图快照」：跳转/前进/后退时要原样还原的东西 —— 筛选、搜索词、排序、选中列、滚动位置。
+    /// 不记录列显隐（那是全局配置，跨视图共享，跟着还原反而会打乱别的视图）。
+    /// </summary>
+    private sealed class NavState
+    {
+        public SettingType type;
+        public string modPack = "All";
+        public int propType;
+        public string search = "";
+        public SortModeType sortMode;
+        public StatColumnConfig? sortCol;
+        public StatColumnConfig? selectedCol;
+        public Vector2 dataScroll;
+        public Vector2 headerScroll;
+        public TweakData? highlight;
+    }
 
     // 右键菜单状态
     private static Vector2 rightClickStartPos;
@@ -302,6 +364,13 @@ public partial class BalanceTweakSettings : ModSettings
 
         GUI.BeginGroup(inRect);
 
+        // 0. 标题行（窗口壳只负责边框，标题和右上角那排按钮都在这里画）
+        DrawTitleBar(new Rect(0, 0, inRect.width, LineHeight));
+
+        // 表格整体下移一行：用嵌套 group，里面所有坐标仍是 0 基，原有布局一行都不用改
+        Rect tableRect = new(0, LineHeight, inRect.width, inRect.height - LineHeight);
+        GUI.BeginGroup(tableRect);
+
         // 1. 顶部控制栏
         Rect tabTopRect = new(0, 0, inRect.width, TabTopHeight);
         DrawTabTop(tabTopRect);
@@ -310,17 +379,149 @@ public partial class BalanceTweakSettings : ModSettings
         float headerStartY = TabTopHeight + 5f;
         GUI.color = Color.gray;
         Widgets.DrawLineHorizontal(0, headerStartY, inRect.width);
-        Widgets.DrawLineVertical(NameColWidth, headerStartY, inRect.height - TabTopHeight); // 垂直分隔线
+        Widgets.DrawLineVertical(NameColWidth, headerStartY, tableRect.height - TabTopHeight); // 垂直分隔线
         GUI.color = Color.white;
         // 3. 表头
         Rect headerRect = new(0, headerStartY, inRect.width, LineHeight);
         DrawHeader(headerRect);
 
         // 4. 数据区域
-        Rect dataRect = new(0, headerStartY + LineHeight + 4f, inRect.width, inRect.height - (headerStartY + LineHeight + 4f));
+        Rect dataRect = new(0, headerStartY + LineHeight + 4f, inRect.width, tableRect.height - (headerStartY + LineHeight + 4f));
         DrawData(dataRect);
         Text.Anchor = TextAnchor.UpperLeft;
+
         GUI.EndGroup();
+        GUI.EndGroup();
+    }
+
+    /// <summary>
+    /// 标题行：左边标题，右边一排「后退 / 前进 / 列配置 / 总体设置 / ?」。
+    /// 高度只有一行（<see cref="LineHeight"/>），所以按钮高度也压在这一行里。
+    /// </summary>
+    private static void DrawTitleBar(Rect rect)
+    {
+        Text.Font = GameFont.Small;
+        Text.Anchor = TextAnchor.UpperLeft;
+
+        float top = rect.y + Contracted;
+        float height = rect.height - Contracted * 2f;
+        float right = rect.xMax - TitleCloseReserve;   // 给窗口右上角的关闭 X 让位
+
+        // 从右往左摆：视觉顺序（左→右）就是 后退 / 前进 / 列配置 / 总体设置 / ?
+        Rect helpRect = new(right - height, top, height, height);
+        DrawHelpButton(helpRect);
+        right = helpRect.x - TitleButtonGap;
+
+        DrawTitleButton(ref right, top, height, "MST.GeneralSettings", null,
+            () => Find.WindowStack.Add(new GeneralSettingsWindow()));
+        DrawTitleButton(ref right, top, height, "MST.ColumnSelectorTitle", "MST.ColumnConfig",
+            () => Find.WindowStack.Add(new ColumnSelectorWindow()));
+        DrawTitleButton(ref right, top, height, "MST.NavForward", "MST.NavForwardTooltip", NavForward, navForward.Count > 0);
+        DrawTitleButton(ref right, top, height, "MST.NavBack", "MST.NavBackTooltip", NavBack, navBack.Count > 0);
+
+        // 标题（Medium 字号；剩余宽度不够时自动被裁，不会压到按钮上）
+        Text.Font = GameFont.Medium;
+        Text.Anchor = TextAnchor.MiddleLeft;
+        GUI.color = Color.white;
+        Widgets.Label(new Rect(rect.x, rect.y, Mathf.Max(0f, right - rect.x - TitleButtonGap), rect.height),
+            "MST.SimpleDefEditer".Translate().RawText);
+
+        // 与表格里「控制栏 / 表头」之间同款的分隔线
+        GUI.color = Color.gray;
+        Widgets.DrawLineHorizontal(rect.x, rect.yMax - 1f, rect.width);
+        GUI.color = Color.white;
+        Text.Anchor = TextAnchor.UpperLeft;
+        Text.Font = GameFont.Small;
+    }
+
+    /// <summary>
+    /// 标题行按钮：宽度按文字实测（中英文都不会被裁），从 <paramref name="right"/> 往左排。
+    /// </summary>
+    /// <param name="tooltipKey">悬浮提示的翻译键，传 null 则不带提示。</param>
+    /// <param name="enabled">false 时置灰且不可点（后退/前进没有历史时用）。</param>
+    private static void DrawTitleButton(ref float right, float top, float height,
+        string labelKey, string? tooltipKey, Action onClick, bool enabled = true)
+    {
+        string label = labelKey.Translate().RawText;
+        float width = Mathf.Max(Text.CalcSize(label).x + 12f, 40f);
+        Rect btnRect = new(right - width, top, width, height);
+        right = btnRect.x - TitleButtonGap;
+
+        bool prevEnabled = GUI.enabled;
+        GUI.enabled = prevEnabled && enabled;
+        if (Widgets.ButtonText(btnRect, label)) onClick();
+        GUI.enabled = prevEnabled;
+
+        if (tooltipKey != null) TooltipHandler.TipRegion(btnRect, tooltipKey.Translate().RawText);
+    }
+
+    /// <summary>跳转前记一条历史（每次跳转记一次），并把前进栈作废。</summary>
+    private static void PushNavigationHistory()
+    {
+        CommitPendingEdit();
+        navBack.Add(CaptureNavState());
+        if (navBack.Count > NavHistoryLimit) navBack.RemoveAt(0);
+        navForward.Clear();
+    }
+
+    private static NavState CaptureNavState() => new()
+    {
+        type = curType,
+        modPack = filterModPack,
+        propType = filterPropType,
+        search = searchFilter.Text,
+        sortMode = curSortMode,
+        sortCol = sortCol,
+        selectedCol = selectedCol,
+        dataScroll = dataScrollPosition,
+        headerScroll = headerScrollPosition,
+        // 高亮已经淡完就不必记了，只记「还看得见」的那一次
+        highlight = jumpHighlightFrame > 0 ? jumpHighlightData : null,
+    };
+
+    private static void NavBack()
+    {
+        if (navBack.Count == 0) return;
+        CommitPendingEdit();
+        navForward.Add(CaptureNavState());
+        NavState target = navBack[navBack.Count - 1];
+        navBack.RemoveAt(navBack.Count - 1);
+        ApplyNavState(target);
+    }
+
+    private static void NavForward()
+    {
+        if (navForward.Count == 0) return;
+        CommitPendingEdit();
+        navBack.Add(CaptureNavState());
+        NavState target = navForward[navForward.Count - 1];
+        navForward.RemoveAt(navForward.Count - 1);
+        ApplyNavState(target);
+    }
+
+    /// <summary>
+    /// 还原一份快照。注意顺序：先把筛选字段写好并<b>立即</b>重建列表，再写滚动位置 ——
+    /// DrawData 会在本帧按当前列表钳制滚动位置，重建拖到下一帧的话，这里刚恢复的位置会被旧列表钳一次。
+    /// </summary>
+    private static void ApplyNavState(NavState state)
+    {
+        curType = state.type;
+        filterModPack = state.modPack;
+        filterPropType = state.propType;
+        searchFilter.Text = state.search;
+        curSortMode = state.sortMode;
+        sortCol = state.sortCol;
+        selectedCol = state.selectedCol;
+        // 置空：否则 UpdateFilters 末尾会按 jumpData 算出的行号覆盖下面恢复的滚动位置
+        jumpData = null;
+        jumpHighlightData = state.highlight;
+        jumpHighlightFrame = state.highlight != null ? 90 : 0;
+
+        filterDirty = true;
+        TweakUtility.InitAndUpdateData();
+
+        dataScrollPosition = state.dataScroll;
+        headerScrollPosition = state.headerScroll;
     }
     #endregion
 
@@ -342,9 +543,9 @@ public partial class BalanceTweakSettings : ModSettings
         Widgets.Label(colInfoRect, "MST.CurrentColumn".Translate().RawText + colName);
         curX += colInfoRect.width;
         // 批量操作区
-        Rect FlatRect = new Rect(curX, toprow.y, toprow.width * 0.10f + Contracted, toprow.height).ContractedBy(Contracted);
+        Rect FlatRect = new Rect(curX, toprow.y, toprow.width * 0.09f + Contracted, toprow.height).ContractedBy(Contracted);
         curX += DrawLabeledInput(FlatRect, "MST.FlatInput".Translate().RawText, ref batchFlat, false);
-        Rect PrecRect = new Rect(curX, toprow.y, toprow.width * 0.10f + Contracted, toprow.height).ContractedBy(Contracted);
+        Rect PrecRect = new Rect(curX, toprow.y, toprow.width * 0.09f + Contracted, toprow.height).ContractedBy(Contracted);
         curX += DrawLabeledInput(PrecRect, "MST.PrecInput".Translate().RawText, ref batchPrec, true) + 4f;
         // 下限输入框（点击「下限」标签切换是否应用下限截断）
         Rect LowerLimitRect = new Rect(curX, toprow.y, toprow.width * 0.12f + Contracted, toprow.height).ContractedBy(Contracted);
@@ -358,6 +559,10 @@ public partial class BalanceTweakSettings : ModSettings
             batchLowerLimit = batchUpperLimit;
         }
 
+        // 步长：把结果对齐到步长的整数倍（0 = 不取整），取整方式用下拉列表选
+        Rect StepRect = new Rect(curX, toprow.y, toprow.width * 0.14f + Contracted, toprow.height).ContractedBy(Contracted);
+        curX += DrawBatchStepInput(StepRect, "MST.BatchStep".Translate().RawText, ref batchStep) + 4f;
+
         // 批量应用按钮
         Rect applyRect = new Rect(curX, toprow.y, toprow.width * 0.08f + Contracted, toprow.height).ContractedBy(Contracted);
         if (Widgets.ButtonText(applyRect, "MST.Apply".Translate().RawText))
@@ -366,23 +571,6 @@ public partial class BalanceTweakSettings : ModSettings
         }
         TooltipHandler.TipRegion(applyRect, "MST.ApplyToolTip".Translate().RawText);
         curX += applyRect.width;
-
-        // 打开列配置窗口按钮
-        Rect openFolderRect = new Rect(curX, toprow.y, toprow.width * 0.08f + Contracted, toprow.height).ContractedBy(Contracted);
-        if (Widgets.ButtonText(openFolderRect, "MST.ColumnSelectorTitle".Translate().RawText))
-        {
-            Find.WindowStack.Add(new ColumnSelectorWindow());
-        }
-        TooltipHandler.TipRegion(openFolderRect, "MST.ColumnConfig".Translate().RawText);
-        curX += openFolderRect.width;
-
-        // 总体设置按钮
-        Rect colConfigBtn = new Rect(curX, toprow.y, toprow.width * 0.08f + Contracted, toprow.height).ContractedBy(Contracted);
-        if (Widgets.ButtonText(colConfigBtn, "MST.GeneralSettings".Translate().RawText))
-        {
-            Find.WindowStack.Add(new GeneralSettingsWindow());
-        }
-        curX += colConfigBtn.width;
 
         // 重置此列按钮
         Rect resetColRect = new Rect(curX, toprow.y, toprow.width * 0.08f + Contracted, toprow.height).ContractedBy(Contracted);
@@ -418,8 +606,10 @@ public partial class BalanceTweakSettings : ModSettings
         // 搜索框
         Rect searchInputTexture = new Rect(curX, bottomrow.y, bottomrow.height, bottomrow.height).ContractedBy(Contracted);
         curX += searchInputTexture.width;
-        // 右侧为「?」帮助按钮腾出位置
-        float searchWidth = Mathf.Max(80f, bottomrow.width * 0.21f - HelpButtonReserve);
+        // 右侧留白：这一行的控件加起来本就贴着右边界（原先这个位置正好摆着「?」），
+        // 不留这 64px，最后一个「查看模式」勾选框会被窗口右边裁掉。
+        // 搜索框是整行唯一的弹性元素，留白从它身上扣。
+        float searchWidth = Mathf.Max(80f, bottomrow.width * 0.21f - FilterRowRightSlack);
         Rect searchInputRect = new Rect(curX, bottomrow.y, searchWidth + Contracted, bottomrow.height).ContractedBy(Contracted);
 
         const string SearchControlName = "SearchBox";
@@ -514,29 +704,21 @@ public partial class BalanceTweakSettings : ModSettings
         TooltipHandler.TipRegion(showDisplayModeRect, "MST.showDisplayModeTooltip".Translate().RawText);
         Widgets.CheckboxLabeled(showDisplayModeRect, "MST.showDisplayMode".Translate().RawText, ref showDisplayMode);
         curX += showDisplayModeRect.width;
-
-        // 「?」帮助按钮：贴在最右侧，只显示提示、不接受点击。
-        // 尺寸与纵向位置跟同一行的其它筛选控件完全对齐（都是 30 高内缩 2 → 26）
-        Rect helpRect = new Rect(
-            bottomrow.xMax - HelpButtonSize - Contracted - 8f,
-            bottomrow.y + Contracted,
-            HelpButtonSize,
-            HelpButtonSize);
-        DrawHelpButton(helpRect);
     }
 
     /// <summary>
-    /// 筛选行最右侧的「?」
-    /// 悬浮时显示整表操作说明。
+    /// 标题行最右侧的「?」：悬浮显示整表操作说明。
+    /// 底纹与标题行其它按钮同一套，但**不接受点击** —— 它只是个提示入口。
     /// </summary>
     private static void DrawHelpButton(Rect rect)
     {
+        Widgets.DrawAtlas(rect, Widgets.ButtonSubtleAtlas);
         if (Mouse.IsOver(rect)) Widgets.DrawHighlight(rect);
         Text.Anchor = TextAnchor.MiddleCenter;
         Text.Font = GameFont.Small;
         Widgets.Label(rect, "?");
-        Text.Anchor = TextAnchor.MiddleCenter;
         TooltipHandler.TipRegion(rect, "MST.HelpTooltip".Translate().RawText);
+        Text.Anchor = TextAnchor.UpperLeft;
     }
 
     /// <summary>绘制表头</summary>
@@ -1543,6 +1725,59 @@ public partial class BalanceTweakSettings : ModSettings
         return rect.width;
     }
 
+    /// <summary>
+    /// 取整方式 → 翻译键。写成字面量而不是「"MST.BatchStep" + 枚举名」拼接：
+    /// 拼出来的键 CheckLoc 的静态扫描看不见，会被误报成多余翻译键。
+    /// </summary>
+    private static readonly Dictionary<BatchStepMode, string> batchStepModeKeyOf = new()
+    {
+        [BatchStepMode.Round] = "MST.BatchStepRound",
+        [BatchStepMode.Ceil] = "MST.BatchStepCeil",
+        [BatchStepMode.Floor] = "MST.BatchStepFloor",
+    };
+
+    /// <summary>下拉里的取整方式，按枚举声明顺序；下拉索引靠这个列表映射回枚举，不依赖「索引 == 枚举值」。</summary>
+    private static readonly List<BatchStepMode> batchStepModes =
+        Enum.GetValues(typeof(BatchStepMode)).Cast<BatchStepMode>().ToList();
+    private static readonly List<string> batchStepModeOptionKeys = batchStepModes
+        .Select(m => batchStepModeKeyOf.TryGetValue(m, out string? key) ? key : m.ToString())
+        .ToList();
+
+    private static string BatchStepModeLabel(BatchStepMode mode)
+        => (batchStepModeKeyOf.TryGetValue(mode, out string? key) ? key : mode.ToString()).Translate().RawText;
+
+    /// <summary>
+    /// 步长控件：标签 + 数值输入 + 取整方式下拉。
+    /// 步长填 0 即不取整，所以不另设开关；算法说明与「当前取整方式」都放进悬浮提示，
+    /// 与上下限那两个可点标签的提示风格保持一致。
+    /// </summary>
+    private static float DrawBatchStepInput(Rect rect, string label, ref float value)
+    {
+        Text.Anchor = TextAnchor.MiddleCenter;
+        float labelWidth = 40f;
+        Rect labelRect = new(rect.x, rect.y, labelWidth, rect.height);
+        Widgets.Label(labelRect, label);
+
+        // 提示挂在整块控件上：标签、输入框、下拉任意处悬浮都能看到
+        TooltipHandler.TipRegion(rect,
+            "MST.BatchStepTooltip".Translate(BatchStepModeLabel(batchStepMode)).RawText);
+
+        const float inputWidth = 42f;
+        Rect inputRect = new(rect.x + labelWidth, rect.y, inputWidth, rect.height);
+        string text = Widgets.TextField(inputRect, value.ToString("0.###"));
+        if (float.TryParse(text, out float newVal))
+        {
+            value = Mathf.Max(newVal, 0f);
+        }
+
+        Rect modeRect = new(inputRect.xMax + 2f, rect.y, rect.width - labelWidth - inputWidth - 2f, rect.height);
+        if (Widgets.ButtonText(modeRect, BatchStepModeLabel(batchStepMode)))
+        {
+            OpenFilterMenu(batchStepModeOptionKeys, i => batchStepMode = batchStepModes[i]);
+        }
+        return rect.width;
+    }
+
     /// <summary>启用状态下标签的底色（绿色高亮，表示该项会参与截断）</summary>
     private static readonly Color LimitLabelOnColor = new(0.26f, 0.58f, 0.30f);
     /// <summary>停用状态下标签的底色（灰色，表示该项不参与截断）</summary>
@@ -1598,7 +1833,6 @@ public partial class BalanceTweakSettings : ModSettings
     }
 
     public static bool IsPinned(TweakID id) => pinnedIds.Contains(id);
-
     public static void TogglePin(TweakID id)
     {
         if (pinnedIds.Contains(id))
