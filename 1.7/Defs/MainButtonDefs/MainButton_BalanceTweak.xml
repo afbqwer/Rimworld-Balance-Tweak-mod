@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!--
+    底部主按钮：打开独立的 Def 编辑窗口（DefEditorWindow）。
+    放在 1.7/ 下而不是根目录，是因为 1.6 的 dll 已归档、不含 MainButtonWorker_OpenEditor，
+    根目录的 Def 会被 1.6 一起加载，workerClass 找不到类型会报错。
+  -->
+  <MainButtonDef>
+    <defName>BalanceTweakEditor</defName>
+    <label>Def editor</label>
+    <description>Open the standalone def editor window: batch-edit def fields, configure columns and manage the tweaks you have saved.</description>
+    <workerClass>BalanceTweak.MainButtonWorker_OpenEditor</workerClass>
+    <!-- 排在原版 Factions(90) 之后、Menu(500) 之前：贴着右下角，不挤占殖民地的日常页签 -->
+    <order>95</order>
+    <!-- 没有地图（世界地图界面）时也能开：编辑的是 Def，与当前殖民地无关 -->
+    <validWithoutMap>true</validWithoutMap>
+  </MainButtonDef>
+
+</Defs>

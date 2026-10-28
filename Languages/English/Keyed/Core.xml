@@ -82,6 +82,7 @@
 - Name column: left-click jumps to the entry, right-click for Pin / Reset / Copy defName, R resets it.
 - Data cell: right-click for Copy / Paste / Reset that field; def-picker columns can also jump.</MST.HelpTooltip>
     <MST.SimpleDefEditer>Simple Def Editor</MST.SimpleDefEditer>
+    <MST.SettingsHint>The editor window opens automatically. Closing it also closes this page. While playing you can also click the "Def editor" main button at the bottom of the screen.</MST.SettingsHint>
     <MST.EditCurve>Edit Curve</MST.EditCurve>
     <MST.Points>Points</MST.Points>
     <MST.AddPoint>Add Point</MST.AddPoint>

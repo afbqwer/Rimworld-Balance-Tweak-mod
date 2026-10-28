@@ -82,6 +82,7 @@
 - 名称列：左键跳转条目，右键 固定/重置/复制 defName，右侧 R 重置。
 - 数据格右键：复制/粘贴/重置该字段，Def 引用列可跳转。</MST.HelpTooltip>
     <MST.SimpleDefEditer>简单Def编辑器</MST.SimpleDefEditer>
+    <MST.SettingsHint>编辑窗口已自动打开。关闭编辑窗口会一并退出本页；游戏内也可以直接点屏幕底部的「Def 编辑器」主按钮。</MST.SettingsHint>
     <MST.EditCurve>编辑曲线</MST.EditCurve>
     <MST.Points>控制点</MST.Points>
     <MST.AddPoint>添加点</MST.AddPoint>

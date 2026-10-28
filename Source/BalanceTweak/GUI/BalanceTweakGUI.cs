@@ -12,7 +12,8 @@ namespace BalanceTweak;
 public partial class BalanceTweakSettings : ModSettings
 {
     #region 常量定义
-    private const float LineHeight = 26f;
+    /// <summary>表格一行的高度。顶部控制栏也是按这个行高切分的，<see cref="DefEditorWindow"/> 的自绘标题同样取这一行。</summary>
+    internal const float LineHeight = 26f;
     private const float TabTopHeight = 60f;
     public static int NameColWidth = 230;
     public static int DataColWidth = 76;
@@ -290,8 +291,9 @@ public partial class BalanceTweakSettings : ModSettings
     #endregion
 
     #region 主绘制逻辑
-    // Unity 的 IMGUI在每一帧会为不同的事件类型（EventType）多次调用 OnGUI(DoSettingsWindowContents) 方法。
-    public void DoSettingsWindowContents(Rect inRect)
+    // Unity 的 IMGUI在每一帧会为不同的事件类型（EventType）多次调用 OnGUI(DoWindowContents) 方法。
+    // 这里是整张表格的本体，由独立窗口 DefEditorWindow 调用（不再挂在 Dialog_ModSettings 上）。
+    public void DoEditorContents(Rect inRect)
     {
         // 必须放在所有绘制/点击处理之前：拖拽涂抹的收尾（松手复位 + 抑制点击）要在本帧任何点击判定之前完成
         DragPaint.BeginFrame();

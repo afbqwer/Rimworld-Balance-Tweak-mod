@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <BalanceTweakEditor.label>Def editor</BalanceTweakEditor.label>
+  <BalanceTweakEditor.description>Open the standalone def editor window: batch-edit def fields, configure columns and manage the tweaks you have saved.</BalanceTweakEditor.description>
+
+</LanguageData>

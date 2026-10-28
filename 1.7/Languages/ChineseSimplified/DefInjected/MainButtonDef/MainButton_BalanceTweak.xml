@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <BalanceTweakEditor.label>Def 编辑器</BalanceTweakEditor.label>
+  <BalanceTweakEditor.description>打开独立的 Def 编辑窗口：批量改字段、配列、管理已保存的改动。</BalanceTweakEditor.description>
+
+</LanguageData>

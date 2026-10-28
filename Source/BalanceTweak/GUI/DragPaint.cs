@@ -17,8 +17,8 @@ namespace BalanceTweak;
 ///   自持 <see cref="Input"/> 状态不跟它们抢 controlID（见 <see cref="Cell"/> 注释）。
 ///
 /// 状态推进完全由「单元格在绘制时调用 <see cref="Cell"/>」驱动；鼠标一松开
-/// （<see cref="BeginFrame"/> 里检测）就整体复位，不依赖任何窗口生命周期回调 —— 本表
-/// 挂在 <c>Dialog_ModSettings</c> 上，没有可用的 PostClose 收尾点。
+/// （<see cref="BeginFrame"/> 里检测）就整体复位，不依赖窗口生命周期回调 ——
+/// 编辑窗口 <c>DefEditorWindow</c> 关窗时另调一次 <see cref="Reset"/> 兜底。
 /// </summary>
 public static class DragPaint
 {
