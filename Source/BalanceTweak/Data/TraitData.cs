@@ -102,7 +102,7 @@ class TraitData : TweakData<TraitData>, ISubItemHost
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<float>(nameof(commonality), v => CommonalityField.SetValue(def, v));
         ApplyV<float>(nameof(commonalityFemale), v => CommonalityFemaleField.SetValue(def, v));
         ApplyV<bool>(nameof(canBeSuppressed), v => def.canBeSuppressed = v);

@@ -303,7 +303,7 @@ public class ApparelData : TweakData<ApparelData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyApparelProp(def);
         ApplyDefStats(def);
         OnChangeStuffEffectMultiplierArmor(this);

@@ -150,7 +150,7 @@ class ResearchData : TweakData<ResearchData>
         ApplyL<string>(nameof(customUnlockTexts), v => def.customUnlockTexts = v);
         ApplyL<string>(nameof(heldByFactionCategoryTags), v => def.heldByFactionCategoryTags = v);
         ApplyD<ConceptDef>(nameof(teachConcept), v => def.teachConcept = v);
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
     }
 
     public override List<string> TypeStrings => typeStrings;

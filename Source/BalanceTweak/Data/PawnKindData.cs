@@ -375,7 +375,7 @@ class PawnKindData : TweakData<PawnKindData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<float>(nameof(combatPower), v => def.combatPower = v);
         ApplyV<bool>(nameof(allowInMechClusters), v => def.allowInMechClusters = v);
         ApplyV<bool>(nameof(collidesWithPawns), v => def.collidesWithPawns = v);

@@ -285,7 +285,7 @@ class BiomeData : TweakData<BiomeData>
             InvalidateBiomeCaches(def);
         }
 
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
     }
 
     private static void InvalidateBiomeCaches(BiomeDef def)

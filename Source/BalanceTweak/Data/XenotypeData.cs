@@ -88,7 +88,7 @@ class XenotypeData : TweakData<XenotypeData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyS(nameof(descriptionShort), v => def.descriptionShort = v);
         // genes 在游戏里被 AllGenes/Archite 直接解引用（无 null 判断）：
         // Cleared 语义仍由 ApplyL 判定，但写入时用空列表代替 null，避免运行期 NRE。

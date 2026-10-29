@@ -166,7 +166,7 @@ public class RecipeData : TweakData<RecipeData>
     {
         if (this.def is RecipeDef def)
         {
-            ApplyS(nameof(defLabel), v => this.def.label = v);
+            ApplyDefLabel(nameof(defLabel), def);
             ApplyV<float>(nameof(workAmount), v => def.workAmount = v);
             ApplyD<StatDef>(nameof(workSpeedStat), v => def.workSpeedStat = v);
             ApplyV<int>(nameof(targetCountAdjustment), v => def.targetCountAdjustment = v);

@@ -364,7 +364,7 @@ class HediffData : TweakData<HediffData>, ISubItemHost
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<float>(nameof(initialSeverity), v => def.initialSeverity = v);
         ApplyV<float>(nameof(lethalSeverity), v => def.lethalSeverity = v);
         ApplyV<float>(nameof(minSeverity), v => def.minSeverity = v);

@@ -76,7 +76,14 @@ class ThoughtStageData : TweakData<ThoughtStageData>
             Log.Error($"[BalanceTweak]{this}的stage为{this.stage}!");
             return;
         }
-        ApplyS(nameof(subdefLabel), v => stage.label = v);
+        // 阶段 label 的 memo 在 ThoughtStage 自己身上（无公开清除入口），且 ThoughtDef.LabelCap 在
+        // def.label 为空时直接用 stages[0].label —— 两处缓存都要清，否则改名在界面上不生效。
+        ApplyS(nameof(subdefLabel), v =>
+        {
+            stage.label = v;
+            LabelCache.Clear(stage);
+            this.def?.ClearCachedData();
+        });
         if (stage != null)
         {
             ApplyV<float>(nameof(baseMoodEffect), v => stage.baseMoodEffect = v);

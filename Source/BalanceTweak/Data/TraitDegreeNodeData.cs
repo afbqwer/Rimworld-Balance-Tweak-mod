@@ -169,7 +169,12 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
             Log.Error($"[BalanceTweak]{this}的degreeData为{this.degreeData}!");
             return;
         }
-        ApplyS(nameof(subdefLabel), v => dd.label = v);
+        // TraitDegreeData.LabelCap 是私有 memo（无公开清除入口）：不清就还是旧名。
+        ApplyS(nameof(subdefLabel), v =>
+        {
+            dd.label = v;
+            LabelCache.Clear(dd);
+        });
         if (dd != null)
         {
             ApplyV<int>(nameof(degree), v => dd.degree = v);

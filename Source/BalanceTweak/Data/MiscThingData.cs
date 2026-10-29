@@ -67,7 +67,7 @@ class MiscThingData : TweakData<MiscThingData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyDefStats(def);
         ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
         if (IsFieldModified(nameof(thingSetMakerTags))) DataUtility.RefreshThingSetMakerFilters();

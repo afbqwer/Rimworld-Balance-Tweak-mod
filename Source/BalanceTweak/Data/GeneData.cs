@@ -137,7 +137,7 @@ class GeneData : TweakData<GeneData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<int>(nameof(biostatMet), v => def.biostatMet = v);
         ApplyV<int>(nameof(biostatArc), v => def.biostatArc = v);
         ApplyV<int>(nameof(biostatCpx), v => def.biostatCpx = v);

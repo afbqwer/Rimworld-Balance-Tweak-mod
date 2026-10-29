@@ -48,7 +48,7 @@ class MemeData : TweakData<MemeData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<float>(nameof(selectionWeightFactor), v => def.randomizationSelectionWeightFactor = v);
         ApplyV<int>(nameof(impact), v => def.impact = v);
     }

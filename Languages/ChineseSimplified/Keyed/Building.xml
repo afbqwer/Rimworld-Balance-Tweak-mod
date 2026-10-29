@@ -67,6 +67,8 @@
     <MST.turretBurstWarmupTimeComment>炮塔瞄准时长（秒），写成 min~max；原版每次开火在区间内随机取值。炮塔枪自己的 verb 预热对它不生效。</MST.turretBurstWarmupTimeComment>
     <MST.turretBurstCooldownTime>爆发冷却</MST.turretBurstCooldownTime>
     <MST.turretInitialCooldownTime>初始冷却</MST.turretInitialCooldownTime>
+    <MST.damagePerFuel>每燃料伤害</MST.damagePerFuel>
+    <MST.damagePerFuelComment>每消耗 1 单位燃料打出的名义伤害：一轮齐射的总伤害 ÷ 这一轮消耗的燃料（每发燃料 × 发数 + 每轮燃料）。不含命中率，与武器页 MaxDPS 同口径。显示为空表示该炮塔开火不消耗燃料。</MST.damagePerFuelComment>
 
     <!-- Furniture 字段 -->
 

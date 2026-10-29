@@ -64,6 +64,25 @@ class BuildingData : TweakData<BuildingData>
     [TweakField(Available = nameof(AvailableIfTurret), Style = ColumnStyle.Int)]
     public float? combatPower = null;
 
+    /// <summary>
+    /// 每消耗 1 单位燃料能打出的名义伤害 = 单次齐射总伤害 ÷ 单次齐射总燃料。
+    /// <para>
+    /// 只读派生列。燃料按发（<c>VerbProperties.consumeFuelPerShot</c>）与按齐射（<c>consumeFuelPerBurst</c>）
+    /// 两种扣法都计入分母，两者的和才是"打完一轮"的真实开销。都不为 0 才轮得到这个比值 ——
+    /// 原版燃料炮塔全是"每发 1 燃料"或"每轮 1 燃料"，不吃燃料的炮塔（含按天连续烧的）显示为空。
+    /// </para>
+    /// <para>
+    /// 分子与武器页的伤害列同源（弹丸的 <c>damageAmountBase</c>），<b>不含命中率、不含爆炸衰减</b>；
+    /// 迫击炮这类伤害取决于装填炮弹的炮塔在 def 上没有 <c>defaultProjectile</c>，同样留空。
+    /// </para>
+    /// <para>
+    /// 分母的"1 燃料"= 燃料槽的 1 点（与游戏里燃料条同口径）。换料时 1 份燃料物资折算
+    /// <c>fuelMultiplier</c> 点，所以这一列直接比"同样一格燃料槽谁更划算"，不掺物资折算。
+    /// </para>
+    /// </summary>
+    [TweakField(DataType = ColumnDataType.Display, Available = nameof(AvailableIfTurret))]
+    public float? damagePerFuel = null;
+
     [TweakField(Style = ColumnStyle.StringList)]
     public List<string>? replaceTags = null;
     [TweakField(Style = ColumnStyle.ThingSetTags)]
@@ -367,9 +386,67 @@ class BuildingData : TweakData<BuildingData>
     private bool _displayValuesEnsured;
     public override void EnsureDisplayValues()
     {
-        if (_displayValuesEnsured) return;
-        _displayValuesEnsured = true;
-        normalMarketValue ??= (float?)GetNormalMarketValue(this);
+        if (!_displayValuesEnsured)
+        {
+            _displayValuesEnsured = true;
+            normalMarketValue ??= (float?)GetNormalMarketValue(this);
+        }
+        // damagePerFuel 不能跟上面那个一次性开关走：它随武器页的伤害 / 连发数与燃料设置变化，
+        // `??=` 会把它冻在第一次算出的值上（改完枪回来，炮塔页还显示旧比值）。
+        // 重算成本只是几次 def 读取，跟着列表刷新算一遍无所谓。
+        damagePerFuel = def is ThingDef d ? ComputeDamagePerFuel(d) : null;
+    }
+
+    /// <summary>
+    /// 每消耗 1 单位燃料能打出的名义伤害。
+    /// <para>
+    /// <b>一律读 def，不读 TweakData</b>：<see cref="Apply"/> 已经把用户的改动写进 def 了，def 就是
+    /// "游戏下一次开火会用的值"；而 <see cref="WeaponData"/> 里的伤害 / 连发数是带原始-活实例双层的镜像，
+    /// 在 <see cref="EnsureDisplayValues"/> 的调用时机（可能早于 Apply）会读到半新半旧的组合。
+    /// </para>
+    /// <para>
+    /// 分子是<b>裸伤害</b>、不含命中率 —— 与武器页 MaxDPS 同口径。命中率是另一个维度，
+    /// 乘进来会把"省不省燃料"和"打不打得中"混成一个数，反而不利于判断。
+    /// </para>
+    /// <para>取不到（非炮塔 / 无枪 / 不吃燃料 / 伤害为 0）时返回 null，单元格留空。</para>
+    /// </summary>
+    private static float? ComputeDamagePerFuel(ThingDef def)
+    {
+        if (def.building?.turretGunDef is not ThingDef gunDef) return null;
+        // 与 WeaponData.SetDef / GenValues 取 verb 的规则保持一致（Building_TurretGun.AttackVerb
+        // = GunCompEq.PrimaryVerb，原版炮塔枪的第一个非近战 verb 就是它）。
+        var verb = gunDef.Verbs?.FirstOrDefault(v => !v.IsMeleeAttack);
+        if (verb == null) return null;
+
+        float fuelPerShot = verb.consumeFuelPerShot;
+        float fuelPerBurst = verb.consumeFuelPerBurst;
+        if (fuelPerShot <= 0f && fuelPerBurst <= 0f) return null;
+
+        int shots = verb.burstShotCount < 1 ? 1 : verb.burstShotCount;
+        float damage = ShotDamage(verb);
+        if (damage <= 0f) return null;
+
+        return shots * damage / (fuelPerShot * shots + fuelPerBurst);
+    }
+
+    /// <summary>
+    /// 单发伤害：优先弹丸（原版炮塔全走这条），其次光束。
+    /// <para>
+    /// 与 <see cref="WeaponData.GenRangeDPS"/> 同一条判据：既不打生命也不造成眩晕的"伤害"
+    /// （泡沫炮的 <c>Extinguish</c> 写着 9999 伤害，实际只是灭火）拿去当分子只会得到一个荒谬的大数，
+    /// 这类炮塔按"无伤害"处理，整列留空。
+    /// </para>
+    /// </summary>
+    private static float ShotDamage(VerbProperties verb)
+    {
+        if (verb.defaultProjectile?.projectile is ProjectileProperties p && p.damageDef != null)
+        {
+            if (!p.damageDef.causeStun && !p.damageDef.harmsHealth) return 0f;
+            return p.GetDamageAmount(null, null, null);
+        }
+        if (verb.beamDamageDef != null)
+            return verb.beamTotalDamage > 0f ? verb.beamTotalDamage : verb.beamDamageDef.defaultDamage;
+        return 0f;
     }
 
     public override void Apply()
@@ -379,7 +456,7 @@ class BuildingData : TweakData<BuildingData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyBuildingProp(def);
         ApplyDefStats(def);
         // 炮塔的射击节奏（冷却 / 预热）写在建筑上，挂载的那把枪只是据它算 DPS。

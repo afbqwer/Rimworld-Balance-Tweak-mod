@@ -49,7 +49,7 @@ class WeatherData : TweakData<WeatherData>
         ApplyV<float>(nameof(accuracyMultiplier), v => def.accuracyMultiplier = v);
         ApplyV<float>(nameof(moveSpeedMultiplier), v => def.moveSpeedMultiplier = v);
         ApplyV<float>(nameof(windSpeedFactor), v => def.windSpeedFactor = v);
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
     }
 
     public override List<string> TypeStrings => typeStrings;

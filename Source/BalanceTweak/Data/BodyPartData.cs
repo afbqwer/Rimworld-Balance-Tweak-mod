@@ -121,7 +121,7 @@ class BodyPartData : TweakData<BodyPartData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<int>(nameof(hitPoints), v => def.hitPoints = v);
         ApplyL<BodyPartTagDef>(nameof(tags), v => def.tags = v);
         ApplyV<float>(nameof(permanentInjuryChanceFactor), v => def.permanentInjuryChanceFactor = v);

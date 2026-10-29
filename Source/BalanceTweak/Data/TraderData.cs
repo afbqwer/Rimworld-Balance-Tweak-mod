@@ -96,7 +96,7 @@ class TraderData : TweakData<TraderData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<float>(nameof(commonality), v => def.commonality = v);
         ApplyV<bool>(nameof(orbital), v => def.orbital = v);
         ApplyV<bool>(nameof(requestable), v => def.requestable = v);

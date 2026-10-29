@@ -175,7 +175,7 @@ class ProjectileData : TweakData<ProjectileData>
     //}
     public override void Apply()
     {
-        if (this.def != null) ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         SetProjectileProp(def);
         if (def is ThingDef d)
         {

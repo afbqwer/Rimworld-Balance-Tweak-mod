@@ -192,7 +192,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<int>(nameof(stackLimit), v => def.stackLimit = v);
         ApplyV<float>(nameof(stackedEffectMultiplier), v => def.stackedEffectMultiplier = v);
         ApplyV<float>(nameof(durationDays), v => def.durationDays = v);

@@ -145,7 +145,7 @@ class AbilityData : TweakData<AbilityData>
     {
         if (this.def is AbilityDef def)
         {
-            ApplyS(nameof(defLabel), v => this.def.label = v);
+            ApplyDefLabel(nameof(defLabel), def);
             ApplyDefStats(def);
             ResetDescCache();
             // 应用基础属性

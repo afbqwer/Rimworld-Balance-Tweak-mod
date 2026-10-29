@@ -67,6 +67,8 @@
     <MST.turretBurstWarmupTimeComment>Turret aim time in seconds, written as min~max; the game rolls a random value in range for each shot. The gun's own verb warmup has no effect on turrets.</MST.turretBurstWarmupTimeComment>
     <MST.turretBurstCooldownTime>BurstCD</MST.turretBurstCooldownTime>
     <MST.turretInitialCooldownTime>InitCD</MST.turretInitialCooldownTime>
+    <MST.damagePerFuel>DmgPerFuel</MST.damagePerFuel>
+    <MST.damagePerFuelComment>Nominal damage dealt per 1 unit of fuel: the total damage of one full burst divided by the fuel that burst consumes (fuel per shot × shots + fuel per burst). Hit chance is not included, same basis as the weapon tab's max DPS. Empty means this turret does not consume fuel when firing.</MST.damagePerFuelComment>
 
     <!-- Furniture 字段 -->
 

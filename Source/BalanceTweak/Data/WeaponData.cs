@@ -688,7 +688,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyDefStats(def);
         ApplyWeaponProp(def);
         GenValues();

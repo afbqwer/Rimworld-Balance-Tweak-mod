@@ -64,7 +64,7 @@ class FactionData : TweakData<FactionData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<SimpleCurve>(nameof(raidCommonalityFromPointsCurve), v => def.raidCommonalityFromPointsCurve = v);
         ApplyV<SimpleCurve>(nameof(maxPawnCostPerTotalPointsCurve), v => def.maxPawnCostPerTotalPointsCurve = v);
         ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);

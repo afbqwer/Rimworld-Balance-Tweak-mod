@@ -460,6 +460,30 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     }
 
     /// <summary>
+    /// 写回 <see cref="Def.label"/>，并清掉该 Def 的标签缓存。
+    ///
+    /// <para>
+    /// <b>为什么必须清</b>：<c>Def.LabelCap</c> 是 memo 的 —— 第一次取到时把 <c>label.CapitalizeFirst()</c>
+    /// 存进 <c>cachedLabelCap</c>，之后一直返回那份缓存。只改 <c>label</c> 不清缓存，界面上（以及所有走
+    /// <c>LabelCap</c> 的地方）仍然是旧文本，玩家会以为改动根本没生效。
+    /// </para>
+    /// <para>
+    /// 走公开的 <see cref="Def.ClearCachedData"/> 而不是反射 <c>cachedLabelCap</c>：
+    /// <c>RoadDef</c> / <c>BodyDef</c> 各自扩展了别的缓存，只清一个字段会留下半新半旧的状态；
+    /// 而且 <c>ThoughtDef</c> 也复用了基类那个字段做 <c>LabelCap</c> 缓存，走虚方法才能一并覆盖。
+    /// </para>
+    /// </summary>
+    protected internal void ApplyDefLabel(string f, Def? def)
+    {
+        if (def == null) return;
+        ApplyS(f, v =>
+        {
+            def.label = v;
+            def.ClearCachedData();
+        });
+    }
+
+    /// <summary>
     /// ThingFilter 目标。<see cref="GUI.Editor.IngredientFilterEditorWindow"/> 的产物恒为非 null 过滤器，
     /// 旧版判据 <c>!= null</c> 恒真 ⇒ 非 null 即写入。空过滤器（AllowedDefCount == 0）在 RimWorld 里是
     /// "允许项为空"的有效值（＝清空该过滤器的允许项），不是 null 语义的 Clear，故不做 Cleared 分支。

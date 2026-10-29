@@ -144,7 +144,7 @@ class IncidentData : TweakData<IncidentData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
-        ApplyS(nameof(defLabel), v => this.def.label = v);
+        ApplyDefLabel(nameof(defLabel), def);
         ApplyV<float>(nameof(baseChance), v => def.baseChance = v);
         ApplyV<int>(nameof(earliestDay), v => def.earliestDay = v);
         ApplyV<int>(nameof(minPopulation), v => def.minPopulation = v);
