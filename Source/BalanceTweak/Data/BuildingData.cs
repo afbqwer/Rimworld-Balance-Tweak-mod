@@ -383,13 +383,13 @@ class BuildingData : TweakData<BuildingData>
         }
     }
 
-    private bool _displayValuesEnsured;
     public override void EnsureDisplayValues()
     {
-        if (!_displayValuesEnsured)
+        if (def == null) return;
+        if (!displayValuesEnsured)
         {
-            _displayValuesEnsured = true;
-            normalMarketValue ??= (float?)GetNormalMarketValue(this);
+            displayValuesEnsured = true;
+            normalMarketValue = (float?)GetNormalMarketValue(this);
         }
         // damagePerFuel 不能跟上面那个一次性开关走：它随武器页的伤害 / 连发数与燃料设置变化，
         // `??=` 会把它冻在第一次算出的值上（改完枪回来，炮塔页还显示旧比值）。
@@ -463,6 +463,8 @@ class BuildingData : TweakData<BuildingData>
         // 改完必须主动刷那一行，否则武器页签的 DPS / 强度停在旧值 —— 与弹丸改动后
         // 刷新共用武器（ProjectileData.RefreshSharedWeapons）是同一条道理。
         if (TurretRateTouched) RefreshTurretGun();
+        // 参考价值按"当前 def 现算"：改完造价后，下一次读就该是新值，不能冻在改之前那次计算上。
+        displayValuesEnsured = false;
     }
 
     /// <summary>

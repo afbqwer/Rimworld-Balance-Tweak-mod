@@ -455,6 +455,9 @@ public class StatColumnConfig
         {
             //Log.Message($"[BalanceTweak] {data.label}({data.id}) - {label}: {GetRawValue(data)?.ToString() ?? "null"} -> {newValue}");
             ApplyValue(data, newValue);
+            // 参考列（市场价 / 护甲 / 强度…）是"按当前 def 现算"的派生值，Apply 已把缓存标记置脏，
+            // 这里补算一次，改完当帧就能看到新参考值 —— 否则要等下一次列表重建。
+            data.EnsureDisplayValues();
         }
     }
 

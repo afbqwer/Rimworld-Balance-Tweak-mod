@@ -485,10 +485,24 @@ dotnet build -p:SelfCheck=true
 - `ProjectileData.RefreshSharedWeapons` / `BuildingData.RefreshTurretGun` 跳过快照，只刷活实例；
 - 代价是快照的镜像可能落后于当前弹丸 → UI 首次打开、从快照克隆出来的行要在
   `EnsureDisplayValues` 里补一次同步（`WeaponData.SyncMirrorsFromProjectile`），所以 `Clone()` 必须清掉
-  `_displayValuesEnsured`（标记是实例级的，不能跟着抄）。
+  `displayValuesEnsured`（基类字段，`TweakData.Clone()` 统一清零；标记是实例级的，不能跟着抄）。
 
 > 强度刻度（`GetEquipPower`）同理取**原始快照**当基准：刻度必须固定，否则"谁先算谁说了算"。
 > 语义是"原版武器 = 100；改了某颗弹丸，共用它的武器一起变，没共用的纹丝不动"。
+
+### 7.8.1 Display 列一律按需计算（不许在 `SetDef` 里算）
+
+`ColumnDataType.Display` 的列不落盘、不参与 `Apply`，只是 UI 的派生展示值。因此：
+
+| 规则 | 说明 |
+| --- | --- |
+| `SetDef` 只填**镜像与可编辑字段的原值** | 例如 `WeaponData` 的 `SetDef` 只跑 `GenMirrors`（verb / 伤害 / 穿透 / 射程…），不跑 `GenDps` |
+| 派生列在**第一次被读**时算 | 入口是 `UpdateFilters`（切页签 / 改筛选 / 编辑后重建列表）→ `EnsureDisplayValues()`；各数据类自己决定算什么 |
+| 算完置 `displayValuesEnsured = true` 缓存 | `Apply()` 结束时会把它置回 false：参考值按"当前 def 现算"，改完成本 / 招式后下一次读就是新值 |
+| 只有**原始快照**需要在 `Apply` 之前定格 | `PrepareDeferredDisplayValues` 只遍历 `tweakDatas.Keys`，成本与改动条数成正比；未修改的行 def 没被动过，现算与提前算完全等价 |
+
+> `GenValues()`（镜像 + DPS + 强度全量重算）只给"数据真的变了"的路径用：`Apply` / 弹丸推送 / 招式编辑 / 自检。
+> 新增 Display 列时照这个来：字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏，不要在 `SetDef` 里算。
 
 ### 7.9 炮塔枪的 DPS：节奏在建筑上
 

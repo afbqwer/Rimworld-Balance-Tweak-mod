@@ -187,12 +187,24 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     public static object? GetDPS(TweakData data) =>
     (data.def is ThingDef d ? DataUtility.CalculateExpectedDPS(d.tools) : null);
 
+    /// <summary>
+    /// 派生显示列按需计算。这两列都读当前 def（<c>race.body</c> / <c>tools</c>），
+    /// 而 def 在 Init 阶段会被 Apply 改写，所以推迟到 UI 第一次要它们时再算 —— 那时 def 已是最终值。
+    /// </summary>
+    public override void EnsureDisplayValues()
+    {
+        if (displayValuesEnsured) return;
+        // def 还没绑定就先别算，也别置标志：那一刻算出来的 null 会被永久冻住。
+        if (def == null) return;
+        displayValuesEnsured = true;
+        MeleeDPS = (float?)GetDPS(this);
+        corepartHP = (float?)GetCorepartHP(this);
+    }
+
     public override void SetDef(Def def, BalanceTweakSettings.SettingType type, bool tweaked = false)
     {
         base.SetDef(def, type, tweaked);
         defLabel ??= def?.label;
-        MeleeDPS ??= (float?)GetDPS(this);
-        corepartHP ??= (float?)GetCorepartHP(this);
         if (def is ThingDef d)
         {
             bodyDef ??= d.race?.body != null ? new TweakID(d.race.body.defName, SettingType.BodyDef) : null;
@@ -270,6 +282,8 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         ApplyDefStats(def);
         ApplyEntityCompProps(def);
         ApplyAnimalCompProps(def);
+        // 参考列按"当前 def 现算"：改完体型/血量/招式后，下一次读就该是新值。
+        displayValuesEnsured = false;
     }
 
     /// <summary>

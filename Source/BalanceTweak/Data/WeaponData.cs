@@ -411,9 +411,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     static float? DamageLMultiplier = null;
     static float? APLMultiplier = null;
     static List<Tool>? HumanTool = null;
-    /// <param name="includeEquipPower">SetDef 首次建数据时为 false，避免启动期跑昂贵的 GetEquipPower；
-    /// Apply / 弹丸 / 招式刷新路径保持默认 true，行为与改动前一致。</param>
-    public void GenValues(bool includeEquipPower = true)
+
+    /// <summary>只求一次的品质因子与人类招式表。推迟到第一次真要算派生列时再求。</summary>
+    private static void EnsureStatics()
     {
         if (!meleeLQualityMult.HasValue || !AccuracyMediumLMult.HasValue || !DamageLMultiplier.HasValue)
         {
@@ -427,59 +427,81 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             var humanreference = DefDatabase<ThingDef>.GetNamed("Human");
             HumanTool = humanreference.tools;
         }
+    }
+
+    /// <summary>
+    /// 填镜像字段（verb / 弹丸伤害与穿透 / 预热 / 射程 / 连发 / 强制偏移）与技术等级。
+    /// <para>
+    /// 这一段是 <b>Apply 的输入</b> —— 用户改的就是这些格，Apply 要把它们写进弹丸 / def，所以建快照时必须就位。
+    /// 代价只是几次 def 字段读取，不含任何派生计算。派生显示列见 <see cref="EnsureDisplayValues"/>。
+    /// </para>
+    /// </summary>
+    private void GenMirrors()
+    {
         // 只在 def 已绑定时推断，且不要用 ?? false 兜底：
         // def 为 null 时 GetIsCompQuality 返回 null，兜成 false 会把这个派生字段永久写坏
         // （详见 SetDef 里的说明）。
         if (!isCompQuality.HasValue && def is ThingDef)
             isCompQuality = (bool?)GetIsCompQuality(this) ?? false;
-        if (def is ThingDef d)
-        {
-            techLevel ??= d.techLevel;
-            verb ??= d.Verbs.FirstOrDefault(v => !v.IsMeleeAttack);
-            if (verb != null)
-            {
-                var projectile = ResolveProjectile(verb);
-                if (projectile != null)
-                {
-                    LinkProjectile(projectile);
-                    // 与关联弹丸保持同步：弹丸的伤害/穿透被编辑后，武器行需跟随刷新（DPS 由这两个字段算出）。
-                    // 不能用 ??=：武器在 SetDef 阶段已填过值，??= 会让弹丸改动永远刷不进来。
-                    // 但**用户在本行改过的那一格不能覆盖**：读档时它的值来自存档（旧版武器侧修改），
-                    // 要等 Apply 里的 PushWeaponEditsToProjectile 推给弹丸；这里覆盖掉等于静默丢弃那条修改。
-                    if (!IsFieldModified(nameof(damageAmountBase))) damageAmountBase = projectile.damageAmountBase;
-                    if (!IsFieldModified(nameof(armorPenetrationBase))) armorPenetrationBase = projectile.armorPenetrationBase;
-                }
-                warmup ??= verb.warmupTime;
-                minRange ??= verb.minRange;
-                maxRange ??= verb.range;
-                ticksBetweenBurstShots ??= verb.ticksBetweenBurstShots;
-                burstShotCount ??= verb.burstShotCount;
-                forcedMissRadius ??= (float?)ForcedMissRadius.GetValue(verb);
-                GenRangeDPS(d, verb);
-            }
-            var stuff = GetDefaultStuffFromDef(d);
-            var md = CalculateExpectedDPS(null, d.tools, meleeDamageMultiplier ?? 1f, 1f, false, stuff);
-            MeleeDPS = md;
-            if (d.HasAssignableCompFrom(typeof(CompQuality)))
-            {
-                LMeleeDPS = CalculateExpectedDPS(null, d.tools, meleeLQualityMult.Value * (meleeDamageMultiplier ?? 1f), 1f, false, stuff);
-            }
-            else
-            {
-                LMeleeDPS = md;
-            }
-            //var mm = TryGetStat(d, StatDefOf.MeleeWeapon_DamageMultiplier);
-            //if (mm.HasValue)
-            //{
-            //    MeleeDPS *= mm.Value;
-            //    LMeleeDPS *= mm.Value;
-            //}
+        if (def is not ThingDef d) return;
 
-            // SetDef 首次建数据时跳过（启动期不跑昂贵计算）；Apply / 弹丸 / 招式刷新时照常重算。
-            if (includeEquipPower)
-                equipPower = (float?)GetEquipPower(this, HumanTool, isCompQuality.GetValueOrDefault(), stuff);
-            //equipCP = (float?)GetEquipCP(this, equipPower!.Value, isCompQuality);
+        techLevel ??= d.techLevel;
+        verb ??= d.Verbs.FirstOrDefault(v => !v.IsMeleeAttack);
+        if (verb == null) return;
+        var projectile = ResolveProjectile(verb);
+        if (projectile != null)
+        {
+            LinkProjectile(projectile);
+            // 与关联弹丸保持同步：弹丸的伤害/穿透被编辑后，武器行需跟随刷新（DPS 由这两个字段算出）。
+            // 不能用 ??=：武器在 SetDef 阶段已填过值，??= 会让弹丸改动永远刷不进来。
+            // 但**用户在本行改过的那一格不能覆盖**：读档时它的值来自存档（旧版武器侧修改），
+            // 要等 Apply 里的 PushWeaponEditsToProjectile 推给弹丸；这里覆盖掉等于静默丢弃那条修改。
+            if (!IsFieldModified(nameof(damageAmountBase))) damageAmountBase = projectile.damageAmountBase;
+            if (!IsFieldModified(nameof(armorPenetrationBase))) armorPenetrationBase = projectile.armorPenetrationBase;
         }
+        warmup ??= verb.warmupTime;
+        minRange ??= verb.minRange;
+        maxRange ??= verb.range;
+        ticksBetweenBurstShots ??= verb.ticksBetweenBurstShots;
+        burstShotCount ??= verb.burstShotCount;
+        forcedMissRadius ??= (float?)ForcedMissRadius.GetValue(verb);
+    }
+
+    /// <summary>
+    /// 派生显示列：远程 DPS 期望 + 近战 DPS。
+    /// <para>
+    /// 只读数据层字段与 def 的 stat，<b>不写任何镜像</b> —— 原始快照调它时不会把"建快照那一刻"的弹丸镜像
+    /// 刷成现值，所以它可以在 Apply 之后的任意时机安全重算。
+    /// </para>
+    /// </summary>
+    private void GenDps(ThingDef d, ThingDef? stuff)
+    {
+        if (verb != null) GenRangeDPS(d, verb);
+        var md = CalculateExpectedDPS(null, d.tools, meleeDamageMultiplier ?? 1f, 1f, false, stuff);
+        MeleeDPS = md;
+        if (d.HasAssignableCompFrom(typeof(CompQuality)))
+        {
+            LMeleeDPS = CalculateExpectedDPS(null, d.tools, meleeLQualityMult!.Value * (meleeDamageMultiplier ?? 1f), 1f, false, stuff);
+        }
+        else
+        {
+            LMeleeDPS = md;
+        }
+    }
+
+    /// <summary>
+    /// 重算全部派生值（镜像 + DPS + 强度）。**只在"数据真的变了"的路径上调用**：
+    /// Apply / 弹丸推送 / 招式编辑 / 自检。
+    /// 建快照走 <see cref="GenMirrors"/>，UI 首读走 <see cref="EnsureDisplayValues"/> —— 两者都更轻。
+    /// </summary>
+    public void GenValues()
+    {
+        EnsureStatics();
+        GenMirrors();
+        if (def is not ThingDef d) return;
+        var stuff = GetDefaultStuffFromDef(d);
+        GenDps(d, stuff);
+        equipPower = (float?)GetEquipPower(this, HumanTool!, isCompQuality.GetValueOrDefault(), stuff);
     }
 
     /// <summary>
@@ -614,7 +636,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             isCompQuality = (bool?)GetIsCompQuality(this) ?? false;
 
         // 建原始快照期间的跨行读取锁原始层，见 ResolveProjectile。
-        GenValues(includeEquipPower: false);
+        // 这里只填镜像：DPS / 强度 / 参考价值都是显示列，推迟到 UI 第一次要它们时再算
+        // （见 EnsureDisplayValues）。启动期为几千个 def 跑射程扫描与近战 DPS 没有任何收益。
+        GenMirrors();
     }
 
     /// <summary>
@@ -636,49 +660,31 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
 
         // 只同步"用户没动过"的那一格：动过的要由 Apply 推给弹丸（PushWeaponEditsToProjectile），
         // 这里覆盖掉就等于把他的输入静默吃掉。
-        bool damageEditable = !IsFieldModified(nameof(damageAmountBase));
-        bool apEditable = !IsFieldModified(nameof(armorPenetrationBase));
-        bool changed = (damageEditable && p.damageAmountBase != damageAmountBase)
-            || (apEditable && p.armorPenetrationBase != armorPenetrationBase);
-        if (!changed) return;
-
-        if (damageEditable) damageAmountBase = p.damageAmountBase;
-        if (apEditable) armorPenetrationBase = p.armorPenetrationBase;
-        // 连同 DPS / 强度一起重算：equipPower 可能已由原始快照定格（PrepareDeferredDisplayValues），
-        // 只刷镜像会让"伤害变了、强度没变"。这里传 true，直接覆盖掉旧值。
-        GenValues();
+        if (!IsFieldModified(nameof(damageAmountBase))) damageAmountBase = p.damageAmountBase;
+        if (!IsFieldModified(nameof(armorPenetrationBase))) armorPenetrationBase = p.armorPenetrationBase;
     }
 
-    private bool _displayValuesEnsured;
     public override void EnsureDisplayValues()
     {
-        if (_displayValuesEnsured) return;
-        // 环境没就绪就别置标志：normalMarketValue 是"一次定值"的派生列（`??=` 之后不再重算），
-        // 在 def / HumanTool 缺席时算出的 null 会永久留着 —— 与 isCompQuality 踩过的是同一个坑形。
-        if (def == null || HumanTool == null) return;
-        _displayValuesEnsured = true;
-        // 原始快照不动：它的镜像必须停在"建快照那一刻"，那是重置的原值基准。
+        if (displayValuesEnsured) return;
+        // 环境没就绪就别置标志：在 def / HumanTool 缺席时算出的 null 会永久留着 ——
+        // 与 isCompQuality 踩过的是同一个坑形。
+        if (def == null) return;
+        EnsureStatics();
+        if (HumanTool == null) return;
+        displayValuesEnsured = true;
+
+        // 原始快照不动：它的镜像必须停在"建快照那一刻"，那是重置 / 强度刻度的原值基准。
+        // 活实例则跟随弹丸刷新（UI 首次打开时，行是从原始快照克隆来的，带的是旧镜像）。
         if (!ReferenceEquals(TweakDatabase.GetOriginal(id), this))
             SyncMirrorsFromProjectile();
-        normalMarketValue ??= (float?)GetNormalMarketValue(this);
         if (def is ThingDef td)
         {
             var stuff = GetDefaultStuffFromDef(td);
-            equipPower ??= (float?)GetEquipPower(this, HumanTool, isCompQuality ?? false, stuff);
+            GenDps(td, stuff);
+            equipPower = (float?)GetEquipPower(this, HumanTool, isCompQuality ?? false, stuff);
         }
-    }
-
-    /// <summary>
-    /// 克隆是<b>新实例</b>，"显示值已算过"这个标记不能跟着抄 —— 否则 UI 从原始快照克隆出来的行
-    /// 会直接跳过 <see cref="EnsureDisplayValues"/>，<see cref="SyncMirrorsFromProjectile"/> 也就跟着被跳过，
-    /// 屏幕上留下建快照那一刻的旧镜像（弹丸页显示 20、武器行显示 15）。
-    /// 重置后重新 Ensure 一遍的代价是两次 <c>??=</c>，值已在时什么都不做。
-    /// </summary>
-    public override TweakData Clone()
-    {
-        var clone = (WeaponData)base.Clone();
-        clone._displayValuesEnsured = false;
-        return clone;
+        normalMarketValue = (float?)GetNormalMarketValue(this);
     }
 
     public override void Apply()
@@ -692,6 +698,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         ApplyDefStats(def);
         ApplyWeaponProp(def);
         GenValues();
+        // 参考价值 / 装备强度按"当前 def 现算"：改完成本或招式后，下一次读就该是新值，
+        // 不能冻在改之前那次计算上。
+        displayValuesEnsured = false;
     }
 
     static float? RDPS = null;
@@ -724,6 +733,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     /// </param>
     private static float? RangedPower(WeaponData wd, bool legendary, bool originalLayer = false)
     {
+        // 派生列按需计算：基准行（电荷步枪）可能还没被任何人读过，先补算再取。
+        // 原始快照在 Apply 之前已由 PrepareDeferredDisplayValues 定格，这里不会读到"改后的基准"。
+        if (!wd.LRangedDPS.HasValue) wd.EnsureDisplayValues();
         if (!wd.LRangedDPS.HasValue) return null;
 
         // AP 走数据层镜像（共享弹丸的当前值）。-1 表示弹丸没写 AP，回落到 def 的

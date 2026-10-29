@@ -252,18 +252,19 @@ public class ApparelData : TweakData<ApparelData>
         //equipCP = (float?)GetEquipCP(this, isCompQuality, equipPower);
     }
 
-    private bool _displayValuesEnsured;
     public override void EnsureDisplayValues()
     {
-        if (_displayValuesEnsured) return;
-        _displayValuesEnsured = true;
-        normalSharpArmor ??= (float?)GetNormalSharpArmor(this);
-        normalBluntArmor ??= (float?)GetNormalBluntArmor(this);
-        normalHeatArmor ??= (float?)GetNormalHeatArmor(this);
-        normalInsulationCold ??= (float?)GetNormalInsulationCold(this);
-        normalInsulationHeat ??= (float?)GetNormalInsulationHeat(this);
-        normalMarketValue ??= (float?)GetNormalMarketValue(this);
-        equipPower ??= (float?)GetEquipPower(this, isCompQuality);
+        if (displayValuesEnsured) return;
+        // def 还没绑定就先别算，也别置标志：那一刻算出来的 null 会被永久冻住。
+        if (def == null) return;
+        displayValuesEnsured = true;
+        normalSharpArmor = (float?)GetNormalSharpArmor(this);
+        normalBluntArmor = (float?)GetNormalBluntArmor(this);
+        normalHeatArmor = (float?)GetNormalHeatArmor(this);
+        normalInsulationCold = (float?)GetNormalInsulationCold(this);
+        normalInsulationHeat = (float?)GetNormalInsulationHeat(this);
+        normalMarketValue = (float?)GetNormalMarketValue(this);
+        equipPower = (float?)GetEquipPower(this, isCompQuality);
     }
 
     private static void OnChangeStuffEffectMultiplierArmor(TweakData data)
@@ -311,6 +312,8 @@ public class ApparelData : TweakData<ApparelData>
         OnChangeStuffEffectMultiplierInsulationHeat(this);
         equipPower = (float?)GetEquipPower(this, isCompQuality);
         //equipCP = (float?)GetEquipCP(this);
+        // 参考列按"当前 def 现算"：改完成本 / 材料后，下一次读就该是新值。
+        displayValuesEnsured = false;
     }
     private void ApplyApparelProp(ThingDef def)
     {

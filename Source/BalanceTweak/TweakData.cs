@@ -359,9 +359,18 @@ public abstract partial class TweakData : IExposable
     public static string GenJumpString(TweakData data)
         => $"{"MST.JumpToDesc".Translate().RawText}{data.label}({data.id.settingType.ToString().Translate().RawText})";
 
+    /// <summary>
+    /// 显示值缓存是否已算过。Display 列不落盘、也不参与 Apply，只是 UI 的派生展示值，
+    /// 所以统一在"第一次被读"时按需计算（见各数据类的 <see cref="EnsureDisplayValues"/>）。
+    /// </summary>
+    protected bool displayValuesEnsured;
+
     public virtual TweakData Clone()
     {
         var clone = (TweakData)MemberwiseClone();
+        // 克隆出来的是新实例，缓存标记不能跟着抄：否则 UI 从原始快照克隆的行会直接跳过按需计算，
+        // 屏幕上留下原始快照那一刻的值。
+        clone.displayValuesEnsured = false;
         clone._modifiedFieldNames = new HashSet<string>(_modifiedFieldNames);
         clone._clearedFieldNames = new HashSet<string>(_clearedFieldNames);
         clone._corruptedFieldNames = new HashSet<string>(_corruptedFieldNames);

@@ -170,7 +170,6 @@ public static partial class TweakDatabase
             if (rule.Tab != id.settingType) drifted.Add((id, data));
 
             data.SetDef(def, rule.Tab, true);
-            data.EnsureDisplayValues();
             data.Apply();
             return true;
         }
@@ -457,7 +456,7 @@ public static partial class TweakDatabase
                     failedDelayedItems.Add(data);
                     continue;
                 }
-                data.EnsureDisplayValues();
+                // 子项（招式等）的 Display 列同样是按需计算，这里不必提前算。
                 data.Apply();
                 lazyApplied++;
             }
@@ -486,48 +485,22 @@ public static partial class TweakDatabase
     }
 
     /// <summary>
-    /// 参考值改为按需计算后，必须在 Apply 修改 Def 之前，把"会被改到的 Def"的参考值定格；
-    /// 另外市场价依赖 Recipe/Stuff，武器强度依赖 Projectile —— 这些源类型有改动时，
-    /// 依赖它们的类型也要提前计算，否则会在 Apply 之后算出"改后的参考值"。
+    /// 参考值改成"UI 首次要时按当前 def 现算"之后，唯一还需要提前算的，是<b>原始快照</b>：
+    /// 它是 ResetTo / 整行重置的原值来源，而 Def 在本轮 Apply 之后就是"改后"的了。
+    /// <para>
+    /// 只对"存档里真有修改"的那些行做 —— 成本与改动条数成正比，不再按类型整批摊开。
+    /// 未修改的行不在这里算：它们的 def 没被动过，UI 首次读时现算与现在算一模一样。
+    /// </para>
+    /// <para>
+    /// 武器强度的刻度基准（原版电荷步枪）也走原始快照，所以它同样在这一步定格；
+    /// 否则改过基准武器之后，全表的强度会跟着基准一起漂。
+    /// </para>
     /// </summary>
     private static void PrepareDeferredDisplayValues()
     {
         if (tweakDatas.Count == 0) return;
-
-        bool recipeOrStuffChanged = false;
-        bool projectileChanged = false;
-        foreach (var id in tweakDatas.Keys)
-        {
-            switch (id.settingType)
-            {
-                case SettingType.Recipe:
-                case SettingType.Stuff:
-                    recipeOrStuffChanged = true;
-                    break;
-                case SettingType.Projectile:
-                    projectileChanged = true;
-                    break;
-            }
-        }
-
-        // 每个已存修改项自身的原始数据（Apply 前定格）
         foreach (var id in tweakDatas.Keys)
             GetOriginal(id)?.EnsureDisplayValues();
-
-        if (!recipeOrStuffChanged && !projectileChanged) return;
-
-        foreach (var kv in originalData)
-        {
-            var t = kv.Key.settingType;
-            if (t == SettingType.Building || t == SettingType.Apparel)
-            {
-                if (recipeOrStuffChanged) kv.Value.EnsureDisplayValues();
-            }
-            else if (t == SettingType.Weapon)
-            {
-                if (recipeOrStuffChanged || projectileChanged) kv.Value.EnsureDisplayValues();
-            }
-        }
     }
 
     /// <summary>集合类字段（List&lt;&gt; / ThingFilter）：Cleared 的语义是"清空"；其余是"还原原值"。</summary>
