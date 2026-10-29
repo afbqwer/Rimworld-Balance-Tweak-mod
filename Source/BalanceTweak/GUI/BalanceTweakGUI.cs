@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using RimWorld;
 using UnityEngine;
@@ -574,15 +575,15 @@ public partial class BalanceTweakSettings : ModSettings
         curX += colInfoRect.width;
         // 批量操作区
         Rect FlatRect = new Rect(curX, toprow.y, toprow.width * 0.1f + Contracted, toprow.height).ContractedBy(Contracted);
-        curX += DrawLabeledInput(FlatRect, "MST.FlatInput".Translate().RawText, ref batchFlat, false);
+        curX += DrawLabeledInput(FlatRect, nameof(batchFlat), "MST.FlatInput".Translate().RawText, ref batchFlat);
         Rect PrecRect = new Rect(curX, toprow.y, toprow.width * 0.1f + Contracted, toprow.height).ContractedBy(Contracted);
-        curX += DrawLabeledInput(PrecRect, "MST.PrecInput".Translate().RawText, ref batchPrec, true) + 4f;
+        curX += DrawLabeledInput(PrecRect, nameof(batchPrec), "MST.PrecInput".Translate().RawText, ref batchPrec, positive: true) + 4f;
         // 下限输入框（点击「下限」标签切换是否应用下限截断）
         Rect LowerLimitRect = new Rect(curX, toprow.y, toprow.width * 0.12f + Contracted, toprow.height).ContractedBy(Contracted);
-        curX += DrawLabeledInputToggle(LowerLimitRect, "MST.LowerLimit".Translate().RawText, ref batchLowerLimit, ref batchLowerLimitEnabled, "MST.LowerLimitToggleTooltip");
+        curX += DrawLabeledInputToggle(LowerLimitRect, nameof(batchLowerLimit), "MST.LowerLimit".Translate().RawText, ref batchLowerLimit, ref batchLowerLimitEnabled, "MST.LowerLimitToggleTooltip");
         // 上限输入框（点击「上限」标签切换是否应用上限截断）
         Rect UpperLimitRect = new Rect(curX, toprow.y, toprow.width * 0.12f + Contracted, toprow.height).ContractedBy(Contracted);
-        curX += DrawLabeledInputToggle(UpperLimitRect, "MST.UpperLimit".Translate().RawText, ref batchUpperLimit, ref batchUpperLimitEnabled, "MST.UpperLimitToggleTooltip") + 4f;
+        curX += DrawLabeledInputToggle(UpperLimitRect, nameof(batchUpperLimit), "MST.UpperLimit".Translate().RawText, ref batchUpperLimit, ref batchUpperLimitEnabled, "MST.UpperLimitToggleTooltip") + 4f;
         // 仅当两侧都启用时才强制 下限 ≤ 上限；某一侧停用时保留用户输入，便于稍后再启用
         if (batchLowerLimitEnabled && batchUpperLimitEnabled && batchLowerLimit > batchUpperLimit)
         {
@@ -1737,19 +1738,16 @@ public partial class BalanceTweakSettings : ModSettings
     }
 
     /// 辅助方法：绘制带标签的输入框
-    private static float DrawLabeledInput(Rect rect, string label, ref float value, bool postive = false)
+    /// <summary>辅助方法：绘制带标签的输入框</summary>
+    /// <param name="id">控件名兼编辑缓冲 key，传 <c>nameof(字段)</c>。</param>
+    private static float DrawLabeledInput(Rect rect, string id, string label, ref float value, bool positive = false)
     {
         Text.Anchor = TextAnchor.MiddleCenter;
         float labelWidth = 40f;
         Widgets.Label(new Rect(rect.x, rect.y, labelWidth, rect.height), label);
 
         Rect inputRect = new(rect.x + labelWidth, rect.y, rect.width - labelWidth, rect.height);
-        string text = Widgets.TextField(inputRect, value.ToString("F2"));
-
-        if (float.TryParse(text, out float newVal))
-        {
-            value = postive ? Mathf.Max(newVal, 0) : newVal;
-        }
+        DrawBufferedFloatField(inputRect, id, ref value, positive);
         return rect.width;
     }
 
@@ -1837,11 +1835,8 @@ public partial class BalanceTweakSettings : ModSettings
             return rect.width;
         }
 
-        string text = Widgets.TextField(inputRect, value.ToString("0.###"));
-        if (float.TryParse(text, out float newVal))
-        {
-            value = Mathf.Max(newVal, 0f);
-        }
+        // 数字输入走共用实现（带编辑缓冲，见 DrawBufferedFloatField）
+        DrawBufferedFloatField(inputRect, nameof(batchStep), ref value, positive: true, format: "0.####");
 
         if (Widgets.ButtonText(modeRect, BatchStepModeLabel(batchStepMode)))
         {
@@ -1856,11 +1851,53 @@ public partial class BalanceTweakSettings : ModSettings
     private static readonly Color LimitLabelOffColor = new(0.30f, 0.30f, 0.30f);
 
     /// <summary>
+    /// 各数字输入框的编辑缓冲，key = 控件名（调用方用 <c>nameof(字段)</c> 传，稳定且不随语言变）。
+    /// <para>
+    /// 必须有它：<c>Widgets.TextField</c> 每帧都会把传入的字符串重新灌给编辑控件
+    /// （<c>textEditor.text = text</c>），若每帧传 <c>value.ToString()</c>，「0.」这种半截输入
+    /// 会被立刻抹成「0」—— 小数点就永远敲不进去。原版 <c>Widgets.TextFieldNumeric</c> 让调用方
+    /// 持有 <c>ref buffer</c> 是同一件事，这里按控件名存，省掉给每个调用点加字段。
+    /// </para>
+    /// </summary>
+    private static readonly Dictionary<string, string> inputBuffers = new();
+
+    /// <summary>
+    /// 带编辑缓冲的数字输入框：编辑期间以缓冲字符串为准，失焦后重新按当前值生成。
+    /// 半截输入（""、"."、"-"）只留在缓冲里、不回写值，等用户敲完。
+    /// 格式化和解析都用 <see cref="CultureInfo.InvariantCulture"/>（并接受逗号当小数点），
+    /// 免得小数点是逗号的区域设置把 "0.5" 读成 5。
+    /// </summary>
+    /// <param name="id">控件名兼缓冲 key，同一窗口内必须唯一。</param>
+    /// <param name="format">非编辑状态下的显示格式。</param>
+    private static void DrawBufferedFloatField(Rect rect, string id, ref float value, bool positive, string format = "F2")
+    {
+        GUI.SetNextControlName(id);
+        // 失焦就丢掉旧缓冲，下次按当前值（可能被别处改过）重新生成
+        if (GUI.GetNameOfFocusedControl() != id) inputBuffers.Remove(id);
+        if (!inputBuffers.TryGetValue(id, out string? buffer))
+        {
+            buffer = value.ToString(format, CultureInfo.InvariantCulture);
+            inputBuffers[id] = buffer;
+        }
+
+        string text = Widgets.TextField(rect, buffer);
+        if (text == buffer) return;
+
+        // 先记账再解析：解析失败（半截输入）时文本也要留在缓冲里，否则下一个字符会从旧值重新开始
+        inputBuffers[id] = text;
+        if (float.TryParse(text.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed))
+        {
+            value = positive ? Mathf.Max(parsed, 0f) : parsed;
+        }
+    }
+
+    /// <summary>
     /// 绘制带「可点击标签」的输入框：点击标签切换 <paramref name="enabled"/>，
     /// 标签区域以底色高亮表示当前状态，并附带悬浮工具提示。
     /// </summary>
+    /// <param name="id">控件名兼编辑缓冲 key，传 <c>nameof(字段)</c>。</param>
     /// <param name="tooltipKey">工具提示的翻译键，其中 {0} 会被替换为当前状态文案。</param>
-    private static float DrawLabeledInputToggle(Rect rect, string label, ref float value, ref bool enabled, string tooltipKey, bool postive = false)
+    private static float DrawLabeledInputToggle(Rect rect, string id, string label, ref float value, ref bool enabled, string tooltipKey, bool positive = false)
     {
         Text.Anchor = TextAnchor.MiddleCenter;
         float labelWidth = 40f;
@@ -1888,11 +1925,7 @@ public partial class BalanceTweakSettings : ModSettings
         Rect inputRect = new(rect.x + labelWidth, rect.y, rect.width - labelWidth, rect.height);
         if (enabled)
         {
-            string text = Widgets.TextField(inputRect, value.ToString("F2"));
-            if (float.TryParse(text, out float newVal))
-            {
-                value = postive ? Mathf.Max(newVal, 0) : newVal;
-            }
+            DrawBufferedFloatField(inputRect, id, ref value, positive);
         }
         else
         {
