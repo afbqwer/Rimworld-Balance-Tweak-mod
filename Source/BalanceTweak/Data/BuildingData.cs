@@ -65,7 +65,7 @@ class BuildingData : TweakData<BuildingData>
     public float? combatPower = null;
 
     /// <summary>
-    /// 每消耗 1 单位燃料能打出的名义伤害 = 单次齐射总伤害 ÷ 单次齐射总燃料。
+    /// 燃料性价比：每消耗 1 份燃料物资能打出的名义伤害 = 单次齐射总伤害 ÷ 单次齐射烧掉的物资份数。
     /// <para>
     /// 只读派生列。燃料按发（<c>VerbProperties.consumeFuelPerShot</c>）与按齐射（<c>consumeFuelPerBurst</c>）
     /// 两种扣法都计入分母，两者的和才是"打完一轮"的真实开销。都不为 0 才轮得到这个比值 ——
@@ -76,8 +76,9 @@ class BuildingData : TweakData<BuildingData>
     /// 迫击炮这类伤害取决于装填炮弹的炮塔在 def 上没有 <c>defaultProjectile</c>，同样留空。
     /// </para>
     /// <para>
-    /// 分母的"1 燃料"= 燃料槽的 1 点（与游戏里燃料条同口径）。换料时 1 份燃料物资折算
-    /// <c>fuelMultiplier</c> 点，所以这一列直接比"同样一格燃料槽谁更划算"，不掺物资折算。
+    /// 分母换算成<b>物资份数</b>：开火扣的是燃料槽点数，换料时 1 份物资折算
+    /// <c>CompProperties_Refuelable.fuelMultiplier</c> 点。所以调燃料倍率这一列会跟着动 ——
+    /// 它回答的是"这场炮火每烧掉一份枪管 / 弹片 / 火箭，换来多少伤害"。
     /// </para>
     /// </summary>
     [TweakField(DataType = ColumnDataType.Display, Available = nameof(AvailableIfTurret))]
@@ -221,12 +222,35 @@ class BuildingData : TweakData<BuildingData>
     public bool? isResourceRock = null;
 
     // --- Refuelable 字段 ---
+    // 四个字段都只对带 CompProperties_Refuelable 的建筑有效；Apply 在 `cp is CompProperties_Refuelable`
+    // 分支里才写回，其它建筑改这几列不会有任何效果（值也留空）。
+    // 燃料有两个量纲，别混：
+    //   · 点（fuel）：燃料槽的计量单位，开火时按 consumeFuelPerShot / consumeFuelPerBurst 直接扣，不乘任何倍率；
+    //   · 份（item）：换料时搬的物资个数，1 份折算 fuelMultiplier 点（CompRefuelable.Refuel）。
+    // 下面 fuelCapacity 是点，fuelConsumptionRate 是点/天，fuelMultiplier 是点/份 ——
+    // 「每燃料伤害」按"份"算，所以它衡量的正是每份物资换多少伤害，即性价比。
+
+    /// <summary>换料消耗的物资（<c>fuelFilter.Summary</c>）。只读；也是「每燃料伤害」里"1 份"的单位。</summary>
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.String)]
     public string? fuelName = null;
+    /// <summary>
+    /// 燃料槽容量（<b>点</b>）。满槽能打几轮 = 容量 ÷ 一轮扣的点数（每发燃料 × 发数 + 每轮燃料）。
+    /// 只影响"多久加一次料"，不影响「每燃料伤害」。
+    /// </summary>
     [TweakField()]
     public float? fuelCapacity = null;
+    /// <summary>
+    /// 每 1 份燃料物资折算多少<b>点</b>进燃料槽（点/份）。<c>CompRefuelable.Refuel</c> 里
+    /// <c>fuel += amount * this</c>，只作用于装填，不影响开火扣点 —— 所以它是物价换算：
+    /// 调大它，同一份物资换更多轮开火，「每燃料伤害」随之线性变大。
+    /// 原版该字段是 private，走反射读写。
+    /// </summary>
     [TweakField()]
     public float? fuelMultiplier = null;
+    /// <summary>
+    /// 闲置时每天连续消耗的<b>点</b>数（点/天，不是倍率）。只在 <c>consumeFuelOnlyWhenUsed = false</c>
+    /// 的建筑（发电机等）上有意义；炮塔按发扣点，这一项对它们无效。
+    /// </summary>
     [TweakField()]
     public float? fuelConsumptionRate = null;
 
@@ -398,7 +422,7 @@ class BuildingData : TweakData<BuildingData>
     }
 
     /// <summary>
-    /// 每消耗 1 单位燃料能打出的名义伤害。
+    /// 每消耗 1 <b>份燃料物资</b>能打出的名义伤害。
     /// <para>
     /// <b>一律读 def，不读 TweakData</b>：<see cref="Apply"/> 已经把用户的改动写进 def 了，def 就是
     /// "游戏下一次开火会用的值"；而 <see cref="WeaponData"/> 里的伤害 / 连发数是带原始-活实例双层的镜像，
@@ -407,6 +431,15 @@ class BuildingData : TweakData<BuildingData>
     /// <para>
     /// 分子是<b>裸伤害</b>、不含命中率 —— 与武器页 MaxDPS 同口径。命中率是另一个维度，
     /// 乘进来会把"省不省燃料"和"打不打得中"混成一个数，反而不利于判断。
+    /// </para>
+    /// <para>
+    /// 分母换算成<b>物资份数</b>：开火扣的是燃料槽点数（<c>consumeFuelPerShot</c> / <c>consumeFuelPerBurst</c>），
+    /// 而换料时 1 份物资折算 <c>CompProperties_Refuelable.fuelMultiplier</c> 点（<c>CompRefuelable.Refuel</c>）。
+    /// 所以份数 = 点数 ÷ 倍率 —— 调倍率必须让这一列跟着动，否则它就答不了"换个枪管划不划算"。
+    /// </para>
+    /// <para>
+    /// 不含 <c>fuelMultiplier / difficulty.maintenanceCostFactor</c> 那层难度系数：那是全局的运行时系数，
+    /// 掺进来会让同一件东西在不同难度下显示不同的数，不适合当平衡指标。
     /// </para>
     /// <para>取不到（非炮塔 / 无枪 / 不吃燃料 / 伤害为 0）时返回 null，单元格留空。</para>
     /// </summary>
@@ -426,7 +459,23 @@ class BuildingData : TweakData<BuildingData>
         float damage = ShotDamage(verb);
         if (damage <= 0f) return null;
 
-        return shots * damage / (fuelPerShot * shots + fuelPerBurst);
+        // 点火一轮扣的点数 ÷ 每份物资折算的点数 = 这一轮烧掉的物资份数。
+        return shots * damage / (fuelPerShot * shots + fuelPerBurst) * FuelPerItem(def);
+    }
+
+    /// <summary>
+    /// 1 份燃料物资折算成多少点燃料槽（<c>CompProperties_Refuelable.fuelMultiplier</c>）。
+    /// 字段是 private 的（原版没暴露），走反射；没有 Refuelable 组件 / 值非正时按 1 处理 ——
+    /// 那种炮塔的"份数"本来就没有换算关系，退化成按点数算。
+    /// </summary>
+    private static float FuelPerItem(ThingDef def)
+    {
+        if (def.GetCompProperties<CompProperties_Refuelable>() is CompProperties_Refuelable rp
+            && CompPropertiesfuelMultiplier.GetValue(rp) is float m && m > 0f)
+        {
+            return m;
+        }
+        return 1f;
     }
 
     /// <summary>

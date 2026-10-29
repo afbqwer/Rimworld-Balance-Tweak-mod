@@ -68,7 +68,13 @@
     <MST.turretBurstCooldownTime>爆发冷却</MST.turretBurstCooldownTime>
     <MST.turretInitialCooldownTime>初始冷却</MST.turretInitialCooldownTime>
     <MST.damagePerFuel>每燃料伤害</MST.damagePerFuel>
-    <MST.damagePerFuelComment>每消耗 1 单位燃料打出的名义伤害：一轮齐射的总伤害 ÷ 这一轮消耗的燃料（每发燃料 × 发数 + 每轮燃料）。不含命中率，与武器页 MaxDPS 同口径。显示为空表示该炮塔开火不消耗燃料。</MST.damagePerFuelComment>
+    <MST.damagePerFuelComment>性价比：每消耗 1 份燃料物资（见「燃料类型」列）打出的名义伤害 = 一轮齐射总伤害 ÷ 本轮烧掉的份数，份数 = (每发燃料 × 发数 + 每轮燃料) ÷ 燃料倍率。分子是裸伤害，不含命中率与爆炸衰减，也不含难度系数。空 = 开火不吃燃料，或伤害不伤生命（如泡沫炮）。</MST.damagePerFuelComment>
+
+    <!-- Refuelable 字段：只对带 CompProperties_Refuelable 的建筑有效，其它建筑改这一列不产生任何效果 -->
+    <MST.fuelNameComment>换料消耗的物资（fuelFilter 摘要）：炮塔是枪管 / 弹片 / 火箭，发电机是化合燃料。只读。它也是「每燃料伤害」里"1 份"的单位 —— 跨炮塔比较那一列之前先看这里。</MST.fuelNameComment>
+    <MST.fuelCapacityComment>燃料槽容量（点）。满槽轮数 = 容量 ÷ 一轮扣的点数（每发燃料 × 发数 + 每轮燃料）。只影响多久加一次料，不影响「每燃料伤害」。例：原版迷你炮塔 60 点、每轮 2 点 ⇒ 30 轮齐射换一次枪管。</MST.fuelCapacityComment>
+    <MST.fuelMultiplierComment>每 1 份燃料物资折算多少点进燃料槽（点/份；Refuel 时 fuel += 份数 × 它）。只作用于装填、不影响开火扣点，所以这是物价换算：调大它，同一份物资换更多轮开火，「每燃料伤害」按比例变大。原版差异极大（迷你炮塔 0.75、狙击 0.5、火箭 0.067、迫击炮 20），别当统一刻度用；开启 factorByDifficulty 时游戏还会再除以难度系数，那层不写在这里。</MST.fuelMultiplierComment>
+    <MST.fuelConsumptionRateComment>闲置时每天连续扣的点数（点/天，不是倍率）。只有 consumeFuelOnlyWhenUsed = false 的建筑（发电机等）生效；炮塔是开火时按发扣点，这一项对它们无效。</MST.fuelConsumptionRateComment>
 
     <!-- Furniture 字段 -->
 

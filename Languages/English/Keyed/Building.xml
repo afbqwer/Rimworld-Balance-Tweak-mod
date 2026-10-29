@@ -68,7 +68,13 @@
     <MST.turretBurstCooldownTime>BurstCD</MST.turretBurstCooldownTime>
     <MST.turretInitialCooldownTime>InitCD</MST.turretInitialCooldownTime>
     <MST.damagePerFuel>DmgPerFuel</MST.damagePerFuel>
-    <MST.damagePerFuelComment>Nominal damage dealt per 1 unit of fuel: the total damage of one full burst divided by the fuel that burst consumes (fuel per shot × shots + fuel per burst). Hit chance is not included, same basis as the weapon tab's max DPS. Empty means this turret does not consume fuel when firing.</MST.damagePerFuelComment>
+    <MST.damagePerFuelComment>Cost-effectiveness: the nominal damage per 1 unit of fuel item (see the "Fuel" column) = total damage of one burst ÷ items that burst consumes, where items = (fuel per shot × shots + fuel per burst) ÷ fuel multiplier. The numerator is raw damage: no hit chance, no explosion falloff, no difficulty factor. Empty = firing costs no fuel, or the damage does not harm health (e.g. foam turret).</MST.damagePerFuelComment>
+
+    <!-- Refuelable fields: only meaningful for buildings with CompProperties_Refuelable; editing them elsewhere does nothing -->
+    <MST.fuelNameComment>The item consumed when refueling (fuelFilter summary): barrels / slugs / rockets for turrets, chemfuel for generators. Read-only. It is also the unit of "1 unit of fuel" in DmgPerFuel — check it before comparing that column across turrets.</MST.fuelNameComment>
+    <MST.fuelCapacityComment>Tank capacity in points. Bursts per tank = capacity ÷ points per burst (fuel per shot × shots + fuel per burst). Only changes how often you refuel, not DmgPerFuel. Example: vanilla mini-turret holds 60 and burns 2 per burst ⇒ 30 bursts per barrel change.</MST.fuelCapacityComment>
+    <MST.fuelMultiplierComment>How many points one unit of fuel item adds to the tank (points per item; Refuel does fuel += count × this). It only affects refueling, never the points burned per shot, so it is a price conversion: raise it and each item buys more bursts, scaling DmgPerFuel up proportionally. Vanilla varies wildly (mini-turret 0.75, sniper 0.5, rockets 0.067, mortar 20) — not a common scale. With factorByDifficulty the game also divides by the difficulty factor at runtime; that layer is not shown here.</MST.fuelMultiplierComment>
+    <MST.fuelConsumptionRateComment>Points drained per day while idle (points/day, not a multiplier). Only applies to buildings with consumeFuelOnlyWhenUsed = false (generators etc.); turrets burn per shot instead, so this does nothing for them.</MST.fuelConsumptionRateComment>
 
     <!-- Furniture 字段 -->
 

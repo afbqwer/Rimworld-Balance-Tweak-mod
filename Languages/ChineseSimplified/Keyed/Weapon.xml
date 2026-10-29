@@ -47,8 +47,6 @@
     <MST.ticksBetweenBurstShotsComment>在瞄准之后每次射击的间隔，单位为刻（1/60秒），如30刻为0.5秒。</MST.ticksBetweenBurstShotsComment>
     <MST.OptimalRangeComment>远程武器命中率最高的距离。某些拥有特殊机制的武器可能结果存在偏差。</MST.OptimalRangeComment>
     <MST.explosionRadiusComment>爆炸的范围，编辑器不支持添加爆炸效果，只会修改已有的爆炸效果。</MST.explosionRadiusComment>
-    <MST.fuelMultiplierComment>燃料消耗的倍率。编辑器只会修改已有的燃料属性。</MST.fuelMultiplierComment>
-    <MST.fuelConsumptionRateComment>燃料随时间减少的倍率。如果燃料不会随时间减少则数值无意义。编辑器只会修改已有的燃料属性。</MST.fuelConsumptionRateComment>
     <MST.projectileSpeedComment>投射物在地图上的飞行速度。</MST.projectileSpeedComment>
     <MST.damageAmountBaseComment>造成的基础伤害，如果为-1，意味着伤害值只由伤害类型的默认伤害所决定。</MST.damageAmountBaseComment>
     <MST.armorPenetrationBaseComment>伤害的护甲穿透，如果为-1，意味着护甲穿透为伤害的15%，如10伤害对应15%护甲穿透。</MST.armorPenetrationBaseComment>
