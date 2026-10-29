@@ -132,6 +132,7 @@
     <MST.statOffsets>属性偏移</MST.statOffsets>
     <MST.statFactors>属性倍率</MST.statFactors>
     <MST.Clear>清除</MST.Clear>
+    <MST.ClearCell>清空</MST.ClearCell>
     <MST.CurrentDef>当前：</MST.CurrentDef>
     <MST.DefSelector>Def选择</MST.DefSelector>
     <MST.CapModList>机能列表</MST.CapModList>

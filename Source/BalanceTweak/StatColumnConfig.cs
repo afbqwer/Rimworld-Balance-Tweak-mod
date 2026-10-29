@@ -41,6 +41,24 @@ public class StatColumnConfig
 
     public readonly bool isSPStat = false;
     public readonly bool isListStyle; // 缓存 IsListStyle() 结果
+
+    /// <summary>
+    /// 该列能否"清空"（右键菜单里的「清空」）。
+    /// <para>
+    /// 只给"清空真的有独立含义"的列开口子，判据看 Apply 怎么写 Cleared：
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>stat 列</b>（<c>[TweakField(StatDef = …)]</c>）：清空 = 把这条 StatModifier 从 statBases 里移除，
+    /// 回到游戏默认值 —— 与"重置"（写回原值）是两件事。见 <c>ApplyDefStats</c> Phase 2 的
+    /// <c>value == null ⇒ 移除</c>。</item>
+    /// <item><b>集合</b>（<c>List&lt;T&gt;</c>，走 <c>ApplyL</c>）：Cleared = 置 null，即清空。</item>
+    /// <item><b>其余一律不显示</b>：非空标量 / 枚举 / Def 引用 / 字符串 / <c>ThingFilter</c> 的 Cleared 是
+    /// "还原原值"，与旁边的「重置」完全重复；镜像列的清空会被下一次 <c>EnsureDisplayValues</c> 从源行同步回来，
+    /// 点了等于没点。</item>
+    /// </list>
+    /// </summary>
+    public readonly bool canClear;
+
     private FieldType cachedFieldType;
     public FieldType SortFieldType => cachedFieldType;
     public readonly Type? EnumType;
@@ -112,6 +130,9 @@ public class StatColumnConfig
         CacheFieldType();
         ValidateFieldTypeStyle();
         CompileAccessors();
+        canClear = type == ColumnDataType.Field
+            && !isMirror
+            && (stat != null || typeof(IList).IsAssignableFrom(field.FieldType));
 
         if (columnType == ColumnStyle.DefSelector)
         {
@@ -351,9 +372,7 @@ public class StatColumnConfig
         {
             if (data.IsFieldCleared(field.Name)) return; // 幂等
             if (GetRawValue(data) == null) return; // 本就没有值，无物可清 ⇒ 不该留下任何状态
-            SetRawValue(data, null, isModified: false);
-            data.MarkFieldCleared(field.Name);
-            data.Apply();
+            ApplyClear(data);
             return;
         }
         if (showChanged && selectedCol == this)
@@ -465,6 +484,38 @@ public class StatColumnConfig
     {
         SetRawValue(data, newValue, isModified);
         data.Apply();
+    }
+
+    /// <summary>
+    /// 这一格此刻能不能清空：列本身可清（见 <see cref="canClear"/>），且当前确实有值。
+    /// 右键菜单只在这个判据成立时才显示「清空」。
+    /// </summary>
+    public bool CanClear(TweakData data)
+        => canClear && field != null && GetRawValue(data) != null;
+
+    /// <summary>
+    /// 清空这一格：值写 null 并登记为"显式清空"。与在编辑框里输入 <c>null</c> 完全同一条路径
+    /// （<see cref="ApplyClear"/>），集合因此走的是"清空"而不是"改成空列表"。
+    /// </summary>
+    public void ClearValue(TweakData data)
+    {
+        if (!CanClear(data)) return;
+        if (data.IsFieldCleared(field.Name)) return;
+        ApplyClear(data);
+    }
+
+    /// <summary>
+    /// 清空的唯一落地点：先写 null（同时撤掉"已修改"标记），再登记 Cleared，最后 Apply。
+    /// 顺序不能换 —— <see cref="SetRawValue"/> 在标记清零时会把 <c>tweaked</c> 也置 false，
+    /// 而 <see cref="TweakData.MarkFieldCleared"/> 才有权把这条数据留在修改表里。
+    /// </summary>
+    private void ApplyClear(TweakData data)
+    {
+        SetRawValue(data, null, isModified: false);
+        data.MarkFieldCleared(field.Name);
+        data.Apply();
+        // 参考列是"按当前 def 现算"的派生值，Apply 已把缓存置脏，这里补算一次当帧就能看到新值。
+        data.EnsureDisplayValues();
     }
 
     /// <summary>

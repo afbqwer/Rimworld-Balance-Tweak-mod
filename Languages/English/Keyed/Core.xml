@@ -132,6 +132,7 @@
     <MST.statOffsets>Offsets</MST.statOffsets>
     <MST.statFactors>Factors</MST.statFactors>
     <MST.Clear>Clear</MST.Clear>
+    <MST.ClearCell>Clear</MST.ClearCell>
     <MST.CurrentDef>Current:</MST.CurrentDef>
     <MST.DefSelector>DefSel</MST.DefSelector>
     <MST.CapModList>CapList</MST.CapModList>

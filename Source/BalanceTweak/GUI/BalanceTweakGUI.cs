@@ -2029,6 +2029,16 @@ public partial class BalanceTweakSettings : ModSettings
                     }
                 }));
             }
+            // 清空：只对"清空和重置不是一回事"的列出现（stat 列 = 移除该条 stat，集合 = 清空）。
+            // 判据与理由见 StatColumnConfig.canClear。
+            if (columnConfig.CanClear(data))
+            {
+                options.Add(new FloatMenuOption("MST.ClearCell".Translate().RawText, () =>
+                {
+                    CommitPendingEdit();
+                    columnConfig.ClearValue(data);
+                }));
+            }
             options.Add(new FloatMenuOption("MST.Reset".Translate().RawText, () =>
             {
                 // 先提交旧单元格的编辑
