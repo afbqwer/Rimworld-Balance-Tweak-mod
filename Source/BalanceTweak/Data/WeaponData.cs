@@ -697,10 +697,12 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         ApplyDefLabel(nameof(defLabel), def);
         ApplyDefStats(def);
         ApplyWeaponProp(def);
+        // GenValues 已经把镜像 / DPS / 强度都算成"当前 def"的值了，只剩参考价值没覆盖。
         GenValues();
-        // 参考价值 / 装备强度按"当前 def 现算"：改完成本或招式后，下一次读就该是新值，
-        // 不能冻在改之前那次计算上。
-        displayValuesEnsured = false;
+        normalMarketValue = (float?)GetNormalMarketValue(this);
+        // 标记置"已就绪"而不是置脏：调用方（ApplyValue）紧接着会调 EnsureDisplayValues，
+        // 置脏就等于把 DPS / 强度再算一遍 —— 批量改上千行时那是纯浪费。
+        displayValuesEnsured = true;
     }
 
     static float? RDPS = null;

@@ -446,6 +446,12 @@ class BuildingData : TweakData<BuildingData>
     private static float? ComputeDamagePerFuel(ThingDef def)
     {
         if (def.building?.turretGunDef is not ThingDef gunDef) return null;
+        // 必须真的有燃料槽组件：开火扣燃料那一步是
+        // <c>caster.TryGetComp&lt;CompRefuelable&gt;()?.ConsumeFuel(...)</c>，
+        // 没有这个组件时枪上的 consumeFuelPerShot 是死值 —— 原版战术炮塔（Anomaly）的
+        // Gun_TacticalTurret 就写着每发 1 燃料，但建筑靠 CompProperties_MechPowerCell 电池供能，
+        // 从不扣燃料。不看组件就会给它算出一个根本不存在的"每燃料伤害"。
+        if (def.GetCompProperties<CompProperties_Refuelable>() is not CompProperties_Refuelable refuelable) return null;
         // 与 WeaponData.SetDef / GenValues 取 verb 的规则保持一致（Building_TurretGun.AttackVerb
         // = GunCompEq.PrimaryVerb，原版炮塔枪的第一个非近战 verb 就是它）。
         var verb = gunDef.Verbs?.FirstOrDefault(v => !v.IsMeleeAttack);
@@ -460,21 +466,16 @@ class BuildingData : TweakData<BuildingData>
         if (damage <= 0f) return null;
 
         // 点火一轮扣的点数 ÷ 每份物资折算的点数 = 这一轮烧掉的物资份数。
-        return shots * damage / (fuelPerShot * shots + fuelPerBurst) * FuelPerItem(def);
+        return shots * damage / (fuelPerShot * shots + fuelPerBurst) * FuelPerItem(refuelable);
     }
 
     /// <summary>
     /// 1 份燃料物资折算成多少点燃料槽（<c>CompProperties_Refuelable.fuelMultiplier</c>）。
-    /// 字段是 private 的（原版没暴露），走反射；没有 Refuelable 组件 / 值非正时按 1 处理 ——
-    /// 那种炮塔的"份数"本来就没有换算关系，退化成按点数算。
+    /// 字段是 private 的（原版没暴露），走反射；值非正（坏 XML）时按 1 处理，别把整列算成 0。
     /// </summary>
-    private static float FuelPerItem(ThingDef def)
+    private static float FuelPerItem(CompProperties_Refuelable refuelable)
     {
-        if (def.GetCompProperties<CompProperties_Refuelable>() is CompProperties_Refuelable rp
-            && CompPropertiesfuelMultiplier.GetValue(rp) is float m && m > 0f)
-        {
-            return m;
-        }
+        if (CompPropertiesfuelMultiplier.GetValue(refuelable) is float m && m > 0f) return m;
         return 1f;
     }
 
