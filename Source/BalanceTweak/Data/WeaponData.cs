@@ -268,7 +268,11 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
         ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
         if (IsFieldModified(nameof(thingSetMakerTags))) DataUtility.RefreshThingSetMakerFilters();
-        ApplyL<string>(nameof(weaponTagList), v => def.weaponTags = v);
+        // weaponTags 允许 null，但清空必须写成空列表：PawnWeaponGenerator.allWeaponPairs 是静态缓存，
+        // 只在 PlayDataLoader 里 Reset()，运行期清空后缓存里仍留着这条武器，而 TryGenerateWeaponFor /
+        // MechRepairUtility.IsMissingWeapon 都是裸调 w.thing.weaponTags.Contains / .Any —— 留 null 会在
+        // 下一次生成武装 NPC 或机械体修理时 NRE。空列表在原版语义里与 null 等价（NullOrEmpty），且裸调用安全。
+        ApplyL<string>(nameof(weaponTagList), v => def.weaponTags = v ?? new List<string>());
         bool costChanged = false;
         ApplyV<int>(nameof(costStuffCount), v => { def.costStuffCount = v; costChanged = true; });
         ApplyL<ThingDefCountClass>(nameof(costList), v => { def.costList = v?.ToList(); costChanged = true; });
