@@ -3,8 +3,14 @@
 
   <!--
     底部主按钮：打开独立的 Def 编辑窗口（DefEditorWindow）。
-    放在 1.7/ 下而不是根目录，是因为 1.6 的 dll 已归档、不含 MainButtonWorker_OpenEditor，
-    根目录的 Def 会被 1.6 一起加载，workerClass 找不到类型会报错。
+
+    为什么在**根目录**而不是 1.7/ 下：LoadFolders 的 `/` 对 v1.6 与 v1.7 都会加载，
+    Defs 与 Languages 因此是两个版本共用的唯一一份（版本目录 1.6/ 1.7/ 只放 Assemblies）。
+    这样 1.6 玩家也有底部主按钮、也有它的 DefInjected 翻译，且不会出现两份副本各自漂移。
+
+    前提是两边的 dll 都含 MainButtonWorker_OpenEditor —— 现在 1.6 与 1.7 由同一份源码编译，
+    都满足。历史上 1.6 曾冻结在归档 dll（不含该类型），当时放在 1.7/ 下正是为了避免
+    1.6 加载本 Def 后 workerClass 找不到类型报错；那个前提已随 1.6 恢复编译而消失。
   -->
   <MainButtonDef>
     <defName>BalanceTweakEditor</defName>

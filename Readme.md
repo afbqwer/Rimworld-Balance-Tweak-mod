@@ -493,6 +493,24 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 发版前对 1.6 的核对项：产物 `TargetFramework` 应为 `.NETFramework,v4.8`、只引用 `mscorlib` / `Assembly-CSharp` /
 `0Harmony`，**不得**出现 1.7 专属的 `UnityStubs` / `Waylith`。
 
+#### 目录结构：版本目录只放 Assemblies
+
+```
+/Defs          ← 底部主按钮（MainButtonDef）
+/Languages     ← Keyed + DefInjected（中/英）
+/1.6/Assemblies/BalanceTweak.dll   ← net48，LTS 稳定版产物
+/1.7/Assemblies/BalanceTweak.dll   ← net10.0
+```
+
+`LoadFolders.xml` 里 v1.6 与 v1.7 都会加载根目录 `/`，所以 **Defs 与 Languages 放在根目录**，
+两个版本共用同一份；`1.6/` `1.7/` 只放 Assemblies。
+
+别再往版本目录里放 Defs / Languages 的副本 —— 两份会漂移，而且 1.6 那边一旦漏掉就是
+"1.6 玩家没有底部按钮 / 按钮没有翻译"。判断某个 Def 能不能放根目录的唯一前提是：
+它引用的类型（如 `workerClass`）在两个 dll 里都存在。当前 1.6 与 1.7 由同一份源码编译，天然满足；
+历史上 1.6 冻结在归档 dll 时 `MainButtonWorker_OpenEditor` 不存在，`MainButtonDefs` 才被迫放在 `1.7/` 下，
+现已移回根目录。
+
 ### 7.8 镜像列（`IsMirror`）与原始快照
 
 有的列**值属于另一行**：武器行的"伤害 / 穿透"其实是关联弹丸的副本（`Bullet_Shotgun` 同时供泵动与链式霰弹枪）。

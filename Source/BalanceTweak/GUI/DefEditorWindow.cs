@@ -197,8 +197,8 @@ public class DefEditorWindow : Window
 /// 底部主按钮的激活逻辑：直接开关独立编辑窗口，不占用 <c>MainTabWindow</c>
 /// （那是个整屏窗口，会把表格挤成全屏，还要重做尺寸逻辑）。
 /// <para>
-/// 类型全名被 <c>1.7/Defs/MainButtonDefs/MainButton_BalanceTweak.xml</c> 的 <c>workerClass</c> 引用，
-/// 改名必须同步改 XML，否则按钮加载失败。
+/// 类型全名被 <c>Defs/MainButtonDefs/MainButton_BalanceTweak.xml</c> 的 <c>workerClass</c> 引用，
+/// 改名必须同步改 XML，否则按钮加载失败（1.6 与 1.7 共用根目录那一份 Def，两边都得能解析到本类型）。
 /// </para>
 /// </summary>
 public class MainButtonWorker_OpenEditor : MainButtonWorker
