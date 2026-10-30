@@ -161,6 +161,32 @@ public static class DataUtility
 
     #endregion
 
+    #region 材料随机生成缓存
+
+    // 原版这三处缓存在 PlayDataLoader.ResetStaticDataPre/Post 里各建一次，之后不再重建：
+    //   · GenStuff.cachedStuffDefs —— 所有 IsStuff 的 ThingDef 列表
+    //   · PawnWeaponGenerator.allWeaponPairs / PawnApparelGenerator.allApparelPairs ——
+    //     "物品 × 材料"配对表。ThingStuffPair 在构造时就把 MarketValue / 保温 / 毒抗等 stat
+    //     算进 cachedPrice 等字段，Commonality 里的 commonalityMultiplier 也是那时按"平均
+    //     commonality"归一化好的。
+    // 所以改完材料的 commonality / allowedInStuffGeneration / 价格类 stat 之后，配对表里存的
+    // 仍是旧值：武器与服饰的生成权重、weaponMoney 价格门槛看起来"改了没反应"。
+    // 这里统一重建，语义等同重启游戏。
+    //
+    // 注意：只在当前 Def 上有实际改动时调用（见 StuffData.NeedsGenerationCacheRefresh）。
+    // 一次重建要遍历全部 ThingDef × 可用材料，不是每帧能做的事。目前已知的重复调用点只有
+    // TweakDatabase.Init —— 读档时每个被改过的材料行各触发一次（原版材料三十来个，量级可接受，
+    // 但未实测）；若哪天真被玩家察觉（改了大量材料后读档变慢），把 Init 里那条链路包成批次
+    // （首行置脏、末尾统一刷一次）即可，不必改这里的语义。
+    public static void RefreshStuffGenerationCaches()
+    {
+        GenStuff.ResetStaticData();
+        PawnWeaponGenerator.Reset();
+        PawnApparelGenerator.Reset();
+    }
+
+    #endregion
+
     #region ThingDef 分类谓词
     // 由各 Data 类上的 [TweakFor(Match = nameof(...))] 引用。
     // 逐一对应原 TweakDatabase.Init() 的 if/else-if 链，抢占顺序由 Priority 还原：

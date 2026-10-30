@@ -18,6 +18,12 @@
     <MST.stuffWorkToMake>材料工量</MST.stuffWorkToMake>
     <MST.stuffWorkToBuild>材料建量</MST.stuffWorkToBuild>
     <MST.stuffMeleeWeaponCooldownMultiplier>材近CD</MST.stuffMeleeWeaponCooldownMultiplier>
+    <MST.stuffCommonality>随机权重</MST.stuffCommonality>
+    <MST.stuffCommonalityComment>随机生成时该材料被抽中的相对权重：影响武器、服饰、战利品，以及野外建筑的选址材料。与"深钻概率"无关。</MST.stuffCommonalityComment>
+    <MST.stuffAllowedInGeneration>参与生成</MST.stuffAllowedInGeneration>
+    <MST.stuffAllowedInGenerationComment>关闭后该材料不再参与随机生成（武器、服饰、战利品、野外建筑选材均跳过它）；玩家手动指定材料建造不受影响。</MST.stuffAllowedInGenerationComment>
+    <MST.stuffAirtight>气密</MST.stuffAirtight>
+    <MST.stuffAirtightComment>该材料是否气密。仅对允许由材料决定气密的建筑生效，影响其室内外温度与真空隔离。</MST.stuffAirtightComment>
     <MST.deepCommonality>深钻概率</MST.deepCommonality>
     <MST.deepCommonalityComment>被地质扫描仪扫描到的概率。</MST.deepCommonalityComment>
     <MST.deepCountPerPortion>深钻产出</MST.deepCountPerPortion>

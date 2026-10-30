@@ -10,6 +10,49 @@ namespace BalanceTweak;
 class StuffData : TweakData<StuffData>
 {
     // 字段定义
+
+    /// <summary>
+    /// 该材料在随机生成里的份额（<c>StuffProperties.commonality</c>）。
+    /// <para>
+    /// 消费方：<c>ThingStuffPair.Commonality</c>（武器/服饰/战利品按它 × 价格加权）、
+    /// <c>GenStuff.TryRandomStuffByCommonalityFor</c>、<c>GenStuff.RandomStuffInexpensiveFor</c>（BaseGen 建筑选材）、
+    /// <c>ThingSetMakerUtility.TryGetRandomThingWhichCanWeighNoMoreThan</c>。
+    /// </para>
+    /// <para>
+    /// 与 <see cref="deepCommonality"/> 无任何关系：那个是深钻井/地质扫描的储量权重，
+    /// 这个是"随机生成时被抽中的概率"。两者互不影响，也可以一个为 0 另一个不为 0。
+    /// </para>
+    /// </summary>
+    [TweakField(Style = ColumnStyle.Float)]
+    public float? stuffCommonality = null;
+
+    /// <summary>
+    /// 是否参与随机生成（<c>StuffProperties.allowedInStuffGeneration</c>）。
+    /// 关闭后 <c>GenStuff.AllowedStuffsFor</c> 会把它排除在随机选材之外
+    /// （武器、服饰、战利品、BaseGen 建筑选材均受影响）；玩家手动指定材料建造不受限制。
+    /// </summary>
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? stuffAllowedInGeneration = null;
+
+    /// <summary>
+    /// 材料的科技等级（<c>ThingDef.techLevel</c>）。
+    /// <para>
+    /// 随机选材时 <c>GenStuff.AllowedStuffsFor(td, maxTechLevel)</c> 会按它过滤：材料等级高于势力
+    /// （或物品集）等级就被排除。所以调高它 = 这种材料不再出现在低科技聚落、部落前哨、低阶战利品里；
+    /// 调低则相反。配对表不缓存这一项，改完即时生效。
+    /// </para>
+    /// </summary>
+    [TweakField(Style = ColumnStyle.Enum, EnumType = typeof(TechLevel))]
+    public TechLevel? techLevel = null;
+
+    /// <summary>
+    /// 材料是否气密（<c>StuffProperties.isAirtight</c>）。只对带有
+    /// <c>BuildingProperties.isStuffableAirtight</c> 的建筑生效（判定见 <c>Verse.Building.Stuff</c> 一侧），
+    /// 影响那类建筑的室内外温度/真空隔离。
+    /// </summary>
+    [TweakField(Style = ColumnStyle.Bool)]
+    public bool? stuffAirtight = null;
+
     [TweakField(StatDef = "MarketValue")]
     public float? marketValue = null;
 
@@ -71,6 +114,10 @@ class StuffData : TweakData<StuffData>
         defLabel ??= def?.label;
         if (def is ThingDef d)
         {
+            stuffCommonality ??= d.stuffProps?.commonality;
+            stuffAllowedInGeneration ??= d.stuffProps?.allowedInStuffGeneration;
+            techLevel ??= d.techLevel;
+            stuffAirtight ??= d.stuffProps?.isAirtight;
             deepCommonality ??= d.deepCommonality;
             deepCountPerPortion ??= d.deepCountPerPortion;
             deepCountPerCell ??= d.deepCountPerCell;
@@ -89,6 +136,8 @@ class StuffData : TweakData<StuffData>
             Log.Error($"[BalanceTweak]{this}的def为{this.def}!");
             return;
         }
+        // ApplyDefStats 末尾会把 forceResetStats 清零，判断"是否要重建随机生成缓存"必须在这之前取值。
+        bool forcedReset = forceResetStats;
         ApplyDefLabel(nameof(defLabel), def);
         ApplyDefStats(def);
         ApplyL<string>(nameof(thingSetMakerTags), v => def.thingSetMakerTags = v);
@@ -97,6 +146,43 @@ class StuffData : TweakData<StuffData>
         ApplyV<int>(nameof(deepCountPerPortion), v => def.deepCountPerPortion = v);
         ApplyV<int>(nameof(deepCountPerCell), v => def.deepCountPerCell = v);
         ApplyV<IntRange>(nameof(deepLumpSizeRange), v => def.deepLumpSizeRange = v);
+
+        // stuffProps 为 null 的行（MatchStuff 也会收进只有 deepCommonality、没有 stuffProps 的矿脉类 Def）
+        // 没有可写目标，静默跳过 —— 与 ApplyDefStats 对 statOffsets / statFactors 的处理保持一致。
+        var stuffProps = def.stuffProps;
+        if (stuffProps != null)
+        {
+            ApplyV<float>(nameof(stuffCommonality), v => stuffProps.commonality = v);
+            ApplyV<bool>(nameof(stuffAllowedInGeneration), v => stuffProps.allowedInStuffGeneration = v);
+            ApplyV<bool>(nameof(stuffAirtight), v => stuffProps.isAirtight = v);
+        }
+        ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
+
+        if (forcedReset || NeedsGenerationCacheRefresh()) DataUtility.RefreshStuffGenerationCaches();
+    }
+
+    /// <summary>
+    /// 这些字段不进入 <c>ThingStuffPair</c> 的缓存（价格、保温、权重归一化倍数），改它们不必重建配对表。
+    /// 其余字段（含以后新增的）一律按"需要重建"处理 —— 默认取安全的一侧，免得加字段时漏改这张名单。
+    /// </summary>
+    private static readonly HashSet<string> CacheNeutralFields = new()
+    {
+        nameof(defLabel), nameof(thingSetMakerTags),
+        nameof(deepCommonality), nameof(deepCountPerPortion),
+        nameof(deepCountPerCell), nameof(deepLumpSizeRange),
+        // techLevel 是选材时的过滤条件（AllowedStuffsFor 现算），isAirtight 只在建筑判定里读，
+        // 两者都不参与 ThingStuffPair 的构造。
+        nameof(techLevel), nameof(stuffAirtight),
+    };
+
+    private bool NeedsGenerationCacheRefresh()
+    {
+        foreach (var meta in Fields)
+        {
+            if (IsFieldModified(meta.Field.Name) && !CacheNeutralFields.Contains(meta.Field.Name))
+                return true;
+        }
+        return false;
     }
 
 

@@ -18,6 +18,12 @@
     <MST.stuffWorkToMake>StfW2M</MST.stuffWorkToMake>
     <MST.stuffWorkToBuild>StfW2B</MST.stuffWorkToBuild>
     <MST.stuffMeleeWeaponCooldownMultiplier>StfMCD</MST.stuffMeleeWeaponCooldownMultiplier>
+    <MST.stuffCommonality>Cmn</MST.stuffCommonality>
+    <MST.stuffCommonalityComment>Relative weight for random generation: affects weapons, apparel, loot and wild-building material choice. Unrelated to deep scanning commonality.</MST.stuffCommonalityComment>
+    <MST.stuffAllowedInGeneration>AllowGen</MST.stuffAllowedInGeneration>
+    <MST.stuffAllowedInGenerationComment>When off, this stuff is never picked by random generation (weapons, apparel, loot, wild-building materials). Manual construction is unaffected.</MST.stuffAllowedInGenerationComment>
+    <MST.stuffAirtight>Airtight</MST.stuffAirtight>
+    <MST.stuffAirtightComment>Whether this stuff is airtight. Only matters for buildings that take airtightness from their stuff; affects indoor/outdoor temperature and vacuum separation.</MST.stuffAirtightComment>
     <MST.deepCommonality>DeepCmn</MST.deepCommonality>
     <MST.deepCommonalityComment>Commonality for deep scanning / ground-penetrating scanner.</MST.deepCommonalityComment>
     <MST.deepCountPerPortion>DeepCnt</MST.deepCountPerPortion>
