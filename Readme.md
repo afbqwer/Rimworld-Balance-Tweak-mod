@@ -11,6 +11,7 @@
 | 重命名 `[TweakField]` 字段 | 字段名 = XML 元素名，改名即丢该字段的修改（新增字段安全） |
 | 直接删除还在使用的 `[TweakFor]` 规则 | 先确认没有已存数据落在该页签；确需删除时保留一个继承它的空壳子类 |
 | 用「值 == null / 值为空」反推"用户清空了该字段" | L0 三态只认两个**显式**集合（`TweakData.StateOf`）：`_modifiedFieldNames`（Set）与 `_clearedFieldNames`（Cleared）。清空**只能**由编辑器的清空动作（`MarkFieldCleared`）写入；判定不清空/不写入一律走 `ApplyV/ApplyN/ApplyL/ApplyD/ApplyS/ApplyF` 门控 |
+| 把「清空」实现成给集合赋 `null`（`def.list = null` / 字段 = null） | 清空的语义**只有**「从集合里移除一项或全部项」，集合的终态是**空集合**（`List<T>` 的 `Count == 0`），永远不是 `null`。原版从不区分 null 与空列表（`NullOrEmpty` 等价），而列表字段为 `null` 在原版里总是**错误情况** —— 大量裸 `.Contains` / `foreach` / `.Count` 会直接 NRE。stat 列的"清空"同样是「从 `statBases` / `equippedStatOffsets` 里移除该条 `StatModifier`」。参见 [§A 门控表](#a-apply-系列-tweakdatatypedcs访问级别-protected-internal) 与 `Docs/NullSemantics_L0_Plan.md` §15 |
 | 绕过 `MarkFieldCleared` 直接改 `_clearedFieldNames`，或让同一字段同时出现在两个集合里 | 两集合互斥是 Set/Cleared 的唯一判据；破坏互斥会让 `StateOf` 二义、`IsFieldModified` 回填守卫与 `Apply` 门控错乱 |
 | 给 `List<>` / `ThingFilter` 字段加 `??=` 回填点却不带 `!IsFieldModified(...)` 守卫 | Cleared 字段读档后会被 Def 回填"复活"，清空意图重启即失效。运行期自检 SC2 会报 `[BT/SELFCHECK] 复活:` |
 | 在代码里**静态引用可选 Mod 的类型**（`typeof` / `is` / 泛型参数 / 把该类型变量捕获进 lambda） | C# 会把 lambda 捕获的变量编成闭包类的**公共字段**；未加载该 Mod 的玩家在启动期 `StaticConstructorOnStartupUtility` 对全部类型调 `GetFields()` → `TypeLoadException`（`Could not load type of field '...<>c__DisplayClass...'`）。一律按全名反射：`DataUtility.IsTypeOrSubclassOfName / FindMember / GetByName / SetByName / FindModExtension`，闭包里只许出现 `object`/`MemberInfo` |
@@ -28,16 +29,17 @@
 | helper | 目标 | 签名 | `Cleared` 的动作 |
 | ------ | ---- | ---- | ---------------- |
 | `ApplyV<TV>` | 非空目标 / 标量（`Action<float>`、`Action<int>`、`Action<FloatRange>`…） | `ApplyV<TV>(string f, Action<TV> set)` | 还原原值（`Revert`） |
-| `ApplyN<TV>` `where TV:struct` | 可空目标（`float?` / `int?` / `IntRange?` / `QualityCategory?`…） | `ApplyN<TV>(string f, Action<TV?> set)` | 置 `null` |
-| `ApplyL<TV>` | 集合（`List<T>`） | `ApplyL<TV>(string f, Action<List<TV>?> set)` | 置 `null`（清空） |
+| `ApplyN<TV>` `where TV:struct` | 可空目标（`float?` / `int?` / `IntRange?` / `QualityCategory?`…） | `ApplyN<TV>(string f, Action<TV?> set)` | 还原原值（`Revert`）—— **不写 `null`**：可空值置 `null` 在本工程里等于"重置"，与重置按钮重复，且把"用户清空"和"本来没配"混成一态 |
+| `ApplyL<TV>` | 集合（`List<T>`） | `ApplyL<TV>(string f, Action<List<TV>?> set)` | **写成空列表**（`new List<TV>()`）：清空 = 移除全部项，**永不写 `null`**；权威重置路径同样不给 `null` |
 | `ApplyD<TV>` `where TV:Def` | Def 引用 | `ApplyD<TV>(string f, Action<TV?> set)` | 还原原引用（`Revert`） |
 | `ApplyS` | `string` | `ApplyS(string f, Action<string> set)` | 还原原字符串（`Revert`） |
 | `ApplyF` | `ThingFilter` | `ApplyF(string f, Action<ThingFilter> set)` | 无 Cleared 分支（空过滤器是有效值） |
 
 - `f` 一律写 `nameof(字段名)`；setter 里直接赋给目标：`ApplyV<float>(nameof(workAmount), v => def.workAmount = v)`。
-- **标量选 `ApplyV` 还是 `ApplyN`**：取决于"清空"语义 —— 想要还原原值用 `ApplyV`，想要写成 `null` 用 `ApplyN`。
+- **标量选 `ApplyV` 还是 `ApplyN`**：只看目标字段在 Def 上是否可空（`float?` 用 `ApplyN`、`float` 用 `ApplyV`）；两者的 `Cleared` 都是还原原值。
+- **setter 收到的集合永远可安全遍历**：`ApplyL` 不会给 `null`，所以 `v => def.list = v` 就够；个别地方还留着 `v ?? new List<T>()`，那只是给"字段为 null 的权威重置"兜底，不是必需。
 - `Revert` 原值取自 `TweakDatabase.GetOriginal(id)`；原值缺席时**保持现状 + 每字段告警一次，不抛异常**。
-- `StatDef` 字段**不要**用这些 helper，改用 `ApplyDefStats(def)`（见 §7.2）。
+- `StatDef` 字段**不要**用这些 helper，改用 `ApplyDefStats(def)`（见 §7.2）；其中"清空一条 stat"= 从列表里 `RemoveWhere` 掉该条，不是把列表置 null。
 - 字符串列不开放清空，故 `ApplyS` 的 Cleared 分支平时不走。
 
 ### B. 可选 Mod 反射系列（`DataUtility`，全名反射，严禁静态引用）
@@ -260,7 +262,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `AptitudeList` | `List<Aptitude>?` | Aptitude 列表编辑器 |
 | `GeneticTraitList` | `List<GeneticTraitData>?` | GeneticTraitData 列表编辑器 |
 | `StringList` | `List<string>?` | 字符串列表编辑器（添加/编辑/删除） |
-| `ThingSetTags` | `List<string>?` | 同 `StringList` 的编辑器（`StringListEditorWindow(clearWhenEmpty: true)`）：保存时先去空白 / 去重，**清空则走显式 Cleared 路径**（`MarkFieldCleared` + `Apply`），否则空列表会被判 `Unset`、`ApplyL` 静默跳过，旧标签删不干净。用于 `thingSetMakerTags` 这类删了就必须生效的标签列 |
+| `ThingSetTags` | `List<string>?` | 同 `StringList` 的编辑器（`StringListEditorWindow`）：保存时先去空白 / 去重。**所有列表编辑器删光保存都走显式 Cleared 路径**（`ListEditorWindow.CommitResult` → `ClearValue`），否则空列表会被判 `Unset`、`ApplyL` 静默跳过，旧项删不干净。本 Style 现在只影响列标题 / 说明文案 |
 | `IntList` | `List<int>?` | 整数列表编辑器（添加/编辑/删除） |
 | `ThingDefCountList` | `List<ThingDefCountClass>?` | ThingDefCountClass 列表编辑器 |
 | `IngredientList` | `List<IngredientCount>?` | IngredientCount 列表编辑器 |
@@ -315,9 +317,9 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 
 **写入规则：** 一律走 **Apply 门控 helper**（见文首《Apply 门控与可选 Mod 反射 helper 索引》），**不要手写 `if (field != null)`** —— 那会绕过 `Set`/`Cleared` 判定（硬约束表第 5 行），把用户的清空意图吃掉。按目标选 helper：
 - 标量（非空目标）：`ApplyV<float>(nameof(f), v => def.f = v);`
-- 可空目标：`ApplyN<float>(nameof(f), v => def.f = v);`（也可用 `ApplyV`，见索引中的取舍说明）
+- 可空目标：`ApplyN<float>(nameof(f), v => def.f = v);`（选 `ApplyN` 只是因为目标字段可空、setter 收 `float?`；两者的 Cleared 都是还原原值）
 - 引用 / Def 引用：`ApplyD<SkillDef>(nameof(f), v => def.f = v);`
-- 列表：`ApplyL<HediffDef>(nameof(f), v => def.list = v);`
+- 列表：`ApplyL<HediffDef>(nameof(f), v => def.list = v);` —— Cleared 时 setter 收到的是**空列表**，不是 null
 - 字符串：`ApplyS(nameof(f), v => def.f = v);`
 
 > **对于 `[TweakField(StatDef = "...")]` 标记的 StatDef 字段**，写入步骤**不要手写 `if` 块**，在 `Apply()` 中**直接调用基类 `ApplyDefStats(def)` 一行**即可（`TweakData.Typed.cs`）：
@@ -561,7 +563,7 @@ dotnet build -p:SelfCheck=true
 | `AptitudeList` | 弹出窗口 | `AptitudeListEditorWindow` | `List<Aptitude>?` |
 | `GeneticTraitList` | 弹出窗口 | `GeneticTraitListEditorWindow` | `List<GeneticTraitData>?` |
 | `StringList` | 弹出窗口 | `StringListEditorWindow` | `List<string>?` |
-| `ThingSetTags` | 弹出窗口 | `StringListEditorWindow`（`clearWhenEmpty: true`） | `List<string>?`，清空走显式 Cleared 路径 |
+| `ThingSetTags` | 弹出窗口 | `StringListEditorWindow` | `List<string>?`，删光即清空（走显式 Cleared 路径，与所有列表列一致） |
 | `IntList` | 弹出窗口 | `IntListEditorWindow` | `List<int>?` |
 | `ThingDefCountList` | 弹出窗口 | `ThingDefCountListEditorWindow` | `List<ThingDefCountClass>?` |
 | `IngredientList` | 弹出窗口 | `IngredientListEditorWindow` | `List<IngredientCount>?` |

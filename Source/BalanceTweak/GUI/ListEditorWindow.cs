@@ -95,18 +95,34 @@ public abstract class ListEditorWindow<T> : EditorWindowBase
 
     protected virtual bool IsItemValid(T item) => true;
 
+    /// <summary>
+    /// 提交编辑结果。**空列表 = 清空**（从集合里移除全部项），走显式 Cleared 路径；
+    /// 非空 = 普通赋值。
+    ///
+    /// <para>
+    /// <b>为什么空列表不能当普通赋值</b>：那样字段是"空列表 + 已修改"，而 <c>StateOf</c> 要求
+    /// Set 必须非空（空集合按 Unset 处理）⇒ <c>ApplyL</c> 静默跳过，用户把行删光保存后
+    /// Def 上的旧条目一个都没少，界面却显示已经空了。改成显式 Cleared 后，
+    /// "删光 = 清空"才真的落到 Def 上（写空列表，不是 null）。
+    /// </para>
+    /// </summary>
+    /// <param name="finalList"><c>null</c> 或空列表都表示清空；子窗口回调原样收到它本来的值。</param>
+    protected void CommitResult(List<T>? finalList)
+    {
+        if (onSaveCallback != null)
+        {
+            // 子窗口（过滤器里的分类 / 标签等）自己决定 null 与空列表怎么存，维持原有约定。
+            onSaveCallback(finalList);
+            return;
+        }
+        if (finalList == null || finalList.Count == 0) config!.ClearValue(data!);
+        else config!.ApplyValue(data!, finalList);
+    }
+
     protected virtual void SaveAndClose()
     {
         var finalList = workingList.Where(IsItemValid).ToList();
-        var result = finalList.Count > 0 ? finalList : null;
-        if (onSaveCallback != null)
-        {
-            onSaveCallback(result);
-        }
-        else
-        {
-            config!.ApplyValue(data!, result);
-        }
+        CommitResult(finalList.Count > 0 ? finalList : null);
         Close();
     }
 

@@ -45,19 +45,24 @@ public class StatColumnConfig
     /// <summary>
     /// 该列能否"清空"（右键菜单里的「清空」）。
     /// <para>
-    /// 只给"清空真的有独立含义"的列开口子，判据看 Apply 怎么写 Cleared：
+    /// <b>清空的语义只有一条：从集合里移除一项或全部项。</b>所以只有两类列开这个口子：
     /// </para>
     /// <list type="bullet">
-    /// <item><b>stat 列</b>（<c>[TweakField(StatDef = …)]</c>）：清空 = 把这条 StatModifier 从 statBases 里移除，
-    /// 回到游戏默认值 —— 与"重置"（写回原值）是两件事。见 <c>ApplyDefStats</c> Phase 2 的
-    /// <c>value == null ⇒ 移除</c>。</item>
-    /// <item><b>集合</b>（<c>List&lt;T&gt;</c>，走 <c>ApplyL</c>）：Cleared = 置 null，即清空。</item>
-    /// <item><b>其余一律不显示</b>：非空标量 / 枚举 / Def 引用 / 字符串 / <c>ThingFilter</c> 的 Cleared 是
-    /// "还原原值"，与旁边的「重置」完全重复；镜像列的清空会被下一次 <c>EnsureDisplayValues</c> 从源行同步回来，
-    /// 点了等于没点。</item>
+    /// <item><b>stat 列</b>（<c>[TweakField(StatDef = …)]</c>）：清空 = 把这条 <c>StatModifier</c>
+    /// 从 <c>statBases</c> / <c>equippedStatOffsets</c> 里**移除**，回到游戏默认值 ——
+    /// 与"重置"（写回原值）是两件事。见 <c>ApplyDefStats</c> Phase 2 的 <c>value == null ⇒ 移除</c>。</item>
+    /// <item><b>集合</b>（<c>List&lt;T&gt;</c>，走 <c>ApplyL</c>）：清空 = 移除全部项，即写入**空列表**。
+    /// 注意不是写 null：原版不区分 null 与空列表，null 反而是错误状态（大量裸 <c>.Contains</c> / <c>foreach</c>）。</item>
+    /// <item><b>其余一律不显示</b>：标量 / 枚举 / Def 引用 / 字符串没有"清空"这种状态
+    /// （它们要么还原原值，要么本来就允许任意文本，与「重置」重复）；<c>ThingFilter</c> 的"空"
+    /// 是"允许项为空"的有效值，由过滤器编辑器自己表达；镜像列的清空会被下一次
+    /// <c>EnsureDisplayValues</c> 从源行同步回来，点了等于没点。</item>
     /// </list>
     /// </summary>
     public readonly bool canClear;
+
+    /// <summary>字段值是否"已经空了"（null / 空串 / 空集合 / 无允许项的 ThingFilter）——空就没什么可清。</summary>
+    public bool IsEmpty(TweakData data) => TweakData.IsEmptyValue(GetRawValue(data));
 
     private FieldType cachedFieldType;
     public FieldType SortFieldType => cachedFieldType;
@@ -365,13 +370,18 @@ public class StatColumnConfig
 
         object? newValue = null;
         bool changed = false;
-        // 非 String 列：输入 null 关键字 = 显式清空（唯一入口，不再靠"已改且空"反推）。
-        // String 列不参与清空 —— 对字符串而言 "null" 就是普通文本，走下方常规解析，按字面量 "null" 赋值。
-        if (newText.IndexOf("null", StringComparison.OrdinalIgnoreCase) > -1
+        // 输入 null 关键字 = 显式清空（唯一入口，不再靠"已改且空"反推）。
+        // 三重门控：
+        //   ① 只有 canClear 的列才有"清空"这回事（stat 列 = 移除该条 stat；集合列 = 移除全部项）。
+        //      标量 / 枚举 / Def 引用没有这种状态 —— 让它们掉进下面的常规解析，解析不出来就当没改，
+        //      绝不能把"清空"当成"给这个值写 null"（那是重置的语义，两者重复）。
+        //   ② String 列不参与清空 —— 对字符串而言 "null" 就是普通文本，按字面量赋值。
+        //   ③ 已经空了 / 已经登记为 Cleared ⇒ 无物可清，不留任何状态。
+        if (canClear && newText.IndexOf("null", StringComparison.OrdinalIgnoreCase) > -1
             && columnType != ColumnStyle.String && cachedFieldType != FieldType.String)
         {
             if (data.IsFieldCleared(field.Name)) return; // 幂等
-            if (GetRawValue(data) == null) return; // 本就没有值，无物可清 ⇒ 不该留下任何状态
+            if (IsEmpty(data)) return;
             ApplyClear(data);
             return;
         }
@@ -488,15 +498,15 @@ public class StatColumnConfig
     }
 
     /// <summary>
-    /// 这一格此刻能不能清空：列本身可清（见 <see cref="canClear"/>），且当前确实有值。
-    /// 右键菜单只在这个判据成立时才显示「清空」。
+    /// 这一格此刻能不能清空：列本身可清（见 <see cref="canClear"/>），且当前确实**有东西可清**
+    /// （空集合 / 空串 / null 都算"已经空了"）。
     /// </summary>
     public bool CanClear(TweakData data)
-        => canClear && field != null && GetRawValue(data) != null;
+        => canClear && field != null && !IsEmpty(data);
 
     /// <summary>
-    /// 清空这一格：值写 null 并登记为"显式清空"。与在编辑框里输入 <c>null</c> 完全同一条路径
-    /// （<see cref="ApplyClear"/>），集合因此走的是"清空"而不是"改成空列表"。
+    /// 清空这一格：把"移除"这件事登记成显式 Cleared。与在编辑框里输入 <c>null</c> 完全同一条路径
+    /// （<see cref="ApplyClear"/>）。
     /// </summary>
     public void ClearValue(TweakData data)
     {
@@ -506,17 +516,42 @@ public class StatColumnConfig
     }
 
     /// <summary>
-    /// 清空的唯一落地点：先写 null（同时撤掉"已修改"标记），再登记 Cleared，最后 Apply。
-    /// 顺序不能换 —— <see cref="SetRawValue"/> 在标记清零时会把 <c>tweaked</c> 也置 false，
-    /// 而 <see cref="TweakData.MarkFieldCleared"/> 才有权把这条数据留在修改表里。
+    /// 清空的唯一落地点。顺序不能换 —— <see cref="SetRawValue"/> 在标记清零时会把 <c>tweaked</c>
+    /// 也置 false，而 <see cref="TweakData.MarkFieldCleared"/> 才有权把这条数据留在修改表里。
+    ///
+    /// <para>
+    /// <b>集合写成空集合，绝不写 null。</b>「清空」= 从集合里移除全部项，字段的终态就是"空集合"：
+    /// 它既能被 <c>ApplyL</c> 原样交给 Def（Def 侧同样是空列表），也不会让 <c>??=</c> 回填、
+    /// UI 摘要、自检的空值判定多出一种 null 形态。原版从不区分 null 与空列表，
+    /// 而 null 列表是错误状态（裸 <c>.Contains</c> / <c>foreach</c> 直接 NRE）。
+    /// </para>
+    /// <para>
+    /// <b>stat 列例外</b>：它没有集合可清，清空的语义是"把这条 <c>StatModifier</c> 从
+    /// <c>statBases</c> 里移除"，字段里只能表示为 null（= 该项不存在），移除动作由
+    /// <c>ApplyDefStats</c> Phase 2 执行。这里的 null 是"这一项不存在"，不是"集合被丢掉"。
+    /// </para>
     /// </summary>
     private void ApplyClear(TweakData data)
     {
-        SetRawValue(data, null, isModified: false);
+        SetRawValue(data, EmptyValueForClear(), isModified: false);
         data.MarkFieldCleared(field.Name);
         data.Apply();
         // 参考列是"按当前 def 现算"的派生值，Apply 已把缓存置脏，这里补算一次当帧就能看到新值。
         data.EnsureDisplayValues();
+    }
+
+    /// <summary>清空后字段应该持有的值：集合 ⇒ 同类型的空集合；stat 列 ⇒ null（该项不存在）。</summary>
+    private object? EmptyValueForClear()
+    {
+        if (field == null) return null;
+        if (!typeof(IList).IsAssignableFrom(field.FieldType)) return null;
+        try { return Activator.CreateInstance(field.FieldType); }
+        catch (Exception e)
+        {
+            // 集合字段没有无参构造（理论上不会出现：声明类型恒为 List<T>）。
+            Log.Warning($"[BalanceTweak] 字段 {field.Name}（{field.FieldType.Name}）无法构造空集合：{e.Message}");
+            return null;
+        }
     }
 
     /// <summary>

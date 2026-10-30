@@ -503,7 +503,7 @@ public static partial class TweakDatabase
             GetOriginal(id)?.EnsureDisplayValues();
     }
 
-    /// <summary>集合类字段（List&lt;&gt; / ThingFilter）：Cleared 的语义是"清空"；其余是"还原原值"。</summary>
+    /// <summary>集合类字段（List&lt;&gt; / ThingFilter）：Cleared 的语义是"移除全部项"（写空集合，不写 null）；其余是"还原原值"。</summary>
     internal static bool IsCollectionColumn(StatColumnConfig col)
         => col.isListStyle || col.columnType == ColumnStyle.IngredientFilter;
 

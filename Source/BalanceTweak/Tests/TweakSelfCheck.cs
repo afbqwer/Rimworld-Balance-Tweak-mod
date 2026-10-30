@@ -225,14 +225,19 @@ public static class TweakSelfCheck
     // ─────────────────────────── SC4 Revert 正确性 ───────────────────────────
 
     /// <summary>
-    /// Cleared 的非集合字段（ApplyV/ApplyS/ApplyD ⇒ "还原原值"），Apply 之后 Def 上的值必须是
-    /// <b>原值</b>或<b>空</b>（ApplyN 路径的 Cleared 即置空）；出现第三种值 ⇒ Apply 把 def 写坏了。
+    /// Cleared 的<b>非集合</b>字段（ApplyV/ApplyD/ApplyS ⇒ "还原原值"），Apply 之后 Def 上的值必须是
+    /// <b>原值</b>或<b>空</b>；出现第三种值 ⇒ Apply 把 def 写坏了。
+    /// <para>
+    /// 集合字段不在这里验：清空集合的终态是"空列表"，且在 Def 上无法与"原本就是空列表"区分 ——
+    /// 那由 SC2（复活检测）覆盖。可空标量也不例外：<c>ApplyN</c> 的 Cleared 同样走还原，
+    /// 不再有"清空 ⇒ 写 null"这条路（null 只出现在重置的权威写入里）。
+    /// </para>
     ///
     /// 探手法：新建同类型空实例 + <c>SetDef(def, type, false)</c>，让字段从 <b>当前 def</b> 读回 —— 这样读到的
     /// 就是"Apply 之后 def 上的实际值"，且不触碰 def。原值本就为空的字段跳过（Revert 的兜底语义是保持现状）。
     ///
     /// 已知边界：Revert 成功的终态与"Apply 根本没碰该字段"不可区分（两者都是原值），
-    /// 所以 SC4 只能抓"第三种值"，不能证明 Apply 一定动过手 —— 那由 SC2 与 dry-run 覆盖。
+    /// 所以 SC4 只能抓"第三种值"，不能证明 Apply 一定动过手 —— 那由 SC2 与自检快照覆盖。
     /// </summary>
     private static R SC4_Revert()
     {

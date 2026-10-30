@@ -65,15 +65,8 @@ public class HediffGiverListEditorWindow : ListEditorWindow<HediffGiver>
 
     protected override void SaveAndClose()
     {
-        var result = workingList.Count > 0 ? workingList : null;
-        if (onSaveCallback != null)
-        {
-            onSaveCallback(result);
-        }
-        else
-        {
-            config!.ApplyValue(data!, result);
-        }
+        // 删到空 = 清空（显式 Cleared ⇒ Def 写空列表）。传 null 走旧路会被判 Unset，Def 上什么都不改。
+        CommitResult(workingList.Count > 0 ? workingList : null);
         Close();
     }
 }

@@ -85,6 +85,20 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             if (meta.Field.GetValue(this) == null && !IsFieldModified(meta.Field.Name))
                 meta.Field.SetValue(this, meta.DefaultGetter!.Invoke(this));
         }
+
+        // 已清空的集合字段：终态恒为"空集合"，内存里也不留 null。
+        // （清空的字段不落盘 —— ExposeData 只写 _modifiedFieldNames 里的字段 —— 读档后它是默认值 null；
+        //   Apply 时 ApplyL 会照 Cleared 写空列表，但字段本身仍是 null，UI / 剪贴板 / 自检就多出一种 null 形态。
+        //   这里补一次规范化，让"集合 = null"在内存里也不再出现。）
+        // 判据只看集合类型：stat 列的 null 是"该项不存在"的合法表示，不能动。
+        if (_clearedFieldNames.Count == 0) return;
+        foreach (var meta in Fields)
+        {
+            if (meta.Field.GetValue(this) != null) continue;
+            if (!_clearedFieldNames.Contains(meta.Field.Name)) continue;
+            if (!typeof(IList).IsAssignableFrom(meta.Field.FieldType)) continue;
+            meta.Field.SetValue(this, Activator.CreateInstance(meta.Field.FieldType));
+        }
     }
 
     /// <summary>
@@ -109,11 +123,13 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
                 {
                     // 字段已改但空有两种来源：
                     //   ① forceResetStats：一次重置，需清掉 def 上的脏数据，防 Phase 3 把脏值回读进字段；
-                    //   ② L0 Cleared：用户主动清空该列表，语义即为"把 def 上的对应列表也清掉"
-                    //      —— 与 Phase 2 对单个 StatDef 字段的"value==null ⇒ 移除"对齐。
+                    //   ② L0 Cleared：用户主动清空该列表，语义 = 从集合里移除全部项 ⇒ def 上的列表变空。
                     // 判据用 StateOf(f)==Cleared 而非裸 IsFieldModified：Cleared 只由显式清空写入，
                     // 未显式清空的空列表不会走到这里（Reset 的脏数据由 forceResetStats 兜）。
                     // isForceField：单字段重置该列时，原值可能就是 null，同样要把 def 上的列表清掉。
+                    //
+                    // 清空一律写**空列表**、绝不写 null：原版不区分 null 与空列表，而 null 是错误状态
+                    // （StatWorker / GetStatValueAbstract / 各种 foreach 都会无条件解引用这几个列表）。
                     if (forceResetStats || isForceField || StateOf(meta.Field.Name) == FieldState.Cleared)
                     {
                         anyWrite = true;
@@ -122,17 +138,17 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
                             case ThingDef td:
                                 switch (meta.Field.Name)
                                 {
-                                    case "statBases": td.statBases = null; break;
-                                    case "equippedStatOffsets": td.equippedStatOffsets = null; break;
-                                    case "statOffsets": if (td.stuffProps != null) td.stuffProps.statOffsets = null; break;
-                                    case "statFactors": if (td.stuffProps != null) td.stuffProps.statFactors = null; break;
+                                    case "statBases": td.statBases = new List<StatModifier>(); break;
+                                    case "equippedStatOffsets": td.equippedStatOffsets = new List<StatModifier>(); break;
+                                    case "statOffsets": if (td.stuffProps != null) td.stuffProps.statOffsets = new List<StatModifier>(); break;
+                                    case "statFactors": if (td.stuffProps != null) td.stuffProps.statFactors = new List<StatModifier>(); break;
                                 }
                                 break;
                             case BuildableDef bd:
-                                if (meta.Field.Name == "statBases") bd.statBases = null;
+                                if (meta.Field.Name == "statBases") bd.statBases = new List<StatModifier>();
                                 break;
                             case AbilityDef ad:
-                                if (meta.Field.Name == "statBases") ad.statBases = null;
+                                if (meta.Field.Name == "statBases") ad.statBases = new List<StatModifier>();
                                 break;
                         }
                     }
@@ -411,25 +427,54 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         }
     }
 
-    /// <summary>目标可空（<c>float?</c> / <c>IntRange?</c> / <c>QualityCategory?</c> 等）：Cleared = 置 null。</summary>
+    /// <summary>
+    /// 目标可空（<c>float?</c> / <c>IntRange?</c> / <c>QualityCategory?</c> 等）。
+    ///
+    /// <para>
+    /// <b>Cleared = 还原原值，绝不写 null。</b>「清空」在本质上只对集合有意义
+    /// （= 从集合里移除一项或全部项），标量没有"空"这个状态；把可空值写成 null 在本工程里
+    /// 等于「重置」（def 上"这一项不存在"），与旁边的重置按钮完全重复，还会把
+    /// "用户清空了"和"值没配过"混成同一个状态。
+    /// </para>
+    /// <para>
+    /// 唯一会给可空目标写 null 的是 <b>重置</b>路径（<see cref="IsForceWriteField"/>）：那是把
+    /// def 恢复成原始快照里的样子，快照里本来就没有值，null 就是原值 —— 属"照抄"，不是清空。
+    /// </para>
+    /// </summary>
     protected internal void ApplyN<TV>(string f, Action<TV?> set) where TV : struct
     {
         if (IsForceWriteField(f)) { set((TV?)RawVal(f)); return; }
         switch (StateOf(f))
         {
             case FieldState.Set: set((TV?)RawVal(f)); break;
-            case FieldState.Cleared: set(null); break;
+            case FieldState.Cleared: Revert(f, set); break;
         }
     }
 
-    /// <summary>集合（<c>List&lt;T&gt;</c> / ThingFilter）：Cleared = 清空。</summary>
+    /// <summary>
+    /// 集合（<c>List&lt;T&gt;</c>）。
+    ///
+    /// <para>
+    /// <b>Cleared = 清空集合 = 写入空列表，绝不写 null。</b>「清空」的语义<b>仅</b>是"从集合里移除
+    /// 一项或全部项"：清空整列 ⇔ 集合变成空集合。原版代码从不区分 null 与空列表
+    /// （<c>NullOrEmpty</c> / <c>Count == 0</c> 等价），而列表字段为 null 在原版里总是**错误情况** ——
+    /// 一大票地方（<c>weaponTags.Contains</c>、<c>genes</c> 无条件解引用……）会直接 NRE。
+    /// 所以这里给 setter 的永远是"可以安全遍历的集合"。
+    /// </para>
+    /// <para>
+    /// 字段侧（<see cref="TweakData{T}"/> 的 <c>[TweakField]</c>）同理：清空后字段是空列表而不是 null，
+    /// 这样 <c>??=</c> 回填守卫、UI 摘要、自检的空值判定都只有"空集合"一种形态要考虑。
+    /// </para>
+    /// </summary>
     protected internal void ApplyL<TV>(string f, Action<List<TV>?> set)
     {
-        if (IsForceWriteField(f)) { set(RawVal(f) as List<TV>); return; }
+        // 权威字段（重置）也照抄成"可遍历的集合"：原始快照里该列表若为 null（原 def 没配这个列表），
+        // 写回空列表与写回 null 在原版语义里等价，但前者不会给 def 留一个会 NRE 的状态。
+        if (IsForceWriteField(f)) { set(RawVal(f) as List<TV> ?? new List<TV>()); return; }
         switch (StateOf(f))
         {
             case FieldState.Set: set((List<TV>)RawVal(f)!); break;
-            case FieldState.Cleared: set(null); break;
+            case FieldState.Cleared: set(new List<TV>()); break;
         }
     }
 

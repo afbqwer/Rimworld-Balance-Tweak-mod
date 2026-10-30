@@ -140,7 +140,9 @@ public class TweakFieldAttribute : Attribute
     /// <summary>
     /// 镜像字段：值属于<b>另一行</b>（如武器行的伤害/穿透来自关联弹丸），本行只是它的副本。
     /// <para>
-    /// 它仍是 <see cref="ColumnDataType.Field"/> —— 可编辑、可清空、参与三态，编辑它等于编辑源行。
+    /// 它仍是 <see cref="ColumnDataType.Field"/> —— 可编辑、参与三态，编辑它等于编辑源行。
+    /// （不开放"清空"：镜像是从源行同步过来的副本，清空后下一次 <c>EnsureDisplayValues</c> 又会把它同步回来，
+    /// 点了等于没点 —— 见 <see cref="StatColumnConfig.canClear"/>。）
     /// 唯一被区别对待的是 <see cref="TweakData.EqualsData"/>：镜像<b>不参与</b>"是否已恢复原样"的判定。
     /// </para>
     /// <para>

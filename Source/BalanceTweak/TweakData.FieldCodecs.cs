@@ -396,13 +396,31 @@ public abstract partial class TweakData
 
     #region 解析（读档后把原始数据还原成字段值）
 
+    /// <summary>
+    /// 字段类型的"空集合"实例（非集合类型返回 <c>null</c>）。
+    ///
+    /// <para>
+    /// <b>为什么读档也要给空集合而不是 null</b>：清空（Cleared）的列表字段根本不会落盘
+    /// （<c>ExposeData</c> 只写 <c>_modifiedFieldNames</c> 里的字段），读档后字段是默认值 null ——
+    /// 若就这么留着，内存里就出现了"集合 = null"这个本不该存在的形态。清空的产物一律是空集合：
+    /// 它在 <c>ApplyL</c>、<c>??=</c> 回填守卫、UI 摘要、自检空值判定里与 null 同义，但不会让
+    /// 任何遍历到它的代码 NRE。
+    /// </para>
+    /// </summary>
+    private static object? EmptyCollectionFor(Type fieldType)
+    {
+        if (!typeof(System.Collections.IList).IsAssignableFrom(fieldType)) return null;
+        try { return Activator.CreateInstance(fieldType); }
+        catch { return null; }
+    }
+
     private static bool ResolveList(TweakData data, StatFieldMeta meta, Func<List<string>, (object? result, bool success)> parse)
     {
         if (data._savedLoadData == null || !data._savedLoadData.TryGetValue(meta.Field.Name, out var saved) || saved is not List<string> strList || strList.Count == 0)
         {
-            // 已动过但存档无可解析值（无 key / null / 空列表）⇒ 把实例值显式置空，
+            // 已动过但存档无可解析值（无 key / null / 空列表）⇒ 把实例值显式清成"空集合"，
             // 免得残留 SetDef 回填值；是否 Cleared 由 _clearedFieldNames 判定，此处只保证值为空。
-            if (data.IsFieldModified(meta.Field.Name)) meta.Field.SetValue(data, null);
+            if (data.IsFieldModified(meta.Field.Name)) meta.Field.SetValue(data, EmptyCollectionFor(meta.Field.FieldType));
             return true;
         }
         var (result, success) = parse(strList);
@@ -487,8 +505,9 @@ public abstract partial class TweakData
     {
         if (data._savedLoadData == null || !data._savedLoadData.TryGetValue(meta.Field.Name, out var saved) || saved is not string str || str.NullOrEmpty())
         {
-            // 已动过但空（无 key / 非字符串 / 空串）⇒ 把实例值显式置空（是否 Cleared 由 _clearedFieldNames 判定）。
-            if (data.IsFieldModified(meta.Field.Name)) meta.Field.SetValue(data, null);
+            // 已动过但空（无 key / 非字符串 / 空串）⇒ 显式清成空集合（ThingFilter 不是集合，保持 null）。
+            // 是否 Cleared 由 _clearedFieldNames 判定。
+            if (data.IsFieldModified(meta.Field.Name)) meta.Field.SetValue(data, EmptyCollectionFor(meta.Field.FieldType));
             return true;
         }
         var filter = SerializationHelper.ParseIngredientFilter(str);
@@ -518,7 +537,7 @@ public abstract partial class TweakData
         if (list is { Count: > 0 })
             meta.Field.SetValue(data, list);
         else if (data.IsFieldModified(meta.Field.Name))
-            meta.Field.SetValue(data, null); // 已动过但空 ⇒ 显式置空（值必须为空）
+            meta.Field.SetValue(data, new List<string>()); // 已动过但空 ⇒ 空集合（清空不写 null）
         return true;
     }
 
@@ -530,7 +549,7 @@ public abstract partial class TweakData
         if (list is { Count: > 0 })
             meta.Field.SetValue(data, list);
         else if (data.IsFieldModified(meta.Field.Name))
-            meta.Field.SetValue(data, null); // 已动过但空 ⇒ 显式置空（值必须为空）
+            meta.Field.SetValue(data, new List<int>()); // 已动过但空 ⇒ 空集合（清空不写 null）
         return true;
     }
 

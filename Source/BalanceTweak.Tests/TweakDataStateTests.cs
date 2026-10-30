@@ -41,20 +41,21 @@ public class TweakDataStateTests
     // ═══════════════════════ B 组：Resolve 显式置空 + Apply 门控 ═══════════════════════
 
     /// <summary>
-    /// ★B1：显式清空（Cleared）的列表字段，ResolveList 必须显式置空 —— 否则字段会残留
-    /// SetDef 回填值（Cleared 的实例值必须是空）。
+    /// ★B1：显式清空（Cleared）的列表字段，ResolveList 必须把它还原成<b>空集合</b> ——
+    /// 既不能残留 SetDef 回填值，也不能留成 null（原版不区分二者，但 null 集合是运行期的错误状态）。
     /// </summary>
     [Fact]
-    public void 已改但清的列表字段被显式置空()
+    public void 已改但清的列表字段读档后是空集合()
     {
         var gene = new GeneData();
-        gene.statOffsets = null; // 用户清空
+        gene.statOffsets = new List<StatModifier>(); // 用户清空（清空的产物就是空集合）
         gene.MarkFieldCleared("statOffsets");
         // 模拟读档：ExposeList 对空/null 列表不写 key，加载后 _savedLoadData 里该字段值为 null
         SetSavedLoadData(gene, new Dictionary<string, object?> { ["statOffsets"] = null });
 
         Assert.True(gene.ResolveDefs(), "ResolveDefs 应返回 true");
-        Assert.Null(gene.statOffsets);
+        Assert.NotNull(gene.statOffsets);
+        Assert.Empty(gene.statOffsets);
     }
 
     /// <summary>
@@ -92,26 +93,84 @@ public class TweakDataStateTests
         Assert.Equal("", capS);
     }
 
-    /// <summary>集合 / 可空目标 Cleared ⇒ setter 收到 null（清空）。</summary>
+    /// <summary>
+    /// 编辑器的「清空」落在集合列上：字段变<b>空集合</b>（不是 null）并登记为显式 Cleared，
+    /// 清空后的状态可重复清（幂等，不会反复产生新状态）。
+    /// </summary>
     [Fact]
-    public void 清空后setter收到null()
+    public void 清空集合列_字段变空集合且登记Cleared()
+    {
+        var id = new TweakData.TweakID("__BT_Test_ClearColumn__", BalanceTweakSettings.SettingType.Gene);
+        var gene = new GeneData
+        {
+            id = id,
+            def = new GeneDef { defName = "__BT_Test_ClearColumn__" },
+            statOffsets = new List<StatModifier>
+            {
+                new() { stat = new StatDef { defName = "MoveSpeed" }, value = 0.2f },
+            },
+        };
+        try
+        {
+            var col = gene.AllColumn.Single(c => c.fieldName == nameof(GeneData.statOffsets));
+            Assert.True(col.CanClear(gene), "有内容的集合列应当可清空");
+
+            col.ClearValue(gene);
+
+            Assert.True(gene.IsFieldCleared(nameof(GeneData.statOffsets)));
+            Assert.NotNull(gene.statOffsets);
+            Assert.Empty(gene.statOffsets);
+            Assert.Empty(((GeneDef)gene.def!).statOffsets); // Def 侧同样是空列表，绝不是 null
+            Assert.False(col.CanClear(gene), "已经空了就没有可清的东西");
+        }
+        finally { BalanceTweakSettings.tweakDatas.Remove(id); }
+    }
+
+    /// <summary>
+    /// 清空的语义只有"从集合里移除一项或全部项"：
+    /// 集合 ⇒ setter 收到<b>空集合</b>（不是 null —— 原版不区分二者，但 null 集合会 NRE）；
+    /// 可空标量根本没有"清空"这种状态 ⇒ 走还原，不写 null（null 在本工程里等于"重置"，功能重复）。
+    /// </summary>
+    [Fact]
+    public void 清空后集合收到空列表()
     {
         var g1 = new GeneData();
-        g1.statOffsets = null; // 用户清空
+        g1.statOffsets = new List<StatModifier>(); // 用户清空
         g1.MarkFieldCleared("statOffsets");
-        List<StatModifier>? capL = new();
+        List<StatModifier>? capL = null;
         bool calledL = false;
         g1.ApplyL<StatModifier>("statOffsets", v => { capL = v; calledL = true; });
         Assert.True(calledL);
-        Assert.Null(capL);
+        Assert.NotNull(capL);
+        Assert.Empty(capL);
+    }
 
-        var g2 = new GeneData { selectionWeight = null };
-        g2.MarkFieldCleared("selectionWeight");
-        float? capN = 1f;
-        bool calledN = false;
-        g2.ApplyN<float>("selectionWeight", v => { capN = v; calledN = true; });
-        Assert.True(calledN);
-        Assert.Null(capN);
+    /// <summary>可空标量的 Cleared ⇒ 还原原值，<b>不</b>写 null（不制造"清空 = 重置"的重复语义）。</summary>
+    [Fact]
+    public void 可空标量清空走还原而非置null()
+    {
+        var id = new TweakData.TweakID("__BT_Test_NullableClear__", BalanceTweakSettings.SettingType.Gene);
+        try
+        {
+            var orig = new GeneData { id = id, selectionWeight = 7f };
+            TweakDatabase.AllOriginals[id] = orig;
+
+            var g = new GeneData { id = id, selectionWeight = null };
+            g.MarkFieldCleared("selectionWeight");
+            float? captured = 1f;
+            bool called = false;
+            g.ApplyN<float>("selectionWeight", v => { captured = v; called = true; });
+            Assert.True(called);
+            Assert.Equal(7f, captured!.Value, 3);
+
+            // 原值也缺席时保持现状（Revert 兜底），同样不会写 null
+            TweakDatabase.AllOriginals.Remove(id);
+            float? captured2 = 1f;
+            bool called2 = false;
+            g.ApplyN<float>("selectionWeight", v => { captured2 = v; called2 = true; });
+            Assert.False(called2, "原值缺席：保持现状、不写、不抛异常");
+        }
+        finally { TweakDatabase.AllOriginals.Remove(id); }
     }
 
     /// <summary>标量 / Def 引用 / string 的 Cleared ⇒ 还原 GetOriginal(id) 的同字段原值。</summary>

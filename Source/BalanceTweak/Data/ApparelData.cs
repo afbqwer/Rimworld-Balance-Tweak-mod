@@ -377,7 +377,8 @@ public class ApparelData : TweakData<ApparelData>
         }
         ApplyL<BodyPartGroupDef>(nameof(bodyPartGroups), v => def.apparel.bodyPartGroups = v);
         ApplyL<ApparelLayerDef>(nameof(layers), v => def.apparel.layers = v);
-        // ApparelProperties.tags 原版默认是空列表且运行期直接 .Count / .Contains，清空必须写成空列表而不是 null。
+        // ApparelProperties.tags 原版默认是空列表且运行期直接 .Count / .Contains；
+        // ApplyL 清空时交的就是空列表，这里 ?? 只是给"字段为 null 的权威重置"兜一层。
         ApplyL<string>(nameof(apparelTagList), v => def.apparel.tags = v ?? new List<string>());
         ApplyV<bool>(nameof(careIfWornByCorpse), v => def.apparel.careIfWornByCorpse = v);
         ApplyV<bool>(nameof(careIfDamaged), v => def.apparel.careIfDamaged = v);

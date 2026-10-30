@@ -14,8 +14,16 @@ namespace BalanceTweak;
 /// [TweakField] 字段的三态（L0 语义）。
 /// Unset   —— 用户没动过，Apply 时不得写 Def。
 /// Set     —— 用户显式赋过值，Apply 时写入 Def。
-/// Cleared —— 用户显式清空（见 <see cref="TweakData{T}._clearedFieldNames"/>），Apply 时按字段类别
-///            "清空 Def"（集合）或"还原原值"（标量 / Def 引用）。
+/// Cleared —— 用户显式清空（见 <see cref="TweakData{T}._clearedFieldNames"/>）。
+///
+/// <para>
+/// <b>Cleared 的语义只有一条：从集合里移除一项或全部项。</b>集合（<c>List&lt;T&gt;</c>）⇒ 写空列表；
+/// stat 列 ⇒ 把该条 <c>StatModifier</c> 从 <c>statBases</c> / <c>equippedStatOffsets</c> 里移除；
+/// 其余（标量 / 枚举 / string / Def 引用）本来就没有"清空"这种状态，编辑器也不给入口，
+/// 万一出现按"还原原值"处理。<b>任何情况下都不写 null</b> —— 把字段或 Def 的集合置 null
+/// 是早先对"清空"的误解（把"移除全部项"实现成了"把集合整个丢掉"），原版从不区分二者，
+/// 而 null 列表在运行期等于错误状态。
+/// </para>
 ///
 /// 判据是两个显式集合：<see cref="TweakData{T}._modifiedFieldNames"/>（Set）
 /// 与 <see cref="TweakData{T}._clearedFieldNames"/>（Cleared），互斥。
@@ -129,8 +137,9 @@ public abstract partial class TweakData : IExposable
     /// 非 stat 字段则被静默跳过：界面换成了原始克隆、看起来"重置成功"，Def 上还是改过的值。
     /// </para>
     /// <para>
-    /// 语义是"照抄"，不是 <see cref="FieldState.Cleared"/>：<c>Cleared</c> 对集合写 null、对标量走
-    /// <c>Revert</c> 回查原值，而这里快照本身就是原值 —— 空列表要保持空列表，null 要保持 null。
+    /// 语义是"照抄"，不是 <see cref="FieldState.Cleared"/>：<c>Cleared</c> 对集合写空列表、对标量走
+    /// <c>Revert</c> 回查原值，而这里快照本身就是原值 —— 列表按原样写回（空列表就是空列表），
+    /// 原快照里为 null 的列表也写成空列表（<c>ApplyL</c> 保证不给 Def 留 null 集合）。
     /// 与 <see cref="forceResetStats"/> 一起由 <see cref="ApplyAuthoritative"/> 设置并在 finally 里撤销，
     /// 不会漏到下一次 Apply。
     /// </para>

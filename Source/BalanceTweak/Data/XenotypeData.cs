@@ -90,8 +90,8 @@ class XenotypeData : TweakData<XenotypeData>
         }
         ApplyDefLabel(nameof(defLabel), def);
         ApplyS(nameof(descriptionShort), v => def.descriptionShort = v);
-        // genes 在游戏里被 AllGenes/Archite 直接解引用（无 null 判断）：
-        // Cleared 语义仍由 ApplyL 判定，但写入时用空列表代替 null，避免运行期 NRE。
+        // genes 在游戏里被 AllGenes/Archite 直接解引用（无 null 判断）：ApplyL 清空时本来就交空列表
+        // （见 TweakData.Typed.cs 的 ApplyL），这里 ?? 只是给"字段为 null 的权威重置"兜一层。
         ApplyL<GeneDef>(nameof(genes), v => def.genes = v ?? new List<GeneDef>());
 
         ApplyV<bool>(nameof(inheritable), v => def.inheritable = v);

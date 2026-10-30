@@ -208,10 +208,14 @@ public class DefListEditorWindow : EditorWindowBase
         {
             onSaveCallback(finalList);
         }
+        else if (finalList.Count == 0)
+        {
+            // 删光 = 清空（显式 Cleared ⇒ Def 写空列表）。空列表当普通赋值会被判 Unset 静默跳过。
+            config!.ClearValue(data!);
+        }
         else
         {
-            var result = finalList.Count > 0 ? finalList : null;
-            config!.ApplyValue(data!, result);
+            config!.ApplyValue(data!, finalList);
         }
         Close();
     }

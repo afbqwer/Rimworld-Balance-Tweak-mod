@@ -92,7 +92,9 @@ public class ProcessResultListEditorWindow : ListEditorWindow<ProcessResultItem>
             {
                 originalList.Add(item);
             }
-            config!.ApplyValue(data!, originalList.Count > 0 ? originalList : null);
+            // 删除全部行 = 清空（显式 Cleared ⇒ Def 上写成空列表），不是"空列表赋值"（那会被判 Unset 静默跳过）。
+            if (originalList.Count == 0) config!.ClearValue(data!);
+            else config!.ApplyValue(data!, originalList);
         }
         Close();
     }

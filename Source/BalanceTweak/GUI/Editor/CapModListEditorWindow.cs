@@ -244,15 +244,8 @@ public class CapModListEditorWindow : ListEditorWindow<PawnCapacityModifier>
     protected override void SaveAndClose()
     {
         var finalList = workingList.Where(c => c.capacity != null).ToList();
-        var result = finalList.Count > 0 ? finalList : null;
-        if (onSaveCallback != null)
-        {
-            onSaveCallback(result);
-        }
-        else
-        {
-            config!.ApplyValue(data!, result);
-        }
+        // 删到空 = 清空（显式 Cleared ⇒ Def 写空列表）。传 null 走旧路会被判 Unset，Def 上什么都不改。
+        CommitResult(finalList.Count > 0 ? finalList : null);
         Close();
     }
 }

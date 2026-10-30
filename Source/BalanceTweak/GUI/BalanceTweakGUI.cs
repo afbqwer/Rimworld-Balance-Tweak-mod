@@ -251,7 +251,9 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.AptitudeList, (c, d) => new AptitudeListEditorWindow(c, d) },
         { ColumnStyle.GeneticTraitList, (c, d) => new GeneticTraitListEditorWindow(c, d) },
         { ColumnStyle.StringList, (c, d) => new StringListEditorWindow(c, d) },
-        { ColumnStyle.ThingSetTags, (c, d) => new StringListEditorWindow(c, d, clearWhenEmpty: true) },
+        // ThingSetTags 与 StringList 现已是同一个窗口、同一套"删光即清空"语义
+        // （见 ListEditorWindow.CommitResult），保留独立 ColumnStyle 只是为了列标题/说明文案。
+        { ColumnStyle.ThingSetTags, (c, d) => new StringListEditorWindow(c, d) },
         { ColumnStyle.StockGenList, (c, d) => new StockGeneratorListEditorWindow(c, d) },
         { ColumnStyle.IntList, (c, d) => new IntListEditorWindow(c, d) },
         { ColumnStyle.ThingDefCountList, (c, d) => new ThingDefCountListEditorWindow(c, d) },
