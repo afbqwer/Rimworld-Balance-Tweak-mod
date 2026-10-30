@@ -344,7 +344,8 @@ public class CurveEditorWindow : EditorWindowBase
                     new FloatMenuOption("MST.DeletePoint".Translate().RawText, () => RemovePoint(clickedPointIndex)),
                     new FloatMenuOption("MST.DuplicatePoint".Translate().RawText, () => AddPoint(curve[clickedPointIndex].x + 0.1f, curve[clickedPointIndex].y))
                 };
-                Find.WindowStack.Add(new FloatMenu(options));
+                // 子窗口登记：否则点菜单项的鼠标按下会经 NotifyOutsideClicks 关掉本窗口。
+                OpenChildWindow(new FloatMenu(options));
                 current.Use();
             }
             else if (Mouse.IsOver(graphRect))

@@ -453,7 +453,9 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
             new FloatMenuOption("MST.MovePartDown".Translate().RawText, moveDown),
             new FloatMenuOption("MST.DeletePart".Translate().RawText, delete),
         };
-        Find.WindowStack.Add(new FloatMenu(options));
+        // 必须登记成子窗口：FloatMenu 也是 Window，点击它内部会触发 NotifyOutsideClicks，
+        // 裸 WindowStack.Add 会让本窗口在鼠标按下的那一帧被自己的 Notify_ClickOutsideWindow 关掉。
+        OpenChildWindow(new FloatMenu(options));
     }
 
     private void AddChildTo(BodyPartNode parent)
@@ -781,7 +783,9 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
         y += FieldHeight + FieldSpacing;
     }
 
-    private static void OpenEnumMenu(string[] labels, Action<int> onSelected)
+    /// <summary>枚举下拉菜单。**非静态**：要经由 <see cref="EditorWindowBase.OpenChildWindow"/> 登记子窗口，
+    /// 否则点选项时本窗口会被 Notify_ClickOutsideWindow 关掉（见 StockGeneratorListEditorWindow 里的同类注释）。</summary>
+    private void OpenEnumMenu(string[] labels, Action<int> onSelected)
     {
         var options = new List<FloatMenuOption>();
         for (int i = 0; i < labels.Length; i++)
@@ -789,7 +793,7 @@ public class BodyPartTreeEditorWindow : EditorWindowBase
             int index = i;
             options.Add(new FloatMenuOption(labels[i].Translate().RawText, () => onSelected(index)));
         }
-        Find.WindowStack.Add(new FloatMenu(options));
+        OpenChildWindow(new FloatMenu(options));
     }
 
     private void OpenDefSelector(BodyPartDef? current, Action<BodyPartDef> onSelected)

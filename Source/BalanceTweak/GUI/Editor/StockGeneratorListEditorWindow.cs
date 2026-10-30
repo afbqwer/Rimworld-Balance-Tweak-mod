@@ -65,7 +65,11 @@ public class StockGeneratorListEditorWindow : ListEditorWindow<StockGenerator>
                 }
             }));
         }
-        Find.WindowStack.Add(new FloatMenu(options));
+        // 必须走 OpenChildWindow：FloatMenu 也是 Window，点击它内部任意位置会触发
+        // Find.WindowStack.NotifyOutsideClicks → 本窗口的 Notify_ClickOutsideWindow。
+        // 直接 WindowStack.Add 的话 childWindows 为空 ⇒ 鼠标一按下本窗口就被关掉，
+        // 选项的 action 落在一个已关闭窗口的 workingList 上 = 「点了没反应、无日志」。
+        OpenChildWindow(new FloatMenu(options));
     }
 
     protected override void DrawEntry(Rect rect, int index)

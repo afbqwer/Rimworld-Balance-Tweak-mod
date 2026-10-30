@@ -77,7 +77,8 @@ public class GeneticTraitListEditorWindow : ListEditorWindow<GeneticTraitData>
                         workingList[index].degree = degreeData.degree;
                     }));
                 }
-                Find.WindowStack.Add(new FloatMenu(options));
+                // 子窗口登记：否则点等级项的那一帧，本窗口会被 Notify_ClickOutsideWindow 关掉。
+                OpenChildWindow(new FloatMenu(options));
             }
         }
         else

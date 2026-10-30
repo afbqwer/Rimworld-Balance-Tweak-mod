@@ -1501,8 +1501,20 @@ public partial class BalanceTweakSettings : ModSettings
             return displayText ?? "";
         }
 
-        if (Widgets.ButtonText(cellRect, displayText) && !DragPaint.SuppressClick)
+        // 画法与 Widgets.ButtonText 逐行等价（DrawButtonGraphic 自带 hover / 按下态 + 居中标签），
+        // 但**不走 GUI.Button**：它不区分鼠标键，右键也会被当成"按下"，
+        // 于是右键弹出的不是单元格菜单，而是这个枚举列表 —— 右键菜单里的「重置」根本点不到。
+        // 判据与同表的 DrawEditorButtonCell / DrawListEditorCell / Link 格统一：只认左键。
+        Widgets.DrawButtonGraphic(cellRect);
+        Text.Anchor = TextAnchor.MiddleCenter;
+        Widgets.Label(cellRect, displayText ?? "");
+        Text.Anchor = TextAnchor.UpperLeft;
+
+        if (!DragPaint.SuppressClick
+            && Event.current.type == EventType.MouseUp && Event.current.button == 0
+            && cellRect.Contains(Event.current.mousePosition))
         {
+            Event.current.Use();
             var menuOptions = new List<FloatMenuOption>();
             for (int i = 0; i < enumOptions.Count; i++)
             {

@@ -100,7 +100,7 @@ internal static class StockGeneratorFieldUi
                 DrawRange(rect, field, target, current, isIntRange: false);
                 break;
             case PocoCodec.Kind.Enum:
-                DrawEnum(rect, field, target, current);
+                DrawEnum(rect, field, target, current, owner);
                 break;
             case PocoCodec.Kind.Def:
                 DrawDefRef(rect, field, target, current, owner);
@@ -169,7 +169,7 @@ internal static class StockGeneratorFieldUi
             StockGeneratorCodec.WriteField(field, target, value);
     }
 
-    private static void DrawEnum(Rect rect, PocoCodec.Field field, object target, object? current)
+    private static void DrawEnum(Rect rect, PocoCodec.Field field, object target, object? current, EditorWindowBase owner)
     {
         var enumType = field.EnumType!;
         if (!Widgets.ButtonText(rect, EnumValueLabel(enumType, current))) return;
@@ -180,7 +180,10 @@ internal static class StockGeneratorFieldUi
             var captured = value;
             options.Add(new FloatMenuOption(EnumValueLabel(enumType, captured), () => StockGeneratorCodec.WriteField(field, target, captured)));
         }
-        Find.WindowStack.Add(new FloatMenu(options));
+        // 与 MainWindow 的枚举下拉不同，本窗口重写了 Notify_ClickOutsideWindow（点击窗外即关闭）。
+        // 裸 WindowStack.Add 的 FloatMenu 不算子窗口 ⇒ 点选项的那一帧窗口就被关掉。
+        // 必须登记成子窗口，见 EditorWindowBase.OpenChildWindow。
+        owner.OpenChildWindow(new FloatMenu(options));
     }
 
     private static void DrawDefRef(Rect rect, PocoCodec.Field field, object target, object? current, EditorWindowBase owner)

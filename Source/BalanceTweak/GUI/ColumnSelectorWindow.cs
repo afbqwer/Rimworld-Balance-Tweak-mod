@@ -22,6 +22,13 @@ public partial class BalanceTweakSettings
         // 重置确认状态
         private bool resetSortConfirm = false;
 
+        /// <summary>
+        /// 已打开的子窗口（浮动菜单 / 子对话框）。本窗口"点击窗外即关闭"，
+        /// 必须知道哪些窗口是自己弹出来的，否则点一下自己的菜单就会把本窗口一起关掉。
+        /// 与 <see cref="EditorWindowBase"/> / <see cref="GeneralSettingsWindow"/> 同一套机制。
+        /// </summary>
+        public List<Window> childWindows = new();
+
         public ColumnSelectorWindow()
         {
             doCloseX = true;
@@ -34,8 +41,19 @@ public partial class BalanceTweakSettings
 
         public override Vector2 InitialSize => new(500f, 650f);
 
+        /// <summary>打开子窗口，并在它关闭前不因"点击外部"关闭自己。</summary>
+        private void OpenChildWindow(Window window)
+        {
+            childWindows.Add(window);
+            Find.WindowStack.Add(window);
+        }
+
         public override void Notify_ClickOutsideWindow()
         {
+            childWindows.RemoveAll(w => !Find.WindowStack.IsOpen(w));
+            if (childWindows.Count > 0)
+                return;
+            childWindows.Clear();
             Close();
         }
 
@@ -146,7 +164,7 @@ public partial class BalanceTweakSettings
                     SetStatVisibility(false);
                     resetSortConfirm = false;
                 }));
-                Find.WindowStack.Add(new FloatMenu(menuOptions));
+                OpenChildWindow(new FloatMenu(menuOptions));
             }
         }
         private void SetStatVisibility(bool visible)

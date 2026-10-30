@@ -467,6 +467,32 @@ csproj 的默认值改不动它（`Directory.Build.props` 也挡不住），所�
 dotnet build -p:SelfCheck=true
 ```
 
+#### 1.6 是长期支持（LTS）的稳定版 —— 默认不编译
+
+1.6 的 `1.6/Assemblies/BalanceTweak.dll` 是**直接发给玩家的冻结产物**：编一次就等于给全体 1.6 玩家换版。
+因此 `TargetFrameworks` 默认只有 `net10.0`，net48 目标由开关 `IncludeNet48` 按需拉起（csproj 里所有 net48 段
+——输出目录 / `Krafs.Rimworld.Ref` 1.6.x / Harmony 2.4 / PolySharp 垫片——都带 `TargetFramework == 'net48'` 条件，
+开关关闭时不参与求值、也不进 restore 图）。
+
+**只有 1.6 侧确有实打实的缺陷要修时才编**，且优先只编 1.6：
+
+```powershell
+# 只编 1.6（隐式 restore；产物落 1.6/Assemblies/）
+dotnet build BalanceTweak/BalanceTweak.csproj -c Release -p:IncludeNet48=true -f net48
+
+# 1.6 + 1.7 一起出
+dotnet build BalanceTweak/BalanceTweak.csproj -c Release -p:IncludeNet48=true
+```
+
+为什么 1.6 不能“随手一编”：源码已用到 `init` 访问器 / `required` 成员 / 切片 / `HashCode.Combine`，
+net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range`、`HashCode`，
+靠 `PolySharp`（编译期源生成器，`PrivateAssets=all`，不进产物、玩家无需安装）补齐。
+编译通过只说明 API 面一致，**行为差异仍需在 1.6 实机验证**（1.6 的引用程序集来自 `Krafs.Rimworld.Ref`，
+不是本机游戏目录）。
+
+发版前对 1.6 的核对项：产物 `TargetFramework` 应为 `.NETFramework,v4.8`、只引用 `mscorlib` / `Assembly-CSharp` /
+`0Harmony`，**不得**出现 1.7 专属的 `UnityStubs` / `Waylith`。
+
 ### 7.8 镜像列（`IsMirror`）与原始快照
 
 有的列**值属于另一行**：武器行的"伤害 / 穿透"其实是关联弹丸的副本（`Bullet_Shotgun` 同时供泵动与链式霰弹枪）。
