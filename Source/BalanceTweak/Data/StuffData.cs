@@ -158,31 +158,38 @@ class StuffData : TweakData<StuffData>
         }
         ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);
 
-        if (forcedReset || NeedsGenerationCacheRefresh()) DataUtility.RefreshStuffGenerationCaches();
+        var aspect = forcedReset ? DataUtility.StuffCacheAspect.All : RequestedCacheAspect();
+        DataUtility.RefreshStuffGenerationCaches(def, aspect);
     }
 
     /// <summary>
-    /// 这些字段不进入 <c>ThingStuffPair</c> 的缓存（价格、保温、权重归一化倍数），改它们不必重建配对表。
-    /// 其余字段（含以后新增的）一律按"需要重建"处理 —— 默认取安全的一侧，免得加字段时漏改这张名单。
+    /// 这些字段既不出现在配对条目的缓存值里，也不参与归一化，改它们完全不必碰配对表。
+    /// 其余字段（含以后新增的）默认按"要重建条目"处理 —— 默认取安全的一侧，免得加字段时漏改。
     /// </summary>
     private static readonly HashSet<string> CacheNeutralFields = new()
     {
         nameof(defLabel), nameof(thingSetMakerTags),
         nameof(deepCommonality), nameof(deepCountPerPortion),
         nameof(deepCountPerCell), nameof(deepLumpSizeRange),
-        // techLevel 是选材时的过滤条件（AllowedStuffsFor 现算），isAirtight 只在建筑判定里读，
-        // 两者都不参与 ThingStuffPair 的构造。
-        nameof(techLevel), nameof(stuffAirtight),
+        // 只影响选材时的过滤条件（AllowedStuffsFor 现算）或建筑判定，不参与配对表构建。
+        nameof(techLevel), nameof(stuffAirtight), nameof(stuffAllowedInGeneration),
     };
 
-    private bool NeedsGenerationCacheRefresh()
+    /// <summary>
+    /// 按字段判定本次改动要碰配对表的哪一部分：
+    /// commonality 只需重算归一化倍数，其余数值字段要重建条目（价格/保温等被烘进结构体）。
+    /// </summary>
+    private DataUtility.StuffCacheAspect RequestedCacheAspect()
     {
+        var aspect = DataUtility.StuffCacheAspect.None;
         foreach (var meta in Fields)
         {
-            if (IsFieldModified(meta.Field.Name) && !CacheNeutralFields.Contains(meta.Field.Name))
-                return true;
+            string name = meta.Field.Name;
+            if (!IsFieldModified(name)) continue;
+            if (name == nameof(stuffCommonality)) aspect |= DataUtility.StuffCacheAspect.Commonality;
+            else if (!CacheNeutralFields.Contains(name)) aspect |= DataUtility.StuffCacheAspect.PairStats;
         }
-        return false;
+        return aspect;
     }
 
 

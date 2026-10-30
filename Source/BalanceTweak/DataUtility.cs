@@ -163,26 +163,168 @@ public static class DataUtility
 
     #region 材料随机生成缓存
 
-    // 原版这三处缓存在 PlayDataLoader.ResetStaticDataPre/Post 里各建一次，之后不再重建：
-    //   · GenStuff.cachedStuffDefs —— 所有 IsStuff 的 ThingDef 列表
-    //   · PawnWeaponGenerator.allWeaponPairs / PawnApparelGenerator.allApparelPairs ——
-    //     "物品 × 材料"配对表。ThingStuffPair 在构造时就把 MarketValue / 保温 / 毒抗等 stat
-    //     算进 cachedPrice 等字段，Commonality 里的 commonalityMultiplier 也是那时按"平均
-    //     commonality"归一化好的。
-    // 所以改完材料的 commonality / allowedInStuffGeneration / 价格类 stat 之后，配对表里存的
-    // 仍是旧值：武器与服饰的生成权重、weaponMoney 价格门槛看起来"改了没反应"。
-    // 这里统一重建，语义等同重启游戏。
+    // 原版那两张"物品 × 材料"配对表（PawnWeaponGenerator.allWeaponPairs /
+    // PawnApparelGenerator.allApparelPairs）只在 PlayDataLoader.ResetStaticDataPost 里建一次。
+    // ThingStuffPair 在构造时把 MarketValue / 保温 / 毒抗等 stat 算进 cachedPrice 等字段，
+    // commonalityMultiplier 也是那时归一化好的 —— 所以改完材料的价格或 commonality，
+    // 配对表里存的仍是旧值：武器与服饰的生成权重、weaponMoney 价格门槛看起来"改了没反应"。
     //
-    // 注意：只在当前 Def 上有实际改动时调用（见 StuffData.NeedsGenerationCacheRefresh）。
-    // 一次重建要遍历全部 ThingDef × 可用材料，不是每帧能做的事。目前已知的重复调用点只有
-    // TweakDatabase.Init —— 读档时每个被改过的材料行各触发一次（原版材料三十来个，量级可接受，
-    // 但未实测）；若哪天真被玩家察觉（改了大量材料后读档变慢），把 Init 里那条链路包成批次
-    // （首行置脏、末尾统一刷一次）即可，不必改这里的语义。
-    public static void RefreshStuffGenerationCaches()
+    // 为什么不直接调原版 Reset()：复杂度是 O(ThingDef 总数 × 可上材料物品数)。
+    // ThingStuffPair.AllWith 对每个可上材料的 ThingDef 都要全表扫一遍找材料
+    // （DefDatabase<ThingDef>.AllDefs.Where(st => st.IsStuff && st.stuffProps.CanMake(td))），
+    // 武器 Reset 之后还有一层"每个武器 def 再扫全表求和 Commonality"。
+    // 原版规模（数千 ThingDef / 几十材料）下这是百万级，能忍；装了大型 Mod 到数万 ThingDef
+    // 时就是上亿次委托调用，一次重建要几秒 —— 改一格卡一下，不可用。
+    //
+    // 这里改成增量修补：只重建"该材料参与的那几条"，再按物品粒度重算归一化倍数。
+    // 复杂度是 O(配对表长度) + O(该材料参与的条目数)，与 ThingDef 总数无关。
+
+    /// <summary>本次改动会影响配对表的哪个方面。由 <c>StuffData</c> 按字段判定后传入。</summary>
+    [Flags]
+    public enum StuffCacheAspect
     {
-        GenStuff.ResetStaticData();
-        PawnWeaponGenerator.Reset();
-        PawnApparelGenerator.Reset();
+        None = 0,
+        /// <summary>价格 / 保温 / 毒抗 / 真空抗等被烘进配对条目的 stat 值。需要重建条目
+        /// （并顺带重算归一化 —— derp 判定依赖这些 stat）。</summary>
+        PairStats = 1,
+        /// <summary>commonality。不需要重建条目，只需按物品重算归一化倍数。</summary>
+        Commonality = 2,
+        All = PairStats | Commonality,
+    }
+
+    private static FieldInfo? _apparelPairsField;
+    private static bool _apparelPairsFieldResolved;
+
+    /// <summary>
+    /// 把 <paramref name="stuff"/> 的改动同步到原版两张配对表。
+    /// 语义等同"重启游戏后重新生成配对表"，但只碰受影响的条目。
+    /// </summary>
+    public static void RefreshStuffGenerationCaches(ThingDef? stuff, StuffCacheAspect aspect)
+    {
+        if (stuff?.stuffProps == null || aspect == StuffCacheAspect.None) return;
+
+        var weaponPairs = PawnWeaponGenerator.AllWeaponPairs;
+        if (weaponPairs == null)
+        {
+            // 配对表还没建过（理论上 PlayDataLoader 已建好）。退回原版重建，慢但不会留错值。
+            PawnWeaponGenerator.Reset();
+        }
+        else
+        {
+            // 武器：AllWith 之后 Reset 还会把"该物品全部材料的 Commonality 之和"拉回 generateCommonality。
+            PatchPairTable(weaponPairs, stuff, useAllWithNormalization: false, aspect);
+        }
+
+        // allApparelPairs 是私有静态字段且每次 Reset 都会整个换掉，所以缓存 FieldInfo、每次重取实例。
+        //
+        // 已知不覆盖的一处：PawnApparelGenerator.Reset 里还会重算 4 个"免费保暖衣物价格阈值"
+        // （freeWarmParkaMaxPrice 等，由 Cloth 等固定材料的 MarketValue 推出来）。它们是私有静态 float，
+        // 本函数不重算 —— 只有改 Cloth 价格时才会偏离，影响面是"寒冷地图开局给殖民者发免费大衣"这一处判定。
+        // 复制那段初始化逻辑的脆弱性大于这点收益，故留作已知偏差。
+        if (!_apparelPairsFieldResolved)
+        {
+            _apparelPairsFieldResolved = true;   // 解析失败也不反复重试（Reflect 已记过一条 Error）
+            _apparelPairsField = Reflect.Field(typeof(PawnApparelGenerator), "allApparelPairs");
+        }
+        if (_apparelPairsField?.GetValue(null) is List<ThingStuffPair> apparelPairs)
+        {
+            // 服饰：Reset 只调 AllWith，归一化口径就是 mult = 1/n/avg(stuff.commonality)，没有二次修正。
+            PatchPairTable(apparelPairs, stuff, useAllWithNormalization: true, aspect);
+        }
+        else
+        {
+            // 反射没拿到字段（游戏版本改名？）：退回原版全量重建。慢，但不会留错值。
+            PawnApparelGenerator.Reset();
+        }
+    }
+
+    private static void PatchPairTable(List<ThingStuffPair> pairs, ThingDef stuff,
+        bool useAllWithNormalization, StuffCacheAspect aspect)
+    {
+        bool touchStats = (aspect & StuffCacheAspect.PairStats) != 0;
+        HashSet<ThingDef>? affected = null;
+
+        // 1) 重建该材料参与的条目：cachedPrice / 保温 / 毒抗等全部按当前 stat 重算。
+        //    只用 new ThingStuffPair(thing, stuff, multiplier) —— multiplier 原样带过去，
+        //    归一化放在下一步统一处理，两步互不干扰。
+        if (touchStats)
+        {
+            for (int i = 0; i < pairs.Count; i++)
+            {
+                ThingStuffPair p = pairs[i];
+                if (p.stuff != stuff) continue;
+                (affected ??= new HashSet<ThingDef>()).Add(p.thing);
+                pairs[i] = new ThingStuffPair(p.thing, stuff, p.commonalityMultiplier);
+            }
+        }
+
+        // 2) 归一化。除了 commonality 本身，stat 改动也可能间接触发它：
+        //    IsDerpWeapon / IsDerpApparel 是按材料 stat（护甲乘数）判定的，改了护甲值可能让某条
+        //    配对在"derp（×0.01）"与"正常"之间翻转，那样求和结果就变了 —— 原版 Reset 会连归一化
+        //    一起重算，这里保持一致。k≈1 时是纯 no-op，所以只有 commonality 未变时代价可忽略。
+        if (affected == null)
+        {
+            // 只改了 commonality：受影响物品集合得单独扫一遍。
+            for (int i = 0; i < pairs.Count; i++)
+            {
+                ThingStuffPair p = pairs[i];
+                if (p.stuff == stuff) (affected ??= new HashSet<ThingDef>()).Add(p.thing);
+            }
+            if (affected == null) return;
+        }
+
+        // 3) 按物品分组（归一化以"物品"为粒度：一个物品下所有材料共享同一个倍数）。
+        var groups = new Dictionary<ThingDef, List<int>>(affected.Count);
+        foreach (ThingDef t in affected) groups[t] = new List<int>();
+        for (int i = 0; i < pairs.Count; i++)
+        {
+            if (groups.TryGetValue(pairs[i].thing, out var idxs)) idxs.Add(i);
+        }
+
+        foreach (var kv in groups)
+        {
+            List<int> idxs = kv.Value;
+            if (idxs.Count == 0) continue;
+
+            if (useAllWithNormalization)
+            {
+                // 复刻 ThingStuffPair.AllWith：mult = (avg≈0) ? 1 : 1/n/avg，
+                // avg 是所有可上材料（含 commonality 为 0 的）的 commonality 算术平均。
+                float sumComm = 0f;
+                for (int j = 0; j < idxs.Count; j++)
+                {
+                    ThingDef? st = pairs[idxs[j]].stuff;
+                    if (st != null) sumComm += st.stuffProps.commonality;
+                }
+                float avg = sumComm / idxs.Count;
+                float mult = Mathf.Approximately(avg, 0f) ? 1f : 1f / idxs.Count / avg;
+                for (int j = 0; j < idxs.Count; j++)
+                {
+                    int idx = idxs[j];
+                    ThingStuffPair p = pairs[idx];
+                    p.commonalityMultiplier = mult;
+                    pairs[idx] = p;
+                }
+            }
+            else
+            {
+                // 复刻 PawnWeaponGenerator.Reset：把该物品所有材料的 Commonality 之和缩放到
+                // generateCommonality。k 是纯缩放，重复执行收敛（和为 generateCommonality 时 k=1）。
+                float gen = kv.Key.generateCommonality;
+                float sum = 0f;
+                for (int j = 0; j < idxs.Count; j++) sum += pairs[idxs[j]].Commonality;
+                if (sum <= 0f) continue;
+                float k = gen / sum;
+                if (Mathf.Approximately(k, 1f)) continue;
+                for (int j = 0; j < idxs.Count; j++)
+                {
+                    int idx = idxs[j];
+                    ThingStuffPair p = pairs[idx];
+                    p.commonalityMultiplier *= k;
+                    pairs[idx] = p;
+                }
+            }
+        }
     }
 
     #endregion
