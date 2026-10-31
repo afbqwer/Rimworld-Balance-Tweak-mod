@@ -6,4 +6,22 @@
     <MST.settlementGenerationWeight>SetWght</MST.settlementGenerationWeight>
     <MST.naturalEnemy>NatEnmy</MST.naturalEnemy>
     <MST.permanentEnemy>PrmEnmy</MST.permanentEnemy>
+    <MST.pawnGroupMakers>PawnGrpMkr</MST.pawnGroupMakers>
+    <MST.pawnGroupMakersComment>Raid composition structure: each group maker pairs a kindDef (which generation logic) with a commonality (relative chance this pool is picked), and lists its pawn options with weights plus a point cap. The per-pawn price is PawnKindDef.combatPower, not editable here.</MST.pawnGroupMakersComment>
+    <MST.AddPawnGroupMaker>Add group maker</MST.AddPawnGroupMaker>
+    <MST.kindDef>Kind</MST.kindDef>
+    <MST.maxTotalPoints>MaxPoints</MST.maxTotalPoints>
+    <MST.maxTotalPointsComment>This group maker is only usable when raid points are at or below this value. Vanilla default 9999999 means unlimited.</MST.maxTotalPointsComment>
+    <MST.disallowedStrategies>NoStrategy</MST.disallowedStrategies>
+    <MST.disallowedStrategiesComment>Raid strategies (siege, breaching, ...) that may not use this group maker. Empty = no restriction.</MST.disallowedStrategiesComment>
+    <MST.options>Options</MST.options>
+    <MST.optionsComment>Pawn options for this pool (PawnGenOption: kind + selection weight). Only the Normal / Shamblers worker reads it.</MST.optionsComment>
+    <MST.traders>Traders</MST.traders>
+    <MST.carriers>Carriers</MST.carriers>
+    <MST.guards>Guards</MST.guards>
+    <MST.kind>PawnKind</MST.kind>
+    <MST.PawnGroupMakerWorker>Worker</MST.PawnGroupMakerWorker>
+    <MST.PawnGroupMakerNoKind>No kind set</MST.PawnGroupMakerNoKind>
+    <MST.PawnGroupMakerNoOptions>This group maker has no options, so it cannot produce any pawns.</MST.PawnGroupMakerNoOptions>
+    <MST.PawnGroupMakerDropped>Dropped {0} group maker(s) with no kind set</MST.PawnGroupMakerDropped>
 </LanguageData>

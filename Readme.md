@@ -283,6 +283,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `SkillRangeList` | `List<SkillRange>?` | 技能区间列表编辑器（skill + IntRange）；`SkillRange` 两个字段都是 private，读写走 PocoCodec 字段表 |
 | `BackstoryTraitList` | `List<BackstoryTrait>?` | 背景特性列表编辑器（trait + degree）；与 `TraitReqList` 形状相同但元素类型不同 |
 | `PossessionList` | `List<PossessionThingDefCountClass>?` | 随身物品列表编辑器（ThingDef + 数量区间 `value`） |
+| `PawnGroupMakerList` | `List<PawnGroupMaker>?` | 兵种池列表编辑器（每行一个兵种池：kindDef + commonality + 各子列表条目数；`options`/`traders`/`carriers`/`guards` 是 `PawnGenOption` 子列表）；非原版子类只读透传，见 [§7.6.1](#761-兵种池paingroupmaker复用同一套字段表) |
 
 ---
 
@@ -442,9 +443,33 @@ ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 - `Apply` 写完列表后对每个生成器调 `ResolveReferences(def)`（`trader` 是 `[Unsaved]`，必须靠它写回）。
 
 实现细节不在这里重复，读这几处就够：`Data/StockGeneratorCodec.cs`（字段表 / 编解码 / 克隆 / `MergeWithDef`）、
-`GUI/Editor/StockGeneratorFieldUi.cs`（按 `PocoCodec.Kind` 画控件 + 字段标签字典，标签必须用显式字面量 —— CheckLoc 是静态正则，
+`GUI/Editor/PocoFieldUi.cs`（按 `PocoCodec.Kind` 画控件 + 字段标签字典，标签必须用显式字面量 —— CheckLoc 是静态正则，
 看不见拼接出来的键）、`BalanceTweak.Tests/StockGeneratorCodecTests.cs` 的 `字段表无未解析项` / `字段表覆盖原版全部类型与字段`
 （"原版加类型 / 加字段"的第一道警报）、`Tests/TweakDataSerializationTests.cs` 的 `testStockGen_*`（真实商人数据的整表往返）。
+
+### 7.6.1 兵种池（PawnGroupMaker）：复用同一套字段表
+
+`FactionDef.pawnGroupMakers`（`List<PawnGroupMaker>`）走的是**与 §7.6 相同的模式**，但少了"多态"这一层：
+`PawnGroupMaker` 在**原版里没有子类**，也不是抽象类，所以
+
+- **字段声明仍然只有一处**：`TweakData.FieldCodecs.Build()` 里的
+  `PocoCodec.Declare(typeof(PawnGenOption), "kind", "selectionWeight")` + `PocoList<PawnGroupMaker>(...)`。
+  `options` / `traders` / `carriers` / `guards` 是 `List<PawnGenOption>`，走 `Kind.ComplexList` ——
+  **元素类型必须先声明**，否则 `Classify` 把它们判成 `Unsupported`，字段静默不读不写。
+- **窗口不复用 StockGen 那个**：`PawnGroupMakerListEditorWindow`（行：编辑 / 摘要 / 上下移 / 删除）+
+  `PawnGroupMakerEditorWindow`（字段表表单，四个子列表各自打开 `SGComplexListEditorWindow`）。
+  表单渲染共用 `PocoFieldUi`（原 `StockGeneratorFieldUi`，改名因为它现在不认识任何具体业务类型）。
+- **`Data/PawnGroupMakerCodec.cs` 只保留三件事**：克隆（字段与 Def 永不共享实例）、`MergeWithDef`
+  （非原版子类按"类型 + 出现次序"从 Def 找回原实例，找不到就丢弃并告警）、行摘要。**它不含字段表**。
+- **写回 Def 前有一道 `Sanitize`**：没有 `kindDef` 的兵种池（`CanGenerateFrom` 解引用 `kindDef.Worker`）、
+  没有 `kind` 的 `PawnGenOption`（`GetOptions` 拿它查 `XenotypesAvailableFor`）都会在袭击生成期 NRE，
+  必须丢。字段里仍然保留用户填的内容（编辑窗口里那行还在，补一个兵种就能救回来）。
+- **`SGComplexListEditorWindow` 删光时交出空列表而不是 `null`**：`options` 这类字段会被裸 `foreach`，
+  `null` 直接 NRE；与 `DefListEditorWindow` 的 `onSaveCallback` 口径一致。
+
+> 已知边界：`PawnGroupKindWorker_Trader` 读 `traders` / `carriers` / `guards`，`Normal` / `Shamblers` 只读
+> `options`。编辑窗口**不按 worker 隐藏字段**（其它 Mod 的 worker 可以按自己的规则读），只在头部把当前的
+> `workerClass` 显示出来，避免"改了一个当前 worker 根本不读的列表"。
 
 ### 7.7 构建验证
 
@@ -628,6 +653,7 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | `SkillRangeList` | 弹出窗口 | `SkillRangeListEditorWindow` | `List<SkillRange>?`（每行 = 技能选择 + 最低/最高等级；`skill` / `range` 均为 private，经 PocoCodec `ReadField` / `WriteField` 读写） |
 | `BackstoryTraitList` | 弹出窗口 | `BackstoryTraitListEditorWindow` | `List<BackstoryTrait>?`（每行 = 特性选择 + 程度） |
 | `PossessionList` | 弹出窗口 | `PossessionListEditorWindow` | `List<PossessionThingDefCountClass>?`（每行 = 物品选择 + 数量区间 min/max） |
+| `PawnGroupMakerList` | 弹出窗口 | `PawnGroupMakerListEditorWindow`（+ `PawnGroupMakerEditorWindow` / `SGComplexListEditorWindow`） | `List<PawnGroupMaker>?`（字段即对象列表，字段表见 [§7.6.1](#761-兵种池paingroupmaker复用同一套字段表)） |
 | `DefSelector` | 弹出窗口 | `DefSelectionWindow` | `T? where T : Def` |
 ---
 

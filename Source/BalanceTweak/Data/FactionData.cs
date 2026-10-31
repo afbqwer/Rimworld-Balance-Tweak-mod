@@ -29,6 +29,14 @@ class FactionData : TweakData<FactionData>
     [TweakField(Style = ColumnStyle.Bool)]
     public bool? permanentEnemy = null;
 
+    /// <summary>
+    /// 兵种池：袭击编成的**结构**（哪个 <see cref="PawnGroupKindDef"/>、以多大 commonality 出、
+    /// 每类兵种的出现权重、点数上限、禁用的袭击策略）。字段值是与 Def 不共享实例的副本
+    /// （<see cref="PawnGroupMakerCodec.CloneAll"/>），取消编辑不会污染 Def。
+    /// </summary>
+    [TweakField(Style = ColumnStyle.PawnGroupMakerList)]
+    public List<PawnGroupMaker>? pawnGroupMakers = null;
+
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
@@ -54,6 +62,10 @@ class FactionData : TweakData<FactionData>
             settlementGenerationWeight ??= d.settlementGenerationWeight;
             naturalEnemy ??= d.naturalEnemy;
             permanentEnemy ??= d.permanentEnemy;
+            // 列表字段必须带守卫：否则用户清空后读档会被 Def 回填"复活"（且这里是深克隆，
+            // 裸 ??= 还会让已编辑的副本被 Def 覆盖）。
+            if (!IsFieldModified(nameof(pawnGroupMakers)))
+                pawnGroupMakers ??= PawnGroupMakerCodec.CloneAll(d.pawnGroupMakers);
         }
     }
 
@@ -71,6 +83,10 @@ class FactionData : TweakData<FactionData>
         ApplyV<float>(nameof(settlementGenerationWeight), v => def.settlementGenerationWeight = v);
         ApplyV<bool>(nameof(naturalEnemy), v => def.naturalEnemy = v);
         ApplyV<bool>(nameof(permanentEnemy), v => def.permanentEnemy = v);
+        // 写回前再克隆一次：字段里的对象与 Def 永不共享实例，所以"编辑 → Apply → 再编辑 → 再 Apply"
+        // 不会互相污染。非原版子类不克隆，按"类型 + 次序"从 Def 里找回原实例（见 MergeWithDef）。
+        ApplyL<PawnGroupMaker>(nameof(pawnGroupMakers),
+            v => def.pawnGroupMakers = PawnGroupMakerCodec.MergeWithDef(v, def.pawnGroupMakers));
     }
 
     protected override Texture2D? ResolveUiIcon() => (def as FactionDef)?.FactionIcon;

@@ -6,4 +6,22 @@
     <MST.settlementGenerationWeight>定居点权重</MST.settlementGenerationWeight>
     <MST.naturalEnemy>自然敌对</MST.naturalEnemy>
     <MST.permanentEnemy>永久敌对</MST.permanentEnemy>
+    <MST.pawnGroupMakers>兵种池</MST.pawnGroupMakers>
+    <MST.pawnGroupMakersComment>袭击编成的结构：每个兵种池 = 一个 kindDef（用哪套生成逻辑）+ 一个 commonality（该池被抽中的相对权重），池内再列各兵种的 selectionWeight 与点数上限。注意单个兵种的点数单价是 PawnKindDef 的 combatPower，不在本表里。</MST.pawnGroupMakersComment>
+    <MST.AddPawnGroupMaker>添加兵种池</MST.AddPawnGroupMaker>
+    <MST.kindDef>兵种池类型</MST.kindDef>
+    <MST.maxTotalPoints>点数上限</MST.maxTotalPoints>
+    <MST.maxTotalPointsComment>该兵种池只在袭击总点数不超过此值时可用。原版默认 9999999 = 不设限。</MST.maxTotalPointsComment>
+    <MST.disallowedStrategies>禁用策略</MST.disallowedStrategies>
+    <MST.disallowedStrategiesComment>禁止使用该兵种池的袭击策略（如围攻、破墙）。留空 = 不限制。</MST.disallowedStrategiesComment>
+    <MST.options>兵种</MST.options>
+    <MST.optionsComment>该池的兵种列表（PawnGenOption：兵种 + 出现权重）。只有 Normal / Shamblers 生成逻辑读它。</MST.optionsComment>
+    <MST.traders>商人</MST.traders>
+    <MST.carriers>驮运</MST.carriers>
+    <MST.guards>护卫</MST.guards>
+    <MST.kind>兵种</MST.kind>
+    <MST.PawnGroupMakerWorker>生成逻辑</MST.PawnGroupMakerWorker>
+    <MST.PawnGroupMakerNoKind>未选兵种池类型</MST.PawnGroupMakerNoKind>
+    <MST.PawnGroupMakerNoOptions>该兵种池没有任何兵种（options 为空），袭击时凑不出人。</MST.PawnGroupMakerNoOptions>
+    <MST.PawnGroupMakerDropped>已丢弃 {0} 个未选类型的兵种池</MST.PawnGroupMakerDropped>
 </LanguageData>

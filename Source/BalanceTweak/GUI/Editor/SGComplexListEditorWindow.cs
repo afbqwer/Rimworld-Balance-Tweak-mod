@@ -34,7 +34,10 @@ public class SGComplexListEditorWindow : EditorWindowBase
         pickerTitle = title;
         this.elementType = elementType;
         this.onSave = onSave;
-        fields = StockGeneratorCodec.FieldsFor(elementType);
+        // 字段声明由 TweakData.FieldCodecs 的静态构造写入 PocoCodec，而 PocoCodec.FieldsFor 不会去拉它
+        // ⇒ 少了这一下，窗口会画出一排"零字段"的空行（无日志）。
+        TweakData.FieldCodecs.EnsureBuilt();
+        fields = PocoCodec.FieldsFor(elementType);
         if (initial != null)
             foreach (var item in initial)
                 if (item != null) items.Add(item);
@@ -103,11 +106,11 @@ public class SGComplexListEditorWindow : EditorWindowBase
             GameFont prevFont = Text.Font;
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(labelRect, StockGeneratorFieldUi.LabelOf(field));
+            Widgets.Label(labelRect, PocoFieldUi.LabelOf(field));
             Text.Font = prevFont;
             Text.Anchor = TextAnchor.UpperLeft;
 
-            StockGeneratorFieldUi.DrawField(fieldRect, field, item, this);
+            PocoFieldUi.DrawField(fieldRect, field, item, this);
             x += slot + Spacing;
         }
 
@@ -121,7 +124,10 @@ public class SGComplexListEditorWindow : EditorWindowBase
         var result = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
         foreach (var item in items)
             if (item != null) result.Add(item);
-        onSave(result.Count > 0 ? result : null);
+        // 删光 ⇒ 交出**空列表**而不是 null：这是"从集合里移除全部项"的终态（硬约束：集合永不为 null）。
+        // 原版普遍用 NullOrEmpty 判定，两者等价；但 PawnGroupMaker.options 这类字段会被裸 foreach，
+        // null 直接 NRE。与 DefListEditorWindow 的 onSaveCallback 口径一致。
+        onSave(result);
         Close();
     }
 

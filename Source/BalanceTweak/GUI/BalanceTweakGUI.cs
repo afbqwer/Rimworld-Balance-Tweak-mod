@@ -273,6 +273,7 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.WeatherCommonalityList, (c, d) => new WeatherCommonalityListEditorWindow(c, d) },
         { ColumnStyle.TerrainThresholdList, (c, d) => new TerrainThresholdListEditorWindow(c, d) },
         { ColumnStyle.FactionCurveList, (c, d) => new FactionCurveListEditorWindow(c, d) },
+        { ColumnStyle.PawnGroupMakerList, (c, d) => new PawnGroupMakerListEditorWindow(c, d) },
         { ColumnStyle.BodyPartTree, (c, d) => new BodyPartTreeEditorWindow(c, d) },
     };
     #endregion

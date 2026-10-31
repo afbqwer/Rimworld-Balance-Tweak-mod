@@ -43,6 +43,7 @@
     <MST.TerrainThresholdList>地形区间列表</MST.TerrainThresholdList>
     <MST.StockGenList>库存列表</MST.StockGenList>
     <MST.FactionCurveList>派系曲线列表</MST.FactionCurveList>
+    <MST.PawnGroupMakerList>兵种池列表</MST.PawnGroupMakerList>
     <MST.SkillRangeList>技能区间列表</MST.SkillRangeList>
     <MST.BackstoryTraitList>背景特性列表</MST.BackstoryTraitList>
     <MST.PossessionList>随身物品列表</MST.PossessionList>
@@ -186,6 +187,9 @@
     <MST.ExtraAllowedDefs>额外允许的Def</MST.ExtraAllowedDefs>
     <MST.ExtraDisallowedDefs>额外禁用的Def</MST.ExtraDisallowedDefs>
     <MST.Edit>编辑</MST.Edit>
+    <!-- 字段表表单（库存生成器 / 兵种池共用，见 GUI/Editor/PocoFieldUi.cs） -->
+    <MST.PocoNonVanilla>非原版类型（其它 Mod 新增）：只读展示，本工具不读取也不修改它的字段</MST.PocoNonVanilla>
+    <MST.PocoFieldUnsupported>该字段类型暂不支持编辑，保留原值</MST.PocoFieldUnsupported>
     <MST.TestFilter>刷新过滤器</MST.TestFilter>
     <MST.ClickTestToPreview>点击"刷新过滤器"以预览</MST.ClickTestToPreview>
     <MST.ShowOnlyAllowed>仅显示允许的Def</MST.ShowOnlyAllowed>

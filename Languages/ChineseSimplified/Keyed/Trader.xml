@@ -18,8 +18,6 @@
     <MST.AddStockGenerator>添加生成器</MST.AddStockGenerator>
     <MST.AddEntry>添加一项</MST.AddEntry>
     <MST.StockGenType>类型</MST.StockGenType>
-    <MST.StockGenNonVanilla>非原版类型（其它 Mod 新增）：只读展示，本工具不读取也不修改它的字段</MST.StockGenNonVanilla>
-    <MST.StockGenUnsupported>该字段类型暂不支持编辑，保留原值</MST.StockGenUnsupported>
 
     <!-- 库存生成器字段（键名与原版 XML 元素名一致，便于对照 Def XML） -->
     <MST.countRange>数量区间</MST.countRange>

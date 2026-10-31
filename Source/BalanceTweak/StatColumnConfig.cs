@@ -80,7 +80,7 @@ public class StatColumnConfig
         { FieldType.IntRange, new[] { ColumnStyle.Range } },
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
-        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList, ColumnStyle.XenotypeChanceList, ColumnStyle.ThingSetTags, ColumnStyle.FactionCurveList, ColumnStyle.SkillRangeList, ColumnStyle.BackstoryTraitList, ColumnStyle.PossessionList } },
+        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList, ColumnStyle.XenotypeChanceList, ColumnStyle.ThingSetTags, ColumnStyle.FactionCurveList, ColumnStyle.SkillRangeList, ColumnStyle.BackstoryTraitList, ColumnStyle.PossessionList, ColumnStyle.PawnGroupMakerList } },
         { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks, ColumnStyle.WeaponLinks } },
     };
 
@@ -179,7 +179,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks, PawnGroupMakerList }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -199,7 +199,8 @@ public class StatColumnConfig
             or ColumnStyle.FactionCurveList
             or ColumnStyle.SkillRangeList
             or ColumnStyle.BackstoryTraitList
-            or ColumnStyle.PossessionList;
+            or ColumnStyle.PossessionList
+            or ColumnStyle.PawnGroupMakerList;
     }
 
     private void ValidateFieldTypeStyle()
@@ -1209,6 +1210,15 @@ public class StatColumnConfig
                                     ? $"[{label[..LabelTruncateLength]}..{rng}]"
                                     : $"[{label}{rng}]";
                             }
+                        }
+                        break;
+                    case ColumnStyle.PawnGroupMakerList:
+                        if (element is PawnGroupMaker pgm)
+                        {
+                            // 兵种池的"名字"就是它的 kindDef（如「战斗」「商队」）
+                            var label = pgm.kindDef?.LabelCap.Resolve();
+                            if (!label.NullOrEmpty())
+                                return label!.Length > LabelTruncateLength ? $"[{label[..LabelTruncateLength]}..]" : $"[{label}]";
                         }
                         break;
                 }

@@ -44,6 +44,7 @@
     <MST.TerrainThresholdList>TerrainList</MST.TerrainThresholdList>
     <MST.StockGenList>StockGen</MST.StockGenList>
     <MST.FactionCurveList>FactionCurves</MST.FactionCurveList>
+    <MST.PawnGroupMakerList>PawnGroupMkrs</MST.PawnGroupMakerList>
     <MST.SkillRangeList>SkillRanges</MST.SkillRangeList>
     <MST.BackstoryTraitList>BstoryTraits</MST.BackstoryTraitList>
     <MST.PossessionList>Possessions</MST.PossessionList>
@@ -186,6 +187,9 @@
     <MST.ExtraAllowedDefs>Extra Allowed Defs</MST.ExtraAllowedDefs>
     <MST.ExtraDisallowedDefs>Extra Disallowed Defs</MST.ExtraDisallowedDefs>
     <MST.Edit>Edit</MST.Edit>
+    <!-- Field-table form (shared by stock generators and pawn group makers, see GUI/Editor/PocoFieldUi.cs) -->
+    <MST.PocoNonVanilla>Non-vanilla type (added by another mod): shown read-only; this tool neither reads nor writes its fields</MST.PocoNonVanilla>
+    <MST.PocoFieldUnsupported>Editing this field type is not supported; value kept</MST.PocoFieldUnsupported>
     <MST.TestFilter>Update Filter</MST.TestFilter>
     <MST.ClickTestToPreview>Click "Update Filter" to preview</MST.ClickTestToPreview>
     <MST.ShowOnlyAllowed>Show Allowed Only</MST.ShowOnlyAllowed>

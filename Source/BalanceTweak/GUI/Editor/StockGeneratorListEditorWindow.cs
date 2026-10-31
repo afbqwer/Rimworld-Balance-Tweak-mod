@@ -131,7 +131,7 @@ public class StockGeneratorListEditorWindow : ListEditorWindow<StockGenerator>
 
         // 非原版类型：只显示类型名（字段靠 Mod 自己解释、没有翻译），悬停说明本工具对它只读。
         if (!vanilla)
-            TooltipHandler.TipRegion(rect, "MST.StockGenNonVanilla".Translate().RawText);
+            TooltipHandler.TipRegion(rect, "MST.PocoNonVanilla".Translate().RawText);
     }
 
     private void OpenGeneratorEditor(StockGenerator gen)

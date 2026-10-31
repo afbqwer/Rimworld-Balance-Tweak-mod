@@ -209,6 +209,13 @@ public abstract partial class TweakData
             PocoList<ProcessResultItem>(r => r.count >= 0, "thing", "count");
             // FactionCurve.selectionWeightPerPointsCurve 是 private 的 SimpleCurve，由 PocoCodec 的 Kind.Curve 编解码
             PocoList<FactionCurve>("faction", "selectionWeightPerPointsCurve");
+            // 兵种池（FactionDef.pawnGroupMakers）。PawnGroupMaker 的 options / traders / carriers / guards
+            // 是四个 List<PawnGenOption>，走 Kind.ComplexList —— 元素类型必须先声明，否则 Classify 会把它们
+            // 判成 Unsupported（字段静默不读不写）。声明顺序因此不能颠倒。
+            // 说明见 Data/PawnGroupMakerCodec.cs。
+            PocoCodec.Declare(typeof(PawnGenOption), "kind", "selectionWeight");
+            PocoList<PawnGroupMaker>("kindDef", "commonality", "maxTotalPoints", "disallowedStrategies",
+                "options", "traders", "carriers", "guards");
 
             // ── bespoke：各有不走字段表的硬理由 ──
             // IngredientCount 挂在 ThingFilter + GetBaseCount/SetBaseCount 上，不是普通字段；

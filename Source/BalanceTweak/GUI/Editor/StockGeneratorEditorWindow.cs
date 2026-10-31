@@ -6,7 +6,7 @@ using Verse;
 namespace BalanceTweak;
 
 /// <summary>
-/// 单个库存生成器的字段编辑窗口：按字段表声明的编辑方式渲染表单（见 <see cref="StockGeneratorFieldUi"/>），
+/// 单个库存生成器的字段编辑窗口：按字段表声明的编辑方式渲染表单（见 <see cref="PocoFieldUi"/>），
 /// 控件直接读写传入的那个 <see cref="StockGenerator"/> 对象 —— 没有中间副本、没有文本格式。
 ///
 /// <para>
@@ -17,7 +17,7 @@ namespace BalanceTweak;
 public class StockGeneratorEditorWindow : EditorWindowBase
 {
     private const float LabelWidth = 170f;
-    private const float RowStride = StockGeneratorFieldUi.RowHeight + Spacing;
+    private const float RowStride = PocoFieldUi.RowHeight + Spacing;
 
     private readonly StockGenerator gen;
     private readonly IReadOnlyList<PocoCodec.Field> fields;
@@ -67,24 +67,24 @@ public class StockGeneratorEditorWindow : EditorWindowBase
         float y = 0f;
 
         // 实际类型（= 原版 XML 里的 Class），只读展示
-        DrawLabel(new Rect(0f, y, LabelWidth, StockGeneratorFieldUi.RowHeight), "MST.StockGenType");
-        var typeRect = new Rect(LabelWidth, y, viewRect.width - LabelWidth, StockGeneratorFieldUi.RowHeight);
+        DrawLabel(new Rect(0f, y, LabelWidth, PocoFieldUi.RowHeight), "MST.StockGenType");
+        var typeRect = new Rect(LabelWidth, y, viewRect.width - LabelWidth, PocoFieldUi.RowHeight);
         DrawLabelText(typeRect, StockGeneratorCodec.TypeLabel(gen.GetType()));
         // 非原版（其它 Mod 新增）类型：列表窗口里这一行是只读的（不给开本窗口），这里保留提示以防被直接调用。
         if (!StockGeneratorCodec.IsVanilla(gen.GetType()))
-            TooltipHandler.TipRegion(typeRect, "MST.StockGenNonVanilla".Translate().RawText);
+            TooltipHandler.TipRegion(typeRect, "MST.PocoNonVanilla".Translate().RawText);
         y += RowStride;
 
         // 生成器自身字段
         foreach (var field in fields)
         {
-            var labelRect = new Rect(0f, y, LabelWidth, StockGeneratorFieldUi.RowHeight);
-            DrawLabelText(labelRect, StockGeneratorFieldUi.LabelOf(field));
+            var labelRect = new Rect(0f, y, LabelWidth, PocoFieldUi.RowHeight);
+            DrawLabelText(labelRect, PocoFieldUi.LabelOf(field));
             // 悬停标签显示 C# 字段名（= 原版 XML 的元素名），便于对照 Def XML 手工排查
             TooltipHandler.TipRegion(labelRect, field.Name);
 
-            var fieldRect = new Rect(LabelWidth, y, viewRect.width - LabelWidth, StockGeneratorFieldUi.RowHeight);
-            StockGeneratorFieldUi.DrawField(fieldRect, field, gen, this);
+            var fieldRect = new Rect(LabelWidth, y, viewRect.width - LabelWidth, PocoFieldUi.RowHeight);
+            PocoFieldUi.DrawField(fieldRect, field, gen, this);
 
             y += RowStride;
         }

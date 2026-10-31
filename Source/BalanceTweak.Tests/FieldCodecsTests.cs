@@ -56,6 +56,7 @@ public class FieldCodecsTests
     [InlineData(typeof(List<WeatherCommonalityRecord>))]
     [InlineData(typeof(List<TerrainThreshold>))]
     [InlineData(typeof(List<StockGenerator>))]
+    [InlineData(typeof(List<PawnGroupMaker>))]
     public void 精确类型都能查到(Type fieldType)
         => Assert.NotNull(TweakData.FieldCodecs.Find(fieldType));
 
@@ -134,6 +135,7 @@ public class FieldCodecsTests
     [InlineData(typeof(List<StatModifier>))]
     [InlineData(typeof(ThingFilter))]
     [InlineData(typeof(List<StockGenerator>))]
+    [InlineData(typeof(List<PawnGroupMaker>))]
     public void 结构化类型参与解析(Type structured)
         => Assert.NotNull(TweakData.FieldCodecs.Find(structured)!.Resolve);
 

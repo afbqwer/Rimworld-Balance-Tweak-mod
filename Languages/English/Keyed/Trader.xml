@@ -18,8 +18,6 @@
     <MST.AddStockGenerator>Add generator</MST.AddStockGenerator>
     <MST.AddEntry>Add entry</MST.AddEntry>
     <MST.StockGenType>Type</MST.StockGenType>
-    <MST.StockGenNonVanilla>Non-vanilla type (added by another mod): shown read-only; this tool neither reads nor writes its fields</MST.StockGenNonVanilla>
-    <MST.StockGenUnsupported>Editing this field type is not supported; value kept</MST.StockGenUnsupported>
 
     <!-- Stock generator fields (key = vanilla XML element name, easy to map to def XML) -->
     <MST.countRange>CountRange</MST.countRange>
