@@ -101,25 +101,23 @@ public class GeneralSettingsWindow : Window
 
         // 清除失效记录：Def 找不到，条目在读档时就被跳过，游戏数值从未被改过
         curY += DrawCleanupButton(ref curY, inRect.width,
-            TweakDatabase.failedDirectItems,
+            TweakDatabase.failedDirectItems.Select(d => (d, "MST.FailDefNotFound")).ToList(),
             "MST.RemoveFailedDirect".Translate().RawText,
-            "MST.FailDefNotFound",
             TweakUtility.RemoveFailedDirectItems,
             noopNotice);
 
-        // 清除失效记录：父项找不到，同上，只删记录
+        // 清除失效记录：父项找不到 / 父项结构已变，同上，只删记录
+        // 原因逐条给：同一个列表里混着两种成因，用一个键糊过去就会把"父项还在"说成"父项已不存在"。
         curY += DrawCleanupButton(ref curY, inRect.width,
-            TweakDatabase.failedDelayedItems,
+            TweakDatabase.failedDelayedItems.Select(p => (p.data, DelayedReasonKey(p.cause))).ToList(),
             "MST.RemoveFailedDelayed".Translate().RawText,
-            "MST.FailParentNotFound",
             TweakUtility.RemoveFailedDelayedItems,
             noopNotice);
 
         // 放弃修改并回滚：这类条目已部分生效，清理前必须把 Def 写回原值
         curY += DrawCleanupButton(ref curY, inRect.width,
-            TweakDatabase.failedResolveItems,
+            TweakDatabase.failedResolveItems.Select(d => (d, "MST.FailResolveDefs")).ToList(),
             "MST.RemoveFailedResolve".Translate().RawText,
-            "MST.FailResolveDefs",
             TweakUtility.RemoveFailedResolveItems,
             rollbackNotice,
             noticeIsDestructive: true,
@@ -167,14 +165,21 @@ public class GeneralSettingsWindow : Window
         curY += RowHeight;
     }
 
+    /// <summary>延迟项的失败原因 → 文案键。原因在数据侧（<see cref="TweakDatabase.DelayedFailCause"/>），键只放 UI 侧。</summary>
+    private static string DelayedReasonKey(TweakDatabase.DelayedFailCause cause) => cause switch
+    {
+        TweakDatabase.DelayedFailCause.ParentMismatch => "MST.FailParentMismatch",
+        _ => "MST.FailParentNotFound",
+    };
+
     /// <summary>
     /// 清理按钮：直接打开列表窗口，二次确认（含后果说明）在列表窗口中处理。
     /// </summary>
+    /// <param name="items">待清理条目与各自的失败原因键（原因逐条给，见 <see cref="DelayedReasonKey"/>）。</param>
     /// <param name="notice">列表上方的后果说明（已翻译）；见 <see cref="ItemsToRemoveWindow"/>。</param>
     private float DrawCleanupButton(ref float curY, float width,
-        List<TweakData> items,
+        List<(TweakData data, string reason)> items,
         string buttonLabel,
-        string reasonKey,
         System.Action cleanupAction,
         string? notice = null,
         bool noticeIsDestructive = false,
@@ -188,8 +193,7 @@ public class GeneralSettingsWindow : Window
 
         if (Widgets.ButtonText(btnRect, label))
         {
-            var itemList = items.Select(data => (data, reasonKey)).ToList();
-            OpenChildWindow(new ItemsToRemoveWindow(itemList, buttonLabel, cleanupAction,
+            OpenChildWindow(new ItemsToRemoveWindow(items, buttonLabel, cleanupAction,
                 notice, noticeIsDestructive, confirmLabel));
         }
 
@@ -220,8 +224,8 @@ public class GeneralSettingsWindow : Window
                 var itemList = new List<(TweakData, string)>();
                 foreach (var data in TweakDatabase.failedDirectItems)
                     itemList.Add((data, "MST.FailDefNotFound"));
-                foreach (var data in TweakDatabase.failedDelayedItems)
-                    itemList.Add((data, "MST.FailParentNotFound"));
+                foreach (var (data, cause) in TweakDatabase.failedDelayedItems)
+                    itemList.Add((data, DelayedReasonKey(cause)));
                 foreach (var data in TweakDatabase.failedResolveItems)
                     itemList.Add((data, "MST.FailResolveDefs"));
 

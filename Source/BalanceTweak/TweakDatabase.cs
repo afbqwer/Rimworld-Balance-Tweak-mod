@@ -45,7 +45,22 @@ public static partial class TweakDatabase
     // 记录失败的修改项（供 UI 清理使用）
     public static List<TweakData> failedResolveItems = new();
     public static List<TweakData> failedDirectItems = new();
-    public static List<TweakData> failedDelayedItems = new();
+
+    /// <summary>
+    /// 延迟项（子项）失败的原因。两种都是"应用之前就被跳过"，但用户看到的东西不一样：
+    /// 前者是父项本身没了，后者是父项还在、只是它的阶段/招式表变了
+    /// （<see cref="TweakData.SetParentTweak"/> 里 label 对不上就返回 false）。
+    /// 以前两者共用一句「父项已不存在」，对后一种是明着写错 —— 父项明明在表里点得开。
+    /// </summary>
+    public enum DelayedFailCause
+    {
+        /// <summary>找不到父项数据或其 Def。</summary>
+        ParentMissing,
+        /// <summary>父项在，但该子项已不匹配（阶段 / 招式被重排或改名）。</summary>
+        ParentMismatch,
+    }
+
+    public static List<(TweakData data, DelayedFailCause cause)> failedDelayedItems = new();
 
     public static Dictionary<ToolCapacityDef, VerbProperties> allMeleeVerb = [];
     public const string CE = "ceteam.combatextended";
@@ -435,9 +450,14 @@ public static partial class TweakDatabase
         int lazyApplied = 0;
         int parentNotFoundCount = 0;
         int setParentFailedCount = 0;
+        int parentBrokenCount = 0;
 
         foreach (var data in lazy)
         {
+            // 定位父项与"挂到父项上"单独一个 try：这两步里抛的异常说明父项结构与存档不符
+            // （HediffStageData / ToolData 按 index 取 stage/tool，父项的阶段表变短就直接越界，
+            // 越界不会走到 return false 那条路），属于"父项结构已变"，该进清理列表。
+            // Apply 必须放在外面 —— 它抛异常时数据可能已经写了一半，归类成"从未生效"会误导用户。
             try
             {
                 if (!tweakDatas.TryGetValue(data.parentTweakId!.Value, out var pdata))
@@ -446,16 +466,29 @@ public static partial class TweakDatabase
                 if (pdata?.def == null)
                 {
                     parentNotFoundCount++;
-                    failedDelayedItems.Add(data);
+                    failedDelayedItems.Add((data, DelayedFailCause.ParentMissing));
                     continue;
                 }
 
                 if (!data.SetParentTweak(pdata, data.id.settingType, true))
                 {
                     setParentFailedCount++;
-                    failedDelayedItems.Add(data);
+                    failedDelayedItems.Add((data, DelayedFailCause.ParentMismatch));
                     continue;
                 }
+            }
+            catch (Exception e)
+            {
+                // 以前这里只打日志：条目既没应用、也不在任何一个清理列表里 —— 用户看不到、
+                // 也清不掉，只能一直躺在存档里。归进「父项结构已变」至少让它可被清理。
+                parentBrokenCount++;
+                failedDelayedItems.Add((data, DelayedFailCause.ParentMismatch));
+                Log.Error($"[BalanceTweak] 挂载延迟项到父项时出错（按父项结构已变处理），id={data.id}: {e}");
+                continue;
+            }
+
+            try
+            {
                 // 子项（招式等）的 Display 列同样是按需计算，这里不必提前算。
                 data.Apply();
                 lazyApplied++;
@@ -469,15 +502,21 @@ public static partial class TweakDatabase
         if (parentNotFoundCount > 0)
             Log.Message($"[BalanceTweak] 有 {parentNotFoundCount} 个延迟项未找到父项，已跳过。");
         if (setParentFailedCount > 0)
-            Log.Message($"[BalanceTweak] 有 {setParentFailedCount} 个延迟项设置父项失败，已跳过。");
+            Log.Message($"[BalanceTweak] 有 {setParentFailedCount} 个延迟项与父项对不上（阶段/招式被重排或改名），已跳过。");
+        if (parentBrokenCount > 0)
+            Log.Message($"[BalanceTweak] 有 {parentBrokenCount} 个延迟项挂载到父项时抛异常（父项结构变化），已跳过。");
         Mark($"延迟修改项 Apply ({lazyApplied} 已应用)");
 
         // 上游错误优先：目标 Def / 父项都找不到的条目，不再重复计入「内部解析失败」。
         // 同一条数据同时出现在两个清理列表里，计数会翻倍，更麻烦的是会让「点下去会回滚」的说明失真 ——
         // 目标 Def 都没了，根本没有可回滚的对象。一条数据只在一个桶里报，报最上游的那个错。
         // 放在这里是因为三个桶这时才全部填好（延迟项要等父项解析完）。
-        int reclassified = failedResolveItems.RemoveAll(
-            d => failedDirectItems.Contains(d) || failedDelayedItems.Contains(d));
+        // 按 id 比对而不是按实例：两个桶里的引用本来就是同一条 tweakDatas 条目，但 id 是它们的身份定义，
+        // 拿 id 判定才不会因为将来某处存了克隆而悄悄失效。
+        HashSet<TweakID> upstream = new();
+        foreach (var d in failedDirectItems) upstream.Add(d.id);
+        foreach (var (d, _) in failedDelayedItems) upstream.Add(d.id);
+        int reclassified = upstream.Count == 0 ? 0 : failedResolveItems.RemoveAll(d => upstream.Contains(d.id));
         if (reclassified > 0)
             Log.Message($"[BalanceTweak] 有 {reclassified} 条数据的目标 Def/父项已不存在，已归入上游错误，不再计入内部引用解析失败。");
 

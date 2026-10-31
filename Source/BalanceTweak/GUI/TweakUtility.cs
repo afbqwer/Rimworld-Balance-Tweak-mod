@@ -455,6 +455,14 @@ public partial class BalanceTweakSettings
         private static void DropFailedItem(TweakData data, bool rollbackDef)
         {
             var id = data.id;
+
+            // 同键已经换人了：用户在点「清理」之前重新编辑过这一行 —— 编辑会把行上的实例写回同一个键
+            // （StatColumnConfig.SetRawValue 的 tweakDatas.SetOrAdd），清理列表里那份只是悬空引用。
+            // 「父项结构已变」尤其容易撞上：它的 id 就是"当前那一阶段/招式"的 id，用户完全可能先编辑再清理。
+            // 这时什么都不做：删键会把新编辑一起丢，回滚还会把新编辑在 Def 上的改动抹掉。
+            if (tweakDatas.TryGetValue(id, out var current) && !ReferenceEquals(current, data))
+                return;
+
             tweakDatas.Remove(id);
 
             if (TweakDatabase.GetOriginal(id) is not { } original)
@@ -495,10 +503,10 @@ public partial class BalanceTweakSettings
             filterDirty = true;
         }
 
-        /// <summary>移除解析失败的延迟项（未找到父项）</summary>
+        /// <summary>移除解析失败的延迟项（父项不存在 / 父项结构已变）</summary>
         public static void RemoveFailedDelayedItems()
         {
-            foreach (var data in TweakDatabase.failedDelayedItems)
+            foreach (var (data, _) in TweakDatabase.failedDelayedItems)
                 DropFailedItem(data, rollbackDef: false);
             TweakDatabase.failedDelayedItems.Clear();
             filterDirty = true;

@@ -211,9 +211,10 @@
     <MST.FailResolveDefs>Unresolved internal reference</MST.FailResolveDefs>
     <MST.FailDefNotFound>Def no longer exists</MST.FailDefNotFound>
     <MST.FailParentNotFound>Parent no longer exists</MST.FailParentNotFound>
+    <MST.FailParentMismatch>Parent changed (name mismatch)</MST.FailParentMismatch>
     <MST.AllDataWillBeRemoved>Restored to original</MST.AllDataWillBeRemoved>
     <MST.RemoveAllFailed>Clean Up All Failed Items</MST.RemoveAllFailed>
-    <MST.CleanNoticeNoop>These entries never wrote to game data — they were skipped while loading because their Def or parent no longer exists. Cleaning up only deletes the saved records; in-game values are unchanged.</MST.CleanNoticeNoop>
+    <MST.CleanNoticeNoop>These entries were skipped before they could be written to game data — their Def or parent no longer exists, or the parent's stage/tool list has changed. Cleaning up only deletes the saved records; in-game values are unchanged.</MST.CleanNoticeNoop>
     <MST.CleanNoticeRollback>These entries already wrote the fields they could resolve into game data. Cleaning up first restores that data to its original values, then deletes the records — equivalent to discarding the edit. No restart needed.</MST.CleanNoticeRollback>
     <MST.CleanNoticeMixed>{0} total: {1} never wrote to game data (records deleted only), {2} were partially applied (restored to original values, then deleted).</MST.CleanNoticeMixed>
     <MST.CleanNoticeResetAll>All edits will be written back as their original values and every record cleared. This cannot be undone.</MST.CleanNoticeResetAll>

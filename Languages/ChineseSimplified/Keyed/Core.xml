@@ -211,9 +211,10 @@
     <MST.FailResolveDefs>内部引用解析失败</MST.FailResolveDefs>
     <MST.FailDefNotFound>Def 已不存在</MST.FailDefNotFound>
     <MST.FailParentNotFound>父项已不存在</MST.FailParentNotFound>
+    <MST.FailParentMismatch>父项结构已变（名称不符）</MST.FailParentMismatch>
     <MST.AllDataWillBeRemoved>将恢复为原值</MST.AllDataWillBeRemoved>
     <MST.RemoveAllFailed>清理全部错误项</MST.RemoveAllFailed>
-    <MST.CleanNoticeNoop>这些条目从未写入游戏数据 —— 读档时它们就因为找不到对应的 Def 或父项被跳过了。清理只删除存档里的记录，游戏中的数值不会变化。</MST.CleanNoticeNoop>
+    <MST.CleanNoticeNoop>这些条目在写入游戏数据之前就被跳过了 —— 目标 Def 或父项已不存在，或者父项的阶段/招式表已经变了。清理只删除存档里的记录，游戏中的数值不会变化。</MST.CleanNoticeNoop>
     <MST.CleanNoticeRollback>这些条目已把能解析的字段写进了游戏数据。清理会先把对应数据恢复成本次启动时的原始值，再删除记录 —— 等同于放弃这条修改，不需要重启游戏。</MST.CleanNoticeRollback>
     <MST.CleanNoticeMixed>共 {0} 条：{1} 条从未写入游戏数据（只删记录），{2} 条已部分写入（会先恢复成原值再删除）。</MST.CleanNoticeMixed>
     <MST.CleanNoticeResetAll>所有修改都会被写回原始值，并清空修改记录。此操作不可撤销。</MST.CleanNoticeResetAll>
