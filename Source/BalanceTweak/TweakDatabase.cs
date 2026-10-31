@@ -472,6 +472,15 @@ public static partial class TweakDatabase
             Log.Message($"[BalanceTweak] 有 {setParentFailedCount} 个延迟项设置父项失败，已跳过。");
         Mark($"延迟修改项 Apply ({lazyApplied} 已应用)");
 
+        // 上游错误优先：目标 Def / 父项都找不到的条目，不再重复计入「内部解析失败」。
+        // 同一条数据同时出现在两个清理列表里，计数会翻倍，更麻烦的是会让「点下去会回滚」的说明失真 ——
+        // 目标 Def 都没了，根本没有可回滚的对象。一条数据只在一个桶里报，报最上游的那个错。
+        // 放在这里是因为三个桶这时才全部填好（延迟项要等父项解析完）。
+        int reclassified = failedResolveItems.RemoveAll(
+            d => failedDirectItems.Contains(d) || failedDelayedItems.Contains(d));
+        if (reclassified > 0)
+            Log.Message($"[BalanceTweak] 有 {reclassified} 条数据的目标 Def/父项已不存在，已归入上游错误，不再计入内部引用解析失败。");
+
         // 各阶段之和若小于总计，差额就是没被任何阶段认领的开销 —— 显式打出来，免得"账对不上"却无从判断。
         totalSw.Stop();
         double elapsedMs = totalSw.Elapsed.TotalMilliseconds;
