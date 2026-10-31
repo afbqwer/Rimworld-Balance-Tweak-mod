@@ -211,6 +211,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `Trader` | `Trader.xml` |
 | `Xenotype` | `Xenotype.xml` |
 | `ArrivalMode` | `ArrivalMode.xml` |
+| `RaidStrategy` | `RaidStrategy.xml` |
 | `Backstory` | `Backstory.xml` |
 
 > 新增 SettingType 枚举值时，需同时创建对应的 XML 文件，并在 `Core.xml` 中添加通用 UI 相关的 key。

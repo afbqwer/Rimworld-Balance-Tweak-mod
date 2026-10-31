@@ -39,5 +39,6 @@ public partial class BalanceTweakSettings
         Xenotype = 31,
         ArrivalMode = 32,
         Backstory = 33,
+        RaidStrategy = 34,
     }
 }

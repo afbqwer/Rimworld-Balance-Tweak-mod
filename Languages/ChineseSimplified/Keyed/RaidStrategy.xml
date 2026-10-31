@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.RaidStrategy>袭击策略</MST.RaidStrategy>
+    <MST.Immediate>正面进攻</MST.Immediate>
+    <MST.Breaching>破墙</MST.Breaching>
+    <MST.Siege>围攻</MST.Siege>
+    <MST.selectionWeightPerPointsCurve>点数权重</MST.selectionWeightPerPointsCurve>
+    <MST.selectionWeightPerPointsCurveComment>该策略在不同袭击点数下被选中的相对权重。横轴为点数，纵轴为权重。</MST.selectionWeightPerPointsCurveComment>
+    <MST.minPawns>最少人数</MST.minPawns>
+    <MST.minPawnsComment>该策略期望的最少人数。总点数会除以它来压低单个兵种的单价上限，所以调大会让袭击人数更多、精锐更少（原版攻城为 4，其余多为 1）。</MST.minPawnsComment>
+    <MST.pawnsCanBringFood>可带食物</MST.pawnsCanBringFood>
+    <MST.pawnsCanBringFoodComment>该策略下的袭击者是否允许携带食物。友好派系不受此项限制。</MST.pawnsCanBringFoodComment>
+    <MST.raidLootValueFactor>战利品系数</MST.raidLootValueFactor>
+    <MST.raidLootValueFactorComment>该策略生成袭击战利品时的价值倍率，与原版难度的战利品系数相乘。</MST.raidLootValueFactorComment>
+    <MST.arriveModes>抵达方式</MST.arriveModes>
+    <MST.arriveModesComment>该策略允许使用的抵达方式。清空后该策略在任何地图都无法被选中。</MST.arriveModesComment>
+</LanguageData>

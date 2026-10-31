@@ -21,9 +21,9 @@
     <MST.biomeBlacklist>生态黑名单</MST.biomeBlacklist>
     <MST.biomeBlacklistComment>禁止在这些生态类型使用该抵达方式。</MST.biomeBlacklistComment>
     <MST.layerWhitelist>层级白名单</MST.layerWhitelist>
-    <MST.layerWhitelistComment>只允许在这些星球层使用该抵达方式。</MST.layerWhitelistComment>
+    <MST.layerWhitelistComment>只允许在这些星球层使用。</MST.layerWhitelistComment>
     <MST.layerBlacklist>层级黑名单</MST.layerBlacklist>
-    <MST.layerBlacklistComment>禁止在这些星球层使用该抵达方式。</MST.layerBlacklistComment>
+    <MST.layerBlacklistComment>禁止在这些星球层使用。</MST.layerBlacklistComment>
     <MST.textEnemy>敌对文本</MST.textEnemy>
     <MST.textEnemyComment>敌对派系以该方式抵达时，信件中使用的文本。</MST.textEnemyComment>
     <MST.textFriendly>友好文本</MST.textFriendly>

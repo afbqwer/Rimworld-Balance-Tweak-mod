@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.RaidStrategy>Raid Strategy</MST.RaidStrategy>
+    <MST.Immediate>Immediate</MST.Immediate>
+    <MST.Breaching>Breach</MST.Breaching>
+    <MST.Siege>Siege</MST.Siege>
+    <MST.selectionWeightPerPointsCurve>PtsWt</MST.selectionWeightPerPointsCurve>
+    <MST.selectionWeightPerPointsCurveComment>Relative weight of this strategy being chosen at a given raid point value. X axis: points, Y axis: weight.</MST.selectionWeightPerPointsCurveComment>
+    <MST.minPawns>MinPawns</MST.minPawns>
+    <MST.minPawnsComment>Expected minimum raider count. Total points are divided by it to cap the cost of a single pawn, so raising it means more raiders but fewer elites (vanilla siege uses 4, most others 1).</MST.minPawnsComment>
+    <MST.pawnsCanBringFood>CanFood</MST.pawnsCanBringFood>
+    <MST.pawnsCanBringFoodComment>Whether raiders under this strategy may carry food. Friendly factions ignore this.</MST.pawnsCanBringFoodComment>
+    <MST.raidLootValueFactor>LootFact</MST.raidLootValueFactor>
+    <MST.raidLootValueFactorComment>Multiplier applied to raid loot value for this strategy, on top of the difficulty loot factor.</MST.raidLootValueFactorComment>
+    <MST.arriveModes>Arrivals</MST.arriveModes>
+    <MST.arriveModesComment>Arrival modes this strategy may use. Clearing it makes the strategy unselectable on any map.</MST.arriveModesComment>
+</LanguageData>
