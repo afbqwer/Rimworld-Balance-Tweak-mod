@@ -6,7 +6,7 @@ using static BalanceTweak.BalanceTweakSettings;
 using static BalanceTweak.StatColumnConfig;
 namespace BalanceTweak;
 
-[TweakFor(typeof(ThingDef), SettingType.Stuff, Priority = 300, MatchMethod = nameof(DataUtility.MatchStuff))]
+[TweakFor(typeof(ThingDef), SettingType.Stuff, Priority = 200, MatchMethod = nameof(DataUtility.MatchStuff))]
 class StuffData : TweakData<StuffData>
 {
     // 字段定义

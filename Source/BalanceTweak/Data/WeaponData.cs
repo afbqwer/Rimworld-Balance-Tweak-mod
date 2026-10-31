@@ -11,7 +11,7 @@ using static BalanceTweak.StatColumnConfig;
 namespace BalanceTweak;
 
 
-[TweakFor(typeof(ThingDef), SettingType.Weapon, Priority = 200, MatchMethod = nameof(DataUtility.MatchWeapon))]
+[TweakFor(typeof(ThingDef), SettingType.Weapon, Priority = 100, MatchMethod = nameof(DataUtility.MatchWeapon))]
 public class WeaponData : TweakData<WeaponData>, ISubItemHost
 {
     /// <summary>武器招式子项（原 Init() 里 "data is RaceData or WeaponData" 那段硬编码）。</summary>

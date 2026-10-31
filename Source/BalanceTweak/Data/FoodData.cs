@@ -7,7 +7,7 @@ using static BalanceTweak.StatColumnConfig;
 namespace BalanceTweak;
 
 
-[TweakFor(typeof(ThingDef), SettingType.Food, Priority = 100, MatchMethod = nameof(DataUtility.MatchFood))]
+[TweakFor(typeof(ThingDef), SettingType.Food, Priority = 300, MatchMethod = nameof(DataUtility.MatchFood))]
 class FoodData : TweakData<FoodData>
 {
     private static Dictionary<ThingDef, TweakID>? _harvestedByMap;
