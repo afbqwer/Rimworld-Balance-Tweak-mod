@@ -5,23 +5,46 @@ using Verse;
 
 namespace BalanceTweak;
 
+/// <summary>
+/// 清理确认窗：列出将要被丢弃的条目，逐条给出失败原因。
+/// <para>
+/// <b>为什么要有 <c>notice</c> 这一行</b>：三类错误项的语义完全不同 ——
+/// 「Def 已不存在」「父项已不存在」这两类在读档时就被跳过了，从来没写过游戏数据，清理只是删存档里的记录；
+/// 「内部引用解析失败」那一类则已经把它能解析的字段写进了 Def，清理等于放弃这条修改、把数据恢复成原值。
+/// 两者的后果差一个量级，共用一个「移除」按钮而不说明，用户没法判断点下去会不会改数值。
+/// 所以后果说明放在列表上方，确认按钮按场景换文案（<c>confirmLabel</c>）。
+/// </para>
+/// </summary>
 public class ItemsToRemoveWindow : Window
 {
     private readonly List<(TweakData data, string reason)> items;
     private readonly Action onConfirm;
+    private readonly string? notice;
+    private readonly bool noticeIsDestructive;
+    private readonly string? confirmLabel;
     private Vector2 scrollPosition = Vector2.zero;
 
     private const float RowHeight = 28f;
     private const float ButtonBarHeight = 40f;
+    private const float NoticePadding = 8f;
 
+    /// <param name="notice">列表上方的后果说明（已翻译）。空 = 不显示。</param>
+    /// <param name="noticeIsDestructive">说明是否为"会改动游戏数据"，决定文字颜色。</param>
+    /// <param name="confirmLabel">确认按钮文案（已翻译）。空 = 用默认的「确认移除」。</param>
     public ItemsToRemoveWindow(
         List<(TweakData data, string reason)> items,
         string title,
-        Action onConfirm)
+        Action onConfirm,
+        string? notice = null,
+        bool noticeIsDestructive = false,
+        string? confirmLabel = null)
     {
         this.items = items;
-        this.items.SortBy(t=>t.data.id.defName);
+        this.items.SortBy(t => t.data.id.defName);
         this.onConfirm = onConfirm;
+        this.notice = notice;
+        this.noticeIsDestructive = noticeIsDestructive;
+        this.confirmLabel = confirmLabel;
         doCloseX = true;
         forcePause = false;
         draggable = true;
@@ -36,15 +59,38 @@ public class ItemsToRemoveWindow : Window
     {
         Close();
     }
+
     public override void DoWindowContents(Rect inRect)
     {
-        // 列表区域
-        Rect listRect = new(0, 0, inRect.width, inRect.height - ButtonBarHeight - 10f);
+        float top = DrawNotice(inRect);
+
+        // 列表区域（窗口可缩放：拖得比说明还矮时不能给 BeginScrollView 负高度）
+        Rect listRect = new(0, top, inRect.width,
+            Mathf.Max(0f, inRect.height - ButtonBarHeight - 10f - top));
         DrawItemList(listRect);
 
         // 按钮区域
         Rect buttonRect = new(0, inRect.height - ButtonBarHeight, inRect.width, ButtonBarHeight);
         DrawButtons(buttonRect);
+    }
+
+    /// <summary>画后果说明（有内容才占高度），返回列表的起始 y。</summary>
+    private float DrawNotice(Rect inRect)
+    {
+        if (string.IsNullOrEmpty(notice)) return 0f;
+
+        Text.Font = GameFont.Small;
+        float width = inRect.width - NoticePadding * 2f;
+        float height = Text.CalcHeight(notice, width);
+        Rect rect = new(NoticePadding, 0f, width, height);
+
+        Color prev = GUI.color;
+        // 会改数据的那一档用暖色：屏幕上先要看到"这条点下去数值会变"。
+        GUI.color = noticeIsDestructive ? new Color(1f, 0.72f, 0.45f) : new Color(0.72f, 0.72f, 0.72f);
+        Widgets.Label(rect, notice);
+        GUI.color = prev;
+
+        return height + NoticePadding;
     }
 
     private void DrawItemList(Rect rect)
@@ -99,7 +145,7 @@ public class ItemsToRemoveWindow : Window
 
         // 确认按钮
         Rect confirmRect = new(startX, rect.y + 5f, btnWidth, rect.height - 10f);
-        if (Widgets.ButtonText(confirmRect, "MST.ConfirmRemove".Translate().RawText))
+        if (Widgets.ButtonText(confirmRect, confirmLabel ?? "MST.ConfirmRemove".Translate().RawText))
         {
             onConfirm?.Invoke();
             Close();

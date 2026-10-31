@@ -200,17 +200,23 @@
     <MST.NameColWidth>名称列宽度</MST.NameColWidth>
     <MST.DataColWidth>数据列宽度</MST.DataColWidth>
     <MST.DataCleanup>数据清理</MST.DataCleanup>
-    <MST.RemoveFailedDirect>移除解析失败的直接项</MST.RemoveFailedDirect>
-    <MST.RemoveFailedDelayed>移除解析失败的延迟项</MST.RemoveFailedDelayed>
-    <MST.RemoveFailedResolve>移除内部解析失败的数据</MST.RemoveFailedResolve>
-    <MST.RemoveAllData>移除所有数据</MST.RemoveAllData>
+    <MST.RemoveFailedDirect>清除失效记录（Def 缺失）</MST.RemoveFailedDirect>
+    <MST.RemoveFailedDelayed>清除失效记录（父项缺失）</MST.RemoveFailedDelayed>
+    <MST.RemoveFailedResolve>放弃修改并回滚（解析失败）</MST.RemoveFailedResolve>
+    <MST.RemoveAllData>重置所有数据</MST.RemoveAllData>
     <MST.ConfirmRemove>确认移除</MST.ConfirmRemove>
+    <MST.ConfirmDiscard>确认放弃并回滚</MST.ConfirmDiscard>
+    <MST.ConfirmReset>确认重置</MST.ConfirmReset>
     <MST.CancelRemove>取消</MST.CancelRemove>
-    <MST.FailResolveDefs>ResolveDefs 失败</MST.FailResolveDefs>
-    <MST.FailDefNotFound>未找到对应 Def</MST.FailDefNotFound>
-    <MST.FailParentNotFound>未找到父项</MST.FailParentNotFound>
-    <MST.AllDataWillBeRemoved>将被移除</MST.AllDataWillBeRemoved>
-    <MST.RemoveAllFailed>移除所有错误项</MST.RemoveAllFailed>
+    <MST.FailResolveDefs>内部引用解析失败</MST.FailResolveDefs>
+    <MST.FailDefNotFound>Def 已不存在</MST.FailDefNotFound>
+    <MST.FailParentNotFound>父项已不存在</MST.FailParentNotFound>
+    <MST.AllDataWillBeRemoved>将恢复为原值</MST.AllDataWillBeRemoved>
+    <MST.RemoveAllFailed>清理全部错误项</MST.RemoveAllFailed>
+    <MST.CleanNoticeNoop>这些条目从未写入游戏数据 —— 读档时它们就因为找不到对应的 Def 或父项被跳过了。清理只删除存档里的记录，游戏中的数值不会变化。</MST.CleanNoticeNoop>
+    <MST.CleanNoticeRollback>这些条目已把能解析的字段写进了游戏数据。清理会先把对应数据恢复成本次启动时的原始值，再删除记录 —— 等同于放弃这条修改，不需要重启游戏。</MST.CleanNoticeRollback>
+    <MST.CleanNoticeMixed>共 {0} 条：{1} 条从未写入游戏数据（只删记录），{2} 条已部分写入（会先恢复成原值再删除）。</MST.CleanNoticeMixed>
+    <MST.CleanNoticeResetAll>所有修改都会被写回原始值，并清空修改记录。此操作不可撤销。</MST.CleanNoticeResetAll>
     <MST.Copy>复制</MST.Copy>
     <MST.Paste>粘贴</MST.Paste>
     <MST.CopyDefName>复制defName</MST.CopyDefName>

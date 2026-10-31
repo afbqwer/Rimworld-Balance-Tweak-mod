@@ -91,32 +91,42 @@ public class GeneralSettingsWindow : Window
         // === 数据清理 ===
         DrawSectionHeader(ref curY, inRect.width, "MST.DataCleanup".Translate().RawText);
 
-        // 移除解析失败的直接项
+        // 按钮/说明文案按「点下去会不会改数值」分成两档：
+        //   Def 缺失 / 父项缺失 ⇒ 读档时就被跳过，从未写过游戏数据 ⇒ 只是删记录；
+        //   内部引用解析失败 ⇒ 已把能解析的字段写进 Def ⇒ 必须先回滚再删。
+        // 以前四个按钮共用一个「移除」口径，用户没法判断后果（见 ItemsToRemoveWindow 的类注释）。
+        string noopNotice = "MST.CleanNoticeNoop".Translate().RawText;
+        string rollbackNotice = "MST.CleanNoticeRollback".Translate().RawText;
+        string discardLabel = "MST.ConfirmDiscard".Translate().RawText;
+
+        // 清除失效记录：Def 找不到，条目在读档时就被跳过，游戏数值从未被改过
         curY += DrawCleanupButton(ref curY, inRect.width,
             TweakDatabase.failedDirectItems,
             "MST.RemoveFailedDirect".Translate().RawText,
             "MST.FailDefNotFound",
-            TweakUtility.RemoveFailedDirectItems);
+            TweakUtility.RemoveFailedDirectItems,
+            noopNotice);
 
-        // 移除解析失败的延迟项
+        // 清除失效记录：父项找不到，同上，只删记录
         curY += DrawCleanupButton(ref curY, inRect.width,
             TweakDatabase.failedDelayedItems,
             "MST.RemoveFailedDelayed".Translate().RawText,
             "MST.FailParentNotFound",
-            TweakUtility.RemoveFailedDelayedItems);
+            TweakUtility.RemoveFailedDelayedItems,
+            noopNotice);
 
-        // 移除内部解析失败的数据
+        // 放弃修改并回滚：这类条目已部分生效，清理前必须把 Def 写回原值
         curY += DrawCleanupButton(ref curY, inRect.width,
             TweakDatabase.failedResolveItems,
             "MST.RemoveFailedResolve".Translate().RawText,
             "MST.FailResolveDefs",
-            TweakUtility.RemoveFailedResolveItems);
+            TweakUtility.RemoveFailedResolveItems,
+            rollbackNotice,
+            noticeIsDestructive: true,
+            confirmLabel: discardLabel);
 
-        // 移除所有错误项
-        int totalFailed = TweakDatabase.failedDirectItems.Count
-                        + TweakDatabase.failedDelayedItems.Count
-                        + TweakDatabase.failedResolveItems.Count;
-        curY += DrawCleanupButtonForAllFailed(ref curY, inRect.width, totalFailed);
+        // 清理全部错误项：三个列表合并，说明行按实际构成选
+        curY += DrawCleanupButtonForAllFailed(ref curY, inRect.width, noopNotice, rollbackNotice, discardLabel);
 
         // 分隔线
         Rect lineRect = new(10f, curY, inRect.width - 20f, 1f);
@@ -125,7 +135,7 @@ public class GeneralSettingsWindow : Window
         GUI.color = Color.white;
         curY += 10f;
 
-        // 移除所有数据（在列表窗口中二次确认）
+        // 重置所有数据（在列表窗口中二次确认）
         DrawRemoveAllButton(ref curY, inRect.width);
     }
 
@@ -157,12 +167,18 @@ public class GeneralSettingsWindow : Window
         curY += RowHeight;
     }
 
-    /// <summary>直接打开列表窗口，二次确认在列表窗口中处理</summary>
+    /// <summary>
+    /// 清理按钮：直接打开列表窗口，二次确认（含后果说明）在列表窗口中处理。
+    /// </summary>
+    /// <param name="notice">列表上方的后果说明（已翻译）；见 <see cref="ItemsToRemoveWindow"/>。</param>
     private float DrawCleanupButton(ref float curY, float width,
         List<TweakData> items,
         string buttonLabel,
         string reasonKey,
-        System.Action cleanupAction)
+        System.Action cleanupAction,
+        string? notice = null,
+        bool noticeIsDestructive = false,
+        string? confirmLabel = null)
     {
         Rect btnRect = new(10f, curY, width - 20f, ButtonHeight);
         int count = items.Count;
@@ -173,15 +189,27 @@ public class GeneralSettingsWindow : Window
         if (Widgets.ButtonText(btnRect, label))
         {
             var itemList = items.Select(data => (data, reasonKey)).ToList();
-            OpenChildWindow(new ItemsToRemoveWindow(itemList, buttonLabel, cleanupAction));
+            OpenChildWindow(new ItemsToRemoveWindow(itemList, buttonLabel, cleanupAction,
+                notice, noticeIsDestructive, confirmLabel));
         }
 
         return ButtonHeight + 4f;
     }
 
-    /// <summary>合并清理按钮：显示总数，点击时合并三个列表</summary>
-    private float DrawCleanupButtonForAllFailed(ref float curY, float width, int totalFailed)
+    /// <summary>
+    /// 合并清理按钮：显示总数，点击时合并三个列表。
+    /// <para>
+    /// 三个列表的后果不同，所以说明行按实际构成选：全是"没生效过"就说不改数值；
+    /// 混了"已部分生效"就必须说清楚哪几条会被回滚 —— 合并按钮最容易让人以为只是清记录。
+    /// </para>
+    /// </summary>
+    private float DrawCleanupButtonForAllFailed(ref float curY, float width,
+        string noopNotice, string rollbackNotice, string discardLabel)
     {
+        int noopCount = TweakDatabase.failedDirectItems.Count + TweakDatabase.failedDelayedItems.Count;
+        int rollbackCount = TweakDatabase.failedResolveItems.Count;
+        int totalFailed = noopCount + rollbackCount;
+
         Rect btnRect = new(10f, curY, width - 20f, ButtonHeight);
         string label = "MST.RemoveAllFailed".Translate().RawText + $" ({totalFailed})";
 
@@ -196,7 +224,19 @@ public class GeneralSettingsWindow : Window
                     itemList.Add((data, "MST.FailParentNotFound"));
                 foreach (var data in TweakDatabase.failedResolveItems)
                     itemList.Add((data, "MST.FailResolveDefs"));
-                OpenChildWindow(new ItemsToRemoveWindow(itemList, "MST.RemoveAllFailed".Translate().RawText, TweakUtility.RemoveAllFailedItems));
+
+                string notice;
+                if (rollbackCount == 0)
+                    notice = noopNotice;
+                else if (noopCount == 0)
+                    notice = rollbackNotice;
+                else
+                    notice = "MST.CleanNoticeMixed".Translate(totalFailed, noopCount, rollbackCount).RawText;
+
+                OpenChildWindow(new ItemsToRemoveWindow(itemList,
+                    "MST.RemoveAllFailed".Translate().RawText, TweakUtility.RemoveAllFailedItems,
+                    notice, noticeIsDestructive: rollbackCount > 0,
+                    confirmLabel: rollbackCount > 0 ? discardLabel : null));
             }
         }
 
@@ -215,7 +255,12 @@ public class GeneralSettingsWindow : Window
             {
                 var allModifiedItems = tweakDatas.Values.ToList();
                 var itemList = allModifiedItems.Select(data => (data, "MST.AllDataWillBeRemoved")).ToList();
-                OpenChildWindow(new ItemsToRemoveWindow(itemList, "MST.RemoveAllData".Translate().RawText, TweakUtility.ApplyFullReset));
+                // 这条是"把所有修改写回原值"，跟清理错误项是两回事 —— 说明与确认文案都按重置口径给。
+                OpenChildWindow(new ItemsToRemoveWindow(itemList,
+                    "MST.RemoveAllData".Translate().RawText, TweakUtility.ApplyFullReset,
+                    "MST.CleanNoticeResetAll".Translate().RawText,
+                    noticeIsDestructive: true,
+                    confirmLabel: "MST.ConfirmReset".Translate().RawText));
             }
         }
 

@@ -420,17 +420,77 @@ public partial class BalanceTweakSettings
 
         #region 数据清理方法
 
+        /// <summary>
+        /// 丢弃一条错误项，并把它在 Def 与 UI 上的残留一起收拾干净。
+        /// </summary>
+        /// <remarks>
+        /// <b>不能只做 <c>tweakDatas.Remove</c> + 从 <c>cachedData</c> 删 id</b>（旧实现），两条路都会留下死角：
+        /// <list type="number">
+        /// <item>
+        /// <c>cachedData</c> 是本会话唯一的行源（<see cref="UpdateFilters"/> 只遍历它），而它只在
+        /// <see cref="InitAndUpdateData"/> 里建一次、<c>cached</c> 置 true 后**没有**任何重建入口。
+        /// 所以删 id 等于这一行在本局内永久消失 —— 只有重启才能让它回来。
+        /// 而 id 在 <see cref="TweakDatabase.AllOriginals"/> 里真实存在的情形并不罕见：
+        /// 解析失败（<see cref="TweakDatabase.failedResolveItems"/>）的 Def 本身好好的；
+        /// 延迟项里"父项在、但 label 对不上"（<c>HediffStageData.SetParentTweak</c> / <c>ToolData.SetParentTweak</c>
+        /// 返回 false）的那一类，其 id 正是当前那一阶段/招式的 id。
+        /// </item>
+        /// <item>
+        /// 解析失败的条目在 <c>TweakDatabase.Init</c> 的第二轮循环里**照样被 Apply 过**
+        /// （<c>skipIds</c> 那段是注释掉的），Def 上已经有"能解析的字段已落盘"的半成品修改。
+        /// 只删记录、不回滚，这份修改就失去了唯一能还原它的入口（Def 带着改动，表里却没有这一行），
+        /// 直到重启重新读 XML 才回到原版。
+        /// </item>
+        /// </list>
+        /// 因此按"Def 还在不在"分叉：有原始快照 ⇒ 用原始克隆替换该行（与整行重置同一条路径，
+        /// 见 <see cref="RemoveData"/>），<paramref name="rollbackDef"/> 为 true 时再把 Def 一起写回原值；
+        /// 找不到原始快照（Def 真的没了）⇒ 才连行一起删。
+        /// </remarks>
+        /// <param name="rollbackDef">
+        /// 是否需要把 Def 回滚到原始快照。<b>只有 <see cref="TweakDatabase.failedResolveItems"/> 需要</b> ——
+        /// 那类条目在 <c>TweakDatabase.Init</c> 的第二轮循环里被 Apply 过（<c>skipIds</c> 是注释掉的），
+        /// Def 上已有半成品修改。直接项与延迟项都在 Apply 之前就 <c>continue</c> 了，Def 没被动过，
+        /// 对它们写回原值不但多余，还可能盖掉同一 Def 上另一个并行数据实例（<c>Exclusive = false</c>）的改动。
+        /// </param>
+        private static void DropFailedItem(TweakData data, bool rollbackDef)
+        {
+            var id = data.id;
+            tweakDatas.Remove(id);
+
+            if (TweakDatabase.GetOriginal(id) is not { } original)
+            {
+                // Def 已不存在：这一行本来就不在 cachedData 里（行源是 AllOriginals），删了也只是兜底。
+                foreach (var dict in cachedData.Values)
+                    dict.Remove(id);
+                return;
+            }
+
+            var fresh = original.Clone();
+            if (rollbackDef)
+            {
+                try
+                {
+                    // 与 RemoveData 一致：克隆体是"原始快照"，必须整体写回 —— 三态判据会让 Unset 字段一个都不写。
+                    fresh.ApplyAuthoritative();
+                }
+                catch (Exception e)
+                {
+                    // 移除动作不该在这里中断：记录已删，Def 保持现状，至少不留半途状态。
+                    Log.Error($"[BalanceTweak] 移除错误项时回滚 Def 失败，id={id}: {e}");
+                }
+                // 必须在 Def 已被还原之后再算参考值（同 RemoveData）。
+                fresh.EnsureDisplayValues();
+            }
+            cachedData[id.settingType].SetOrAdd(id, fresh);
+            filteredData.Replace(data, fresh);
+            editingControlName = null;
+        }
+
         /// <summary>移除解析失败的直接项（未找到对应 Def）</summary>
         public static void RemoveFailedDirectItems()
         {
             foreach (var data in TweakDatabase.failedDirectItems)
-            {
-                tweakDatas.Remove(data.id);
-                foreach (var dict in cachedData.Values)
-                {
-                    dict.Remove(data.id);
-                }
-            }
+                DropFailedItem(data, rollbackDef: false);
             TweakDatabase.failedDirectItems.Clear();
             filterDirty = true;
         }
@@ -439,13 +499,7 @@ public partial class BalanceTweakSettings
         public static void RemoveFailedDelayedItems()
         {
             foreach (var data in TweakDatabase.failedDelayedItems)
-            {
-                tweakDatas.Remove(data.id);
-                foreach (var dict in cachedData.Values)
-                {
-                    dict.Remove(data.id);
-                }
-            }
+                DropFailedItem(data, rollbackDef: false);
             TweakDatabase.failedDelayedItems.Clear();
             filterDirty = true;
         }
@@ -454,13 +508,7 @@ public partial class BalanceTweakSettings
         public static void RemoveFailedResolveItems()
         {
             foreach (var data in TweakDatabase.failedResolveItems)
-            {
-                tweakDatas.Remove(data.id);
-                foreach (var dict in cachedData.Values)
-                {
-                    dict.Remove(data.id);
-                }
-            }
+                DropFailedItem(data, rollbackDef: true);
             TweakDatabase.failedResolveItems.Clear();
             filterDirty = true;
         }
