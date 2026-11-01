@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -264,6 +265,9 @@ internal static class CombatPower
             if (!def.weaponTags.Any(tags.Contains)) continue;
             if (def.generateAllowChance < 1f) continue;
 
+            // 功能武器不算火力：EMP 的 defaultDamage 是 50，但 harmsHealth=false，按 DPS 算会凭空多出一门重枪。
+            if (!HarmsHealth(def)) continue;
+
             var stuff = DataUtility.GetDefaultStuffFromDef(def);
             if (PawnWeaponGenerator.IsDerpWeapon(def, stuff)) continue;
 
@@ -326,6 +330,32 @@ internal static class CombatPower
             Mathf.Log10(Mathf.Max(range, RefEngageDistance) / RefEngageDistance));
 
         return dps * hit * ApFactor(ap, derived) * rangeFactor;
+    }
+
+    /// <summary>
+    /// 这把武器打得出健康伤害吗？
+    /// <para>
+    /// 功能武器（烟雾 / EMP / 泡沫）占着武器栏，但 <c>harmsHealth = false</c> —— 对血肉单位零伤害。
+    /// 它们的 <c>defaultDamage</c> 是写给别的东西看的：EMP 写了 50，那是拆机械护盾用的数值，
+    /// 按 DPS 口径会被当成"一把 50 伤害的枪"，<b>反过来抬高</b>兵种的攻击值。
+    /// </para>
+    /// <para>
+    /// 所以远程候选里必须把它们剔掉。近战不受影响 —— 它们的枪托/枪身照样能砸人。
+    /// </para>
+    /// </summary>
+    internal static bool HarmsHealth(ThingDef def)
+    {
+        var props = ProjectileOf(def);
+        var damageDef = props?.damageDef ?? def.Verbs.FirstOrDefault()?.beamDamageDef;
+        return damageDef == null || damageDef.harmsHealth;
+    }
+
+    /// <summary>武器对应的弹丸属性；近战武器与无弹丸的返回 null。</summary>
+    private static ProjectileProperties? ProjectileOf(ThingDef def)
+    {
+        if (TweakData.GetLiveData(new TweakID(def.defName, SettingType.Weapon)) is not WeaponData wd)
+            return null;
+        return (TweakData.GetLiveData(wd.Projectile)?.def as ThingDef)?.projectile;
     }
 
     /// <summary>

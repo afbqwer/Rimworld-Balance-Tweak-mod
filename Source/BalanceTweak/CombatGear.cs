@@ -242,6 +242,9 @@ internal static class CombatGear
             if (def.weaponTags.NullOrEmpty()) continue;
             // 与锁定装备那条路一致：永不自然生成的独特变体（ChargeLance_Unique 之类）不参与期望。
             if (def.generateAllowChance < 1f) continue;
+            // 功能武器（烟雾 / EMP / 泡沫）不进远程候选：它们的 defaultDamage 不是直伤
+            // （EMP 写了 50，那是打机械护盾的），按 DPS 口径会被当成一把重枪。
+            if (!CombatPower.HarmsHealth(def)) continue;
 
             float ranged = CombatPower.RangedIntrinsic(def);
             bool hasTools = !def.tools.NullOrEmpty();
