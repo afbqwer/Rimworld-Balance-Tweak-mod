@@ -116,4 +116,6 @@
     <MST.defensePowerComment>等效生命值 = 核心部位血量 ÷ 覆盖率加权减伤 ÷ 体型惩罚。用核心部位而不是总血量：击杀判据是核心被摧毁，器官和手脚的血量不致命。减伤按部位覆盖率加权：每个部位只取覆盖它的最高一件服装（护甲不叠层，里层收益极低），所以背心护住躯干 42.7% 的命中、头盔护住头部 6.0%，而不是整身穿满。</MST.defensePowerComment>
     <MST.overallPower>总体能力</MST.overallPower>
     <MST.overallPowerComment>sqrt(攻击 × 防御)。1v1 胜负 ∝ 输出 × 生存，开方把乘积压回线性量纲。攻击或防御任一为 Null 时本列也为 Null。不含技能、能力、掩体、风筝、爆炸过杀等失真项。</MST.overallPowerComment>
+    <MST.weaponLinksComment>点击查看该兵种抽得到的手持武器：按 weaponTags 取交集、用手持预算 weaponMoney 的上界卡价，材料被 weaponStuffOverride 钉死时按该材料取值。列表按市价升序，点条目跳转到武器页签。这里列的是「可能抽到什么」（原版每只 pawn 现掷一次预算），与攻击列「期望值」的口径不同；烟雾/EMP 这类功能武器也会列出，但攻击列不计它们。</MST.weaponLinksComment>
+    <MST.pawnWeaponLinkTip>市价 {0}</MST.pawnWeaponLinkTip>
 </LanguageData>

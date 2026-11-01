@@ -46,6 +46,17 @@ class PawnKindData : TweakData<PawnKindData>
 
     [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHumanOrMech))]
     public FloatRange? weaponMoney = null;
+
+    /// <summary>
+    /// 手持武器反查入口（只读触发列）。
+    /// <para>
+    /// 兵种身上<b>没有</b>武器这个字段 —— 原版是按 <c>weaponTags</c> + <c>weaponMoney</c> 现抽一把，
+    /// 所以"能拿哪些枪"只能反查：扫全库武器，逐个套 <c>PawnWeaponGenerator</c> 的判定。
+    /// 字段本身不存也不读任何值，窗口打开时由 <see cref="FindWeaponLinks"/> 实时计算。
+    /// </para>
+    /// </summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.PawnWeaponLinks)]
+    public TweakID? weaponLinks = null;
     [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHuman))]
     public FloatRange? apparelMoney = null;
     [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHuman))]
@@ -567,6 +578,64 @@ class PawnKindData : TweakData<PawnKindData>
     /// </para>
     /// </summary>
     public static bool AvailableIfCombatRated(TweakData data) => true;
+
+    /// <summary>
+    /// 该兵种可能抽到的手持武器（供 <see cref="TweakLinksWindow"/> 使用）。
+    /// <para>
+    /// 判定逐条对齐 <c>PawnWeaponGenerator.TryGenerateWeaponFor</c>：
+    /// 本兵种的某个标签出现在武器标签里、价格不超过 <c>weaponMoney.max</c>、
+    /// 材料被 <c>weaponStuffOverride</c> 钉死时这把武器能用上那种材料。
+    /// 预算取<b>上界</b>而不是随机掷一次 —— 这里要的是"最宽的可抽范围"，掷一次只会随机砍掉一半候选。
+    /// </para>
+    /// <para>
+    /// 只在窗口打开时调用一次，故不做缓存：数据可能刚被改过（改了标签 / 预算，这份列表就该立刻变）。
+    /// 市价走 <see cref="CombatPower.MarketValue"/> 的缓存，与攻击列用同一份口径。
+    /// </para>
+    /// </summary>
+    public static List<TweakID> FindWeaponLinks(PawnKindDef kind)
+    {
+        var result = new List<TweakID>();
+        if (kind == null || kind.weaponTags.NullOrEmpty()) return result;
+
+        float budget = kind.weaponMoney.max;
+        var stuffOverride = kind.weaponStuffOverride;
+        var picked = new List<(float price, TweakID id)>();
+
+        foreach (var thing in DefDatabase<ThingDef>.AllDefsListForReading)
+        {
+            // 候选池的构成条件（PawnWeaponGenerator.Reset 里的 IsWeapon）：主手装备 + 有武器标签。
+            if (thing.equipmentType != EquipmentType.Primary) continue;
+            if (thing.weaponTags.NullOrEmpty()) continue;
+            if (!kind.weaponTags.Any(tag => thing.weaponTags.Contains(tag))) continue;
+            // generateAllowChance == 0 表示永不自然生成（独特变体），抽不到，也就不算候选。
+            if (thing.generateAllowChance <= 0f) continue;
+
+            // 材料钉死时，原版只保留"材料正好是它"的那些 pair。这里对应判"这把武器用不用得上这种材料"：
+            // 用不上（没有材料类别、或类别不匹配）就一对都凑不出来，等于抽不到。
+            var cats = stuffOverride?.stuffProps?.categories;
+            if (stuffOverride != null)
+            {
+                if (thing.stuffCategories.NullOrEmpty() || cats == null) continue;
+                if (!thing.stuffCategories.Any(cats.Contains)) continue;
+            }
+
+            // 钉死材料时价格要按那种材料算，否则"预算够不够"判错；这条路径少见，不值得另开一份缓存。
+            float price = stuffOverride != null
+                ? StatWorker_MarketValue.CalculatedBaseMarketValue(thing, stuffOverride)
+                : CombatPower.MarketValue(thing);
+            if (price > budget) continue;
+
+            var id = new TweakID(thing.defName, SettingType.Weapon);
+            // 只列真的在武器页签里有数据行的 —— 否则点了跳不过去，等于给个死链接。
+            if (TweakDatabase.GetOriginal(id) == null) continue;
+            picked.Add((price, id));
+        }
+
+        // 按价格升序：一眼能看出这个兵种的装备档次，也方便对照 weaponMoney。
+        picked.Sort((a, b) => a.price.CompareTo(b.price));
+        for (int i = 0; i < picked.Count; i++) result.Add(picked[i].id);
+        return result;
+    }
 
     public override List<string> TypeStrings => typeStrings;
     private static readonly List<string> typeStrings = typeof(RaceType).GetEnumNames().Select(s => "MST." + s).ToList();

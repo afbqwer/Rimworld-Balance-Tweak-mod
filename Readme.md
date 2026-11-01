@@ -250,6 +250,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `RaceLinks` | `TweakID?` | 只读关联入口：点击列出反向关联的种族数据（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
 | `BodyLinks` | `TweakID?` | 只读关联入口：点击列出反向关联的身体数据（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
 | `WeaponLinks` | `TweakID?` | 只读关联入口：点击列出使用该投射物的武器（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
+| `PawnWeaponLinks` | `TweakID?` | 只读关联入口：点击列出该兵种抽得到的手持武器（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
 | `DefSelector` | `T?` where T : Def | Def 选择器（弹出搜索窗口） |
 | `StatModList` | `List<StatModifier>?` | StatModifier 列表编辑器 |
 | `CapModList` | `List<PawnCapacityModifier>?` | PawnCapacityModifier 列表编辑器 |
@@ -707,6 +708,7 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | `RaceLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
 | `BodyLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
 | `WeaponLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
+| `PawnWeaponLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
 | `Curve` | 弹出窗口 | `CurveEditorWindow` | `SimpleCurve?` |
 | `Flags` | 弹出窗口 | `FlagsEditorWindow` | `Nullable<Enum>`（带 `[Flags]`） |
 | `StatModList` | 弹出窗口 | `StatModListEditorWindow` | `List<StatModifier>?` |
@@ -757,6 +759,7 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | `RaceLinks` | `BodyPartData` | 身体含该部位的种族 | `BodyPartData.FindRaceLinks` |
 | `BodyLinks` | `BodyPartData` | 部位树含该部位的 `BodyDef` | `BodyPartData.FindBodyLinks` |
 | `WeaponLinks` | `ProjectileData` | 发射该投射物的武器 | `ProjectileData.FindWeaponLinks` |
+| `PawnWeaponLinks` | `PawnKindData` | 该兵种能抽到的手持武器（标签 ∩ 预算） | `PawnKindData.FindWeaponLinks` |
 
 四条不变式：
 
@@ -768,6 +771,12 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
   `StatColumnConfig.GetString` 的按钮文字分支 → `BalanceTweakGUI.DrawDisplayCell` 的点击分发 →
   `IsPaintableColumn` 的排除列表；再补 `MST.XxxLinks`（`Core.xml`，列样式枚举标签）与
   字段名对应的 `MST.{字段名}Comment` tooltip。
+
+> 兵种这条反查的是**规则**而不是字段：`PawnKindDef` 上没有"武器"这个数据，武器是生成时按
+> `weaponTags` + `weaponMoney` 现抽的（`PawnWeaponGenerator.TryGenerateWeaponFor`），所以"能拿哪些枪"
+> 只能扫全库套同一套判定（标签交集 / 预算上界 / `generateAllowChance > 0` / `weaponStuffOverride` 的材料可兼容）。
+> 两条口径差别要记住：预算取**上界**（"最宽可抽范围"），攻击列取**期望**（5 档采样）；功能武器
+> （烟雾 / EMP）会列出来，但攻击列按 `harmsHealth` 把它们排除。
 
 > 弹丸这条是例外中的例外：`ProjectileData.RangedWeapon` 字段名保留旧名（改名会让旧档的 XML 节点失配），
 > 但值已不再由武器端写入 —— 武器端只在 `ProjectileData` 的**共享索引**（运行期，不序列化）里登记自己，

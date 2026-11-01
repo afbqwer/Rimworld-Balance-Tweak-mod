@@ -46,6 +46,7 @@
     <MST.FactionCurveList>FactionCurves</MST.FactionCurveList>
     <MST.PawnGroupMakerList>PawnGroupMkrs</MST.PawnGroupMakerList>
     <MST.UnlockList>UnlockList</MST.UnlockList>
+    <MST.PawnWeaponLinks>PawnKindWpns</MST.PawnWeaponLinks>
     <MST.SkillRangeList>SkillRanges</MST.SkillRangeList>
     <MST.BackstoryTraitList>BstoryTraits</MST.BackstoryTraitList>
     <MST.PossessionList>Possessions</MST.PossessionList>

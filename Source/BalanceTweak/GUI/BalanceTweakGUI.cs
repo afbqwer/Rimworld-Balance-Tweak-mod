@@ -1562,9 +1562,11 @@ public partial class BalanceTweakSettings : ModSettings
                     Event.current.Use();
                 }
             }
-            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.UnlockList)
+            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList)
             {
                 // 只读的关联入口：点击打开链接列表窗口（关联列 / 研究解锁列共用同一套绘制）。
+                // 兵种侧对「没有武器标签」的行返回空串 —— 那种行没有可列的候选，画个空按钮只会误导。
+                if (sourceText.NullOrEmpty()) return;
                 Text.Font = GameFont.Tiny;
                 Widgets.DrawButtonGraphic(cellRect);
                 Widgets.Label(cellRect, sourceText);
@@ -1583,6 +1585,11 @@ public partial class BalanceTweakSettings : ModSettings
                     {
                         if (data.def is ThingDef projectile)
                             Find.WindowStack.Add(new TweakLinksWindow(data, "MST.weaponLinks", ProjectileData.FindWeaponLinks(projectile)));
+                    }
+                    else if (config.columnType == ColumnStyle.PawnWeaponLinks)
+                    {
+                        if (data.def is PawnKindDef kind)
+                            Find.WindowStack.Add(new TweakLinksWindow(data, "MST.weaponLinks", PawnKindData.FindWeaponLinks(kind), GetPawnWeaponTip));
                     }
                     else if (config.columnType == ColumnStyle.BodyLinks)
                     {
@@ -1661,6 +1668,16 @@ public partial class BalanceTweakSettings : ModSettings
 
     #region 辅助方法
 
+    /// <summary>
+    /// 兵种武器链接行的 tooltip：市价。列表按市价升序，这个数用来和 <c>weaponMoney</c> 对照 ——
+    /// 也正是预算判定用的那个数（<see cref="CombatPower.MarketValue"/> 的口径）。
+    /// </summary>
+    private static string? GetPawnWeaponTip(TweakData.TweakID id)
+    {
+        if (TweakData.GetData(id)?.def is not ThingDef weapon) return null;
+        return "MST.pawnWeaponLinkTip".Translate(CombatPower.MarketValue(weapon).ToString("F0")).RawText;
+    }
+
     /// <summary>种族链接行的 tooltip：显示该种族使用的身体。</summary>
     private static string? GetRaceBodyTip(TweakData.TweakID id)
     {
@@ -1694,7 +1711,7 @@ public partial class BalanceTweakSettings : ModSettings
         // 「显示结果值」是批量运算的预览态，该列此刻的编辑本身就被 CheckAndApply 禁用了
         if (showChanged && ReferenceEquals(selectedCol, config)) return false;
         // 关联跳转列没有「值」可复制，GetCopyData / TryPasteData 都不支持
-        if (config.columnType is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks) return false;
+        if (config.columnType is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks) return false;
         return true;
     }
 

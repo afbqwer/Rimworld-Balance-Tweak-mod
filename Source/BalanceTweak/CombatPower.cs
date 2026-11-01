@@ -617,7 +617,8 @@ internal static class CombatPower
     private static float StatOrDefault(ThingDef def, StatDef stat)
         => stat == null ? 1f : def.GetStatValueAbstract(stat);
 
-    private static float MarketValue(ThingDef def)
+    /// <summary>武器 / 服装市价（按 defName 缓存）。<c>FindWeaponLinks</c> 也用它，两边口径必须一致。</summary>
+    internal static float MarketValue(ThingDef def)
     {
         if (marketValueCache.TryGetValue(def.defName, out var cached)) return cached;
         float value = DataUtility.GetDefaultMarketValue(def);
