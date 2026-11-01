@@ -85,6 +85,15 @@ internal static class CombatPower
     /// <summary>种族 defName → 空手招式价值。每行都要用，而它只取决于种族。</summary>
     private static readonly Dictionary<string, float> unarmedValueCache = [];
 
+    /// <summary>
+    /// 种族 defName → 该种族下的全部兵种。种族页的攻防列要按兵种求，而它每行都要用。
+    /// <para>
+    /// 不做失效：race → pawnkind 的归属在运行期不会变（兵种行的 <c>Race</c> 是只读链接，不能改），
+    /// 和 <c>ThingDef</c> 一样是加载期定格的静态关系。
+    /// </para>
+    /// </summary>
+    private static Dictionary<string, List<PawnKindDef>>? kindsByRace;
+
     #endregion
 
     #region 入口
@@ -107,6 +116,52 @@ internal static class CombatPower
         // 防御要遍历几十个部位，按 (种族, 装备画像) 缓存：同一种族的人形兵种通常共享画像。
         float defense = CombatGear.CachedDefense(race.defName, gear, () => Defense(race, gear.Armor));
 
+        (data.attackPower, data.defensePower, data.overallPower) = Scale(data, attack, defense);
+    }
+
+    /// <summary>
+    /// 填 <see cref="RaceData"/> 的三个派生列 —— 取该种族<b>所有</b>关联兵种的平均值。
+    /// <para>
+    /// 为什么能这么算：装备（<c>weaponTags</c> / <c>weaponMoney</c>）、技能、预算全都挂在 pawnkind 上，
+    /// race 自己只有身体与基础数值，所以种族的战力只能是"它的兵种有多强"。
+    /// 非人形种族通常一对一（灰熊、座狼、巨兽都是），多出来的多是 Anomaly 的蹒跚者变体；
+    /// 取算术平均而不是最高值 —— 种族的强度不该由最强那个变体代表。
+    /// </para>
+    /// <para>
+    /// <b>人形不算</b>：Humanlike 一个 race 挂一百多个兵种（原版 Human 就有 125 个），
+    /// 平均出来的数既不代表新兵也不代表甲士。列本身在 Humanlike 分组下不可用
+    /// （<c>AvailableIfNotHumanlike</c>），这里再挡一道是因为 <c>EnsureDisplayValues</c> 对每一行都会跑。
+    /// </para>
+    /// </summary>
+    public static void FillRace(RaceData data)
+    {
+        data.attackPower = null;
+        data.defensePower = null;
+        data.overallPower = null;
+
+        if (data.def is not ThingDef race || race.race == null) return;
+        if (data.propType == (int)RaceData.RaceType.Humanlike) return;
+
+        var kinds = KindsOf(race);
+        if (kinds.Count == 0) return;
+
+        float attackSum = 0f;
+        float defenseSum = 0f;
+        for (int i = 0; i < kinds.Count; i++)
+        {
+            var kind = kinds[i];
+            Gear gear = CombatGear.Of(kind);
+            attackSum += Offense(kind, race, gear);
+            defenseSum += CombatGear.CachedDefense(race.defName, gear, () => Defense(race, gear.Armor));
+        }
+
+        (data.attackPower, data.defensePower, data.overallPower) =
+            Scale(data, attackSum / kinds.Count, defenseSum / kinds.Count);
+    }
+
+    /// <summary>刻度归一：原始 (攻击, 防御) → 锚单位 = 100 的读数。两条入口共用，避免刻度漂移。</summary>
+    private static (float? attack, float? defense, float? overall) Scale(TweakData data, float attack, float defense)
+    {
         EnsureAnchors();
         bool mechScale = UsesMechAnchor(data);
         float anchorAttack = mechScale ? mechAnchorAttack : animalAnchorAttack;
@@ -114,13 +169,33 @@ internal static class CombatPower
 
         // 0 表示"这条不存在"，不是"这条很弱"：没有物理招式的实体（靠 abilities 输出）攻击就是 0，
         // 显示成 0.00 会被误读成"弱得离谱"。写成 null 让列显示 Null。
-        data.attackPower = anchorAttack > 0f && attack > 0f ? attack / anchorAttack * 100f : null;
-        data.defensePower = anchorDefense > 0f ? defense / anchorDefense * 100f : 0f;
+        float? atk = anchorAttack > 0f && attack > 0f ? attack / anchorAttack * 100f : null;
+        float? def = anchorDefense > 0f ? defense / anchorDefense * 100f : 0f;
 
         // 任一轴缺席，开方就没有意义 —— 一起写成 null。
-        data.overallPower = data.attackPower is float atk && data.defensePower is float def && def > 0f
-            ? Mathf.Sqrt(atk * def)
-            : null;
+        float? total = atk is float a && def is float d && d > 0f ? Mathf.Sqrt(a * d) : null;
+        return (atk, def, total);
+    }
+
+    /// <summary>某个种族下的全部兵种。只建一次索引（race → pawnkind 的归属在运行期不变）。</summary>
+    internal static List<PawnKindDef> KindsOf(ThingDef race)
+    {
+        if (race == null) return [];
+
+        if (kindsByRace == null)
+        {
+            kindsByRace = [];
+            foreach (var kind in DefDatabase<PawnKindDef>.AllDefsListForReading)
+            {
+                var kindRace = kind.race;
+                if (kindRace == null) continue;
+                if (!kindsByRace.TryGetValue(kindRace.defName, out var list))
+                    kindsByRace[kindRace.defName] = list = [];
+                list.Add(kind);
+            }
+        }
+
+        return kindsByRace.TryGetValue(race.defName, out var found) ? found : [];
     }
 
     /// <summary>
@@ -166,7 +241,14 @@ internal static class CombatPower
         }
 
         if (!combat) return;
-        if (!cachedData.TryGetValue(SettingType.PawnKind, out var rows)) return;
+        // 种族页的三个列是从兵种算出来的，同一批依赖，一起置脏。
+        InvalidateRows(SettingType.PawnKind);
+        InvalidateRows(SettingType.Race);
+    }
+
+    private static void InvalidateRows(SettingType type)
+    {
+        if (!cachedData.TryGetValue(type, out var rows)) return;
         foreach (var data in rows.Values) data.InvalidateDisplayValues();
     }
 
@@ -194,6 +276,7 @@ internal static class CombatPower
         meleeValueCache.Clear();
         rangedValueCache.Clear();
         unarmedValueCache.Clear();
+        kindsByRace = null;
         CombatGear.Clear();
     }
 

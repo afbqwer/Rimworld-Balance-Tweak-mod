@@ -111,11 +111,11 @@
 
     <!-- Combat power reference (read-only derived columns) -->
     <MST.attackPower>Attack</MST.attackPower>
-    <MST.attackPowerComment>Higher of melee and ranged, plus mounted turrets. Melee = max(unarmed tools, equipped weapon) x hit chance x AP factor x 0.75 engage penalty (closing in means not shooting). Ranged = expected weapon DPS x weapon accuracy x shooter accuracy x AP factor x range factor. Humanlikes get the expected value of a whole loadout from weaponTags/weaponMoney and apparelTags/apparelMoney; shooting/melee skill comes from the kind (level 5 when undeclared). Animals and mechanoids have no skill tracker and use the no-skill baseline. Turrets are a separate firing channel that can fire alongside melee/ranged, so they are added. Scale: the anchor unit = 100 (Thrumbo for animals/insects; Centipede blaster for mechanoids, humanlikes, entities and others). Units with no physical attack (e.g. ability-based entities) show Null instead of 0.</MST.attackPowerComment>
+    <MST.attackPowerComment>Higher of melee and ranged, plus mounted turrets. Scale: a reference unit of the same category = 100. On the race tab this means the average of its pawn kinds.</MST.attackPowerComment>
     <MST.defensePower>Defense</MST.defensePower>
-    <MST.defensePowerComment>Effective HP = core body part HP / coverage-weighted armor mitigation / body-size penalty. Core part is used instead of total HP because death is judged by the core part being destroyed; organ and limb HP is not lethal. Mitigation is weighted by each part hit coverage, and each part only takes the single highest armor covering it (armor does not stack - inner layers add almost nothing), so a vest covers the 42.7% of hits that land on the torso and a helmet covers the 6.0% that land on the head.</MST.defensePowerComment>
+    <MST.defensePowerComment>Effective hit points: the core body part's HP, adjusted for armor. Scale: a reference unit of the same category = 100.</MST.defensePowerComment>
     <MST.overallPower>Overall</MST.overallPower>
-    <MST.overallPowerComment>sqrt(Attack x Defense). A 1v1 outcome scales with damage output x survivability; the square root keeps the product linear. Null when either axis is Null. Skills, abilities, cover, kiting and explosion overkill are not modeled.</MST.overallPowerComment>
-    <MST.weaponLinksComment>Click to list the held weapons this kind can roll: weapon tags must intersect, price must fit the upper bound of weaponMoney, and the material follows weaponStuffOverride when set. Sorted by market value; click an entry to jump to the weapon tab. This is "what it may roll" (vanilla rolls a budget per pawn), not the expectation used by the attack column. Utility weapons such as smoke/EMP are listed here but ignored by the attack column.</MST.weaponLinksComment>
+    <MST.overallPowerComment>Overall strength: attack times defense, square-rooted.</MST.overallPowerComment>
+    <MST.weaponLinksComment>Click to list the weapons this unit may carry; click an entry to jump.</MST.weaponLinksComment>
     <MST.pawnWeaponLinkTip>Market value {0}</MST.pawnWeaponLinkTip>
 </LanguageData>

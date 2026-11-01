@@ -111,11 +111,11 @@
 
     <!-- 战斗力参考值（只读派生列） -->
     <MST.attackPower>攻击能力</MST.attackPower>
-    <MST.attackPowerComment>近战与远程取高值，再加上炮塔。近战 = max(空手招式, 装备武器招式) × 命中率 × 穿透因子 × 0.75 接敌损耗（贴上去的几秒没在输出）；远程 = 武器期望 DPS × 武器命中 × 射手精度 × 穿透因子 × 射程系数。人形兵种按 weaponTags/weaponMoney 与 apparelTags/apparelMoney 求整套装备的期望值，射击/近战技能取兵种声明值（未声明按 5 级），动物与机械没有技能追踪器，走无技能基线。炮塔是独立射击通道，能和近战/远程同时开火，所以相加。以锚单位 = 100 为刻度：动物/昆虫锚巨兽，机械/人形/实体/其它锚蜈蚣·爆裂。没有物理招式的单位（如靠能力的实体）显示 Null，而不是 0。</MST.attackPowerComment>
+    <MST.attackPowerComment>近战与远程取高值，再加上自带的炮塔。刻度：同类参照单位 = 100。种族页为名下各兵种的平均值。</MST.attackPowerComment>
     <MST.defensePower>防御能力</MST.defensePower>
-    <MST.defensePowerComment>等效生命值 = 核心部位血量 ÷ 覆盖率加权减伤 ÷ 体型惩罚。用核心部位而不是总血量：击杀判据是核心被摧毁，器官和手脚的血量不致命。减伤按部位覆盖率加权：每个部位只取覆盖它的最高一件服装（护甲不叠层，里层收益极低），所以背心护住躯干 42.7% 的命中、头盔护住头部 6.0%，而不是整身穿满。</MST.defensePowerComment>
+    <MST.defensePowerComment>等效生命值：核心部位的血量，按护甲折算。刻度：同类参照单位 = 100。</MST.defensePowerComment>
     <MST.overallPower>总体能力</MST.overallPower>
-    <MST.overallPowerComment>sqrt(攻击 × 防御)。1v1 胜负 ∝ 输出 × 生存，开方把乘积压回线性量纲。攻击或防御任一为 Null 时本列也为 Null。不含技能、能力、掩体、风筝、爆炸过杀等失真项。</MST.overallPowerComment>
-    <MST.weaponLinksComment>点击查看该兵种抽得到的手持武器：按 weaponTags 取交集、用手持预算 weaponMoney 的上界卡价，材料被 weaponStuffOverride 钉死时按该材料取值。列表按市价升序，点条目跳转到武器页签。这里列的是「可能抽到什么」（原版每只 pawn 现掷一次预算），与攻击列「期望值」的口径不同；烟雾/EMP 这类功能武器也会列出，但攻击列不计它们。</MST.weaponLinksComment>
+    <MST.overallPowerComment>攻击与防御的综合：两者相乘后开方。</MST.overallPowerComment>
+    <MST.weaponLinksComment>点击查看该单位可能携带的武器，点条目可跳转。</MST.weaponLinksComment>
     <MST.pawnWeaponLinkTip>市价 {0}</MST.pawnWeaponLinkTip>
 </LanguageData>

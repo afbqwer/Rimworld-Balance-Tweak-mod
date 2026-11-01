@@ -55,8 +55,13 @@ class PawnKindData : TweakData<PawnKindData>
     /// 字段本身不存也不读任何值，窗口打开时由 <see cref="FindWeaponLinks"/> 实时计算。
     /// </para>
     /// </summary>
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.PawnWeaponLinks)]
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.PawnWeaponLinks,
+        Hidden = nameof(HiddenIfNoWeaponTags))]
     public TweakID? weaponLinks = null;
+
+    /// <summary>没有武器标签的兵种（动物、昆虫、徒手机械）没有可列的候选武器 → 该格留白。</summary>
+    public static bool HiddenIfNoWeaponTags(TweakData data)
+        => data.def is PawnKindDef kind && kind.weaponTags.NullOrEmpty();
     [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHuman))]
     public FloatRange? apparelMoney = null;
     [TweakField(Style = ColumnStyle.Range, Available = nameof(AvailableIfHuman))]
@@ -593,48 +598,86 @@ class PawnKindData : TweakData<PawnKindData>
     /// </para>
     /// </summary>
     public static List<TweakID> FindWeaponLinks(PawnKindDef kind)
+        => kind == null ? [] : CollectWeaponLinks([kind]);
+
+    /// <summary>
+    /// 一组兵种能抽到的全部手持武器（去重，按市价升序）。种族页用它把所有关联兵种并起来。
+    /// <para>
+    /// 只扫<b>一遍</b>武器库，每把武器问"这组兵种里有没有人抽得到它" —— 逐兵种各扫一遍在 Human
+    /// （125 个兵种）上会是十几万次重复遍历。判定看 <see cref="Takes"/>。
+    /// </para>
+    /// </summary>
+    internal static List<TweakID> CollectWeaponLinks(List<PawnKindDef> kinds)
     {
         var result = new List<TweakID>();
-        if (kind == null || kind.weaponTags.NullOrEmpty()) return result;
+        if (kinds.NullOrEmpty()) return result;
 
-        float budget = kind.weaponMoney.max;
-        var stuffOverride = kind.weaponStuffOverride;
         var picked = new List<(float price, TweakID id)>();
-
         foreach (var thing in DefDatabase<ThingDef>.AllDefsListForReading)
         {
             // 候选池的构成条件（PawnWeaponGenerator.Reset 里的 IsWeapon）：主手装备 + 有武器标签。
             if (thing.equipmentType != EquipmentType.Primary) continue;
             if (thing.weaponTags.NullOrEmpty()) continue;
-            if (!kind.weaponTags.Any(tag => thing.weaponTags.Contains(tag))) continue;
             // generateAllowChance == 0 表示永不自然生成（独特变体），抽不到，也就不算候选。
             if (thing.generateAllowChance <= 0f) continue;
 
-            // 材料钉死时，原版只保留"材料正好是它"的那些 pair。这里对应判"这把武器用不用得上这种材料"：
-            // 用不上（没有材料类别、或类别不匹配）就一对都凑不出来，等于抽不到。
-            var cats = stuffOverride?.stuffProps?.categories;
-            if (stuffOverride != null)
+            PawnKindDef? owner = null;
+            for (int i = 0; i < kinds.Count; i++)
             {
-                if (thing.stuffCategories.NullOrEmpty() || cats == null) continue;
-                if (!thing.stuffCategories.Any(cats.Contains)) continue;
+                if (!Takes(kinds[i], thing)) continue;
+                owner = kinds[i];
+                break;
             }
-
-            // 钉死材料时价格要按那种材料算，否则"预算够不够"判错；这条路径少见，不值得另开一份缓存。
-            float price = stuffOverride != null
-                ? StatWorker_MarketValue.CalculatedBaseMarketValue(thing, stuffOverride)
-                : CombatPower.MarketValue(thing);
-            if (price > budget) continue;
+            if (owner == null) continue;
 
             var id = new TweakID(thing.defName, SettingType.Weapon);
             // 只列真的在武器页签里有数据行的 —— 否则点了跳不过去，等于给个死链接。
             if (TweakDatabase.GetOriginal(id) == null) continue;
-            picked.Add((price, id));
+            picked.Add((PriceOf(owner, thing), id));
         }
 
         // 按价格升序：一眼能看出这个兵种的装备档次，也方便对照 weaponMoney。
         picked.Sort((a, b) => a.price.CompareTo(b.price));
         for (int i = 0; i < picked.Count; i++) result.Add(picked[i].id);
         return result;
+    }
+
+    /// <summary>
+    /// 这个兵种抽不抽得到这把武器。逐条对齐 <c>PawnWeaponGenerator.TryGenerateWeaponFor</c>：
+    /// 标签交集、材料锁定时能用上那种材料、价格不超过 <c>weaponMoney.max</c>。
+    /// <para>
+    /// 预算取<b>上界</b>而不是随机掷一次 —— 这里要的是"最宽的可抽范围"，掷一次只会随机砍掉一半候选。
+    /// </para>
+    /// </summary>
+    private static bool Takes(PawnKindDef kind, ThingDef thing)
+    {
+        var tags = kind.weaponTags;
+        if (tags.NullOrEmpty()) return false;
+        if (!tags.Any(tag => thing.weaponTags.Contains(tag))) return false;
+
+        // 材料钉死时，原版只保留"材料正好是它"的那些 pair。这里对应判"这把武器用不用得上这种材料"：
+        // 用不上（没有材料类别、或类别不匹配）就一对都凑不出来，等于抽不到。
+        var stuff = kind.weaponStuffOverride;
+        if (stuff != null)
+        {
+            var cats = stuff.stuffProps?.categories;
+            if (cats == null || thing.stuffCategories.NullOrEmpty()) return false;
+            if (!thing.stuffCategories.Any(cats.Contains)) return false;
+        }
+
+        return PriceOf(kind, thing) <= kind.weaponMoney.max;
+    }
+
+    /// <summary>
+    /// 这把武器在该兵种手上的市价。材料被钉死时要按那种材料算，否则"预算够不够"会判错；
+    /// 这条路径少见，不值得另开一份缓存。
+    /// </summary>
+    private static float PriceOf(PawnKindDef kind, ThingDef thing)
+    {
+        var stuff = kind.weaponStuffOverride;
+        return stuff != null
+            ? StatWorker_MarketValue.CalculatedBaseMarketValue(thing, stuff)
+            : CombatPower.MarketValue(thing);
     }
 
     public override List<string> TypeStrings => typeStrings;

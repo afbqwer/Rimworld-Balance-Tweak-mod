@@ -29,6 +29,9 @@ public class StatColumnConfig
     public delegate bool IsAvailable(TweakData data);
     public delegate float GetAbstract(TweakData data);
     public readonly IsAvailable? isAvailableDelegate;
+
+    /// <summary>按行留白谓词；null = 该列每行都显示。见 <see cref="StatFieldMeta.HiddenChecker"/>。</summary>
+    public readonly IsAvailable? isHiddenDelegate;
     public readonly GetAbstract? getAbstract;
 
     // 数据定义
@@ -96,7 +99,8 @@ public class StatColumnConfig
         bool isSPStat,
         Type? enumType,
         FieldInfo? optionsListField,
-        bool isMirror = false
+        bool isMirror = false,
+        IsAvailable? isHidden = null
         )
     {
         this.field = field;
@@ -107,6 +111,7 @@ public class StatColumnConfig
         this.isSPStat = isSPStat;
         isListStyle = IsListStyle(style);
         this.isAvailableDelegate = isAvailable;
+        this.isHiddenDelegate = isHidden;
         this.getAbstract = getAbstract;
         this.EnumType = enumType;
         this.OptionsListField = optionsListField;
@@ -914,9 +919,15 @@ public class StatColumnConfig
             return false;
         }
     }
+    /// <summary>这一格在本行是否留白。列级不适用走 <see cref="isAvailableDelegate"/>，行级走这个。</summary>
+    public bool IsHidden(TweakData data) => isHiddenDelegate?.Invoke(data) ?? false;
+
     // 用于数据的显示
     public string GetString(TweakData data)
     {
+        // 整格留白：不适用 ≠ 算不出来。Null 的语义是"没有值"，这里连值都不该出现。
+        if (IsHidden(data)) return "";
+
         if (columnType == ColumnStyle.Link)
         {
             var d = GetData((TweakID?)GetRawValue(data));
@@ -940,9 +951,8 @@ public class StatColumnConfig
         }
         if (columnType == ColumnStyle.PawnWeaponLinks)
         {
-            // 兵种侧同样只返回静态文字：候选武器要扫全库并算市价，绝不能放进绘制阶段。
-            // 唯一读的是本行自己的 def（判断有没有武器标签），不碰别的行。
-            if (data.def is PawnKindDef kind && kind.weaponTags.NullOrEmpty()) return "";
+            // 只返回静态文字：候选武器要扫全库并算市价，绝不能放进绘制阶段。
+            // "这一行有没有可列的武器"由字段上的 Hidden 谓词负责（每行只读自己的 def）。
             return "MST.weaponLinks".Translate().RawText;
         }
         if (cachedFieldType == FieldType.FloatRange)

@@ -28,6 +28,40 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Link)]
     public TweakID? bodyDef = null;
 
+    /// <summary>
+    /// 该种族抽得到的手持武器（只读触发列）。
+    /// <para>
+    /// race 上同样<b>没有</b>武器这个字段 —— 装备按 <c>weaponTags</c> + <c>weaponMoney</c> 挂在 pawnkind 上，
+    /// 所以这里反查的是"它名下所有兵种的并集"。窗口打开时由 <see cref="FindWeaponLinks"/> 实时计算，
+    /// 字段本身不存也不读任何值。
+    /// </para>
+    /// </summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.PawnWeaponLinks,
+        Hidden = nameof(HiddenIfNoKindWeaponTags))]
+    public TweakID? weaponLinks = null;
+
+    /// <summary>名下兵种全都没有武器标签（动物、昆虫、无枪机械）→ 该格留白。</summary>
+    public static bool HiddenIfNoKindWeaponTags(TweakData data)
+        => data.def is ThingDef race && !CombatPower.KindsOf(race).Any(k => !k.weaponTags.NullOrEmpty());
+
+    // === 战斗力参考值（只读派生列，见 CombatPower.FillRace） ===
+    // race 自己只有身体与基础数值，装备 / 技能 / 预算都在 pawnkind 上，所以这三列 = 名下兵种的平均值。
+    // 人形不适用（一个 race 挂上百个兵种，平均值没有意义）—— 走 Available，和 Wildness 之于 Animal 同一个模式：
+    // 种族页本来就按 propType 分组显示（filterPropType），选到 Humanlike 时这三列整列不出现。
+    [TweakField(DataType = ColumnDataType.Display, Available = nameof(AvailableIfNotHumanlike))]
+    public float? attackPower = null;
+    [TweakField(DataType = ColumnDataType.Display, Available = nameof(AvailableIfNotHumanlike))]
+    public float? defensePower = null;
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Int, Available = nameof(AvailableIfNotHumanlike))]
+    public float? overallPower = null;
+
+    /// <summary>战斗力三列的可用性：人形不适用（种族页按 propType 分组，选到 Humanlike 时整列隐藏）。</summary>
+    public static bool AvailableIfNotHumanlike(TweakData data) => data.propType switch
+    {
+        (int)RaceType.Humanlike => false,
+        _ => true,
+    };
+
     [TweakField(StatDef = "ArmorRating_Sharp")]
     public float? sharpArmor = null;
     [TweakField(StatDef = "ArmorRating_Blunt")]
@@ -199,6 +233,8 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         displayValuesEnsured = true;
         MeleeDPS = (float?)GetDPS(this);
         corepartHP = (float?)GetCorepartHP(this);
+        // 攻防三列走兵种的平均值（CombatPower 内部有装备画像与防御缓存，多行共享时几乎不花钱）。
+        CombatPower.FillRace(this);
     }
 
     public override void SetDef(Def def, BalanceTweakSettings.SettingType type, bool tweaked = false)
@@ -422,6 +458,17 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     }
     public override List<string> TypeStrings => typeStrings;
     private static readonly List<string> typeStrings = typeof(RaceType).GetEnumNames().Select(s => "MST." + s).ToList();
+
+    /// <summary>
+    /// 该种族抽得到的手持武器（供 <see cref="TweakLinksWindow"/> 使用）：名下所有兵种候选的并集。
+    /// <para>
+    /// 判定逻辑与兵种页的 <see cref="PawnKindData.FindWeaponLinks"/> 是同一份实现
+    /// （<see cref="PawnKindData.CollectWeaponLinks"/>）—— 两边各写一套，迟早会给出不同的列表。
+    /// 只在窗口打开时调用一次，故不缓存。
+    /// </para>
+    /// </summary>
+    public static List<TweakID> FindWeaponLinks(ThingDef race)
+        => race?.race == null ? [] : PawnKindData.CollectWeaponLinks(CombatPower.KindsOf(race));
 
     public override int GetPropType()
     {

@@ -230,6 +230,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `DataType` | `Field`（可编辑）或 `Display`（只读） | `ColumnDataType.Display` |
 | `IsMirror` | 值属于**另一行**（镜像列），不参与 `EqualsData` 的"已恢复原样"判定；见 §7.8 | `true` |
 | `Available` | 显示条件方法名 | `"AvailableMethodName"` |
+| `Hidden` | **按行**留白条件方法名（返回 true = 该格不显示）。与 `Available` 的区别：`Available` 是列级（整列出现与否，按第一行求值一次），`Hidden` 只影响单行，且语义是"不适用"而不是"没有值" | `"HiddenIfHumanlike"` |
 | `GetAbstract` | 获取抽象值方法名 | `"GetAbstractMethodName"` |
 | `OptionsList` | 静态列表字段名（动态选项） | `"ResearchTabDefs"` |
 
@@ -748,6 +749,23 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | `DefSelector` | 弹出窗口 | `DefSelectionWindow` | `T? where T : Def` |
 ---
 
+## 附1.5. 种族页的战斗力三列
+
+`RaceData` 上也有 `attackPower` / `defensePower` / `overallPower`（列标题与兵种页共用同一批 key），
+但**来源不同**：`race` 自己只有身体与基础数值，装备、技能、预算全挂在 pawnkind 上，所以这三列是
+**该种族名下所有兵种的平均值**（`CombatPower.FillRace`）。
+
+- **Humanlike 下整列不出现**（`Available = nameof(AvailableIfNotHumanlike)`）：一个 race 挂一百多个兵种，
+  平均既不代表新兵也不代表甲士。种族页本来就按 `propType` 分组显示（`filterPropType` 选择器），
+  所以和 `Wildness` 之于 Animal 是同一个模式 —— 列级不适用用 `Available`，不要用 `Hidden`。
+- **取算术平均而不是最高值**：非人形种族通常一对一，多出来的多是 Anomaly 的蹒跚者变体，
+  种族的强度不该由最强那个变体代表。
+- **刻度与缓存全部复用**：`Scale` 是两条入口共用的刻度归一，`CombatGear.CachedDefense` / 装备画像
+  都按 `(种族, 画像)` 命中，所以种族页多算一行几乎不额外花钱。
+- **失效一起走**：`CombatPower.Invalidate` 现在同时置脏 `PawnKind` 与 `Race` 两个页签。
+- **race → pawnkind 的归属建一次索引**（`CombatPower.KindsOf`）不失效：兵种行的 `Race` 是只读链接，
+  这个关系在运行期不会变。
+
 ## 附2. 关联列（RaceLinks / BodyLinks / WeaponLinks）
 
 反向关联（"谁在用我"）没法用 `Link` 列表达：`Link` 指向的是**字段里存的那个 TweakID**，一对一；
@@ -760,6 +778,7 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | `BodyLinks` | `BodyPartData` | 部位树含该部位的 `BodyDef` | `BodyPartData.FindBodyLinks` |
 | `WeaponLinks` | `ProjectileData` | 发射该投射物的武器 | `ProjectileData.FindWeaponLinks` |
 | `PawnWeaponLinks` | `PawnKindData` | 该兵种能抽到的手持武器（标签 ∩ 预算） | `PawnKindData.FindWeaponLinks` |
+| `PawnWeaponLinks` | `RaceData` | 该种族名下**所有**兵种能抽到的手持武器（并集） | `RaceData.FindWeaponLinks` |
 
 四条不变式：
 
@@ -777,6 +796,9 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 > 只能扫全库套同一套判定（标签交集 / 预算上界 / `generateAllowChance > 0` / `weaponStuffOverride` 的材料可兼容）。
 > 两条口径差别要记住：预算取**上界**（"最宽可抽范围"），攻击列取**期望**（5 档采样）；功能武器
 > （烟雾 / EMP）会列出来，但攻击列按 `harmsHealth` 把它们排除。
+
+> 种族页是兵种页的同名并集，两边**共用一份实现**（`PawnKindData.CollectWeaponLinks`）：扫一遍武器库，
+> 每把武器问"这组兵种里有没有人抽得到它"。逐兵种各扫一遍在 `Human`（125 个兵种）上会变成十几万次重复遍历。
 
 > 弹丸这条是例外中的例外：`ProjectileData.RangedWeapon` 字段名保留旧名（改名会让旧档的 XML 节点失配），
 > 但值已不再由武器端写入 —— 武器端只在 `ProjectileData` 的**共享索引**（运行期，不序列化）里登记自己，

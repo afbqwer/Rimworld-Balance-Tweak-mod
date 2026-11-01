@@ -43,6 +43,10 @@ public class StatFieldMeta
     public FieldInfo? OptionsListField { get; }
 
     public IsAvailable? AvailableChecker { get; }
+
+    /// <summary>按行判定留白的谓词（<see cref="TweakFieldAttribute.Hidden"/>），null 表示永远显示。</summary>
+    public IsAvailable? HiddenChecker { get; }
+
     public GetAbstract? GetAbstractMethod { get; }
 
     public delegate object? DefaultValueGetter(TweakData data);
@@ -78,6 +82,15 @@ public class StatFieldMeta
                 AvailableChecker = (IsAvailable)Delegate.CreateDelegate(typeof(IsAvailable), method);
             else
                 Log.Error($"[BalanceTweak]无法找到{attr.Available}");
+        }
+        if (!string.IsNullOrEmpty(attr.Hidden))
+        {
+            var method = type.GetMethod(attr.Hidden, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                ?? typeof(DataUtility).GetMethod(attr.Hidden, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (method != null)
+                HiddenChecker = (IsAvailable)Delegate.CreateDelegate(typeof(IsAvailable), method);
+            else
+                Log.Error($"[BalanceTweak]无法找到{attr.Hidden}");
         }
         if (!string.IsNullOrEmpty(attr.GetAbstract))
         {
@@ -153,8 +166,17 @@ public class TweakFieldAttribute : Attribute
     /// </para>
     /// </summary>
     public bool IsMirror { get; set; }
-    /// <summary>检测是否显示时调用的方法名称</summary>
+    /// <summary>检测是否显示时调用的方法名称（决定<b>整列</b>是否出现，按页签第一行求值一次）</summary>
     public string? Available { get; set; }
+    /// <summary>
+    /// 按<b>行</b>判定这一格要不要留白的方法名称（返回 true = 不显示）。
+    /// <para>
+    /// 和 <see cref="Available"/> 的区别：那个是列级（整列存在与否），这个只影响单行。
+    /// 典型用法是"这一类行不适用" —— 例如人形种族的战斗力列，留白而不是显示 Null，
+    /// 因为 Null 的语义是"算不出来"，而不是"这一列跟它无关"。
+    /// </para>
+    /// </summary>
+    public string? Hidden { get; set; }
     /// <summary>数据被改变时调用的方法名称（已弃用，改为在 Apply 中触发）</summary>
     [Obsolete("OnChange 已弃用，请将逻辑移至 Apply 方法中直接调用。")]
     public string? OnChange { get; set; }

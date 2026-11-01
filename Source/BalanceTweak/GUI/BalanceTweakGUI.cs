@@ -1534,6 +1534,10 @@ public partial class BalanceTweakSettings : ModSettings
     /// <param name="cellBack">整格矩形。绘制用内缩版在方法内部算，但悬浮触发区用的就是它</param>
     private static void DrawDisplayCell(Rect cellBack, StatColumnConfig config, TweakData data, string? sourceText)
     {
+        // 这一行不适用 → 整格留白。文本已由 GetString 置空，但 Bool / Link 等样式不看文本，
+        // 所以必须在这里也挡一道，否则会画出一个没有任何含义的复选框 / 按钮。
+        if (config.IsHidden(data)) return;
+
         sourceText ??= "";
         Rect cellRect = cellBack.ContractedBy(2f, 0f);
         if (config.columnType == ColumnStyle.Bool)
@@ -1590,6 +1594,9 @@ public partial class BalanceTweakSettings : ModSettings
                     {
                         if (data.def is PawnKindDef kind)
                             Find.WindowStack.Add(new TweakLinksWindow(data, "MST.weaponLinks", PawnKindData.FindWeaponLinks(kind), GetPawnWeaponTip));
+                        // 种族页：与兵种页同名列，取名下所有兵种的并集。
+                        else if (data is RaceData && data.def is ThingDef race)
+                            Find.WindowStack.Add(new TweakLinksWindow(data, "MST.weaponLinks", RaceData.FindWeaponLinks(race), GetPawnWeaponTip));
                     }
                     else if (config.columnType == ColumnStyle.BodyLinks)
                     {
