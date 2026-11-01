@@ -510,6 +510,8 @@ public class StatColumnConfig
         // 参考列是"按当前 def 现算"的派生值，而 Apply 刚把 def 改成新值、把显示缓存置脏。
         // 这里是"值变了"的唯一落地点（编辑 / 重置 / 粘贴 / 批量 / 各编辑窗口都走它），
         // 在这里补算一次，重置和批量之后的行也能当帧显示新参考值。
+        // 先清别的行：战斗力参考值跨行依赖武器 / 种族 / 招式，改完这一行别的行也得重算。
+        CombatPower.Invalidate(data);
         data.EnsureDisplayValues();
     }
 
@@ -561,6 +563,7 @@ public class StatColumnConfig
             ResearchUnlocks.Commit(data.def, affectedPrereqs);
         }
         // 参考列是"按当前 def 现算"的派生值，Apply 已把缓存置脏，这里补算一次当帧就能看到新值。
+        CombatPower.Invalidate(data);
         data.EnsureDisplayValues();
     }
 

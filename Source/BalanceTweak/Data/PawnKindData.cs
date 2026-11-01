@@ -18,6 +18,17 @@ class PawnKindData : TweakData<PawnKindData>
 
     [TweakField(Style = ColumnStyle.Int)]
     public float? combatPower = null;
+
+    // === 战斗力参考值（只读派生列，见 CombatPower.cs / Docs/CombatPower_Design.md） ===
+    // 攻击 = 近战 / 远程取高值；防御 = 核心血量 ÷ 护甲减伤 ÷ 体型；总体 = sqrt(攻击 × 防御)。
+    // 三者都以「该类别的锚单位 = 100」为刻度：动物/昆虫锚巨兽，机械锚蜈蚣·爆裂。
+    [TweakField(DataType = ColumnDataType.Display, Available = nameof(AvailableIfCombatRated))]
+    public float? attackPower = null;
+    [TweakField(DataType = ColumnDataType.Display, Available = nameof(AvailableIfCombatRated))]
+    public float? defensePower = null;
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Int, Available = nameof(AvailableIfCombatRated))]
+    public float? overallPower = null;
+
     [TweakField(Style = ColumnStyle.Bool)]
     public bool? collidesWithPawns = null;
     [TweakField(Style = ColumnStyle.Bool, Available = nameof(AvailableIfMech))]
@@ -492,6 +503,22 @@ class PawnKindData : TweakData<PawnKindData>
         ApplyV<bool>(nameof(ignoreIdeoApparelColors), v => def.ignoreIdeoApparelColors = v);
         ApplyV<bool>(nameof(trader), v => def.trader = v);
         ApplyV<bool>(nameof(generateInitialNonFamilyRelations), v => def.generateInitialNonFamilyRelations = v);
+
+        // 参考列按"当前 def 现算"：改完种族 / 招式 / 武器装备后，下一次读就该是新值。
+        displayValuesEnsured = false;
+    }
+
+    /// <summary>
+    /// 战斗力参考值三列。计算推迟到 UI 第一次要它们时 —— 那时 def 已经是 Apply 之后的值。
+    /// 详见 <see cref="CombatPower"/>。
+    /// </summary>
+    public override void EnsureDisplayValues()
+    {
+        if (displayValuesEnsured) return;
+        // def 还没绑定就先别算，也别置标志：那一刻算出来的 null 会被永久冻住。
+        if (def == null) return;
+        displayValuesEnsured = true;
+        CombatPower.Fill(this);
     }
 
     public static bool AvailableIfHuman(TweakData data) => data.propType switch
@@ -524,6 +551,13 @@ class PawnKindData : TweakData<PawnKindData>
         (int)RaceType.Animal => true,
         (int)RaceType.Insect => true,
         _ => false,
+    };
+
+    /// <summary>战斗力参考值：除 Humanlike 外全覆盖（动物 / 昆虫 / 机械 / 实体 / 其它）。</summary>
+    public static bool AvailableIfCombatRated(TweakData data) => data.propType switch
+    {
+        (int)RaceType.Humanlike => false,
+        _ => true,
     };
 
     public override List<string> TypeStrings => typeStrings;

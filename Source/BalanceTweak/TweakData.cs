@@ -374,6 +374,12 @@ public abstract partial class TweakData : IExposable
     /// </summary>
     protected bool displayValuesEnsured;
 
+    /// <summary>
+    /// 把显示缓存置脏。跨行依赖（武器 / 种族 / 招式 → 兵种的战斗力参考值）改完后，
+    /// 依赖它的那些行需要重算；由 <see cref="CombatPower.Invalidate"/> 统一广播。
+    /// </summary>
+    internal void InvalidateDisplayValues() => displayValuesEnsured = false;
+
     public virtual TweakData Clone()
     {
         var clone = (TweakData)MemberwiseClone();
@@ -530,6 +536,8 @@ public abstract partial class TweakData : IExposable
             forceWriteAll = prevWriteAll;
             forceResetStats = false;
             forceWriteFields = null;
+            // 整行 / 完全重置同样会让依赖本行的派生列失效（兵种战斗力依赖武器、种族、招式）。
+            CombatPower.Invalidate(this);
         }
     }
     public abstract bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false);

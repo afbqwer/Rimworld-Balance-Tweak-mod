@@ -108,4 +108,12 @@
     <MST.ignoreIdeoApparelColors>Any Color</MST.ignoreIdeoApparelColors>
     <MST.trader>Is Trader</MST.trader>
     <MST.generateInitialNonFamilyRelations>Relations</MST.generateInitialNonFamilyRelations>
+
+    <!-- Combat power reference (read-only derived columns) -->
+    <MST.attackPower>Attack</MST.attackPower>
+    <MST.attackPowerComment>Higher of melee and ranged. Melee = weighted tool DPS x hit chance x armor-penetration factor x 0.75 engage penalty (closing in means not shooting). Ranged = expected weapon DPS x weapon accuracy x shooter accuracy (0.96^12 cells) x AP factor x range factor. Scale: the anchor unit = 100 (Thrumbo for animals/insects; Centipede blaster for mechanoids, entities and others).</MST.attackPowerComment>
+    <MST.defensePower>Defense</MST.defensePower>
+    <MST.defensePowerComment>Effective HP = core body part HP / expected armor mitigation / body-size penalty. Core part is used instead of total HP because death is judged by the core part being destroyed; organ and limb HP is not lethal.</MST.defensePowerComment>
+    <MST.overallPower>Overall</MST.overallPower>
+    <MST.overallPowerComment>sqrt(Attack x Defense). A 1v1 outcome scales with damage output x survivability; the square root keeps the product linear. Skills, abilities, cover, kiting and explosion overkill are not modeled.</MST.overallPowerComment>
 </LanguageData>
