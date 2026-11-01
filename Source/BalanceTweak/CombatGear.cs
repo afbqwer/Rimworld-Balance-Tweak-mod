@@ -110,8 +110,9 @@ internal static class CombatGear
         public ThingDef def = null!;
         public float price;
         public float weight;
-        public float ranged;
-        /// <summary>近战招式价值；-1 表示还没算（惰性，避免建池时就对每种材料各跑一次）。</summary>
+        /// <summary>远程固有价值；-1 表示还没算（惰性，见 <see cref="RangedValueOf"/>）。</summary>
+        public float ranged = -1f;
+        /// <summary>近战招式价值；-1 表示还没算。</summary>
         public float melee = -1f;
         public ThingDef? stuff;
         public int id;
@@ -132,6 +133,12 @@ internal static class CombatGear
     /// <summary>预算取样档数：<c>RandomInRange</c> 是每次生成独立掷的，取几档平均比取 max 更贴近原版。</summary>
     private const int BudgetSamples = 5;
 
+    /// <summary>
+    /// 每个武器标签桶最多保留多少条候选。mod 包一个标签挂上千把枪时，这是把"打开页签"
+    /// 从几百毫秒压回几十毫秒的唯一开关。数值越小越省，但池子的价格分布会开始失真。
+    /// </summary>
+    private const int MaxCandidatesPerTag = 32;
+
     private static readonly Dictionary<string, Gear> gearCache = [];
 
     private static List<WeaponEntry>? weaponEntries;
@@ -146,16 +153,32 @@ internal static class CombatGear
     /// <summary>防御值按 (种族, 画像) 缓存 —— 一次要遍历几十个部位，不该每行都跑。</summary>
     private static readonly Dictionary<string, float> defenseCache = [];
 
-    public static void Clear()
+    /// <summary>池子变了（武器/服装/材料/价格）→ 池、画像、防御全部作废。</summary>
+    public static void ClearPools()
     {
-        gearCache.Clear();
-        defenseCache.Clear();
         weaponEntries = null;
         weaponByTag = null;
         apparelEntries = null;
         apparelByTag = null;
         apparelByDef = null;
         tmpSeen.Clear();
+        gearCache.Clear();
+        defenseCache.Clear();
+    }
+
+    /// <summary>只有兵种的标签 / 预算变了：画像与防御作废，池子留着（重建池是最贵的一步）。</summary>
+    public static void ClearGear()
+    {
+        gearCache.Clear();
+        defenseCache.Clear();
+    }
+
+    /// <summary>只有种族数值 / 身体结构变了：装备画像照旧，只丢防御。</summary>
+    public static void ClearDefense() => defenseCache.Clear();
+
+    public static void Clear()
+    {
+        ClearPools();
     }
 
     public static float CachedDefense(string raceName, Gear gear, System.Func<float> compute)
@@ -240,16 +263,10 @@ internal static class CombatGear
             var def = pair.thing;
             if (def == null || def.equipmentType != EquipmentType.Primary) continue;
             if (def.weaponTags.NullOrEmpty()) continue;
-            // 与锁定装备那条路一致：永不自然生成的独特变体（ChargeLance_Unique 之类）不参与期望。
+            // 永不自然生成的独特变体（ChargeLance_Unique 之类）不参与期望。
             if (def.generateAllowChance < 1f) continue;
-            // 功能武器（烟雾 / EMP / 泡沫）不进远程候选：它们的 defaultDamage 不是直伤
-            // （EMP 写了 50，那是打机械护盾的），按 DPS 口径会被当成一把重枪。
-            if (!CombatPower.HarmsHealth(def)) continue;
 
-            float ranged = CombatPower.RangedIntrinsic(def);
-            bool hasTools = !def.tools.NullOrEmpty();
-            if (ranged <= 0f && !hasTools) continue;
-
+            // 这里只碰 pair 上的字段，不求任何 stat —— 求值推迟到真的被问到的时候。
             var entry = new WeaponEntry
             {
                 def = def,
@@ -257,7 +274,6 @@ internal static class CombatGear
                 price = pair.Price,
                 // 原版 PawnWeaponGenerator.GetCommonality = Commonality × Price，价格本身就是权重的一部分。
                 weight = Mathf.Max(pair.Commonality, 0.0001f) * Mathf.Max(pair.Price, 0.0001f),
-                ranged = ranged,
                 id = weaponEntries.Count,
             };
             weaponEntries.Add(entry);
@@ -265,6 +281,44 @@ internal static class CombatGear
             for (int t = 0; t < def.weaponTags.Count; t++)
                 Bucket(weaponByTag, def.weaponTags[t]).Add(entry.id);
         }
+
+        CapBuckets(weaponByTag, e => weaponEntries[e].price);
+    }
+
+    /// <summary>
+    /// 每个标签桶最多保留 <see cref="MaxCandidatesPerTag"/> 条，按价格**分层**抽取（等距取秩）。
+    /// <para>
+    /// 这是这份估计值唯一一处"为了性能牺牲精度"的取舍：一个现代 mod 包单个标签能挂上千把枪，
+    /// 逐条求 DPS 会把打开兵种页签变成一次几百毫秒的卡顿。等距抽取保留了价格分布的形状，
+    /// 对"按价格加权的期望"偏差在几个百分点量级 —— 远小于模型本身的误差。
+    /// </para>
+    /// </summary>
+    private static void CapBuckets(Dictionary<string, List<int>> index, System.Func<int, float> sortKey)
+    {
+        var tags = new List<string>(index.Keys);
+        for (int i = 0; i < tags.Count; i++)
+        {
+            var list = index[tags[i]];
+            if (list.Count <= MaxCandidatesPerTag) continue;
+
+            list.Sort((a, b) => sortKey(a).CompareTo(sortKey(b)));
+
+            var kept = new List<int>(MaxCandidatesPerTag);
+            for (int k = 0; k < MaxCandidatesPerTag; k++)
+            {
+                int at = Mathf.RoundToInt(k * (list.Count - 1) / (float)(MaxCandidatesPerTag - 1));
+                kept.Add(list[at]);
+            }
+            index[tags[i]] = kept;
+        }
+    }
+
+    /// <summary>远程固有价值惰性求值。0 = 打不出健康伤害（功能武器），查询时直接跳过。</summary>
+    private static float RangedValueOf(WeaponEntry entry)
+    {
+        if (entry.ranged < 0f)
+            entry.ranged = CombatPower.HarmsHealth(entry.def) ? CombatPower.RangedIntrinsic(entry.def) : 0f;
+        return entry.ranged;
     }
 
     /// <summary>
@@ -290,12 +344,14 @@ internal static class CombatGear
             for (int c = 0; c < candidates.Count; c++)
             {
                 var e = weaponEntries[candidates[c]];
-                if (e.ranged <= 0f) continue;
                 if (e.price > budget) continue;
                 if (kind.weaponStuffOverride != null && e.stuff != kind.weaponStuffOverride) continue;
 
+                float value = RangedValueOf(e);
+                if (value <= 0f) continue;
+
                 sumWeight += e.weight;
-                sumWeighted += e.weight * e.ranged;
+                sumWeighted += e.weight * value;
             }
             if (sumWeight <= 0f) continue;
             total += sumWeighted / sumWeight;

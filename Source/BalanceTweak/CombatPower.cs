@@ -82,6 +82,9 @@ internal static class CombatPower
     /// <summary>defName → 武器固有远程价值。候选池里同一个 def 会因材料不同重复出现。</summary>
     private static readonly Dictionary<string, float> rangedValueCache = [];
 
+    /// <summary>种族 defName → 空手招式价值。每行都要用，而它只取决于种族。</summary>
+    private static readonly Dictionary<string, float> unarmedValueCache = [];
+
     #endregion
 
     #region 入口
@@ -135,16 +138,32 @@ internal static class CombatPower
     {
         var type = changed.id.settingType;
 
-        // 建筑和杂项不改兵种，但会改市价 / 炮塔节奏，所以装备池要跟着清；行本身不必置脏。
-        bool combat = AffectsCombat(type);
-        if (!combat && type is not (SettingType.Building or SettingType.Misc)) return;
+        // 装备数值变了（价格 / 护甲 / 材料 / 炮塔节奏 / 招式）→ 重建池。这是最贵的一步，只给它们。
+        bool equipChanged = type is SettingType.Weapon or SettingType.Apparel or SettingType.Stuff
+            or SettingType.MeleeTool or SettingType.Misc or SettingType.Building;
 
-        // 所有派生缓存一起清：市价、武器招式、武器固有价值、装备画像、防御。
-        // 它们互相依赖（改一件服装 → 画像变 → 防御变），分开清迟早漏一个。
-        marketValueCache.Clear();
-        meleeValueCache.Clear();
-        rangedValueCache.Clear();
-        CombatGear.Clear();
+        bool combat = AffectsCombat(type);
+        if (!equipChanged && !combat) return;
+
+        if (equipChanged)
+        {
+            marketValueCache.Clear();
+            meleeValueCache.Clear();
+            rangedValueCache.Clear();
+            unarmedValueCache.Clear();
+            CombatGear.ClearPools();      // 池 + 画像 + 防御
+        }
+        else if (type == SettingType.PawnKind)
+        {
+            // 只改了兵种的标签 / 预算：签名变了，画像与防御重算即可，池子不用碰。
+            CombatGear.ClearGear();
+        }
+        else if (type is SettingType.Race or SettingType.BodyDef)
+        {
+            // 只改了种族数值 / 身体结构：装备画像照旧，防御与空手招式重算。
+            CombatGear.ClearDefense();
+            unarmedValueCache.Clear();
+        }
 
         if (!combat) return;
         if (!cachedData.TryGetValue(SettingType.PawnKind, out var rows)) return;
@@ -174,6 +193,7 @@ internal static class CombatPower
         marketValueCache.Clear();
         meleeValueCache.Clear();
         rangedValueCache.Clear();
+        unarmedValueCache.Clear();
         CombatGear.Clear();
     }
 
@@ -209,12 +229,16 @@ internal static class CombatPower
     private static float UnarmedMelee(ThingDef race)
     {
         if (race.tools.NullOrEmpty()) return 0f;
+        if (unarmedValueCache.TryGetValue(race.defName, out float cached)) return cached;
 
+        // CalculateExpectedDPS 每次要建十几个临时对象，而结果只取决于种族 —— 按种族缓存。
         float damageFactor = StatOrDefault(race, StatDefOf.MeleeDamageFactor);
         float cooldownFactor = StatOrDefault(race, StatDefOf.MeleeCooldownFactor);
 
-        return DataUtility.CalculateExpectedDPS(
+        float value = DataUtility.CalculateExpectedDPS(
             race.tools, null, damageFactor, cooldownFactor, weaponMode: true);
+        unarmedValueCache[race.defName] = value;
+        return value;
     }
 
     /// <summary>
