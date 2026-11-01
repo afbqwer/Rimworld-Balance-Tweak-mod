@@ -141,9 +141,35 @@ class ResearchData : TweakData<ResearchData>
         ApplyD<ResearchTabDef>(nameof(researchTab), v => def.tab = v);
         ApplyV<float>(nameof(knowledgeCost), v => def.knowledgeCost = v);
         ApplyD<KnowledgeCategoryDef>(nameof(knowledgeCategory), v => def.knowledgeCategory = v);
-        ApplyV<int>(nameof(techprintCount), v => def.techprintCount = v);
+        ApplyV<int>(nameof(techprintCount), v =>
+        {
+            // 图纸物品是**加载期**按 techprintCount 生成的（ThingDefGenerator_Techprints.ImpliedTechprintDefs，
+            // 读的是 XML 原值），而我们的写入永远晚于那一刻（StaticConstructorOnStartup 之后）——
+            // 所以 0 → N 不会补生成物品，只会造出一个"要求 N 张图纸、世界里没有图纸"的项目：
+            // TechprintRequirementMet 恒 false（该研究永久不可完成），且 Techprint 为 null 会让
+            // GetTip() 的 Techprint.LabelCap 与 TechprintUtility 的 p.Techprint.BaseMarketValue 直接 NRE。
+            // 这里拒绝写入并把字段退回原值，让 UI 与 def 保持一致。
+            // 判据看"物品是否真的存在"而不是 def 当前值：重置场景下 def 可能是 0、而 XML 原值 >0（物品已生成）。
+            if (v > 0 && def.techprintCount <= 0 && ModLister.RoyaltyInstalled && FindTechprintThing(def) == null)
+            {
+                Log.Warning($"[BalanceTweak] {def.defName} 的 techprintCount 不能从 0 改为 {v}："
+                          + "图纸物品只在加载期按 XML 原值生成，运行期不会补生成，改后该研究将永远无法完成。已忽略本次修改。");
+                this.techprintCount = def.techprintCount;
+                RemoveFieldModified(nameof(techprintCount));
+                if (CountFieldModified() == 0) tweaked = false;
+                return;
+            }
+            def.techprintCount = v;
+        });
         ApplyV<float>(nameof(techprintCommonality), v => def.techprintCommonality = v);
-        ApplyV<float>(nameof(techprintMarketValue), v => def.techprintMarketValue = v);
+        ApplyV<float>(nameof(techprintMarketValue), v =>
+        {
+            def.techprintMarketValue = v;
+            // 自动生成的图纸物品在加载期就把市场价写进了自己的 statBases（ImpliedTechprintDefs 里的
+            // SetStatBaseValue），改研究项不会回更新它 —— 这里同步过去，让这一列真的改得到图纸的价钱。
+            // label / description 是拼好的字符串，同步不了（见 Readme §8.6 的已知边界）。
+            if (def.techprintCount > 0) def.Techprint?.SetStatBaseValue(StatDefOf.MarketValue, v);
+        });
         ApplyL<ResearchProjectDef>(nameof(prerequisites), v => def.prerequisites = v);
         ApplyL<ResearchProjectDef>(nameof(hiddenPrerequisites), v => def.hiddenPrerequisites = v);
         ApplyL<ResearchProjectTagDef>(nameof(tags), v => def.tags = v);
@@ -159,6 +185,23 @@ class ResearchData : TweakData<ResearchData>
         ApplyL<string>(nameof(heldByFactionCategoryTags), v => def.heldByFactionCategoryTags = v);
         ApplyD<ConceptDef>(nameof(teachConcept), v => def.teachConcept = v);
         ApplyDefLabel(nameof(defLabel), def);
+    }
+
+    /// <summary>
+    /// 找出为该项目生成的图纸物品（<c>Techprint_&lt;defName&gt;</c>，加载期由 ThingDefGenerator_Techprints 创建）。
+    /// <para>
+    /// 不用 <see cref="ResearchProjectDef.Techprint"/>：那个在 <c>techprintCount &lt;= 0</c> 时直接返回 null，
+    /// 而这里恰恰要在"count 还是 0"的时候判断物品到底存不存在。只在写入 techprintCount 时调一次，
+    /// 几千个 ThingDef 的一次遍历 ≈ 0.5ms，不值得为它维护缓存。
+    /// </para>
+    /// </summary>
+    private static ThingDef? FindTechprintThing(ResearchProjectDef project)
+    {
+        var things = DefDatabase<ThingDef>.AllDefsListForReading;
+        for (int i = 0; i < things.Count; i++)
+            if (things[i].GetCompProperties<CompProperties_Techprint>()?.project == project)
+                return things[i];
+        return null;
     }
 
     public override List<string> TypeStrings => typeStrings;

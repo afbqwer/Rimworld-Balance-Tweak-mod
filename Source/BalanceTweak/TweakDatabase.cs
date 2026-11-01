@@ -528,6 +528,16 @@ public static partial class TweakDatabase
         var report = string.Join("\n", timings);
         Log.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {elapsedMs:F1}ms");
 
+        // 研究解锁缓存必须在两轮 Apply 之后再打回一次，理由是时序：
+        // 加载期 CompProperties_Techprint.ResolveReferences 就调过 project.UnlockedDefs（拼物品描述），
+        // 那时 def 还是 XML 原值；而我们的写入在 StaticConstructorOnStartup 之后才发生。
+        // 于是"改过解锁关系、但没改任何研究项字段"的存档，原版那份缓存会一直是改前的关系 ——
+        // 那种情况下 PrepareDeferredDisplayValues 不会触发索引重建（它只遍历有修改的行），
+        // 也就没人替我们清。这里一次性全清（N 次反射写），把运行期第一次读交给懒加载重算。
+        // 顺带丢掉索引本身：换存档/热重载后静态缓存里的 Def 实例可能已经作废。
+        ResearchUnlocks.Invalidate();
+        ResearchUnlocks.ClearAllVanillaCaches();
+
         // C3：运行期自检（SC1–SC6）。Debug 构建里强制开启；发布版默认关闭（零开销）。
         TweakSelfCheck.RunAll();
     }

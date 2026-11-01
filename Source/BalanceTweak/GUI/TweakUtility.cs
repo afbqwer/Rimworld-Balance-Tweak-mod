@@ -219,11 +219,12 @@ public partial class BalanceTweakSettings
         /// <summary>筛选并排序</summary>
         public static void UpdateFilters()
         {
-            // 研究解锁索引的唯一失效点：它由全库反查得出，而改动可能发生在任何页签的任何一格上
-            // （建筑的 researchPrerequisites、配方的 researchPrerequisite…）。
-            // 在这里丢一次，等于"每次重建列表都重新反查一遍"，代价是一次全库正向扫描（约 1ms），
-            // 换来零扇出 —— 不必在每个可能改到前置字段的地方挂失效调用（那种写法漏一个就静默过期）。
-            // 重建本身是懒的：当前页签没有研究行就不会触发。
+            // 研究解锁索引有两条失效路径，这里是"兜底"的那条：
+            // ① 正常编辑/重置走 ApplyValue / ApplyClear / ApplyAuthoritative，它们按 def 前后槽位的并集
+            //    精确清缓存并丢索引（见 ResearchUnlocks.Capture/Commit），一格改动只碰 1~2 个项目；
+            // ② 这里在每次重建列表时再丢一次，覆盖"绕过上面三条路径"的写入（第三方 mod 运行时改前置、
+            //    跨存档残留等）。代价是一次全库正向扫描（约 1ms），重建本身是懒的：
+            //    当前页签没有研究行就不会触发。
             ResearchUnlocks.Invalidate();
 
             filteredData.Clear();

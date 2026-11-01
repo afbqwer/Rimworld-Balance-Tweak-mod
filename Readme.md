@@ -634,27 +634,30 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 - `Display` 不落盘（`TweakData.Serialization.cs` 按 `DataType != Field` 过滤）、不参与 `Apply`、
   不参与 `EqualsData` ⇒ **旧档零迁移**。
 
-### 8.3 缓存有两套，各有各的坑
+### 8.3 缓存失效：三条路径
 
-| 缓存 | 位置 | 谁清 |
-|---|---|---|
-| `ResearchUnlocks.cache` | 本工程 | `TweakUtility.UpdateFilters` 开头 + `StatColumnConfig.SetRawValue` 命中字段名时 |
-| `cachedUnlockedDefs` / `cachedHyperlinks` | 原版 private，懒加载**永不失效** | 同上；重建时按 diff 只清"解锁集合真变了"的项目 |
+| 缓存 | 谁清 |
+|---|---|
+| `ResearchUnlocks.cache` | ① `Capture`/`Commit` ② `UpdateFilters` 开头兜底 ③ `Init` 末尾 |
+| `cachedUnlockedDefs` / `cachedHyperlinks` / `cachedDescription`（原版 private，永不失效） | ① `Commit` 只清"该 def 前后槽位上的项目"（通常 1~2 个）② `Init` 末尾全清 |
 
-- **失效点为什么放 `UpdateFilters` 而不是各 Data 类**：解锁关系由任何页签的任何一格决定，
-  逐个挂失效调用漏一个就静默过期。丢一次索引 = 一次全库正向扫描（约 1ms），换零扇出。
-- **为什么 `SetRawValue` 里还要再清原版缓存**：只靠重建不够 —— 玩家改完建筑前置、直接打开游戏内的
-  研究页签时，我们的索引根本没被建过，那份原版缓存会一直是旧的。
-- **为什么 diff 而不是全清**：全清会让研究台下次打开时给每个项目重扫全库（几百 × 几千）。
-  `previousCache` 与 `cache` 分开正是为此：`Invalidate` 只丢查询侧，diff 才有基准。
-- 原版缓存只置 `null` 不触发重算，成本恒为 N 次反射写（N = 研究项目数）。
+- **主路径 `Capture`/`Commit`**：`ApplyValue`、`ApplyClear`、`ApplyAuthoritative` 三个落点在 `Apply`
+  前后各读一次前置槽位，取**并集**只清这几个项目。要三个落点是因为整行/完全重置不走 `ApplyValue`；
+  要并集是因为"被移出前置"的项目也得清。
+- **`UpdateFilters` 兜底**：覆盖绕过上面三条路径的写入（第三方 mod 运行时改前置、跨存档残留）。
+- **`Init` 末尾全清**：加载期 `CompProperties_Techprint.ResolveReferences` 已按 XML 原值填过一份，
+  而我们的写入在 `StaticConstructorOnStartup` 之后 —— "只改载体前置、没动研究项"的存档只有这里能打回。
+- 多清一个 `cachedDescription`：它是 `GetTip()` 的文案缓存，不在 `ClearCachedData` 覆盖范围内。
+
+**别改成"重建索引来 diff"或"每次编辑全清"**：前者每次编辑一次全库扫描（1~5ms，拖拽/批量线性叠加），
+后者把研究台打回冷启动。
 
 ### 8.4 性能
 
-- 建表是**一次正向扫描**（遍历 `RecipeDef` / `ThingDef` / `TerrainDef` / `PsychicRitualDef` 各一遍，
-  把关系挂到项目上），不是"每个项目扫一遍全库"。单行查询 = 字典命中。
-- 列值在 `EnsureDisplayValues` 里算（`UpdateFilters` 重建列表时调），**绘制期零查询**，符合 §7.8.1。
-- 重建是懒的：当前页签没有研究行就不会触发。
+- 建表是一次正向扫描（四个 Def 表各一遍），单行查询 = 字典命中；列值在 `EnsureDisplayValues` 里算，
+  绘制期零查询（§7.8.1）。重建是懒的：当前页签没有研究行就不触发。
+- 一次编辑的失效成本：一次槽位读取 + 最多几个项目的 3 次反射写。改前改后都没挂前置的 def
+  （绝大多数 `ThingDef` 编辑）**一次都不清**。
 
 ### 8.5 未做（第二步：增 / 删）
 
@@ -670,7 +673,20 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 
 ### 8.6 已知边界
 
-- `CompProperties_Techprint.ResolveReferences` 把 "Unlocks: …" 一次性拼进 `description`，改完要重启才刷新。
+- **图纸物品是加载期生成的**：`ThingDefGenerator_Techprints.ImpliedTechprintDefs` 在
+  `GenerateImpliedDefs_PreResolve` 里按 XML 原值的 `TechprintCount > 0` 造出 `Techprint_<defName>`，
+  早于我们所有写入。由此：
+  - `techprintCount` 从 0 改成正数会被拒绝（告警 + 字段退回）：运行期不补生成物品，改后该研究永久无法完成，
+    且 `Techprint` 为 null 会让 `GetTip()` / `TechprintUtility` 直接 NRE。
+  - `techprintMarketValue` 会同步到已生成图纸的 `statBases`；`techprintCommonality` 与 N→M 的
+    `techprintCount` 本就是运行时读的，生效。
+  - 图纸的 `label` / `description` 在生成时拼死，改 `defLabel` 不会改图纸名。
+- `CompProperties_Techprint.ResolveReferences` 把 "Unlocks: …" 拼进图纸的 `description` 与
+  `descriptionHyperlinks`，清缓存回滚不了已物化的字符串。
+- 游戏内研究台的 `cachedUnlockedDefsGroupedByPrerequisites` 只在 `PreOpen` 清，后台开着研究台时
+  改前置要重开页签。
+- `researchViewX/Y` 只在加载期拷进 `x/y` 快照（`ResearchViewX => x`），改坐标**重开游戏才生效**，
+  且 y 会被 clamp 到 6.5、重叠坐标会被自动摊开。
 - 不覆盖 `DesignationCategoryDef.researchPrerequisites`（建造菜单页签）与 `TerrainTemplateDef`
   —— 它们不在原版 `UnlockedDefs` 里。
 

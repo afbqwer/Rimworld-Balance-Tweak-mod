@@ -15,7 +15,7 @@ namespace BalanceTweak;
 /// 原版那个 getter（<c>Verse/ResearchProjectDef.cs</c>）做了两件我们不要的事 ——
 /// ① 把配方的 <c>products</c> 摊平成产物，**载体身份**（是哪条配方解锁了它）就此丢失，而"改解锁"
 /// 最终必须落到载体上；② 结果缓存在私有字段 <c>cachedUnlockedDefs</c> 里且永不失效，改完 Def 它就过期。
-/// 所以这里按同一份判定重扫一遍，保留载体，并在重建时负责把原版那份过期缓存清掉。
+/// 所以这里按同一份判定重扫一遍，保留载体，并负责在 Def 变化后把原版那份过期缓存清掉。
 /// </para>
 ///
 /// <para>
@@ -28,6 +28,15 @@ namespace BalanceTweak;
 /// <b>覆盖范围严格对齐原版 6 条来源</b>（多一条会让本列与研究台对不上，少一条会漏）：
 /// 配方（单值 / 列表）的产物、配方的列表前置且是手术（登记配方本身）、ThingDef 前置、
 /// 植物播种前置、地形前置、心能仪式前置。
+/// </para>
+///
+/// <para>
+/// <b>原版缓存的失效策略（<see cref="Capture"/> / <see cref="Commit"/>）：</b>
+/// 一次编辑只影响"这个载体 Def 三个前置槽位上写着的项目"——改前 ∪ 改后，通常 1~2 个。
+/// 所以在 <c>Apply</c> 前后各读一次槽位、取并集、只清这几个项目的缓存：成本与前置列表长度成正比，
+/// 与全库规模无关。<b>别改成"重建索引来 diff"或"全清"</b>：
+/// 前者每次编辑一次全库扫描（拖拽涂抹 50 格就是 50~250ms），后者会把研究台打回冷启动
+/// （<c>cachedUnlockedDefs</c> 是懒加载、永不失效，一旦被清，研究台下次要逐个重扫全库）。
 /// </para>
 /// </summary>
 internal static class ResearchUnlocks
@@ -60,66 +69,157 @@ internal static class ResearchUnlocks
 
     private static Dictionary<ResearchProjectDef, List<Entry>>? cache;
 
-    /// <summary>
-    /// 上一次建成的表，<b>只用于 diff</b>（判断哪些项目的解锁集合真的变了，只清它们的原版缓存）。
-    /// 与 <see cref="cache"/> 分开是因为 <see cref="Invalidate"/> 只丢查询侧 —— 若连它也置空，
-    /// 每次重建都会退化成"全清"，diff 永远没有基准。
-    /// </summary>
-    private static Dictionary<ResearchProjectDef, List<Entry>>? previousCache;
-
     private static readonly List<Entry> Empty = new();
 
-    /// <summary>原版两个懒加载缓存的字段（private，只能反射清）。</summary>
+    /// <summary>原版三个懒加载缓存的字段（private，只能反射清）。</summary>
     private static readonly FieldInfo? UnlockedDefsField = AccessTools.Field(typeof(ResearchProjectDef), "cachedUnlockedDefs");
     private static readonly FieldInfo? HyperlinksField = AccessTools.Field(typeof(ResearchProjectDef), "cachedHyperlinks");
+    /// <summary>
+    /// <c>GetTip()</c> 的文案缓存：把 techprint 名称、requiredAnalyzed 列表一次性拼好后存住。
+    /// 它不在 <c>ClearCachedData</c> 的覆盖范围内，改那几个字段后研究项 tooltip 会一直是旧文本。
+    /// </summary>
+    private static readonly FieldInfo? DescriptionField = AccessTools.Field(typeof(ResearchProjectDef), "cachedDescription");
 
     /// <summary>丢弃索引。下一次 <see cref="Get"/> 会重建。</summary>
     internal static void Invalidate() => cache = null;
-
-    /// <summary>承载"研究解锁"关系的三个字段名（建筑/地形/配方列表、植物播种、配方单值）。</summary>
-    private static readonly string[] PrereqFieldNames =
-    {
-        "researchPrerequisites",
-        "sowResearchPrerequisites",
-        "researchPrerequisite",
-    };
-
-    /// <summary>
-    /// 编辑器改了某个字段之后调。命中上面三个字段名才动作 —— 这是一次编辑里唯一需要知道
-    /// "这格改了会不会影响解锁关系"的地方，写在这里就不必在每个 Data 类里各挂一次。
-    /// </summary>
-    internal static void OnFieldEdited(string fieldName)
-    {
-        for (int i = 0; i < PrereqFieldNames.Length; i++)
-        {
-            if (PrereqFieldNames[i] != fieldName) continue;
-            Invalidate();
-            ClearAllVanillaCaches();
-            return;
-        }
-    }
-
-    /// <summary>
-    /// 清掉全部研究项目的原版解锁缓存。<b>只是置 null，不触发重算</b> —— 原版那两个 getter 是懒的，
-    /// 谁来读谁付扫描成本，因此这里的成本恒为 N 次反射写（N = 研究项目数，几百量级）。
-    /// </summary>
-    internal static void ClearAllVanillaCaches()
-    {
-        if (UnlockedDefsField == null && HyperlinksField == null) return;
-        var all = DefDatabase<ResearchProjectDef>.AllDefsListForReading;
-        for (int i = 0; i < all.Count; i++) ClearOne(all[i]);
-    }
 
     /// <summary>取某个研究项目解锁的条目。没有解锁任何东西时返回空列表（非 null）。</summary>
     internal static List<Entry> Get(ResearchProjectDef project)
         => project != null && (cache ??= Build()).TryGetValue(project, out var list) ? list : Empty;
 
+    #region 原版缓存失效
+
+    /// <summary>
+    /// 这个 Def 身上是否可能挂着"研究前置"。只有这四类才需要走 Capture/Commit ——
+    /// 其余 Def（武器、服饰、特性……）的 Apply 不该为一次缓存失效付任何成本。
+    /// </summary>
+    private static bool IsCarrier(Def? def) => def is ThingDef or TerrainDef or RecipeDef or PsychicRitualDef;
+
+    /// <summary>
+    /// 采集 carrier 上<b>此刻（写入前）</b>挂着的项目集合。非载体 Def、以及原本就没挂任何前置的 Def
+    /// 都返回 null —— 调用方据此跳过整段逻辑。后者是关键：`ApplyFullReset` 会把全部 `ThingDef`
+    /// 逐个 `ApplyAuthoritative` 一遍（几千个），绝大多数与解锁关系无关，不该为它们各分配一个列表。
+    /// </summary>
+    internal static List<ResearchProjectDef>? Capture(Def? def)
+    {
+        if (!IsCarrier(def) || !HasAnyPrerequisite(def!)) return null;
+        var list = new List<ResearchProjectDef>(4);
+        CollectPrerequisites(list, def!);
+        return list;
+    }
+
+    /// <summary>
+    /// carrier 写入后调用：把"写入后"的项目并进 <paramref name="before"/>（去重），
+    /// 再逐个项目清原版缓存、丢弃索引。
+    ///
+    /// <para>
+    /// 取<b>并集</b>而不是只看写入后的集合：被移出前置的那个项目，它的解锁列表里也少了一条，
+    /// 只清新集合会让"刚被解除前置"的项目一直显示着旧关系（而且是研究台里最容易被看到的那一条）。
+    /// </para>
+    /// <para>
+    /// <paramref name="before"/> 为 null 有两种来源（非载体 / 改前没有前置），只有后者需要在这里
+    /// 补读一次"改后"—— 改前改后都没有前置就整段跳过，这是绝大多数编辑的实际路径。
+    /// </para>
+    /// </summary>
+    internal static void Commit(Def? def, List<ResearchProjectDef>? before)
+    {
+        if (def == null || !IsCarrier(def)) return;
+
+        if (before == null)
+        {
+            if (!HasAnyPrerequisite(def)) return;
+            before = new List<ResearchProjectDef>(4);
+        }
+        CollectPrerequisites(before, def);
+
+        for (int i = 0; i < before.Count; i++) ClearOne(before[i]);
+        cache = null;
+    }
+
+    /// <summary>def 上是否挂着任何研究前置（只看引用，不建列表）。</summary>
+    private static bool HasAnyPrerequisite(Def def) => def switch
+    {
+        RecipeDef recipe => recipe.researchPrerequisite != null
+                            || (recipe.researchPrerequisites?.Count ?? 0) > 0,
+        ThingDef thing => (thing.researchPrerequisites?.Count ?? 0) > 0
+                          || (thing.plant?.sowResearchPrerequisites?.Count ?? 0) > 0,
+        TerrainDef terrain => (terrain.researchPrerequisites?.Count ?? 0) > 0,
+        PsychicRitualDef ritual => ritual.researchPrerequisite != null,
+        _ => false,
+    };
+
+    /// <summary>把 def 三个前置槽位上的项目追加进 <paramref name="into"/>（去重；列表都很短，线性判重更省）。</summary>
+    private static void CollectPrerequisites(List<ResearchProjectDef> into, Def def)
+    {
+        switch (def)
+        {
+            case RecipeDef recipe:
+                Add(into, recipe.researchPrerequisite);
+                AddRange(into, recipe.researchPrerequisites);
+                break;
+            case ThingDef thing:
+                AddRange(into, thing.researchPrerequisites);
+                // 植物播种是另一条槽位（"能种了"），移除时要一并清，否则删不干净。
+                AddRange(into, thing.plant?.sowResearchPrerequisites);
+                break;
+            case TerrainDef terrain:
+                AddRange(into, terrain.researchPrerequisites);
+                break;
+            case PsychicRitualDef ritual:
+                Add(into, ritual.researchPrerequisite);
+                break;
+        }
+    }
+
+    private static void Add(List<ResearchProjectDef> into, ResearchProjectDef? project)
+    {
+        if (project != null && !into.Contains(project)) into.Add(project);
+    }
+
+    private static void AddRange(List<ResearchProjectDef> into, List<ResearchProjectDef>? projects)
+    {
+        if (projects == null) return;
+        for (int i = 0; i < projects.Count; i++) Add(into, projects[i]);
+    }
+
+    /// <summary>
+    /// 清掉全部研究项目的原版缓存。<b>只在 <c>TweakDatabase.Init</c> 末尾调一次</b> ——
+    /// 那时不知道哪些项目被改动过，而加载期 <c>CompProperties_Techprint.ResolveReferences</c>
+    /// 已经按"未应用修改"的 def 填过一份，必须整体打回。
+    /// </summary>
+    internal static void ClearAllVanillaCaches()
+    {
+        if (UnlockedDefsField == null && HyperlinksField == null && DescriptionField == null) return;
+        var all = DefDatabase<ResearchProjectDef>.AllDefsListForReading;
+        for (int i = 0; i < all.Count; i++) ClearOne(all[i]);
+    }
+
+    /// <summary>
+    /// 清掉单个项目的原版缓存。<b>只是置 null，不触发重算</b> —— 这三个 getter 都是懒的，
+    /// 谁来读谁付扫描成本，因此这里的成本恒为 3 次反射写。
+    /// </summary>
+    private static void ClearOne(ResearchProjectDef project)
+    {
+        try
+        {
+            UnlockedDefsField?.SetValue(project, null);
+            HyperlinksField?.SetValue(project, null);
+            DescriptionField?.SetValue(project, null);
+        }
+        catch (Exception e)
+        {
+            // 原版字段改名/移位：宁可这列显示旧值，也不要打断整次 Apply。
+            Log.Warning($"[BalanceTweak] 清空研究缓存失败 {project.defName}: {e.Message}");
+        }
+    }
+
+    #endregion
+
     private static Dictionary<ResearchProjectDef, List<Entry>> Build()
     {
-        var previous = previousCache;
         var map = new Dictionary<ResearchProjectDef, List<Entry>>();
 
-        void Add(ResearchProjectDef project, Def carrier, Def? display, RelationSlot slot)
+        void AddEntry(ResearchProjectDef project, Def carrier, Def? display, RelationSlot slot)
         {
             if (project == null || carrier == null || display == null) return;
             if (!map.TryGetValue(project, out var list))
@@ -135,7 +235,7 @@ internal static class ResearchUnlocks
         {
             if (recipe.products == null) return;
             for (int i = 0; i < recipe.products.Count; i++)
-                Add(project, recipe, recipe.products[i]?.thingDef, slot);
+                AddEntry(project, recipe, recipe.products[i]?.thingDef, slot);
         }
 
         // —— 配方 ——（原版：先按"单值或列表前置命中"取 products，再把手术配方本身登记一次）
@@ -154,7 +254,7 @@ internal static class ResearchUnlocks
                 // 手术配方本身也进解锁清单（它们通常没有 products，上面那条取不到东西）。
                 if (recipe.IsSurgery)
                     for (int j = 0; j < list.Count; j++)
-                        Add(list[j], recipe, recipe, RelationSlot.List);
+                        AddEntry(list[j], recipe, recipe, RelationSlot.List);
             }
         }
 
@@ -166,13 +266,13 @@ internal static class ResearchUnlocks
             var prereqs = thing.researchPrerequisites;
             if (prereqs != null)
                 for (int j = 0; j < prereqs.Count; j++)
-                    Add(prereqs[j], thing, thing, RelationSlot.List);
+                    AddEntry(prereqs[j], thing, thing, RelationSlot.List);
 
             // —— ThingDef：植物播种前置（"能种了"是另一条槽位，移除时必须一并清，否则删不干净）——
             var sow = thing.plant?.sowResearchPrerequisites;
             if (sow != null)
                 for (int j = 0; j < sow.Count; j++)
-                    Add(sow[j], thing, thing, RelationSlot.List);
+                    AddEntry(sow[j], thing, thing, RelationSlot.List);
         }
 
         // —— TerrainDef ——
@@ -183,7 +283,7 @@ internal static class ResearchUnlocks
             var prereqs = terrain.researchPrerequisites;
             if (prereqs != null)
                 for (int j = 0; j < prereqs.Count; j++)
-                    Add(prereqs[j], terrain, terrain, RelationSlot.List);
+                    AddEntry(prereqs[j], terrain, terrain, RelationSlot.List);
         }
 
         // —— 心能仪式（Anomaly；未装 DLC 时这张表是空的，类型本身在原版程序集里）——
@@ -192,59 +292,10 @@ internal static class ResearchUnlocks
         {
             var ritual = rituals[i];
             if (ritual.researchPrerequisite != null)
-                Add(ritual.researchPrerequisite, ritual, ritual, RelationSlot.Single);
+                AddEntry(ritual.researchPrerequisite, ritual, ritual, RelationSlot.Single);
         }
 
-        ClearVanillaCaches(previous, map);
-        previousCache = map;
         cache = map;
         return map;
-    }
-
-    /// <summary>
-    /// 把原版那两个私有缓存清掉。<b>只清"解锁集合真的变了"的项目</b>——全清会让研究台下次打开时
-    /// 为每个项目重扫一遍全库（几百个项目 × 几千个 Def），而这些项目根本没被这次编辑碰到。
-    /// </summary>
-    private static void ClearVanillaCaches(Dictionary<ResearchProjectDef, List<Entry>>? previous,
-        Dictionary<ResearchProjectDef, List<Entry>> current)
-    {
-        if (UnlockedDefsField == null && HyperlinksField == null) return;
-
-        if (previous == null)
-        {
-            // 首次建表：不知道原版缓存是按哪一版 Def 算的（玩家进游戏就点开过研究台），全清一次最稳。
-            ClearAllVanillaCaches();
-            return;
-        }
-
-        foreach (var kv in current)
-            if (!previous.TryGetValue(kv.Key, out var old) || !SameEntries(old, kv.Value))
-                ClearOne(kv.Key);
-
-        foreach (var kv in previous)
-            if (!current.ContainsKey(kv.Key)) ClearOne(kv.Key);
-    }
-
-    private static bool SameEntries(List<Entry> a, List<Entry> b)
-    {
-        if (a.Count != b.Count) return false;
-        for (int i = 0; i < a.Count; i++)
-            if (!ReferenceEquals(a[i].carrier, b[i].carrier) || !ReferenceEquals(a[i].display, b[i].display))
-                return false;
-        return true;
-    }
-
-    private static void ClearOne(ResearchProjectDef project)
-    {
-        try
-        {
-            UnlockedDefsField?.SetValue(project, null);
-            HyperlinksField?.SetValue(project, null);
-        }
-        catch (Exception e)
-        {
-            // 原版字段改名/移位：宁可这列显示旧值，也不要打断整次重建。
-            Log.Warning($"[BalanceTweak] 清空研究解锁缓存失败 {project.defName}: {e.Message}");
-        }
     }
 }

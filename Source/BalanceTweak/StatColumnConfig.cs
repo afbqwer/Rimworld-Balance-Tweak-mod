@@ -344,9 +344,6 @@ public class StatColumnConfig
         }
 
         _setter(data, finalValue);
-        // 改到"研究前置"这类字段时，研究页的解锁列与原版那份私有缓存都会过期。
-        // 挂在唯一的写入落点上（编辑 / 粘贴 / 批量 / 单列重置都走这里），命中字段名的才有动作。
-        ResearchUnlocks.OnFieldEdited(field.Name);
         tweakDatas.SetOrAdd(data.id, data);
         if (isModified)
         {
@@ -492,10 +489,24 @@ public class StatColumnConfig
         }
     }
 
+    /// <summary>
+    /// 把一格的改动落到 def 上。所有写入路径（编辑 / 粘贴 / 批量 / 单格重置 / 各编辑窗口）都走这里，
+    /// 所以"研究解锁的原版缓存"也在这里失效：按 <c>Apply</c> 前后 def 上三个前置槽位的并集，
+    /// 只清真正受牵连的那几个项目（见 <see cref="ResearchUnlocks.Capture"/>）。
+    /// </summary>
     public void ApplyValue(TweakData data, object? newValue, bool isModified = true)
     {
         SetRawValue(data, newValue, isModified);
-        data.Apply();
+        var affectedPrereqs = ResearchUnlocks.Capture(data.def);
+        try
+        {
+            data.Apply();
+        }
+        finally
+        {
+            // Apply 抛异常时 def 可能已被写了一半，同样要清 —— 宁可让原版重算，也不要留一份对不上的缓存。
+            ResearchUnlocks.Commit(data.def, affectedPrereqs);
+        }
         // 参考列是"按当前 def 现算"的派生值，而 Apply 刚把 def 改成新值、把显示缓存置脏。
         // 这里是"值变了"的唯一落地点（编辑 / 重置 / 粘贴 / 批量 / 各编辑窗口都走它），
         // 在这里补算一次，重置和批量之后的行也能当帧显示新参考值。
@@ -540,7 +551,15 @@ public class StatColumnConfig
     {
         SetRawValue(data, EmptyValueForClear(), isModified: false);
         data.MarkFieldCleared(field.Name);
-        data.Apply();
+        var affectedPrereqs = ResearchUnlocks.Capture(data.def);
+        try
+        {
+            data.Apply();
+        }
+        finally
+        {
+            ResearchUnlocks.Commit(data.def, affectedPrereqs);
+        }
         // 参考列是"按当前 def 现算"的派生值，Apply 已把缓存置脏，这里补算一次当帧就能看到新值。
         data.EnsureDisplayValues();
     }

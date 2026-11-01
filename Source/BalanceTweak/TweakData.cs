@@ -500,6 +500,11 @@ public abstract partial class TweakData : IExposable
     /// 把当前实例当作"权威快照"整体写回 Def（整行重置 / 完全重置用）：
     /// stat 列表 + 每个非 stat 字段都按实例里的值落盘，包括 null。
     /// <para>两个一次性开关都只在这一次 <c>Apply</c> 内有效，finally 保证异常路径也不残留。</para>
+    /// <para>
+    /// 这里同时负责研究解锁缓存的失效：整行重置/完全重置走的是本方法（<c>RemoveData</c> /
+    /// <c>ApplyFullReset</c>），<b>不经过 <c>StatColumnConfig</c> 的写入路径</b> ——
+    /// 少这一处，重置后原版那份 <c>cachedUnlockedDefs</c> 会一直停在"重置前"的关系上。
+    /// </para>
     /// </summary>
     public void ApplyAuthoritative()
     {
@@ -508,7 +513,17 @@ public abstract partial class TweakData : IExposable
         forceResetStats = true;
         try
         {
-            Apply();
+            // 快照与 def 的差异只有 Apply 前后各读一次才知道，且必须成对（Apply 抛异常时也要清，
+            // 那种情况 def 可能已被写了一半）。
+            var affectedPrereqs = ResearchUnlocks.Capture(def);
+            try
+            {
+                Apply();
+            }
+            finally
+            {
+                ResearchUnlocks.Commit(def, affectedPrereqs);
+            }
         }
         finally
         {
