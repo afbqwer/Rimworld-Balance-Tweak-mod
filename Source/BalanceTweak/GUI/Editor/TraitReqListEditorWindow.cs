@@ -78,7 +78,7 @@ public class TraitReqListEditorWindow : ListEditorWindow<TraitRequirement>
         Rect deleteRect = new(curX, rect.y, DeleteButtonWidth, rect.height);
         if (Widgets.ButtonText(deleteRect, "X"))
         {
-            workingList.RemoveAt(index);
+            RemoveAtDeferred(index);
         }
     }
 

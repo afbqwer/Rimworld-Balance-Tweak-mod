@@ -90,7 +90,8 @@ public class DefListEditorWindow : EditorWindowBase
         int firstVisible = Mathf.Max(0, Mathf.FloorToInt((scrollPosition.y - EntryHeight) / rowStride));
         int lastVisible = Mathf.Min(workingList.Count - 1, Mathf.CeilToInt((scrollPosition.y + rect.height + EntryHeight) / rowStride));
 
-        for (int i = firstVisible; i <= lastVisible; i++)
+        // 每轮判界：DrawEntry 里删行会让后续下标整体前移，删到可见区末行时下一次迭代会越界。
+        for (int i = firstVisible; i <= lastVisible && i < workingList.Count; i++)
         {
             Rect entryRect = new(0f, i * rowStride, viewRect.width, EntryHeight);
             DrawEntry(entryRect, i);

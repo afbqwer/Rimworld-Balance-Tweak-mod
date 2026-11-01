@@ -13,6 +13,9 @@ public abstract class ListEditorWindow<T> : EditorWindowBase
     protected Action<List<T>?>? onSaveCallback;
     protected Vector2 scrollPosition;
 
+    /// <summary>本帧待删除的行号。<see cref="DrawEntry"/> 里不能直接改列表，见 <see cref="RemoveAtDeferred"/>。</summary>
+    private readonly List<int> pendingRemovals = [];
+
     protected const float EntryHeight = 30f;
     protected const float DeleteButtonWidth = 30f;
     protected const float ButtonHeight = 30f;
@@ -70,11 +73,14 @@ public abstract class ListEditorWindow<T> : EditorWindowBase
         int firstVisible = Mathf.Max(0, Mathf.FloorToInt((scrollPosition.y - EntryHeight) / rowStride));
         int lastVisible = Mathf.Min(workingList.Count - 1, Mathf.CeilToInt((scrollPosition.y + rect.height + EntryHeight) / rowStride));
 
-        for (int i = firstVisible; i <= lastVisible; i++)
+        // 每轮都重新判一次界：DrawEntry 里可能发生删除 / 整表替换（例如 DefListEditorWindow 的筛选）。
+        for (int i = firstVisible; i <= lastVisible && i < workingList.Count; i++)
         {
             Rect entryRect = new(0f, i * rowStride, viewRect.width, EntryHeight);
             DrawEntry(entryRect, i);
         }
+
+        ApplyPendingRemovals();
 
         if (HasAddButton)
         {
@@ -87,6 +93,33 @@ public abstract class ListEditorWindow<T> : EditorWindowBase
         }
 
         Widgets.EndScrollView();
+    }
+
+    /// <summary>
+    /// 请求删除某一行，实际删除推迟到本帧绘制循环结束。
+    /// <para>
+    /// 直接在 <see cref="DrawEntry"/> 里 <c>workingList.RemoveAt</c> 会让同一次循环的后续索引整体前移，
+    /// 删到可见区最后一行时下一次迭代就取到界外 —— 这是 StringListEditorWindow 那个
+    /// <c>ArgumentOutOfRangeException</c> 的成因。
+    /// </para>
+    /// </summary>
+    protected void RemoveAtDeferred(int index)
+    {
+        if (index < 0 || index >= workingList.Count) return;
+        if (!pendingRemovals.Contains(index)) pendingRemovals.Add(index);
+    }
+
+    /// <summary>倒序执行本帧累积的删除，避免前面的删除把后面的下标挤歪。</summary>
+    protected void ApplyPendingRemovals()
+    {
+        if (pendingRemovals.Count == 0) return;
+        pendingRemovals.Sort();
+        for (int i = pendingRemovals.Count - 1; i >= 0; i--)
+        {
+            int index = pendingRemovals[i];
+            if (index < workingList.Count) workingList.RemoveAt(index);
+        }
+        pendingRemovals.Clear();
     }
 
     protected abstract string AddButtonLabel { get; }

@@ -258,7 +258,13 @@ class PawnKindData : TweakData<PawnKindData>
             {
                 uiIcon = rd.uiIcon;
                 uiIconColor = rd.uiIconColor;
-                desc = rd.desc;
+                // 只借图标，不借 desc：RaceData.desc 的第一行是**种族的** defName，
+                // 直接拿来会让兵种行的悬浮提示显示成 race 的 defName。
+                // 兵种自己没有描述时，取种族的描述正文（不含 defName 那一行）。
+                string body = d.description.NullOrEmpty()
+                    ? d.race?.description ?? ""
+                    : d.description;
+                desc = $"{d.defName}\n{body}";
             }
             combatPower ??= d.combatPower;
             allowInMechClusters ??= d.allowInMechClusters;

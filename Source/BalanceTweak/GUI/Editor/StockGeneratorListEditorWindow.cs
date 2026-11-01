@@ -107,7 +107,7 @@ public class StockGeneratorListEditorWindow : ListEditorWindow<StockGenerator>
         // 删除
         GUI.enabled = !readOnly;
         if (Widgets.ButtonText(new Rect(curX, rect.y, DeleteButtonWidth, rect.height), "X"))
-            workingList.RemoveAt(index);
+            RemoveAtDeferred(index);
         GUI.enabled = prevEnabled;
     }
 

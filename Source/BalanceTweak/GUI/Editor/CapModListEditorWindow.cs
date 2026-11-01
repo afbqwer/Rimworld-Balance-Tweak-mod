@@ -87,12 +87,14 @@ public class CapModListEditorWindow : ListEditorWindow<PawnCapacityModifier>
         int firstVisible = Mathf.Max(0, Mathf.FloorToInt((scrollPosition.y - contentTop - EntryHeight) / rowStride));
         int lastVisible = Mathf.Min(workingList.Count - 1, Mathf.CeilToInt((scrollPosition.y + rect.height + EntryHeight - contentTop) / rowStride));
 
-        // Draw entries
-        for (int i = firstVisible; i <= lastVisible; i++)
+        // Draw entries（每轮判界：删除是延迟的，但整表替换仍可能发生）
+        for (int i = firstVisible; i <= lastVisible && i < workingList.Count; i++)
         {
             Rect entryRect = new(0f, contentTop + i * rowStride, viewRect.width, EntryHeight);
             DrawEntry(entryRect, i);
         }
+
+        ApplyPendingRemovals();
 
         if (HasAddButton)
         {
@@ -233,7 +235,7 @@ public class CapModListEditorWindow : ListEditorWindow<PawnCapacityModifier>
         // Delete button
         if (Widgets.ButtonText(cols.delete, "X"))
         {
-            workingList.RemoveAt(index);
+            RemoveAtDeferred(index);
         }
 
         Text.Font = GameFont.Small;
