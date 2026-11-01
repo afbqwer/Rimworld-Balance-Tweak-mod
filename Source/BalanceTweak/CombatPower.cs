@@ -22,6 +22,8 @@ namespace BalanceTweak;
 /// <item><b>只对非人形生效</b>：动物、昆虫、机械、实体（Anomaly）、其它。
 /// Humanlike 要建模装备、技能、基因、药物，不在这一轮。锚按类别分：动物/昆虫锚巨兽，
 /// 机械/实体/其它锚蜈蚣·爆裂（三类都没有"人类式装备体系"，用动物锚会全挤在低端）。</item>
+/// <item><b>攻击 = max(近战×0.75, 装备武器) + Σ 炮塔</b>。主输出的两条路共用一个 verb，互斥；
+/// 炮塔组件是独立通道，能和它们同时开火，所以相加。</item>
 /// </list>
 /// </summary>
 internal static class CombatPower
@@ -96,7 +98,8 @@ internal static class CombatPower
         if (!IsCovered(data)) return;
 
         var race = kind.race;
-        float attack = Mathf.Max(MeleeAttack(race) * MeleeEngagePenalty, RangedAttack(kind, race));
+        // 炮塔是独立射击通道，与主输出并行，所以相加；主输出的两条路互斥，取高值。
+        float attack = MainAttack(kind, race) + TurretAttack(race);
         float defense = Defense(race);
 
         EnsureAnchors();
@@ -104,9 +107,15 @@ internal static class CombatPower
         float anchorAttack = mechScale ? mechAnchorAttack : animalAnchorAttack;
         float anchorDefense = mechScale ? mechAnchorDefense : animalAnchorDefense;
 
-        data.attackPower = anchorAttack > 0f ? attack / anchorAttack * 100f : 0f;
+        // 0 表示"这条不存在"，不是"这条很弱"：没有物理招式的实体（靠 abilities 输出）攻击就是 0，
+        // 显示成 0.00 会被误读成"弱得离谱"。写成 null 让列显示 Null。
+        data.attackPower = anchorAttack > 0f && attack > 0f ? attack / anchorAttack * 100f : null;
         data.defensePower = anchorDefense > 0f ? defense / anchorDefense * 100f : 0f;
-        data.overallPower = Mathf.Sqrt(Mathf.Max(0f, data.attackPower.Value) * Mathf.Max(0f, data.defensePower.Value));
+
+        // 任一轴缺席，开方就没有意义 —— 一起写成 null。
+        data.overallPower = data.attackPower is float atk && data.defensePower is float def && def > 0f
+            ? Mathf.Sqrt(atk * def)
+            : null;
     }
 
     /// <summary>
@@ -185,20 +194,35 @@ internal static class CombatPower
 
     #endregion
 
-    #region 攻击：远程
+    #region 攻击：主输出与炮塔
 
     /// <summary>
-    /// 远程有效输出：装备武器通道与炮塔通道取高值。
-    /// 不求和 —— 一个单位在同一时刻只能用一个 verb。
+    /// 主输出：近战（含接敌损耗）与装备武器取高值。
+    /// 这两条路走同一个 verb，同一时刻只能用一条，所以取 <c>max</c> 不求和。
     /// </summary>
-    private static float RangedAttack(PawnKindDef kind, ThingDef race)
+    private static float MainAttack(PawnKindDef kind, ThingDef race)
+        => Mathf.Max(MeleeAttack(race) * MeleeEngagePenalty, EquippedGunValue(kind));
+
+    /// <summary>
+    /// 炮塔输出：<c>CompTurretGun</c> 是<b>独立</b>的射击通道 —— 它自己 tick、自己算冷却，
+    /// 不与装备武器的 verb 抢同一个槽位，所以可以和近战 / 射击<b>同时</b>进行。
+    /// 因此这一项是<b>相加</b>，不是取高值。
+    /// <para>
+    /// 注意不要按 <c>CompProperties_TurretGun.autoAttack</c> 过滤：那个字段在原版里只有
+    /// <c>CompTurretGun.AutoAttack</c> 一个只读属性转发，<b>没有任何行为读它</b>（Warqueen 的
+    /// <c>autoAttack=false</c> 照样会自动开火）。按它过滤会把战争女王的炮塔白白扣掉。
+    /// </para>
+    /// </summary>
+    private static float TurretAttack(ThingDef race)
     {
-        float best = kind.weaponTags.NullOrEmpty() ? 0f : EquippedGunValue(kind);
-
-        foreach (var gun in TurretGuns(race))
-            best = Mathf.Max(best, GunValue(gun));
-
-        return best;
+        float sum = 0f;
+        if (race.comps == null) return sum;
+        foreach (var comp in race.comps)
+        {
+            if (comp is CompProperties_TurretGun { turretDef: not null } turret)
+                sum += GunValue(turret.turretDef);
+        }
+        return sum;
     }
 
     /// <summary>
@@ -213,6 +237,8 @@ internal static class CombatPower
     private static float EquippedGunValue(PawnKindDef kind)
     {
         var tags = kind.weaponTags;
+        if (tags.NullOrEmpty()) return 0f;
+
         float budget = kind.weaponMoney.max;
         float sumWeight = 0f;
         float sumWeighted = 0f;
@@ -243,21 +269,6 @@ internal static class CombatPower
         }
 
         return sumWeight > 0f ? sumWeighted / sumWeight : best;
-    }
-
-    /// <summary>
-    /// 单位自带炮塔（<c>CompProperties_TurretGun</c>）：原版 <c>Mech_Centurion</c> /
-    /// <c>Mech_Warqueen</c> / <c>Mech_Diabolus</c> 的 race 上都挂了这个组件。
-    /// <c>autoAttack = false</c> 的是玩家手动控制用，敌方不会自动开火，不计入。
-    /// </summary>
-    private static IEnumerable<ThingDef> TurretGuns(ThingDef race)
-    {
-        if (race.comps == null) yield break;
-        foreach (var comp in race.comps)
-        {
-            if (comp is CompProperties_TurretGun turret && turret.autoAttack && turret.turretDef != null)
-                yield return turret.turretDef;
-        }
     }
 
     /// <summary>
@@ -303,44 +314,46 @@ internal static class CombatPower
     }
 
     /// <summary>
-    /// 护甲穿透按原版三段判定还原（<c>Verse/ProjectileProperties.cs:160</c>）：
-    /// <code>
-    /// if (damageAmountBase != -1 || armorPenetrationBase >= 0) ap = armorPenetrationBase;
-    /// else                                                     ap = damageDef.defaultArmorPenetration;
-    /// if (ap &lt; 0)                                             ap = 伤害 × 0.015;
-    /// ap *= RangedWeapon_ArmorPenetrationMultiplier;
-    /// </code>
-    /// <paramref name="derived"/> 为 true 表示走了最后那段"按伤害推导"。
+    /// 护甲穿透：数值直接走原版 <see cref="ProjectileProperties.GetArmorPenetration"/>，
+    /// 不在这里重写三段判定。
     /// <para>
-    /// 这段不能省：<c>armorPenetrationBase</c> 的字段默认值是 <b>-1</b> 而不是 0，
-    /// 原版绝大多数弹丸都没写这一项，直接当 0 会把电荷长枪的 0.45 读成 0。
+    /// 三段是 `damageAmountBase != -1 || armorPenetrationBase >= 0` 取显式值、
+    /// 否则取 `damageDef.defaultArmorPenetration`、再否则按 `伤害 × 0.015` 推导，
+    /// 外加 `damageDef.armorCategory == null → 0` 的前置短路。这些分支原版方法里都有，
+    /// 抄一遍就有第二份定义 —— 而且 mod 里已经有 `ProjectileData.GetArmorPenetrationAbstract`
+    /// 走了同一个入口，再抄一份就是第三份。
+    /// </para>
+    /// <para>
+    /// 这里只额外算 <paramref name="derived"/>：那是 "AP 来自伤害推导" 的标记，
+    /// 用来决定 <see cref="ApFactor"/> 要不要给 1.5 的补偿。原版方法不吐这个标记，只能自己判一次。
     /// </para>
     /// </summary>
     private static float ResolvedArmorPenetration(WeaponData wd, out bool derived)
     {
         float rawAp = wd.armorPenetrationBase ?? -1f;
         float damage = wd.damageAmountBase ?? -1f;
-        float ap;
 
-        if (damage >= 0f || rawAp >= 0f)
+        var props = (TweakData.GetLiveData(wd.Projectile)?.def as ThingDef)?.projectile;
+
+        // "最终会不会落到按伤害推导"：显式值 ≥ 0 就不是；否则看 damageDef 有没有给默认穿透。
+        float beforeDerive = damage >= 0f || rawAp >= 0f
+            ? rawAp
+            : props?.damageDef?.defaultArmorPenetration ?? -1f;
+        derived = beforeDerive < 0f;
+
+        float ap;
+        if (props != null)
         {
-            ap = rawAp;
+            ap = props.GetArmorPenetration(null, null);
+        }
+        else if (derived)
+        {
+            // 没有弹丸对象（光束类走 beamDamageDef），退回"按伤害推导"的等价式。
+            ap = Mathf.Max(damage, 0f) * DerivedApPerDamage;
         }
         else
         {
-            var projectile = TweakData.GetLiveData(wd.Projectile) as ProjectileData;
-            ap = projectile?.damageType?.defaultArmorPenetration ?? -1f;
-        }
-
-        derived = ap < 0f;
-        if (derived)
-        {
-            if (damage < 0f)
-            {
-                var projectile = TweakData.GetLiveData(wd.Projectile) as ProjectileData;
-                damage = projectile?.damageType?.defaultDamage ?? 0f;
-            }
-            ap = damage * DerivedApPerDamage;
+            ap = Mathf.Max(rawAp, 0f);
         }
 
         ap *= wd.rangeArmorPenetrationMultiplier ?? 1f;
@@ -453,8 +466,8 @@ internal static class CombatPower
     private static float AnchorAttack(string kindName)
     {
         if (DefDatabase<PawnKindDef>.GetNamedSilentFail(kindName) is not PawnKindDef kind) return 0f;
-        // 必须和 Fill 走同一个式子（含接敌损耗），否则锚与行不同口径，刻度就假了。
-        return Mathf.Max(MeleeAttack(kind.race) * MeleeEngagePenalty, RangedAttack(kind, kind.race));
+        // 必须和 Fill 走同一个式子（接敌损耗 + 炮塔相加），否则锚与行不同口径，刻度就假了。
+        return MainAttack(kind, kind.race) + TurretAttack(kind.race);
     }
 
     private static float AnchorDefense(string kindName)

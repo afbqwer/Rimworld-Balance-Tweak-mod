@@ -111,9 +111,9 @@
 
     <!-- 战斗力参考值（只读派生列） -->
     <MST.attackPower>攻击能力</MST.attackPower>
-    <MST.attackPowerComment>近战与远程取高值。近战 = 招式加权 DPS × 命中率 × 穿透因子 × 0.75 接敌损耗（贴上去的几秒没在输出）；远程 = 武器期望 DPS × 武器命中 × 射手精度(0.96^12格) × 穿透因子 × 射程系数。以锚单位 = 100 为刻度：动物/昆虫锚巨兽，机械/实体/其它锚蜈蚣·爆裂。</MST.attackPowerComment>
+    <MST.attackPowerComment>近战与远程取高值，再加上炮塔。近战 = 招式加权 DPS × 命中率 × 穿透因子 × 0.75 接敌损耗（贴上去的几秒没在输出）；远程 = 武器期望 DPS × 武器命中 × 射手精度(0.96^12格) × 穿透因子 × 射程系数。炮塔是独立射击通道，能和近战/远程同时开火，所以相加。以锚单位 = 100 为刻度：动物/昆虫锚巨兽，机械/实体/其它锚蜈蚣·爆裂。没有物理招式的单位（如靠能力的实体）显示 Null，而不是 0。</MST.attackPowerComment>
     <MST.defensePower>防御能力</MST.defensePower>
     <MST.defensePowerComment>等效生命值 = 核心部位血量 ÷ 护甲期望减伤 ÷ 体型惩罚。用核心部位而不是总血量：击杀判据是核心被摧毁，器官和手脚的血量不致命。</MST.defensePowerComment>
     <MST.overallPower>总体能力</MST.overallPower>
-    <MST.overallPowerComment>sqrt(攻击 × 防御)。1v1 胜负 ∝ 输出 × 生存，开方把乘积压回线性量纲。不含技能、能力、掩体、风筝、爆炸过杀等失真项。</MST.overallPowerComment>
+    <MST.overallPowerComment>sqrt(攻击 × 防御)。1v1 胜负 ∝ 输出 × 生存，开方把乘积压回线性量纲。攻击或防御任一为 Null 时本列也为 Null。不含技能、能力、掩体、风筝、爆炸过杀等失真项。</MST.overallPowerComment>
 </LanguageData>
