@@ -190,7 +190,13 @@ public class RecipeData : TweakData<RecipeData>
             ApplyV<int>(nameof(formingTicks), v => def.formingTicks = v);
             ApplyV<int>(nameof(gestationCycles), v => def.gestationCycles = v);
             ApplyV<bool>(nameof(mechResurrection), v => def.mechResurrection = v);
-            ApplyL<IngredientCount>(nameof(ingredients), v => def.ingredients = v?.ToList());
+            ApplyL<IngredientCount>(nameof(ingredients), v =>
+            {
+                def.ingredients = v?.ToList();
+                // 原料（含每项的 filter）变了 ⇒ GetPremultipliedSmallIngredients 的懒加载缓存过期。
+                // 它只被账单配置窗口（suppressSmallVolumeTags / "10x" 文案）使用，置 null 后按需重建即可。
+                PremultipliedSmallIngredientsField?.SetValue(def, null);
+            });
             ApplyF(nameof(fixedIngredientFilter), v => def.fixedIngredientFilter = v);
             ApplyF(nameof(defaultIngredientFilter), v => def.defaultIngredientFilter = v);
             ApplyD<HediffDef>(nameof(addsHediff), v => def.addsHediff = v);
@@ -207,6 +213,14 @@ public class RecipeData : TweakData<RecipeData>
         }
 
     }
+
+    /// <summary>
+    /// <see cref="RecipeDef.GetPremultipliedSmallIngredients"/> 的懒加载缓存（private，原版无失效机制）。
+    /// 只由 <c>ingredients[].filter.AllowedThingDefs</c> 派生（与 fixedIngredientFilter 无关），
+    /// 改完 <c>ingredients</c> 后置 null，下次用到时按现数据重建。
+    /// </summary>
+    private static readonly FieldInfo? PremultipliedSmallIngredientsField =
+        Reflect.Field(typeof(RecipeDef), "premultipliedSmallIngredients");
 
     private static void InvalidateCaches(RecipeDef def, List<ThingDef>? oldUsers, List<ThingDef>? newUsers)
     {
