@@ -1562,9 +1562,9 @@ public partial class BalanceTweakSettings : ModSettings
                     Event.current.Use();
                 }
             }
-            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks)
+            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.UnlockList)
             {
-                // 只读的关联入口：点击打开链接列表窗口。
+                // 只读的关联入口：点击打开链接列表窗口（关联列 / 研究解锁列共用同一套绘制）。
                 Text.Font = GameFont.Tiny;
                 Widgets.DrawButtonGraphic(cellRect);
                 Widgets.Label(cellRect, sourceText);
@@ -1574,7 +1574,12 @@ public partial class BalanceTweakSettings : ModSettings
                 if (!DragPaint.SuppressClick && Event.current.type == EventType.MouseUp && Event.current.button == 0 && cellRect.Contains(Event.current.mousePosition))
                 {
                     Event.current.Use();
-                    if (config.columnType == ColumnStyle.WeaponLinks)
+                    if (config.columnType == ColumnStyle.UnlockList)
+                    {
+                        if (data.def is ResearchProjectDef project)
+                            Find.WindowStack.Add(new ResearchUnlockWindow(data, project));
+                    }
+                    else if (config.columnType == ColumnStyle.WeaponLinks)
                     {
                         if (data.def is ThingDef projectile)
                             Find.WindowStack.Add(new TweakLinksWindow(data, "MST.weaponLinks", ProjectileData.FindWeaponLinks(projectile)));

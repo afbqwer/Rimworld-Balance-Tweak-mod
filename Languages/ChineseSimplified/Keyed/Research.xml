@@ -28,6 +28,10 @@
     <MST.recalculatePowerComment>该项目完成时重新计算电网状态。</MST.recalculatePowerComment>
     <MST.customUnlockTexts>解锁文本</MST.customUnlockTexts>
     <MST.customUnlockTextsComment>附加在研究会话信息卡「解锁」列表中的额外条目（奥德赛）。</MST.customUnlockTextsComment>
+    <MST.unlockedDefs>解锁</MST.unlockedDefs>
+    <MST.unlockedDefsComment>本项研究解锁的 Def（只读，由全库反查得出）。点击可查看明细并跳转到对应页签；要修改请到目标 Def 自己的「研究前置」列。</MST.unlockedDefsComment>
+    <MST.unlockCarrierTip>解锁载体：{0}</MST.unlockCarrierTip>
+    <MST.unlockNoData>该 Def 没有可编辑的页签，只能在此查看。</MST.unlockNoData>
     <MST.heldByFactionCategoryTags>派系标签</MST.heldByFactionCategoryTags>
     <MST.heldByFactionCategoryTagsComment>持有该研究蓝图的派系类别（皇权）。techprintCount 大于 0 时必须非空。</MST.heldByFactionCategoryTagsComment>
     <MST.teachConcept>教学概念</MST.teachConcept>

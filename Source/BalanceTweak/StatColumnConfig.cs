@@ -80,7 +80,7 @@ public class StatColumnConfig
         { FieldType.IntRange, new[] { ColumnStyle.Range } },
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
-        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList, ColumnStyle.XenotypeChanceList, ColumnStyle.ThingSetTags, ColumnStyle.FactionCurveList, ColumnStyle.SkillRangeList, ColumnStyle.BackstoryTraitList, ColumnStyle.PossessionList, ColumnStyle.PawnGroupMakerList } },
+        { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList, ColumnStyle.XenotypeChanceList, ColumnStyle.ThingSetTags, ColumnStyle.FactionCurveList, ColumnStyle.SkillRangeList, ColumnStyle.BackstoryTraitList, ColumnStyle.PossessionList, ColumnStyle.PawnGroupMakerList, ColumnStyle.UnlockList } },
         { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks, ColumnStyle.WeaponLinks } },
     };
 
@@ -179,7 +179,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks, PawnGroupMakerList }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks, PawnGroupMakerList, UnlockList }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -200,7 +200,8 @@ public class StatColumnConfig
             or ColumnStyle.SkillRangeList
             or ColumnStyle.BackstoryTraitList
             or ColumnStyle.PossessionList
-            or ColumnStyle.PawnGroupMakerList;
+            or ColumnStyle.PawnGroupMakerList
+            or ColumnStyle.UnlockList;
     }
 
     private void ValidateFieldTypeStyle()
@@ -343,6 +344,9 @@ public class StatColumnConfig
         }
 
         _setter(data, finalValue);
+        // 改到"研究前置"这类字段时，研究页的解锁列与原版那份私有缓存都会过期。
+        // 挂在唯一的写入落点上（编辑 / 粘贴 / 批量 / 单列重置都走这里），命中字段名的才有动作。
+        ResearchUnlocks.OnFieldEdited(field.Name);
         tweakDatas.SetOrAdd(data.id, data);
         if (isModified)
         {

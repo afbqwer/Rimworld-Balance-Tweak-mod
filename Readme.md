@@ -284,6 +284,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `BackstoryTraitList` | `List<BackstoryTrait>?` | 背景特性列表编辑器（trait + degree）；与 `TraitReqList` 形状相同但元素类型不同 |
 | `PossessionList` | `List<PossessionThingDefCountClass>?` | 随身物品列表编辑器（ThingDef + 数量区间 `value`） |
 | `PawnGroupMakerList` | `List<PawnGroupMaker>?` | 兵种池列表编辑器（每行一个兵种池：kindDef + commonality + 各子列表条目数；`options`/`traders`/`carriers`/`guards` 是 `PawnGenOption` 子列表）；非原版子类只读透传，见 [§7.6.1](#761-兵种池paingroupmaker复用同一套字段表) |
+| `UnlockList` | `List<Def>?` | **只读派生列**：研究项目解锁的 Def，由全库反查得出（`Display`，不落盘、不参与 Apply），见 [§8](#8-研究解锁派生列不是字段) |
 
 ---
 
@@ -604,6 +605,77 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 
 ---
 
+## 8. 研究解锁（派生列，不是字段）
+
+**1.7 没有"解锁列表"这个字段。** `ResearchProjectDef` 上找不到 `unlocks` / `unlockedDefs`；
+`UnlockedDefs` 是个 getter（`Verse/ResearchProjectDef.cs:301-329`），按下面 6 条规则反查全库推出来。
+所以"改一个研究解锁什么" = 改**别的 Def**，研究行上永远不该存第二份真相。
+
+### 8.1 反查的 6 条来源（本列的边界，多一条少一条都会和研究台对不上）
+
+| # | 来源 | 判定 | 登记什么 |
+|---|---|---|---|
+| 1 | `RecipeDef` | `researchPrerequisite == R` 或 `researchPrerequisites ∋ R` | 各 `products[].thingDef` |
+| 2 | `ThingDef` | `researchPrerequisites ∋ R` | 自身 |
+| 3 | `ThingDef.plant` | `sowResearchPrerequisites ∋ R` | 自身（"能种了"是另一条槽位） |
+| 4 | `TerrainDef` | `researchPrerequisites ∋ R` | 自身 |
+| 5 | `RecipeDef` | `IsSurgery && researchPrerequisites ∋ R` | 配方本身（手术配方通常没有 products） |
+| 6 | `PsychicRitualDef` | `researchPrerequisite == R` | 自身 |
+
+`Data/ResearchUnlocks.cs` 按同一份判定重扫一遍，额外保留**载体**身份（原版把配方产物摊平成
+`ThingDef`，载体信息就此丢失，而"改解锁"最终必须落到载体上）。
+
+### 8.2 为什么是 `Display` 列
+
+- 真相在目标 Def 的字段上（`researchPrerequisites` / `sowResearchPrerequisites` /
+  `researchPrerequisite`），目标行本来就能改（`BuildingData` / `FoodData` / `TerrainData` / `RecipeData`）。
+- 研究行若存一份"解锁列表"，同一字段就有两个写者，谁赢取决于 `Apply` 顺序（`LoadingOrd`），
+  重置语义还得单独发明一套（"重置研究行" ≠ "撤销解锁"）。
+- `Display` 不落盘（`TweakData.Serialization.cs` 按 `DataType != Field` 过滤）、不参与 `Apply`、
+  不参与 `EqualsData` ⇒ **旧档零迁移**。
+
+### 8.3 缓存有两套，各有各的坑
+
+| 缓存 | 位置 | 谁清 |
+|---|---|---|
+| `ResearchUnlocks.cache` | 本工程 | `TweakUtility.UpdateFilters` 开头 + `StatColumnConfig.SetRawValue` 命中字段名时 |
+| `cachedUnlockedDefs` / `cachedHyperlinks` | 原版 private，懒加载**永不失效** | 同上；重建时按 diff 只清"解锁集合真变了"的项目 |
+
+- **失效点为什么放 `UpdateFilters` 而不是各 Data 类**：解锁关系由任何页签的任何一格决定，
+  逐个挂失效调用漏一个就静默过期。丢一次索引 = 一次全库正向扫描（约 1ms），换零扇出。
+- **为什么 `SetRawValue` 里还要再清原版缓存**：只靠重建不够 —— 玩家改完建筑前置、直接打开游戏内的
+  研究页签时，我们的索引根本没被建过，那份原版缓存会一直是旧的。
+- **为什么 diff 而不是全清**：全清会让研究台下次打开时给每个项目重扫全库（几百 × 几千）。
+  `previousCache` 与 `cache` 分开正是为此：`Invalidate` 只丢查询侧，diff 才有基准。
+- 原版缓存只置 `null` 不触发重算，成本恒为 N 次反射写（N = 研究项目数）。
+
+### 8.4 性能
+
+- 建表是**一次正向扫描**（遍历 `RecipeDef` / `ThingDef` / `TerrainDef` / `PsychicRitualDef` 各一遍，
+  把关系挂到项目上），不是"每个项目扫一遍全库"。单行查询 = 字典命中。
+- 列值在 `EnsureDisplayValues` 里算（`UpdateFilters` 重建列表时调），**绘制期零查询**，符合 §7.8.1。
+- 重建是懒的：当前页签没有研究行就不会触发。
+
+### 8.5 未做（第二步：增 / 删）
+
+写回本身只有 4 行（`GetEditableData(targetId)` → 目标行的 `researchPrerequisites` 列 →
+`config.ApplyValue`），难点全在语义：
+
+- **载体 ≠ 产物**：一个物品由 3 个配方产出的，删它要清 3 个配方，否则删了还在。
+- **减法要清所有槽位**（列表 + 单值 + 植物播种），漏一个就"移除后还在"。
+- **加法只写列表槽位**：`RecipeDef.researchPrerequisite` 与 `researchPrerequisites` 是 **AND** 语义，
+  两个都填 = 两个都得研究完；"挪项目"别写成"叠加"。
+- 无落点的 Def（`PsychicRitualDef`、`DesignationCategoryDef`、第三方类型）只读，
+  窗口里灰显并说明原因。
+
+### 8.6 已知边界
+
+- `CompProperties_Techprint.ResolveReferences` 把 "Unlocks: …" 一次性拼进 `description`，改完要重启才刷新。
+- 不覆盖 `DesignationCategoryDef.researchPrerequisites`（建造菜单页签）与 `TerrainTemplateDef`
+  —— 它们不在原版 `UnlockedDefs` 里。
+
+---
+
 ## 附1. ColumnStyle 编辑窗口与用法
 
 | ColumnStyle | 编辑方式 | 窗口类 | C# 类型 |
@@ -654,6 +726,7 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | `BackstoryTraitList` | 弹出窗口 | `BackstoryTraitListEditorWindow` | `List<BackstoryTrait>?`（每行 = 特性选择 + 程度） |
 | `PossessionList` | 弹出窗口 | `PossessionListEditorWindow` | `List<PossessionThingDefCountClass>?`（每行 = 物品选择 + 数量区间 min/max） |
 | `PawnGroupMakerList` | 弹出窗口 | `PawnGroupMakerListEditorWindow`（+ `PawnGroupMakerEditorWindow` / `SGComplexListEditorWindow`） | `List<PawnGroupMaker>?`（字段即对象列表，字段表见 [§7.6.1](#761-兵种池paingroupmaker复用同一套字段表)） |
+| `UnlockList` | 弹出窗口 | `ResearchUnlockWindow` | `List<Def>?`（`Display` 只读列；点击列出明细，可跳转到有数据行的目标） |
 | `DefSelector` | 弹出窗口 | `DefSelectionWindow` | `T? where T : Def` |
 ---
 

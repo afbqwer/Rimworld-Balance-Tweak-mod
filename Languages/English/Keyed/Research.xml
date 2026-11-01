@@ -28,6 +28,10 @@
     <MST.recalculatePowerComment>Recalculate the power network when this project completes.</MST.recalculatePowerComment>
     <MST.customUnlockTexts>UnlockTxt</MST.customUnlockTexts>
     <MST.customUnlockTextsComment>Extra entries appended to the "unlocked" list in the research info card (Odyssey).</MST.customUnlockTextsComment>
+    <MST.unlockedDefs>Unlocks</MST.unlockedDefs>
+    <MST.unlockedDefsComment>Defs unlocked by this project (read-only, derived by scanning the whole database). Click to list them and jump to the owning tab; edit the target def's own "research prerequisites" column instead.</MST.unlockedDefsComment>
+    <MST.unlockCarrierTip>Unlocked via: {0}</MST.unlockCarrierTip>
+    <MST.unlockNoData>This def has no editable tab, view only.</MST.unlockNoData>
     <MST.heldByFactionCategoryTags>FactTags</MST.heldByFactionCategoryTags>
     <MST.heldByFactionCategoryTagsComment>Faction categories that hold techprints of this project (Royalty). Must be non-empty whenever techprintCount is above 0.</MST.heldByFactionCategoryTagsComment>
     <MST.teachConcept>Concept</MST.teachConcept>

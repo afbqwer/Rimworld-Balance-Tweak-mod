@@ -219,6 +219,13 @@ public partial class BalanceTweakSettings
         /// <summary>筛选并排序</summary>
         public static void UpdateFilters()
         {
+            // 研究解锁索引的唯一失效点：它由全库反查得出，而改动可能发生在任何页签的任何一格上
+            // （建筑的 researchPrerequisites、配方的 researchPrerequisite…）。
+            // 在这里丢一次，等于"每次重建列表都重新反查一遍"，代价是一次全库正向扫描（约 1ms），
+            // 换来零扇出 —— 不必在每个可能改到前置字段的地方挂失效调用（那种写法漏一个就静默过期）。
+            // 重建本身是懒的：当前页签没有研究行就不会触发。
+            ResearchUnlocks.Invalidate();
+
             filteredData.Clear();
             allColumnSource.Clear();
             editingControlName = null;

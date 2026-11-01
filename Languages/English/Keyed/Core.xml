@@ -45,6 +45,7 @@
     <MST.StockGenList>StockGen</MST.StockGenList>
     <MST.FactionCurveList>FactionCurves</MST.FactionCurveList>
     <MST.PawnGroupMakerList>PawnGroupMkrs</MST.PawnGroupMakerList>
+    <MST.UnlockList>UnlockList</MST.UnlockList>
     <MST.SkillRangeList>SkillRanges</MST.SkillRangeList>
     <MST.BackstoryTraitList>BstoryTraits</MST.BackstoryTraitList>
     <MST.PossessionList>Possessions</MST.PossessionList>

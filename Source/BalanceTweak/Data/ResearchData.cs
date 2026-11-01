@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -74,6 +75,13 @@ class ResearchData : TweakData<ResearchData>
 
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
+
+    // —— 派生展示列：本项研究解锁了什么 ——
+    // 原版没有 unlocks 字段，这条关系存在目标 Def 上（建筑/地形/配方的 researchPrerequisites 等），
+    // 由 ResearchUnlocks 全库反查得出。所以它只能是 Display：不落盘、不参与 Apply，
+    // 也不存在"研究行上存一份解锁列表"这种第二真相（改解锁 = 改目标 Def 的那一行）。
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.UnlockList)]
+    public List<Def>? unlockedDefs = null;
 
     public override void SetDef(Def def, SettingType type, bool tweaked = false)
     {
@@ -155,6 +163,39 @@ class ResearchData : TweakData<ResearchData>
 
     public override List<string> TypeStrings => typeStrings;
     private static readonly List<string> typeStrings = typeof(ResearchType).GetEnumNames().Select(s => "MST." + s).ToList();
+
+    /// <summary>
+    /// 只读解锁列的派生值。按需计算（<c>UpdateFilters</c> 重建列表时调），不做缓存标记 ——
+    /// 一次查询是索引的字典命中 + 一次列表遍历，比维护"已算过"标记更便宜，也不会漏刷新。
+    /// </summary>
+    public override void EnsureDisplayValues()
+    {
+        if (this.def is not ResearchProjectDef project)
+        {
+            unlockedDefs = null;
+            return;
+        }
+
+        var entries = ResearchUnlocks.Get(project);
+        if (entries.Count == 0)
+        {
+            unlockedDefs = null;
+            return;
+        }
+
+        // 同一产物可能由多条配方解锁，表格里只该出现一次（与原版 UnlockedDefs 的 Distinct 一致）。
+        var list = new List<Def>(entries.Count);
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var display = entries[i].display;
+            if (display != null && !list.Contains(display)) list.Add(display);
+        }
+        list.Sort(CompareByLabel);
+        unlockedDefs = list;
+    }
+
+    private static int CompareByLabel(Def a, Def b)
+        => string.Compare(a.label ?? a.defName, b.label ?? b.defName, StringComparison.CurrentCulture);
 
     public static bool AvailableIfAnomaly(TweakData data) => data.propType switch
     {
