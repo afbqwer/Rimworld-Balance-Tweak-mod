@@ -553,12 +553,14 @@ class PawnKindData : TweakData<PawnKindData>
         _ => false,
     };
 
-    /// <summary>战斗力参考值：除 Humanlike 外全覆盖（动物 / 昆虫 / 机械 / 实体 / 其它）。</summary>
-    public static bool AvailableIfCombatRated(TweakData data) => data.propType switch
-    {
-        (int)RaceType.Humanlike => false,
-        _ => true,
-    };
+    /// <summary>
+    /// 战斗力参考值：全部兵种适用。
+    /// <para>
+    /// 谓词是按页签第一行求值的（<c>TweakUtility</c> 只用 firstData 调一次），所以不能在这里
+    /// 按行返回 false —— 那会让整个列在"第一行恰好是人形"时消失。
+    /// </para>
+    /// </summary>
+    public static bool AvailableIfCombatRated(TweakData data) => true;
 
     public override List<string> TypeStrings => typeStrings;
     private static readonly List<string> typeStrings = typeof(RaceType).GetEnumNames().Select(s => "MST." + s).ToList();
