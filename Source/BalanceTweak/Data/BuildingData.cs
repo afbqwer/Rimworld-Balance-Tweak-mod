@@ -91,6 +91,67 @@ class BuildingData : TweakData<BuildingData>
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statBases = null;
 
+    // ── Fortified 中继指挥（可选 Mod，见 RelayConfigWindow）──
+    // 建筑可能挂 SubRelay / Overseer / OverseerFacility 三种 Comp；只留一个只读触发列，
+    // 其余字段 NotAColumn，由窗口按实际存在的 Comp 分节编辑。
+
+    /// <summary>只读触发列：打开中继配置窗口。没有任何中继 Comp 的建筑整格留白。</summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.RelayConfig,
+        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoRelayConfig))]
+    public TweakID? relayConfig = null;
+
+    public static bool HiddenIfNoRelayConfig(TweakData data) => !FortifiedRelay.HasAny(data.def);
+
+    /// <summary>没有代理机械师 Comp 的行不显示带宽 / 控制组 / 指挥范围。</summary>
+    public static bool HiddenIfNoOverseer(TweakData data) => FortifiedRelay.FindOverseer(data.def) == null;
+
+    /// <summary>整列只在 Fortified 加载时出现（判据与行无关，Available 按第一行求值一次是安全的）。</summary>
+    public static bool AvailableIfFortified(TweakData data) => DataUtility.MayRequire(TweakDatabase.FFF);
+
+    // 宿主 stat：写在 def.statBases 上，与 ApplyDefStats 同一个写者。
+    [TweakField(StatDef = "MechBandwidth", Style = ColumnStyle.Int,
+        MayRequire = "ludeon.rimworld.biotech",
+        Available = nameof(AvailableIfFortified),
+        Hidden = nameof(HiddenIfNoOverseer))]
+    public float? mechBandwidth = null;
+    [TweakField(StatDef = "MechControlGroups", Style = ColumnStyle.Int,
+        MayRequire = "ludeon.rimworld.biotech",
+        Available = nameof(AvailableIfFortified),
+        Hidden = nameof(HiddenIfNoOverseer))]
+    public float? mechControlGroups = null;
+    [TweakField(StatDef = "FFF_MechCommandRange",
+        MayRequire = TweakDatabase.FFF,
+        Available = nameof(AvailableIfFortified),
+        Hidden = nameof(HiddenIfNoOverseer))]
+    public float? mechCommandRange = null;
+
+    // 以下字段由 RelayConfigWindow 编辑，只在存档里存在，不进表格。
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
+    public float? subRelayRange = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? subRelayCoverWholeMap = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? overseerCanRepair = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? overseerTicksPerHeal = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? overseerInstantControl = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? facilityMaxSimultaneous = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
+    public float? facilityMaxDistance = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? facilityRequiresLOS = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? facilityMustBePlacedAdjacent = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.StatModList, MayRequire = TweakDatabase.FFF)]
+    public List<StatModifier>? facilityStatOffsets = null;
+
+    /// <summary>中继 Comp 的引用（SetDef 时解析一次；闭包里只捕获 object）。</summary>
+    private object? subRelayProps = null;
+    private object? overseerProps = null;
+    private object? overseerFacilityProps = null;
+
     // --- 新增通用 ThingDef 字段（无 Available 限制）---
     //[TweakField(Style = ColumnStyle.Enum, EnumType = typeof(Traversability))]
     //public Traversability? passability = null;
@@ -404,6 +465,7 @@ class BuildingData : TweakData<BuildingData>
                 isResourceRock ??= d.building.isResourceRock;
             }
 
+            LoadRelay(d);
         }
     }
 
@@ -509,6 +571,7 @@ class BuildingData : TweakData<BuildingData>
         ApplyDefLabel(nameof(defLabel), def);
         ApplyBuildingProp(def);
         ApplyDefStats(def);
+        ApplyRelay(def);
         // 炮塔的射击节奏（冷却 / 预热）写在建筑上，挂载的那把枪只是据它算 DPS。
         // 改完必须主动刷那一行，否则武器页签的 DPS / 强度停在旧值 —— 与弹丸改动后
         // 刷新共用武器（ProjectileData.RefreshSharedWeapons）是同一条道理。
@@ -547,6 +610,104 @@ class BuildingData : TweakData<BuildingData>
         if (ReferenceEquals(TweakDatabase.GetOriginal(gun.id), gun)) return;
         gun.GenValues();
     }
+
+    /// <summary>
+    /// 从三种中继 Comp 回填窗口字段。标量用 <c>??=</c>；列表带 <c>!IsFieldModified</c> 守卫，
+    /// 否则已清空的字段读档后会被 Comp 回填"复活"（硬约束表第 7 行）。
+    /// </summary>
+    private void LoadRelay(ThingDef d)
+    {
+        subRelayProps = FortifiedRelay.FindSubRelay(d);
+        if (subRelayProps != null)
+        {
+            var props = subRelayProps;
+            subRelayRange ??= DataUtility.AsFloat(DataUtility.GetByName(props, "relayRange"));
+            subRelayCoverWholeMap ??= DataUtility.GetByName(props, "coverWholeMap") as bool?;
+        }
+
+        overseerProps = FortifiedRelay.FindOverseer(d);
+        if (overseerProps != null)
+        {
+            var props = overseerProps;
+            overseerCanRepair ??= DataUtility.GetByName(props, "canRepair") as bool?;
+            overseerTicksPerHeal ??= DataUtility.AsInt(DataUtility.GetByName(props, "ticksPerHeal"));
+            overseerInstantControl ??= DataUtility.GetByName(props, "instantControl") as bool?;
+        }
+
+        overseerFacilityProps = FortifiedRelay.FindOverseerFacility(d);
+        if (overseerFacilityProps != null)
+        {
+            var props = overseerFacilityProps;
+            facilityMaxSimultaneous ??= DataUtility.AsInt(DataUtility.GetByName(props, "maxSimultaneous"));
+            facilityMaxDistance ??= DataUtility.AsFloat(DataUtility.GetByName(props, "maxDistance"));
+            facilityRequiresLOS ??= DataUtility.GetByName(props, "requiresLOS") as bool?;
+            facilityMustBePlacedAdjacent ??= DataUtility.GetByName(props, "mustBePlacedAdjacent") as bool?;
+            if (!IsFieldModified(nameof(facilityStatOffsets)))
+                facilityStatOffsets ??= DataUtility.GetByName(props, "statOffsets") is List<StatModifier> list
+                    ? new List<StatModifier>(list)
+                    : null;
+        }
+    }
+
+    /// <summary>
+    /// 把窗口里的值写回中继 Comp。三态门控，未动过的字段不写；没有对应 Comp 的建筑直接跳过。
+    /// 宿主 stat 由 <see cref="ApplyDefStats"/> 负责，这里只登记缓存刷新。
+    /// </summary>
+    private void ApplyRelay(ThingDef def)
+    {
+        var subRelay = subRelayProps ??= FortifiedRelay.FindSubRelay(def);
+        if (subRelay != null)
+        {
+            var props = subRelay; // 闭包只捕获 object
+            ApplyV<float>(nameof(subRelayRange), v => DataUtility.SetByName(props, "relayRange", v));
+            ApplyV<bool>(nameof(subRelayCoverWholeMap), v => DataUtility.SetByName(props, "coverWholeMap", v));
+        }
+
+        var overseer = overseerProps ??= FortifiedRelay.FindOverseer(def);
+        if (overseer != null)
+        {
+            var props = overseer;
+            ApplyV<bool>(nameof(overseerCanRepair), v => DataUtility.SetByName(props, "canRepair", v));
+            ApplyV<int>(nameof(overseerTicksPerHeal), v => DataUtility.SetByName(props, "ticksPerHeal", v));
+            ApplyV<bool>(nameof(overseerInstantControl), v => DataUtility.SetByName(props, "instantControl", v));
+        }
+
+        var facility = overseerFacilityProps ??= FortifiedRelay.FindOverseerFacility(def);
+        if (facility != null)
+        {
+            var props = facility;
+            ApplyV<int>(nameof(facilityMaxSimultaneous), v => DataUtility.SetByName(props, "maxSimultaneous", v));
+            ApplyV<float>(nameof(facilityMaxDistance), v => DataUtility.SetByName(props, "maxDistance", v));
+            ApplyV<bool>(nameof(facilityRequiresLOS), v => DataUtility.SetByName(props, "requiresLOS", v));
+            ApplyV<bool>(nameof(facilityMustBePlacedAdjacent), v => DataUtility.SetByName(props, "mustBePlacedAdjacent", v));
+            ApplyL<StatModifier>(nameof(facilityStatOffsets), v => DataUtility.SetByName(props, "statOffsets", v));
+        }
+
+        if (RelayTouched) FortifiedRelay.RequestRefresh(def);
+    }
+
+    /// <summary>
+    /// 本次 Apply 是否动过会进入中继缓存的字段。比三态多判 <c>forceWriteAll</c> / <c>forceWriteFields</c>：
+    /// 重置是先写回原值再清标记，那一刻三态已是 Unset。
+    /// </summary>
+    private bool RelayTouched
+        => Touched(nameof(statBases))
+        || Touched(nameof(mechBandwidth))
+        || Touched(nameof(mechControlGroups))
+        || Touched(nameof(mechCommandRange))
+        || Touched(nameof(subRelayRange))
+        || Touched(nameof(subRelayCoverWholeMap))
+        || Touched(nameof(overseerCanRepair))
+        || Touched(nameof(overseerTicksPerHeal))
+        || Touched(nameof(overseerInstantControl))
+        || Touched(nameof(facilityMaxSimultaneous))
+        || Touched(nameof(facilityMaxDistance))
+        || Touched(nameof(facilityRequiresLOS))
+        || Touched(nameof(facilityMustBePlacedAdjacent))
+        || Touched(nameof(facilityStatOffsets));
+
+    private bool Touched(string field)
+        => IsFieldModified(field) || forceWriteAll || forceWriteFields?.Contains(field) == true;
 
     private void ApplyBuildingProp(ThingDef def)
     {

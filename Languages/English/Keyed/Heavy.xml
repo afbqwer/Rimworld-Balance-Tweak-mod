@@ -47,4 +47,49 @@
     <MST.mechWeaponFilterStatusOff>Current: heavy-tier body-size gate (weapons without a heavy extension are allowed outright).</MST.mechWeaponFilterStatusOff>
     <MST.mechWeaponFilterWarningEmptyTags>Warning: the filter is on but no usable tags are set — every weapon with weaponTags will be rejected (Fortified also logs a warning).</MST.mechWeaponFilterWarningEmptyTags>
     <MST.mechWeaponFilterBodySize>Current body size: {0} (heavy tiers compare BodySize ≥ threshold).</MST.mechWeaponFilterBodySize>
+
+    <!-- Relay command (single-window editor) -->
+    <MST.relayConfig>Relay</MST.relayConfig>
+    <MST.relayConfigComment>Click to open the relay config window: command relay / sub relay / overseer / overseer facility are shown per Comp actually present. Existing comps are edited in place; nothing is added or removed.</MST.relayConfigComment>
+    <MST.relayConfigEdit>Edit</MST.relayConfigEdit>
+    <MST.relayConfigIntro>These settings are written back to the Fortified relay comps and recorded in the tweak list. Radii are in cells; sections without a matching comp are not shown. Facility link rules are only evaluated when a link is created.</MST.relayConfigIntro>
+    <MST.relayCommandSection>Command relay</MST.relayCommandSection>
+    <MST.relaySubSection>Sub relay</MST.relaySubSection>
+    <MST.relayOverseerSection>Overseer</MST.relayOverseerSection>
+    <MST.relayFacilitySection>Overseer facility</MST.relayFacilitySection>
+
+    <MST.commandRelayMaxRelayRadius>MaxRadius</MST.commandRelayMaxRelayRadius>
+    <MST.commandRelayMaxRelayRadiusComment>Maximum command radius (cells) while the overseer is on the same map.</MST.commandRelayMaxRelayRadiusComment>
+    <MST.commandRelayMinRelayRadius>MinRadius</MST.commandRelayMinRelayRadius>
+    <MST.commandRelayMinRelayRadiusComment>Minimum radius (cells) used across maps; fixed to this once the world distance exceeds "WorldMax".</MST.commandRelayMinRelayRadiusComment>
+    <MST.commandRelayMaxWorldMapRadius>WorldMax</MST.commandRelayMaxWorldMapRadius>
+    <MST.commandRelayMaxWorldMapRadiusComment>Across maps the radius is interpolated between min and max by world distance; beyond this distance it drops to the minimum.</MST.commandRelayMaxWorldMapRadiusComment>
+    <MST.commandRelayCoverWholeMap>WholeMap</MST.commandRelayCoverWholeMap>
+    <MST.commandRelayCoverWholeMapComment>Cover the whole map unconditionally. Still requires the same map and the same overseer as the mech.</MST.commandRelayCoverWholeMapComment>
+
+    <MST.subRelayRange>SubRange</MST.subRelayRange>
+    <MST.subRelayRangeComment>Fixed radius (cells). A sub relay is not bound to one mechanitor and works for all of them.</MST.subRelayRangeComment>
+    <MST.subRelayCoverWholeMap>WholeMap</MST.subRelayCoverWholeMap>
+    <MST.subRelayCoverWholeMapComment>Cover the whole map unconditionally. Still requires the same map, player faction, and a powered / working building.</MST.subRelayCoverWholeMapComment>
+
+    <MST.overseerCanRepair>AutoRepair</MST.overseerCanRepair>
+    <MST.overseerCanRepairComment>Whether the overseer automatically repairs its mechs.</MST.overseerCanRepairComment>
+    <MST.overseerTicksPerHeal>HealTicks</MST.overseerTicksPerHeal>
+    <MST.overseerTicksPerHealComment>Minimum ticks between repairs; lower is faster.</MST.overseerTicksPerHealComment>
+    <MST.overseerInstantControl>Instant</MST.overseerInstantControl>
+    <MST.overseerInstantControlComment>Whether the overseer can take remote instant control of mechs.</MST.overseerInstantControlComment>
+
+    <MST.facilityMaxSimultaneous>MaxLinks</MST.facilityMaxSimultaneous>
+    <MST.facilityMaxSimultaneousComment>Maximum number of simultaneously linked hosts. Lowering it does not break existing links; it only affects new ones.</MST.facilityMaxSimultaneousComment>
+    <MST.facilityMaxDistance>LinkDist</MST.facilityMaxDistance>
+    <MST.facilityMaxDistanceComment>Maximum link distance to a host (cells). Existing links are not recalculated.</MST.facilityMaxDistanceComment>
+    <MST.facilityRequiresLOS>NeedsLOS</MST.facilityRequiresLOS>
+    <MST.facilityRequiresLOSComment>Whether the link requires line of sight. Only affects future links.</MST.facilityRequiresLOSComment>
+    <MST.facilityMustBePlacedAdjacent>Adjacent</MST.facilityMustBePlacedAdjacent>
+    <MST.facilityMustBePlacedAdjacentComment>Whether the facility must be placed adjacent to the host. Only affects future links.</MST.facilityMustBePlacedAdjacentComment>
+    <MST.facilityStatOffsets>Offsets</MST.facilityStatOffsets>
+    <MST.facilityStatOffsetsComment>Stat offsets the facility grants to its host (bandwidth, command range, control groups…). Separate from the host's own statBases.</MST.facilityStatOffsetsComment>
+
+    <MST.relayEffectiveStats>Current: bandwidth {0} / control groups {1} / command range {2}</MST.relayEffectiveStats>
+    <MST.relayFacilityNote>"MaxLinks", "LinkDist", "NeedsLOS" and "Adjacent" are only checked when a link is created: lowering them will not break existing links, and raising them will not link anything automatically.</MST.relayFacilityNote>
 </LanguageData>

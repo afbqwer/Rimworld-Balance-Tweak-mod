@@ -30,6 +30,8 @@
     <MST.marketValue>市场价值</MST.marketValue>
     <MST.baseBodySize>体型</MST.baseBodySize>
     <MST.mechBandwidth>提供带宽</MST.mechBandwidth>
+    <MST.mechControlGroups>控制组</MST.mechControlGroups>
+    <MST.mechCommandRange>指挥范围</MST.mechCommandRange>
     <MST.vacuumResistance>真空抗性</MST.vacuumResistance>
     <MST.workSpeedGlobalOffsetMech>机械速度+</MST.workSpeedGlobalOffsetMech>
     <MST.psychicSensitivity>心灵敏感</MST.psychicSensitivity>

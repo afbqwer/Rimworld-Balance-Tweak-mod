@@ -30,6 +30,8 @@
     <MST.marketValue>MktVal</MST.marketValue>
     <MST.baseBodySize>BdySz</MST.baseBodySize>
     <MST.mechBandwidth>BWProv</MST.mechBandwidth>
+    <MST.mechControlGroups>CtrlGroups</MST.mechControlGroups>
+    <MST.mechCommandRange>CmdRange</MST.mechCommandRange>
     <MST.vacuumResistance>VacRes</MST.vacuumResistance>
     <MST.workSpeedGlobalOffsetMech>MchWSp+</MST.workSpeedGlobalOffsetMech>
     <MST.psychicSensitivity>PsySen</MST.psychicSensitivity>

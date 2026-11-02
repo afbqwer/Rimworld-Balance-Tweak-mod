@@ -151,6 +151,21 @@ public class ApparelData : TweakData<ApparelData>
     [TweakField(Style = ColumnStyle.Bool, Available = nameof(AvailableIfUtility))]
     public bool? reloadableReplenishAfterCooldown = null;
 
+    // ── Fortified 中继指挥（可选 Mod，见 RelayConfigWindow）──
+    // 服装只支持 CompProperties_SubRelay（Fortified 把穿在身上的服装也当作副中继）。
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.RelayConfig,
+        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoRelayConfig))]
+    public TweakID? relayConfig = null;
+
+    public static bool HiddenIfNoRelayConfig(TweakData data) => !FortifiedRelay.HasAny(data.def);
+
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
+    public float? subRelayRange = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? subRelayCoverWholeMap = null;
+
+    private object? subRelayProps = null;
+
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
@@ -248,6 +263,7 @@ public class ApparelData : TweakData<ApparelData>
                 reloadableReplenishAfterCooldown ??= reloadable.replenishAfterCooldown;
                 reloadableMaxCharges ??= reloadable.maxCharges;
             }
+            LoadRelay(d);
         }
         //equipCP = (float?)GetEquipCP(this, isCompQuality, equipPower);
     }
@@ -307,6 +323,7 @@ public class ApparelData : TweakData<ApparelData>
         ApplyDefLabel(nameof(defLabel), def);
         ApplyApparelProp(def);
         ApplyDefStats(def);
+        ApplyRelay(def);
         OnChangeStuffEffectMultiplierArmor(this);
         OnChangeStuffEffectMultiplierInsulationCold(this);
         OnChangeStuffEffectMultiplierInsulationHeat(this);
@@ -315,6 +332,38 @@ public class ApparelData : TweakData<ApparelData>
         // 参考列按"当前 def 现算"：改完成本 / 材料后，下一次读就该是新值。
         displayValuesEnsured = false;
     }
+    /// <summary>从 <c>CompProperties_SubRelay</c> 回填窗口字段。</summary>
+    private void LoadRelay(ThingDef d)
+    {
+        subRelayProps = FortifiedRelay.FindSubRelay(d);
+        if (subRelayProps == null) return;
+        var props = subRelayProps;
+        subRelayRange ??= DataUtility.AsFloat(DataUtility.GetByName(props, "relayRange"));
+        subRelayCoverWholeMap ??= DataUtility.GetByName(props, "coverWholeMap") as bool?;
+    }
+
+    /// <summary>把窗口里的值写回副中继 Comp；没有 Comp 的服装直接跳过，并登记缓存刷新。</summary>
+    private void ApplyRelay(ThingDef def)
+    {
+        var subRelay = subRelayProps ??= FortifiedRelay.FindSubRelay(def);
+        if (subRelay != null)
+        {
+            var props = subRelay; // 闭包只捕获 object
+            ApplyV<float>(nameof(subRelayRange), v => DataUtility.SetByName(props, "relayRange", v));
+            ApplyV<bool>(nameof(subRelayCoverWholeMap), v => DataUtility.SetByName(props, "coverWholeMap", v));
+        }
+
+        if (RelayTouched) FortifiedRelay.RequestRefresh(def);
+    }
+
+    /// <summary>比三态多判 <c>forceWriteAll</c> / <c>forceWriteFields</c>：重置先写回原值再清标记。</summary>
+    private bool RelayTouched
+        => Touched(nameof(subRelayRange))
+        || Touched(nameof(subRelayCoverWholeMap));
+
+    private bool Touched(string field)
+        => IsFieldModified(field) || forceWriteAll || forceWriteFields?.Contains(field) == true;
+
     private void ApplyApparelProp(ThingDef def)
     {
         ApplyV<TechLevel>(nameof(techLevel), v => def.techLevel = v);

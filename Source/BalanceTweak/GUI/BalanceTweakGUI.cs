@@ -1649,7 +1649,7 @@ public partial class BalanceTweakSettings : ModSettings
                     Event.current.Use();
                 }
             }
-            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList or ColumnStyle.MechWeaponFilter)
+            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig)
             {
                 // 只读的关联入口：点击打开链接列表窗口（关联列 / 研究解锁列共用同一套绘制）。
                 // 兵种侧对「没有武器标签」的行返回空串 —— 那种行没有可列的候选，画个空按钮只会误导。
@@ -1689,6 +1689,12 @@ public partial class BalanceTweakSettings : ModSettings
                         // 一组字段（标签 / 科技 / 类别 / 豁免）放在同一个窗口里编辑，没有逐列展示的价值。
                         if (data is RaceData)
                             Find.WindowStack.Add(new MechWeaponFilterWindow(data));
+                    }
+                    else if (config.columnType == ColumnStyle.RelayConfig)
+                    {
+                        // 中继 Comp 的字段按"实际拥有哪几种"分节显示，同样是单窗口编辑。
+                        if (data is RaceData or BuildingData or ApparelData)
+                            Find.WindowStack.Add(new RelayConfigWindow(data));
                     }
                     else if (config.columnType == ColumnStyle.BodyLinks)
                     {

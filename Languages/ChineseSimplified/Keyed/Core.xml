@@ -32,6 +32,7 @@
     <MST.BodyLinks>身体链接</MST.BodyLinks>
     <MST.WeaponLinks>武器链接</MST.WeaponLinks>
     <MST.MechWeaponFilter>机械过滤</MST.MechWeaponFilter>
+    <MST.RelayConfig>中继配置</MST.RelayConfig>
     <MST.Range>范围</MST.Range>
     <MST.SkillReqList>技能需求列表</MST.SkillReqList>
     <MST.TraitReqList>特征需求列表</MST.TraitReqList>

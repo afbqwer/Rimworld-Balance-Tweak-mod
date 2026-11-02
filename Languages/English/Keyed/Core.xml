@@ -33,6 +33,7 @@
     <MST.BodyLinks>BodyLinks</MST.BodyLinks>
     <MST.WeaponLinks>WeaponLinks</MST.WeaponLinks>
     <MST.MechWeaponFilter>MechFilter</MST.MechWeaponFilter>
+    <MST.RelayConfig>Relay</MST.RelayConfig>
     <MST.Range>Range</MST.Range>
     <MST.SkillReqList>SkillReqList</MST.SkillReqList>
     <MST.TraitReqList>TraitReqList</MST.TraitReqList>

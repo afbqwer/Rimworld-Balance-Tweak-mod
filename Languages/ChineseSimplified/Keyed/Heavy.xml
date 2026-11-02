@@ -47,4 +47,49 @@
     <MST.mechWeaponFilterStatusOff>当前：按重型档位的体型门槛判定（没有重型扩展的武器直接放行）。</MST.mechWeaponFilterStatusOff>
     <MST.mechWeaponFilterWarningEmptyTags>警告：过滤已开启但可用标签为空 —— 所有带 weaponTags 的武器都会被拒绝（Fortified 还会额外打一条日志）。</MST.mechWeaponFilterWarningEmptyTags>
     <MST.mechWeaponFilterBodySize>当前体型：{0}（重型档位按「体型 ≥ 门槛」比较）。</MST.mechWeaponFilterBodySize>
+
+    <!-- 中继指挥（单窗口编辑） -->
+    <MST.relayConfig>中继配置</MST.relayConfig>
+    <MST.relayConfigComment>点击打开中继配置窗口：移动中继 / 副中继 / 代理机械师 / 代理设施按实际存在的 Comp 分节显示。只修改已有 Comp，不会新增或删除。</MST.relayConfigComment>
+    <MST.relayConfigEdit>编辑</MST.relayConfigEdit>
+    <MST.relayConfigIntro>这些设置写回 Fortified 的中继 Comp，并记入修改表。半径单位为格；没有对应 Comp 的 Def 不会显示该节。设施的连接规则只在建立连接时判定。</MST.relayConfigIntro>
+    <MST.relayCommandSection>移动中继（CommandRelay）</MST.relayCommandSection>
+    <MST.relaySubSection>副中继（SubRelay）</MST.relaySubSection>
+    <MST.relayOverseerSection>代理机械师（Overseer）</MST.relayOverseerSection>
+    <MST.relayFacilitySection>代理设施（OverseerFacility）</MST.relayFacilitySection>
+
+    <MST.commandRelayMaxRelayRadius>最大半径</MST.commandRelayMaxRelayRadius>
+    <MST.commandRelayMaxRelayRadiusComment>同地图时，机械师能指挥到的最大半径（格）。</MST.commandRelayMaxRelayRadiusComment>
+    <MST.commandRelayMinRelayRadius>最小半径</MST.commandRelayMinRelayRadius>
+    <MST.commandRelayMinRelayRadiusComment>跨地图时使用的最小半径（格）；超过「跨图最远」后固定为它。</MST.commandRelayMinRelayRadiusComment>
+    <MST.commandRelayMaxWorldMapRadius>跨图最远</MST.commandRelayMaxWorldMapRadius>
+    <MST.commandRelayMaxWorldMapRadiusComment>跨地图时按世界地图距离在最小 / 最大半径之间插值；超过这个距离降为最小半径。</MST.commandRelayMaxWorldMapRadiusComment>
+    <MST.commandRelayCoverWholeMap>覆盖全图</MST.commandRelayCoverWholeMap>
+    <MST.commandRelayCoverWholeMapComment>无条件覆盖整张地图。仍然要求同地图，且中继机与机甲的机械师相同。</MST.commandRelayCoverWholeMapComment>
+
+    <MST.subRelayRange>副中继半径</MST.subRelayRange>
+    <MST.subRelayRangeComment>副中继的固定半径（格）。副中继不绑定机械师，对所有机械师生效。</MST.subRelayRangeComment>
+    <MST.subRelayCoverWholeMap>覆盖全图</MST.subRelayCoverWholeMap>
+    <MST.subRelayCoverWholeMapComment>无条件覆盖整张地图。仍需同地图、玩家阵营，建筑还要供电且可用。</MST.subRelayCoverWholeMapComment>
+
+    <MST.overseerCanRepair>自动修理</MST.overseerCanRepair>
+    <MST.overseerCanRepairComment>代理机械师是否自动修理麾下机甲。</MST.overseerCanRepairComment>
+    <MST.overseerTicksPerHeal>修理间隔</MST.overseerTicksPerHeal>
+    <MST.overseerTicksPerHealComment>两次修理之间的最短 tick 数；越小修得越快。</MST.overseerTicksPerHealComment>
+    <MST.overseerInstantControl>即时接管</MST.overseerInstantControl>
+    <MST.overseerInstantControlComment>是否允许远程即时接管 / 控制机甲。</MST.overseerInstantControlComment>
+
+    <MST.facilityMaxSimultaneous>同时连接</MST.facilityMaxSimultaneous>
+    <MST.facilityMaxSimultaneousComment>同时连接的宿主数量上限。调小不会断开已有连接，只影响后续连接。</MST.facilityMaxSimultaneousComment>
+    <MST.facilityMaxDistance>连接距离</MST.facilityMaxDistance>
+    <MST.facilityMaxDistanceComment>设施与宿主的最大连接距离（格）。改动不会重新计算已有连接。</MST.facilityMaxDistanceComment>
+    <MST.facilityRequiresLOS>需要视线</MST.facilityRequiresLOS>
+    <MST.facilityRequiresLOSComment>连接是否要求视线无遮挡。只影响后续建立的连接。</MST.facilityRequiresLOSComment>
+    <MST.facilityMustBePlacedAdjacent>必须相邻</MST.facilityMustBePlacedAdjacent>
+    <MST.facilityMustBePlacedAdjacentComment>是否要求与宿主相邻放置。只影响后续建立的连接。</MST.facilityMustBePlacedAdjacentComment>
+    <MST.facilityStatOffsets>设施加成</MST.facilityStatOffsets>
+    <MST.facilityStatOffsetsComment>设施给宿主建筑提供的 stat 加成（带宽、指挥范围、控制组等）。与宿主自身的 statBases 分开。</MST.facilityStatOffsetsComment>
+
+    <MST.relayEffectiveStats>当前有效：带宽 {0} / 控制组 {1} / 指挥范围 {2}</MST.relayEffectiveStats>
+    <MST.relayFacilityNote>「同时连接」「连接距离」「需要视线」「必须相邻」都只在建立连接时判定：调小不会断开现有连接，调大也不会自动补连。</MST.relayFacilityNote>
 </LanguageData>

@@ -556,6 +556,8 @@ public abstract partial class TweakData : IExposable
             forceWriteFields = null;
             // 整行 / 完全重置同样会让依赖本行的派生列失效（兵种战斗力依赖武器、种族、招式）。
             CombatPower.Invalidate(this);
+            // 中继 Comp 的缓存刷新：整行重置不走 ApplyValue，必须单独接一次。
+            FortifiedRelay.Flush();
         }
     }
     public abstract bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false);

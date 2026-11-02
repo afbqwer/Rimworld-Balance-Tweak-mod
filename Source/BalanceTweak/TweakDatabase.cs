@@ -540,6 +540,10 @@ public static partial class TweakDatabase
         ResearchUnlocks.Invalidate();
         ResearchUnlocks.ClearAllVanillaCaches();
 
+        // 中继 Comp 的运行时缓存（带宽 / 指挥范围 / 平方距离）：两轮 Apply 结束后统一补刷一次。
+        // 读档期地图还没建好时 Flush 会直接丢弃 —— 那时新建的 Comp 会按新 Props 初始化。
+        FortifiedRelay.Flush();
+
         // C3：运行期自检（SC1–SC6）。Debug 构建里强制开启；发布版默认关闭（零开销）。
         TweakSelfCheck.RunAll();
     }

@@ -226,6 +226,61 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     /// <summary>机械武器扩展的引用（SetDef 时解析一次）。</summary>
     private object? mechWeaponExtension = null;
 
+    // ── Fortified 中继指挥（可选 Mod，见 RelayConfigWindow）──
+    // 中继配置全部挂在 CompProperties 上。这里只留一个只读触发列，其余字段 NotAColumn：
+    // 照常落盘 / 走三态 / 参与重置，由窗口统一编辑。
+
+    /// <summary>只读触发列：打开中继配置窗口。没有任何中继 Comp 的行整格留白。</summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.RelayConfig,
+        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoRelayConfig))]
+    public TweakID? relayConfig = null;
+
+    /// <summary>没有中继 Comp 的种族不适用这一格。</summary>
+    public static bool HiddenIfNoRelayConfig(TweakData data) => !FortifiedRelay.HasAny(data.def);
+
+    /// <summary>没有代理机械师 Comp 的行不显示带宽 / 控制组 / 指挥范围。</summary>
+    public static bool HiddenIfNoOverseer(TweakData data) => FortifiedRelay.FindOverseer(data.def) == null;
+
+    /// <summary>整列只在 Fortified 加载时出现（判据与行无关，Available 按第一行求值一次是安全的）。</summary>
+    public static bool AvailableIfFortified(TweakData data) => DataUtility.MayRequire(TweakDatabase.FFF);
+
+    // 宿主 stat：带宽 / 控制组 / 指挥范围写在 def.statBases 上，与 ApplyDefStats 同一个写者。
+    [TweakField(StatDef = "MechBandwidth", Style = ColumnStyle.Int,
+        MayRequire = "ludeon.rimworld.biotech",
+        Available = nameof(AvailableIfFortified),
+        Hidden = nameof(HiddenIfNoOverseer))]
+    public float? mechBandwidth = null;
+    [TweakField(StatDef = "MechControlGroups", Style = ColumnStyle.Int,
+        MayRequire = "ludeon.rimworld.biotech",
+        Available = nameof(AvailableIfFortified),
+        Hidden = nameof(HiddenIfNoOverseer))]
+    public float? mechControlGroups = null;
+    [TweakField(StatDef = "FFF_MechCommandRange",
+        MayRequire = TweakDatabase.FFF,
+        Available = nameof(AvailableIfFortified),
+        Hidden = nameof(HiddenIfNoOverseer))]
+    public float? mechCommandRange = null;
+
+    // 以下字段由 RelayConfigWindow 编辑，只在存档里存在，不进表格。
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? commandRelayMaxWorldMapRadius = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
+    public float? commandRelayMaxRelayRadius = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
+    public float? commandRelayMinRelayRadius = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? commandRelayCoverWholeMap = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? overseerCanRepair = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? overseerTicksPerHeal = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? overseerInstantControl = null;
+
+    /// <summary>中继 Comp 的引用（SetDef 时解析一次；闭包里只捕获 object）。</summary>
+    private object? commandRelayProps = null;
+    private object? overseerProps = null;
+
     // EggLayer comp
     [TweakField(Available = nameof(AvailableIfAnimal))]
     public float? eggLayIntervalDays = null;
@@ -347,6 +402,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
             // Fortified：机械武器过滤（可选 Mod，只按全名反射）。
             mechWeaponExtension = FortifiedMech.FindExtension(d);
             if (mechWeaponExtension != null) LoadMechWeaponFilter(mechWeaponExtension);
+            LoadRelay(d);
         }
     }
 
@@ -361,6 +417,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         ApplyRaceProp(def);
         ApplyMechProps(def);
         ApplyMechWeaponFilter();
+        ApplyRelay(def);
         ApplyDefStats(def);
         ApplyEntityCompProps(def);
         ApplyAnimalCompProps(def);
@@ -443,6 +500,80 @@ class RaceData : TweakData<RaceData>, ISubItemHost
             DataUtility.SetByName(extension, "UsableTechLevels", levels);
         });
     }
+
+    /// <summary>
+    /// 从 <c>CompProperties_CommandRelay</c> / <c>CompProperties_Overseer</c> 回填窗口字段。
+    /// 标量用 <c>??=</c>（值类型不会"复活"）；<c>object</c> 缓存供 Apply 复用，不在闭包里出现可选 Mod 类型。
+    /// </summary>
+    private void LoadRelay(ThingDef d)
+    {
+        commandRelayProps = FortifiedRelay.FindCommandRelay(d);
+        if (commandRelayProps != null)
+        {
+            var props = commandRelayProps;
+            commandRelayMaxWorldMapRadius ??= DataUtility.AsInt(DataUtility.GetByName(props, "maxWorldMapRadius"));
+            commandRelayMaxRelayRadius ??= DataUtility.AsFloat(DataUtility.GetByName(props, "maxRelayRadius"));
+            commandRelayMinRelayRadius ??= DataUtility.AsFloat(DataUtility.GetByName(props, "minRelayRadius"));
+            commandRelayCoverWholeMap ??= DataUtility.GetByName(props, "coverWholeMap") as bool?;
+        }
+
+        overseerProps = FortifiedRelay.FindOverseer(d);
+        if (overseerProps != null)
+        {
+            var props = overseerProps;
+            overseerCanRepair ??= DataUtility.GetByName(props, "canRepair") as bool?;
+            overseerTicksPerHeal ??= DataUtility.AsInt(DataUtility.GetByName(props, "ticksPerHeal"));
+            overseerInstantControl ??= DataUtility.GetByName(props, "instantControl") as bool?;
+        }
+    }
+
+    /// <summary>
+    /// 把窗口里的值写回中继 Comp。三态门控，未动过的字段不写；没有对应 Comp 的种族直接跳过。
+    /// 宿主 stat（带宽 / 控制组 / 指挥范围）由 <see cref="ApplyDefStats"/> 负责，这里只登记缓存刷新。
+    /// </summary>
+    private void ApplyRelay(ThingDef def)
+    {
+        var commandRelay = commandRelayProps ??= FortifiedRelay.FindCommandRelay(def);
+        if (commandRelay != null)
+        {
+            var props = commandRelay; // 闭包只捕获 object
+            ApplyV<int>(nameof(commandRelayMaxWorldMapRadius), v => DataUtility.SetByName(props, "maxWorldMapRadius", v));
+            ApplyV<float>(nameof(commandRelayMaxRelayRadius), v => DataUtility.SetByName(props, "maxRelayRadius", v));
+            ApplyV<float>(nameof(commandRelayMinRelayRadius), v => DataUtility.SetByName(props, "minRelayRadius", v));
+            ApplyV<bool>(nameof(commandRelayCoverWholeMap), v => DataUtility.SetByName(props, "coverWholeMap", v));
+        }
+
+        var overseer = overseerProps ??= FortifiedRelay.FindOverseer(def);
+        if (overseer != null)
+        {
+            var props = overseer;
+            ApplyV<bool>(nameof(overseerCanRepair), v => DataUtility.SetByName(props, "canRepair", v));
+            ApplyV<int>(nameof(overseerTicksPerHeal), v => DataUtility.SetByName(props, "ticksPerHeal", v));
+            ApplyV<bool>(nameof(overseerInstantControl), v => DataUtility.SetByName(props, "instantControl", v));
+        }
+
+        if (RelayTouched) FortifiedRelay.RequestRefresh(def);
+    }
+
+    /// <summary>
+    /// 本次 Apply 是否动过会进入中继缓存的字段。比三态多判 <c>forceWriteAll</c> / <c>forceWriteFields</c>：
+    /// 重置是先写回原值再清标记，那一刻三态已是 Unset。
+    /// </summary>
+    private bool RelayTouched
+        => Touched(nameof(statBases))
+        || Touched(nameof(mechBandwidth))
+        || Touched(nameof(mechControlGroups))
+        || Touched(nameof(mechCommandRange))
+        || Touched(nameof(commandRelayMaxWorldMapRadius))
+        || Touched(nameof(commandRelayMaxRelayRadius))
+        || Touched(nameof(commandRelayMinRelayRadius))
+        || Touched(nameof(commandRelayCoverWholeMap))
+        || Touched(nameof(overseerCanRepair))
+        || Touched(nameof(overseerTicksPerHeal))
+        || Touched(nameof(overseerInstantControl));
+
+    private bool Touched(string field)
+        => IsFieldModified(field) || forceWriteAll || forceWriteFields?.Contains(field) == true;
 
     private void ApplyRaceProp(ThingDef def)
     {
