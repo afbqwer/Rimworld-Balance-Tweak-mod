@@ -383,7 +383,9 @@ public partial class BalanceTweakSettings : ModSettings
         // 必须放在所有绘制/点击处理之前：拖拽涂抹的收尾（松手复位 + 抑制点击）要在本帧任何点击判定之前完成
         DragPaint.BeginFrame();
 
+        long stampFrame = PerfProbe.Stamp();
         TweakUtility.InitAndUpdateData();
+        PerfProbe.Report("初始化 + 重建列表", stampFrame);
 
         GUI.BeginGroup(inRect);
 
@@ -415,6 +417,9 @@ public partial class BalanceTweakSettings : ModSettings
 
         GUI.EndGroup();
         GUI.EndGroup();
+
+        // 整帧收尾要放在 EndGroup 之后，否则测不到内容区的绘制。
+        PerfProbe.Report("整帧（含绘制）", stampFrame);
     }
 
     /// <summary>

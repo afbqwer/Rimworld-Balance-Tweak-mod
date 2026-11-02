@@ -108,9 +108,11 @@ public partial class BalanceTweakSettings
             if (!cached)
             {
 
-                Log.Message("开始读取TweakDatabase");
+                long stampInit = PerfProbe.Stamp();
+                int built = 0;
                 foreach ((var key, var data) in TweakDatabase.AllOriginals)
                 {
+                    built++;
                     var tdata = tweakDatas!.TryGetValue(key);
                     if (tdata != null)
                     {
@@ -123,13 +125,16 @@ public partial class BalanceTweakSettings
                 }
                 cached = true;
                 filterDirty = true;
+                PerfProbe.Report($"首次构建行缓存（{built} 行）", stampInit);
             }
 
             if (filterDirty)
             {
+                long stampFilter = PerfProbe.Stamp();
                 UpdateFilters();
                 SyncVisibleColumns();
                 filterDirty = false;
+                PerfProbe.Report($"筛选/排序（{filteredData.Count} 行 / {allColumnSource.Count} 列）", stampFilter);
             }
         }
 
@@ -285,7 +290,11 @@ public partial class BalanceTweakSettings
                 if (firstData != null)
                 {
                     filterStr = firstData.TypeStrings;
-                    foreach (var config in firstData.AllColumn)
+                    // 列定义是静态惰性构建的：首次打开某个页签要做一遍反射 + 每条列 4 次 Translate。
+                    long stampCols = PerfProbe.Stamp();
+                    var columnsOfFirst = firstData.AllColumn;
+                    PerfProbe.Report($"首次构建列定义（{columnsOfFirst.Count} 列）", stampCols);
+                    foreach (var config in columnsOfFirst)
                     {
                         if (config.isAvailableDelegate == null || config.isAvailableDelegate(firstData))
                             allColumnSource.Add(config);

@@ -253,6 +253,7 @@ internal static class CombatGear
     private static void EnsureWeapons()
     {
         if (weaponEntries != null) return;
+        long stamp = PerfProbe.Stamp();
 
         weaponEntries = [];
         weaponByTag = [];
@@ -286,6 +287,7 @@ internal static class CombatGear
         }
 
         CapBuckets(weaponByTag, e => weaponEntries[e].price);
+        PerfProbe.Report($"建武器池（{weaponEntries.Count} 条 / {weaponByTag.Count} 个标签）", stamp);
     }
 
     /// <summary>
@@ -433,6 +435,7 @@ internal static class CombatGear
     private static void EnsureApparel()
     {
         if (apparelEntries != null) return;
+        long stamp = PerfProbe.Stamp();
 
         apparelEntries = [];
         apparelByTag = [];
@@ -461,6 +464,7 @@ internal static class CombatGear
         // 和武器池同一套限流。排序键用 ThingDef.BaseMarketValue（静态基础值），
         // 因为精确市价要跑 StatWorker，而这里只需要一个单调的价格代理。
         CapBuckets(apparelByTag, e => apparelEntries[e].def.BaseMarketValue);
+        PerfProbe.Report($"建服装池（{apparelEntries.Count} 件 / {apparelByTag.Count} 个标签）", stamp);
     }
 
     /// <summary>
