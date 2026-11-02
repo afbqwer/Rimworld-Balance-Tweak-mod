@@ -219,12 +219,18 @@ public partial class BalanceTweakSettings : ModSettings
 
     #endregion
     #region 初始化
-    private readonly static List<string> curSettingTypeStr = Enum.GetNames(typeof(SettingType)).Select(s => "MST." + s).ToList();
     /// <summary>
-    /// 页签下拉的索引 → 枚举值映射。Enum.GetNames 与 Enum.GetValues 的排序一致，
-    /// 所以第 i 项对应的就是这个列表的第 i 项 —— 不再依赖"枚举值必须从 0 起连续"这一隐含约束。
+    /// 可选 Mod 专属页签在缺少该 Mod 时整项隐藏（而不是留一个永远空着的页签）。
+    /// <para>
+    /// 判定放在<b>打开页签下拉时现算</b>，不在静态初始化阶段读 <c>ModLister</c> ——
+    /// 设置对象的静态构造可能早于 Mod 列表就绪，届时 <c>MayRequire</c> 会误判为"未安装"。
+    /// </para>
     /// </summary>
-    private readonly static List<SettingType> curSettingTypeValues = Enum.GetValues(typeof(SettingType)).Cast<SettingType>().ToList();
+    private static bool IsTabVisible(SettingType type) => type switch
+    {
+        SettingType.HeavyEquipment => DataUtility.MayRequire(TweakDatabase.FFF),
+        _ => true,
+    };
     public enum SortModeType
     {
         NoSort,
@@ -719,9 +725,13 @@ public partial class BalanceTweakSettings : ModSettings
         Rect typeFilterRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.09f + Contracted, bottomrow.height).ContractedBy(Contracted);
         if (Widgets.ButtonText(typeFilterRect, ("MST." + curType).Translate().RawText))
         {
-            OpenFilterMenu(curSettingTypeStr, selectedIndex =>
+            // 每次打开现算：可选 Mod 专属页签（重型装备）在缺少对应 Mod 时不进入下拉。
+            // 两个列表必须同源生成，回调里的 selectedIndex 才能正确映射回枚举值。
+            var visibleTabs = Enum.GetValues(typeof(SettingType)).Cast<SettingType>()
+                .Where(IsTabVisible).ToList();
+            OpenFilterMenu(visibleTabs.Select(t => "MST." + t).ToList(), selectedIndex =>
             {
-                curType = curSettingTypeValues[selectedIndex];
+                curType = visibleTabs[selectedIndex];
                 filterPropType = 0;
                 selectedCol = null;
                 sortCol = null;
