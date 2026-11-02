@@ -34,6 +34,8 @@
     <MST.WeaponLinks>WeaponLinks</MST.WeaponLinks>
     <MST.MechWeaponFilter>MechFilter</MST.MechWeaponFilter>
     <MST.RelayConfig>Relay</MST.RelayConfig>
+    <MST.TurretConfig>Turrets</MST.TurretConfig>
+    <MST.TurretSlotList>TurretSlots</MST.TurretSlotList>
     <MST.Range>Range</MST.Range>
     <MST.SkillReqList>SkillReqList</MST.SkillReqList>
     <MST.TraitReqList>TraitReqList</MST.TraitReqList>

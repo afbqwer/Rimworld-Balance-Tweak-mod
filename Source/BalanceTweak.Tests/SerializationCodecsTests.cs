@@ -33,6 +33,7 @@ public class SerializationCodecsTests
         typeof(ProcessIngredientItem), typeof(ProcessResultItem), typeof(FactionCurve),
         typeof(BackstoryTrait), typeof(PossessionThingDefCountClass),
         typeof(MutatorChance), typeof(ExtraDamage),
+        typeof(TurretSlotRecord),
     };
 
     /// <summary>
@@ -117,6 +118,11 @@ public class SerializationCodecsTests
             (typeof(PossessionThingDefCountClass), new[] { "key", "value" }),
             (typeof(MutatorChance), new[] { "mutator", "chance", "required" }),
             (typeof(ExtraDamage), new[] { "def", "amount", "armorPenetration", "chance" }),
+            (typeof(TurretSlotRecord), new[]
+            {
+                "id", "turret", "supportedWeaponTag", "generateWithWeapons",
+                "idleAngleOffset", "angleOffset", "autoAttack", "warmingTime",
+            }),
         };
 
         Assert.Equal(MigratedTypes.Length, expected.Length);

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <!-- Multi-turret (single-window editor) -->
+    <MST.turretConfig>Turrets</MST.turretConfig>
+    <MST.turretConfigComment>Click to open the turret config window: the main gun is shown for CompProperties_VehicleWeapon, and each sub-turret slot for CompPropertiesMultipleTurretGun.subTurrets. Fields are edited in place; slots are never added or removed.</MST.turretConfigComment>
+    <MST.turretConfigEdit>Edit</MST.turretConfigEdit>
+    <MST.turretConfigIntro>Sub-turret slots are shown per the Def's actual config; adding/removing slots and renaming IDs are not supported. Scalars (warmup / angles / auto attack) apply immediately; changing the turret weapon only affects newly spawned or re-initialized units.</MST.turretConfigIntro>
+
+    <MST.turretSlots>SubTurretSlots</MST.turretSlots>
+    <MST.turretSlotsComment>Editable snapshot of sub-turret slots (only the fields below). Apply merges by slot ID in place; render config stays on the Def.</MST.turretSlotsComment>
+    <MST.turretSlotSection>Slot: {0}</MST.turretSlotSection>
+    <MST.turretNoSlots>This unit has no sub-turret slots.</MST.turretNoSlots>
+    <MST.turretSelectWeapon>Select turret</MST.turretSelectWeapon>
+
+    <MST.turret>SubTurret</MST.turret>
+    <MST.turretComment>The fixed sub-turret weapon for this slot. Only affects newly spawned or re-initialized units; existing sub-turrets keep their current weapon.</MST.turretComment>
+    <MST.warmingTime>Warmup</MST.warmingTime>
+    <MST.warmingTimeComment>Warmup time before firing (seconds). Read live; changes apply immediately.</MST.warmingTimeComment>
+    <MST.angleOffset>AimAngle</MST.angleOffset>
+    <MST.angleOffsetComment>Extra rotation while aiming (degrees). DMS commonly uses -90.</MST.angleOffsetComment>
+    <MST.idleAngleOffset>IdleAngle</MST.idleAngleOffset>
+    <MST.idleAngleOffsetComment>Extra idle rotation when there is no target (degrees).</MST.idleAngleOffsetComment>
+    <MST.autoAttack>AutoAtk</MST.autoAttack>
+    <MST.autoAttackComment>Whether the turret acquires targets automatically. When off, targets must be assigned manually. Read live.</MST.autoAttackComment>
+    <MST.supportedWeaponTag>Tag</MST.supportedWeaponTag>
+    <MST.supportedWeaponTagComment>Weapon tag (weaponTags) allowed to be mounted in this slot. Empty means a fixed weapon.</MST.supportedWeaponTagComment>
+    <MST.generateWithWeapons>GenWeapons</MST.generateWithWeapons>
+    <MST.generateWithWeaponsComment>Weapon tags randomly chosen for this slot on NPC generation. Only affects future spawns.</MST.generateWithWeaponsComment>
+
+    <MST.turretMainSection>Main gun (VehicleWeapon)</MST.turretMainSection>
+    <MST.turretMainNote>The default weapon is only used when a unit spawns without a primary weapon or when a repair replaces a missing weapon; it never replaces an existing primary. Rotation and draw size are read every frame.</MST.turretMainNote>
+    <MST.vehicleDefaultWeapon>MainGun</MST.vehicleDefaultWeapon>
+    <MST.vehicleDefaultWeaponComment>Weapon used when spawning without a primary, or when a repair restores a missing weapon. Never replaces an existing primary.</MST.vehicleDefaultWeaponComment>
+    <MST.vehicleSelectWeapon>Select main gun</MST.vehicleSelectWeapon>
+    <MST.vehicleTurretRotationFollowPawn>FollowPawn</MST.vehicleTurretRotationFollowPawn>
+    <MST.vehicleTurretRotationFollowPawnComment>Whether the main gun follows the pawn's facing. Read live.</MST.vehicleTurretRotationFollowPawnComment>
+    <MST.vehicleRotationSmoothTime>Smooth</MST.vehicleRotationSmoothTime>
+    <MST.vehicleRotationSmoothTimeComment>Smoothing time for main-gun rotation (seconds); lower is snappier. Read live.</MST.vehicleRotationSmoothTimeComment>
+    <MST.vehicleDrawSize>DrawSize</MST.vehicleDrawSize>
+    <MST.vehicleDrawSizeComment>Draw scale of the main gun. Read live.</MST.vehicleDrawSizeComment>
+</LanguageData>

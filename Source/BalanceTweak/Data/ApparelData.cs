@@ -166,6 +166,19 @@ public class ApparelData : TweakData<ApparelData>
 
     private object? subRelayProps = null;
 
+    // ── Fortified 多炮塔（可选 Mod，见 TurretConfigWindow）──
+    // 服装只支持副炮槽（CompMultipleTurretGun 挂在护甲上时由 CompDrawWornExtras 绘制）。
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.TurretConfig,
+        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoTurretComp))]
+    public TweakID? turretConfig = null;
+
+    public static bool HiddenIfNoTurretComp(TweakData data) => !FortifiedTurret.HasSlots(data.def);
+
+    [TweakField(NotAColumn = true, Style = ColumnStyle.TurretSlotList, MayRequire = TweakDatabase.FFF)]
+    public List<TurretSlotRecord>? turretSlots = null;
+
+    private object? multipleTurretProps = null;
+
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
@@ -264,6 +277,7 @@ public class ApparelData : TweakData<ApparelData>
                 reloadableMaxCharges ??= reloadable.maxCharges;
             }
             LoadRelay(d);
+            LoadTurret(d);
         }
         //equipCP = (float?)GetEquipCP(this, isCompQuality, equipPower);
     }
@@ -324,6 +338,7 @@ public class ApparelData : TweakData<ApparelData>
         ApplyApparelProp(def);
         ApplyDefStats(def);
         ApplyRelay(def);
+        ApplyTurret(def);
         OnChangeStuffEffectMultiplierArmor(this);
         OnChangeStuffEffectMultiplierInsulationCold(this);
         OnChangeStuffEffectMultiplierInsulationHeat(this);
@@ -363,6 +378,21 @@ public class ApparelData : TweakData<ApparelData>
 
     private bool Touched(string field)
         => IsFieldModified(field) || forceWriteAll || forceWriteFields?.Contains(field) == true;
+
+    /// <summary>从 <c>CompPropertiesMultipleTurretGun</c> 回填副炮槽快照（列表带守卫）。</summary>
+    private void LoadTurret(ThingDef d)
+    {
+        multipleTurretProps = FortifiedTurret.FindMultipleTurret(d);
+        if (!IsFieldModified(nameof(turretSlots)))
+            turretSlots ??= FortifiedTurret.ReadSlots(multipleTurretProps);
+    }
+
+    /// <summary>按槽位 ID 原地写回副炮槽；没有该 Comp 的服装直接跳过。</summary>
+    private void ApplyTurret(ThingDef def)
+    {
+        var multiple = multipleTurretProps ??= FortifiedTurret.FindMultipleTurret(def);
+        ApplyL<TurretSlotRecord>(nameof(turretSlots), v => FortifiedTurret.WriteSlots(def, multiple, v));
+    }
 
     private void ApplyApparelProp(ThingDef def)
     {

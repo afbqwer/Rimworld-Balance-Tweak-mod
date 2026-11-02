@@ -189,6 +189,10 @@ public abstract partial class TweakData
             // 附加伤害（WeaponTraitDef.extraDamages）：armorPenetration 的 -1 表示"按伤害自动折算"，
             // chance 默认 1（必中），两者都是 PocoCodec 的"等于新实例初值就省略"。
             PocoList<ExtraDamage>("def", "amount", "armorPenetration", "chance");
+            // 副炮槽快照（Fortified 多炮塔）。只存可编辑字段，渲染配置留在 SubTurretProperties 上。
+            // 字段初值与 SubTurretProperties 一致，默认值会被省略。
+            PocoList<TurretSlotRecord>("id", "turret", "supportedWeaponTag", "generateWithWeapons",
+                "idleAngleOffset", "angleOffset", "autoAttack", "warmingTime");
             PocoList<SkillGain>("skill", "amount");
             PocoList<Aptitude>("skill", "level");
             PocoList<GeneticTraitData>("def", "degree");

@@ -281,6 +281,33 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     private object? commandRelayProps = null;
     private object? overseerProps = null;
 
+    // ── Fortified 多炮塔（可选 Mod，见 TurretConfigWindow）──
+    // 副炮槽是列表，但槽位不多，用一个只读触发列 + 单窗口按槽分节编辑；
+    // 槽位数据以 TurretSlotRecord 列表落盘（字段表驱动），渲染配置始终留在 Def 上。
+
+    /// <summary>只读触发列：打开炮塔配置窗口。既没有副炮槽也没有主炮的行整格留白。</summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.TurretConfig,
+        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoTurretComp))]
+    public TweakID? turretConfig = null;
+
+    public static bool HiddenIfNoTurretComp(TweakData data) => !FortifiedTurret.HasAny(data.def);
+
+    [TweakField(NotAColumn = true, Style = ColumnStyle.TurretSlotList, MayRequire = TweakDatabase.FFF)]
+    public List<TurretSlotRecord>? turretSlots = null;
+
+    // 主炮（CompProperties_VehicleWeapon）也放在窗口里编辑，避免在种族页多出四列空格子。
+    [TweakField(NotAColumn = true, Style = ColumnStyle.DefSelector, MayRequire = TweakDatabase.FFF)]
+    public ThingDef? vehicleDefaultWeapon = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? vehicleTurretRotationFollowPawn = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
+    public float? vehicleRotationSmoothTime = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
+    public float? vehicleDrawSize = null;
+
+    private object? multipleTurretProps = null;
+    private object? vehicleWeaponProps = null;
+
     // EggLayer comp
     [TweakField(Available = nameof(AvailableIfAnimal))]
     public float? eggLayIntervalDays = null;
@@ -403,6 +430,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
             mechWeaponExtension = FortifiedMech.FindExtension(d);
             if (mechWeaponExtension != null) LoadMechWeaponFilter(mechWeaponExtension);
             LoadRelay(d);
+            LoadTurret(d);
         }
     }
 
@@ -418,6 +446,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         ApplyMechProps(def);
         ApplyMechWeaponFilter();
         ApplyRelay(def);
+        ApplyTurret(def);
         ApplyDefStats(def);
         ApplyEntityCompProps(def);
         ApplyAnimalCompProps(def);
@@ -574,6 +603,43 @@ class RaceData : TweakData<RaceData>, ISubItemHost
 
     private bool Touched(string field)
         => IsFieldModified(field) || forceWriteAll || forceWriteFields?.Contains(field) == true;
+
+    /// <summary>
+    /// 从 <c>CompPropertiesMultipleTurretGun</c> / <c>CompProperties_VehicleWeapon</c> 回填窗口字段。
+    /// 槽位列表带 <c>!IsFieldModified</c> 守卫：已清空 / 已编辑的字段读档后不得被 Comp 回填"复活"。
+    /// </summary>
+    private void LoadTurret(ThingDef d)
+    {
+        multipleTurretProps = FortifiedTurret.FindMultipleTurret(d);
+        if (!IsFieldModified(nameof(turretSlots)))
+            turretSlots ??= FortifiedTurret.ReadSlots(multipleTurretProps);
+
+        vehicleWeaponProps = FortifiedTurret.FindVehicleWeapon(d);
+        if (vehicleWeaponProps == null) return;
+        var props = vehicleWeaponProps;
+        vehicleDefaultWeapon ??= DataUtility.GetByName(props, "defaultWeapon") as ThingDef;
+        vehicleTurretRotationFollowPawn ??= DataUtility.GetByName(props, "turretRotationFollowPawn") as bool?;
+        vehicleRotationSmoothTime ??= DataUtility.AsFloat(DataUtility.GetByName(props, "rotationSmoothTime"));
+        vehicleDrawSize ??= DataUtility.AsFloat(DataUtility.GetByName(props, "drawSize"));
+    }
+
+    /// <summary>
+    /// 把窗口里的值写回炮塔 Comp。副炮按槽位 ID 原地合并（保留渲染配置），主炮直接写字段。
+    /// 这些字段都是运行时实时读取，没有缓存需要刷新。
+    /// </summary>
+    private void ApplyTurret(ThingDef def)
+    {
+        var multiple = multipleTurretProps ??= FortifiedTurret.FindMultipleTurret(def);
+        ApplyL<TurretSlotRecord>(nameof(turretSlots), v => FortifiedTurret.WriteSlots(def, multiple, v));
+
+        var vehicle = vehicleWeaponProps ??= FortifiedTurret.FindVehicleWeapon(def);
+        if (vehicle == null) return;
+        var props = vehicle;
+        ApplyD<ThingDef>(nameof(vehicleDefaultWeapon), v => DataUtility.SetByName(props, "defaultWeapon", v));
+        ApplyV<bool>(nameof(vehicleTurretRotationFollowPawn), v => DataUtility.SetByName(props, "turretRotationFollowPawn", v));
+        ApplyV<float>(nameof(vehicleRotationSmoothTime), v => DataUtility.SetByName(props, "rotationSmoothTime", v));
+        ApplyV<float>(nameof(vehicleDrawSize), v => DataUtility.SetByName(props, "drawSize", v));
+    }
 
     private void ApplyRaceProp(ThingDef def)
     {

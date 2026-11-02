@@ -59,6 +59,7 @@ public class FieldCodecsTests
     [InlineData(typeof(List<PawnGroupMaker>))]
     [InlineData(typeof(List<MutatorChance>))]
     [InlineData(typeof(List<ExtraDamage>))]
+    [InlineData(typeof(List<TurretSlotRecord>))]
     public void 精确类型都能查到(Type fieldType)
         => Assert.NotNull(TweakData.FieldCodecs.Find(fieldType));
 
@@ -138,6 +139,7 @@ public class FieldCodecsTests
     [InlineData(typeof(ThingFilter))]
     [InlineData(typeof(List<StockGenerator>))]
     [InlineData(typeof(List<PawnGroupMaker>))]
+    [InlineData(typeof(List<TurretSlotRecord>))]
     public void 结构化类型参与解析(Type structured)
         => Assert.NotNull(TweakData.FieldCodecs.Find(structured)!.Resolve);
 
