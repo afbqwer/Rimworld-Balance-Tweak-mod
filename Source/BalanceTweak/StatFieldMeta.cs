@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using BalanceTweak;
 using RimWorld;
@@ -11,6 +12,22 @@ public class StatFieldMeta
 {
     public FieldInfo Field { get; }
     public TweakFieldAttribute Attr { get; }
+
+    /// <summary>
+    /// 字段类型是不是 <c>List&lt;T&gt;</c>。
+    /// <para>
+    /// 只有 List 需要在克隆时深拷贝（防止 clone 与原始数据共享列表引用）；其余引用类型
+    /// （string / Def / TweakID……）都是共享引用。克隆循环据此提前跳过 ——
+    /// 省掉的是"先反射读一遍才知道该不该读"，这在一行几十个字段、几万行时是纯浪费。
+    /// </para>
+    /// </summary>
+    public bool IsList { get; }
+
+    /// <summary>
+    /// <c>List&lt;T&gt;</c> 的构造泛型类型；非 List 为 null。
+    /// 预先算好，避免每次克隆都做一次 <c>MakeGenericType</c>（那比反射读字段还贵）。
+    /// </summary>
+    public Type? ListType { get; }
 
     // 延迟加载的 StatDef
     private StatDef? _statDef;
@@ -56,6 +73,13 @@ public class StatFieldMeta
     {
         Field = field;
         Attr = attr;
+
+        // 字段类型在类型加载时就固定，算一次即可。这是"每行省十几次反射"的唯一代价。
+        if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(List<>))
+        {
+            IsList = true;
+            ListType = field.FieldType;
+        }
         isEquippedStat = attr.IsEquippedStat;
         isStuffFactorStat = attr.IsStuffFactorStat;
         isStuffOffsetStat = attr.IsStuffOffsetStat;

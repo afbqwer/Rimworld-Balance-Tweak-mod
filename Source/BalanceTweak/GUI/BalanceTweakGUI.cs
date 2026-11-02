@@ -385,6 +385,16 @@ public partial class BalanceTweakSettings : ModSettings
 
         long stampFrame = PerfProbe.Stamp();
         TweakUtility.InitAndUpdateData();
+
+        // 首次建表还在一帧一帧地推进：这期间表格没有内容可画，画进度条代替，
+        // 让用户看到"在准备"而不是"界面卡死了"。
+        if (TweakUtility.InitInProgress)
+        {
+            DrawInitProgress(inRect);
+            PerfProbe.Report("整帧（建表中）", stampFrame);
+            return;
+        }
+
         PerfProbe.Report("初始化 + 重建列表", stampFrame);
 
         GUI.BeginGroup(inRect);
@@ -420,6 +430,38 @@ public partial class BalanceTweakSettings : ModSettings
 
         // 整帧收尾要放在 EndGroup 之后，否则测不到内容区的绘制。
         PerfProbe.Report("整帧（含绘制）", stampFrame);
+    }
+
+    /// <summary>
+    /// 首次建表的进度条。只在数据量大到跨帧时才会出现 ——
+    /// 小数据包一帧就建完，这个分支根本进不来，不会闪一下。
+    /// </summary>
+    private static void DrawInitProgress(Rect inRect)
+    {
+        // 铺一层底色：不然会看到上一帧残留的表格。颜色取窗口面板的深灰。
+        Widgets.DrawBoxSolid(inRect, new Color(0.16f, 0.16f, 0.16f, 1f));
+
+        float progress = TweakUtility.InitProgress;
+
+        Rect panel = new(0f, 0f, 460f, 84f);
+        panel.center = inRect.center;
+        Widgets.DrawMenuSection(panel);
+
+        Rect inner = panel.ContractedBy(16f);
+
+        // IMGUI 的 Text.Font / Anchor 是全局状态，这个分支会提前 return，
+        // 借出去的状态必须还回去，否则下一帧别的面板会继承到 MiddleLeft。
+        GameFont prevFont = Text.Font;
+        TextAnchor prevAnchor = Text.Anchor;
+        Text.Font = GameFont.Small;
+        Text.Anchor = TextAnchor.MiddleLeft;
+
+        Widgets.Label(new Rect(inner.x, inner.y, inner.width, 26f),
+            "MST.preparingData".Translate((progress * 100f).ToString("F0") + "%").RawText);
+        Widgets.FillableBar(new Rect(inner.x, inner.y + 32f, inner.width, 18f), progress);
+
+        Text.Font = prevFont;
+        Text.Anchor = prevAnchor;
     }
 
     /// <summary>

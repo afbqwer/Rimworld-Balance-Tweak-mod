@@ -53,6 +53,7 @@
     <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>
+    <MST.preparingData>Preparing data... {0}</MST.preparingData>
     <MST.FlatInput>Flat:</MST.FlatInput>
     <MST.PrecInput>Mult:</MST.PrecInput>
     <MST.LowerLimit>Min:</MST.LowerLimit>

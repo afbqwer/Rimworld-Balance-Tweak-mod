@@ -588,6 +588,27 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 > 新增 Display 列时照这个来：字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏，不要在 `SetDef` 里算。
 > 关联入口列（`Link` / `PawnWeaponLinks` 等）不进 `EnsureForDisplay`：它们的字段永远是 null，点了才去查。
 
+### 7.8.2 首次建表必须分帧（否则打开窗口卡 400ms）
+
+行缓存 `cachedData` 要在首次打开窗口时把 `TweakDatabase.AllOriginals` 全部克隆一份。
+实测 43422 行时这一步要 **405ms**，一次性做完就是"点开就卡住"。
+
+现在的做法是 `TweakUtility.AdvanceInit`：**每帧只克隆 2000 行**，队列没走完时
+`InitInProgress` 为 true，`DoEditorContents` 直接画进度条并 return。约束有三条：
+
+| 规则 | 原因 |
+| --- | --- |
+| 没建完时**不许** `UpdateFilters` | 此时 `cachedData` 只有一部分，筛出来会缺行 |
+| 小数据包（< 2000 行）必须**一帧建完** | 否则进度条会闪一下，反而更差 |
+| `DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor` | 该分支提前 return，IMGUI 的全局状态会漏给下一帧 |
+
+> `ApplyFullReset`（"完全重置"按钮）**仍是同步重建**，没接这套分帧 —— 它是用户主动点击，
+> 且每行还要跑 `ApplyAuthoritative`，语义与首建不同。真觉得卡再单说。
+
+> 克隆本身的成本在 `TweakData<T>.DeepCopyFields`：只有 `List<T>` 字段需要深拷贝，
+> 其余引用类型共享引用。所以那里有 `if (!meta.IsList) continue;` —— 少了这一句，
+> 每行要把几十个字段各反射读一遍、再什么也不做，实测占掉克隆总耗时的九成。
+
 ### 7.9 炮塔枪的 DPS：节奏在建筑上
 
 炮塔的"枪"只是挂件，`Building_TurretGun` 的射击节奏**完全由建筑决定**，两条都要照抄，不能按普通枪算：

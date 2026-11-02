@@ -103,30 +103,33 @@ public partial class BalanceTweakSettings
             filterDirty = true;
         }
 
+        /// <summary>
+        /// 首次建表还没建完的行（null = 从未开始或已完成）。
+        /// 分行不一次性建，是<see cref="AdvanceInit"/> 的全部目的。
+        /// </summary>
+        private static List<KeyValuePair<TweakID, TweakData>>? initQueue;
+        private static int initCursor;
+        private static double initElapsedMs;
+        private static int initFrames;
+
+        /// <summary>
+        /// 每帧最多克隆多少行。按 L1′ 之后约 4µs/行算，2000 行 ≈ 8ms ——
+        /// 卡在半帧之内，进度条才画得动。
+        /// </summary>
+        private const int RowsPerInitFrame = 2000;
+
+        /// <summary>首次建表是否还没完成（还没开始时也算 true）。</summary>
+        public static bool InitInProgress => !cached;
+
+        /// <summary>建表进度 0~1，供进度条使用。</summary>
+        public static float InitProgress
+            => initQueue == null || initQueue.Count == 0 ? 1f : initCursor / (float)initQueue.Count;
+
         public static void InitAndUpdateData()
         {
-            if (!cached)
-            {
-
-                long stampInit = PerfProbe.Stamp();
-                int built = 0;
-                foreach ((var key, var data) in TweakDatabase.AllOriginals)
-                {
-                    built++;
-                    var tdata = tweakDatas!.TryGetValue(key);
-                    if (tdata != null)
-                    {
-                        cachedData[key.settingType].SetOrAdd(key, tdata);
-                    }
-                    else
-                    {
-                        cachedData[key.settingType].SetOrAdd(key, data.Clone());
-                    }
-                }
-                cached = true;
-                filterDirty = true;
-                PerfProbe.Report($"首次构建行缓存（{built} 行）", stampInit);
-            }
+            if (!cached) AdvanceInit();
+            // 没建完就先别筛：此时 cachedData 只有一部分，筛出来的列表会缺行。
+            if (!cached) return;
 
             if (filterDirty)
             {
@@ -136,6 +139,50 @@ public partial class BalanceTweakSettings
                 filterDirty = false;
                 PerfProbe.Report($"筛选/排序（{filteredData.Count} 行 / {allColumnSource.Count} 列）", stampFilter);
             }
+        }
+
+        /// <summary>
+        /// 把首次建表推进一帧的份额。
+        /// <para>
+        /// 43422 行一次克隆要 400ms，直接卡在打开窗口那一帧上。分成每帧 2000 行之后，
+        /// 总量不变，但每帧只占约 8ms，中间还能画进度条 —— 用户看到的是"在准备"而不是"死了"。
+        /// 小数据包（&lt; 2000 行）仍然一帧建完，不会看到进度条闪过。
+        /// </para>
+        /// </summary>
+        private static void AdvanceInit()
+        {
+            long stamp = PerfProbe.Stamp();
+
+            if (initQueue == null)
+            {
+                initCursor = 0;
+                initElapsedMs = 0;
+                initFrames = 0;
+                initQueue = new List<KeyValuePair<TweakID, TweakData>>(TweakDatabase.AllOriginals.Count);
+                foreach (var pair in TweakDatabase.AllOriginals)
+                    initQueue.Add(pair);
+            }
+
+            int end = Math.Min(initCursor + RowsPerInitFrame, initQueue.Count);
+            for (; initCursor < end; initCursor++)
+            {
+                var pair = initQueue[initCursor];
+                var live = tweakDatas!.TryGetValue(pair.Key);
+                // 存档里改过的行直接复用那个实例；没改过的克隆一份，避免编辑时写脏原始快照。
+                cachedData[pair.Key.settingType].SetOrAdd(pair.Key, live ?? pair.Value.Clone());
+            }
+
+            initElapsedMs += PerfProbe.ElapsedMs(stamp);
+            initFrames++;
+
+            if (initCursor < initQueue.Count) return;
+
+            int total = initQueue.Count;
+            initQueue = null;
+            cached = true;
+            filterDirty = true;
+
+            Log.Message($"[BalanceTweak][perf] 首次构建行缓存完成：{total} 行 / {initFrames} 帧，累计 {initElapsedMs:F0}ms");
         }
 
         /// <summary>从数据中移除</summary>

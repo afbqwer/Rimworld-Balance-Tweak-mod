@@ -53,6 +53,7 @@
     <MST.ColumnConfig>列配置</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>列配置</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>选中列：</MST.CurrentColumn>
+    <MST.preparingData>正在准备数据… {0}</MST.preparingData>
     <MST.FlatInput>增减:</MST.FlatInput>
     <MST.PrecInput>倍率:</MST.PrecInput>
     <MST.LowerLimit>下限:</MST.LowerLimit>
