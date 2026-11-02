@@ -102,6 +102,15 @@ public partial class BalanceTweakSettings : ModSettings
     /// </summary>
     public static bool showMainButton = false;
 
+    /// <summary>
+    /// 是否输出诊断日志：初始化统计、性能探针、非原版数据说明。默认关闭。
+    /// <para>
+    /// 这些内容每次启动都会刷进 Player.log —— 对普通玩家没有意义，真出问题时反而更难找。
+    /// 真正的错误与警告走 <c>Log.Error</c> / <c>Log.Warning</c>，不受这个开关影响。
+    /// </para>
+    /// </summary>
+    public static bool verboseLog = false;
+
     /// <summary>统一修改实际生效的下限；未启用下限时为负无穷，等价于该侧不截断。</summary>
     public static float EffectiveBatchLowerLimit => batchLowerLimitEnabled ? batchLowerLimit : float.NegativeInfinity;
     /// <summary>统一修改实际生效的上限；未启用上限时为正无穷，等价于该侧不截断。</summary>
@@ -371,6 +380,7 @@ public partial class BalanceTweakSettings : ModSettings
         Scribe_Values.Look(ref MainWindowX, "mainWindowX", int.MinValue);
         Scribe_Values.Look(ref MainWindowY, "mainWindowY", int.MinValue);
         Scribe_Values.Look(ref showMainButton, "showMainButton", false);
+        Scribe_Values.Look(ref verboseLog, "verboseLog", false);
         base.ExposeData();
     }
     #endregion

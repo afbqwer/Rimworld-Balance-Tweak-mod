@@ -42,8 +42,8 @@ public class GeneralSettingsWindow : Window
         Close();
     }
 
-    // 高度按内容估的：多了「主按钮」一节后 600 会把最下面的「移除所有数据」按钮切掉
-    public override Vector2 InitialSize => new(480f, 670f);
+    // 高度按内容估的：多了「主按钮」和「诊断」两节后，670 会把最下面的「移除所有数据」按钮切掉
+    public override Vector2 InitialSize => new(480f, 710f);
 
     public override void DoWindowContents(Rect inRect)
     {
@@ -75,6 +75,16 @@ public class GeneralSettingsWindow : Window
         // 不需要额外「应用」：主按钮每帧按这个开关重新算可见性
         Widgets.CheckboxLabeled(mainButtonRect, "MST.ShowMainButton".Translate().RawText, ref showMainButton);
         TooltipHandler.TipRegion(mainButtonRect, "MST.ShowMainButtonTooltip".Translate().RawText);
+        curY += RowHeight;
+
+        curY += SectionPadding;
+
+        // === 诊断 ===
+        DrawSectionHeader(ref curY, inRect.width, "MST.Diagnostics".Translate().RawText);
+        Rect verboseRect = new(10f, curY, inRect.width - 20f, RowHeight);
+        // 不需要额外「应用」：写完立刻生效，日志开关本来就没有中途状态
+        Widgets.CheckboxLabeled(verboseRect, "MST.VerboseLog".Translate().RawText, ref verboseLog);
+        TooltipHandler.TipRegion(verboseRect, "MST.VerboseLogTooltip".Translate().RawText);
         curY += RowHeight;
 
         curY += SectionPadding;

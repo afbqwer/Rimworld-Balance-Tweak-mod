@@ -137,7 +137,7 @@ public static class TweakRegistry
             }
         }
 
-        Log.Message($"[BalanceTweak] TweakRegistry：注册 {list.Count} 条规则，覆盖 {list.Select(r => r.DefType).Distinct().Count()} 种 Def 类型。");
+        TweakLog.Message($"[BalanceTweak] TweakRegistry：注册 {list.Count} 条规则，覆盖 {list.Select(r => r.DefType).Distinct().Count()} 种 Def 类型。");
         foreach (var err in buildErrors)
             Log.Error($"[BalanceTweak] TweakRegistry 注册失败：{err}");
 

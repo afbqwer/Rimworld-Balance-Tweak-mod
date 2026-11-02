@@ -572,35 +572,49 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | 规则 | 说明 |
 | --- | --- |
 | `SetDef` 只填**镜像与可编辑字段的原值** | 例如 `WeaponData` 的 `SetDef` 只跑 `GenMirrors`（verb / 伤害 / 穿透 / 射程…），不跑 `GenDps` |
-| 派生列在**第一次被读**时算 | 入口是 `StatColumnConfig.EnsureForDisplay`（由 `GetString` / `GetNumericValue` 触发），也就是**画到 / 排到 / 搜到**那一格时才跑 `EnsureDisplayValues()`；各数据类自己决定算什么 |
+| 派生列在**进入页签时全量算完** | 入口是 `TweakUtility.AdvanceDerive`：切到某页签后按每帧 6ms 的预算把该页签所有行 `EnsureDisplayValues()` 一遍，期间显示进度条。做完之后排序 / 搜索只是比较已有数字，不会在点列头那一刻同步爆算 |
 | 算完置 `displayValuesEnsured = true` 缓存 | `Apply()` 结束时会把它置回 false：参考值按"当前 def 现算"，改完成本 / 招式后下一次读就是新值 |
 | 只有**原始快照**需要在 `Apply` 之前定格 | `PrepareDeferredDisplayValues` 只遍历 `tweakDatas.Keys`，成本与改动条数成正比；未修改的行 def 没被动过，现算与提前算完全等价 |
 
 > **不要在 `UpdateFilters` 里补算**。那是全表遍历（几千行），而表格绘制是行 / 列双虚拟化的，
-> 一屏只有几十格。在那里补一句 `EnsureDisplayValues()`，整条"按需"链路就断了 ——
-> 卡顿会精确地落在玩家刚点开页签的那一帧。
+> 一屏只有几十格；在那里补一句 `EnsureDisplayValues()`，卡顿会精确地落在玩家刚点开页签的那一帧。
+> 全量推导只能走 `AdvanceDerive`，因为只有它分帧、有进度条。
 >
-> 三个可接受的全表触发点：① 按派生列**排序**（`GetNumericValue`）；② 搜索框在 label 未命中时
-> 按排序列再试一次（`GetString`）；③ 编辑 / 清空 / 重置后给被改的**那一行**补算。
-> 前两个是玩家主动要求的全表操作，第三个只碰一行。
+> `StatColumnConfig.EnsureForDisplay`（`GetString` / `GetNumericValue` 触发）**保留但只作兜底**：
+> 正常情况下进页签时已经全算过，那里是 O(1) 的 `displayValuesEnsured` 早退。
 
 > `GenValues()`（镜像 + DPS + 强度全量重算）只给"数据真的变了"的路径用：`Apply` / 弹丸推送 / 招式编辑 / 自检。
 > 新增 Display 列时照这个来：字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏，不要在 `SetDef` 里算。
 > 关联入口列（`Link` / `PawnWeaponLinks` 等）不进 `EnsureForDisplay`：它们的字段永远是 null，点了才去查。
 
-### 7.8.2 首次建表必须分帧（否则打开窗口卡 400ms）
+### 7.8.2 打开窗口要分两段准备（否则卡 400ms）
 
-行缓存 `cachedData` 要在首次打开窗口时把 `TweakDatabase.AllOriginals` 全部克隆一份。
-实测 43422 行时这一步要 **405ms**，一次性做完就是"点开就卡住"。
+打开窗口的准备工作有两段，都是分帧的，期间 `InitInProgress` 为 true，
+`DoEditorContents` 画进度条后直接 return：
 
-现在的做法是 `TweakUtility.AdvanceInit`：**每帧只克隆 2000 行**，队列没走完时
-`InitInProgress` 为 true，`DoEditorContents` 直接画进度条并 return。约束有三条：
+| 段 | 入口 | 规模 | 预算 | 进度权重 |
+| --- | --- | --- | --- | --- |
+| ① 建行缓存（克隆） | `AdvanceInit` | 全库 4 万级，一次性 | 每帧 2000 行 | 0~90% |
+| ② 页签派生值 | `AdvanceDerive` | 当前页签几百~几千行，**每次切页签** | 每帧 6ms（按时间不按行数） | 90~100% |
+
+约束四条：
 
 | 规则 | 原因 |
 | --- | --- |
 | 没建完时**不许** `UpdateFilters` | 此时 `cachedData` 只有一部分，筛出来会缺行 |
-| 小数据包（< 2000 行）必须**一帧建完** | 否则进度条会闪一下，反而更差 |
+| 小数据包必须**一帧做完** | 否则进度条会闪一下，反而更差 |
 | `DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor` | 该分支提前 return，IMGUI 的全局状态会漏给下一帧 |
+| 第 ② 段按**时间**给预算 | 不同页签单行成本差两个数量级（兵种战力 3µs，武器 DPS 要跑 `GenDps`），固定行数要么卡帧要么浪费 |
+
+第 ② 段存在的理由：保留"按需算"的话，用户点列头按派生列排序时，会把整页行在那一帧同步拉起来 ——
+那是一次数百毫秒的停顿，正好落在最不该卡的时刻。全算之后排序只是比较已有数字。
+
+> 派生值被置脏（改武器 / 改兵种）时，只有**当前页签**会重推（`CombatPower.InvalidateRows` 里判
+> `type == TweakUtility.CurrentType`）；别的页签切过去时 `deriveType != curType` 会自然重来。
+> 不判断的话，改一把枪会让武器页几千行 DPS 莫名其妙重算一次。
+
+> 列定义（反射 + 每条列若干次 `Translate`，约 20~30ms/类型）也在第 ② 段的第一帧预热，
+> 这样它落在进度条期间，而不是"表格首次显示前卡一下"。
 
 > `ApplyFullReset`（"完全重置"按钮）**仍是同步重建**，没接这套分帧 —— 它是用户主动点击，
 > 且每行还要跑 `ApplyAuthoritative`，语义与首建不同。真觉得卡再单说。
@@ -608,6 +622,10 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 > 克隆本身的成本在 `TweakData<T>.DeepCopyFields`：只有 `List<T>` 字段需要深拷贝，
 > 其余引用类型共享引用。所以那里有 `if (!meta.IsList) continue;` —— 少了这一句，
 > 每行要把几十个字段各反射读一遍、再什么也不做，实测占掉克隆总耗时的九成。
+
+> 上面这些 `[BalanceTweak][perf]` 日志、以及 `TweakDatabase` 的初始化统计，都走 `TweakLog.Message`，
+> 受「总体设置 → 诊断 → 冗杂日志」开关控制（默认关）。**`Log.Error` / `Log.Warning` 不走这里，永远输出** ——
+> 关掉冗杂日志不能等于关掉报错。
 
 ### 7.9 炮塔枪的 DPS：节奏在建筑上
 

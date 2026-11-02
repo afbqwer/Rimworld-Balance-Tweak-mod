@@ -147,7 +147,7 @@ internal static class StockGeneratorCodec
         if (!IsVanilla(type))
         {
             if (warnedNonVanilla.Add(type))
-                Log.Message($"[BalanceTweak] stockGenerators：{TypeLabel(type)} 是非原版生成器，本工具只做只读展示"
+                TweakLog.Message($"[BalanceTweak] stockGenerators：{TypeLabel(type)} 是非原版生成器，本工具只做只读展示"
                     + "（不读不写它的字段）：存档只留类型名，回填时按类型名在 Def 里找回原实例。");
             return TypeLabel(type);
         }
@@ -282,7 +282,7 @@ internal static class StockGeneratorCodec
         foreach (var leftover in pool)
         {
             if (used.Contains(leftover)) continue;
-            Log.Message($"[BalanceTweak] stockGenerators：Def 里的非原版生成器 {TypeLabel(leftover.GetType())}"
+            TweakLog.Message($"[BalanceTweak] stockGenerators：Def 里的非原版生成器 {TypeLabel(leftover.GetType())}"
                 + " 不在字段里，已原样保留（追加在末尾）。");
             result.Add(leftover);
         }

@@ -107,7 +107,7 @@ public static class SerializationHelper
     /// 记录 Def 引用解析失败（预期情况，例如相关模组被移除）：仅 info 级日志，不视为错误。
     /// </summary>
     internal static void LogMissingDef(string parseTarget, string? defName)
-        => Log.Message($"[BalanceTweak] {parseTarget} 引用的 Def 缺失，已跳过：'{defName}'");
+        => TweakLog.Message($"[BalanceTweak] {parseTarget} 引用的 Def 缺失，已跳过：'{defName}'");
 
 
     #region IngredientCount（bespoke：挂在 ThingFilter + GetBaseCount/SetBaseCount 上）

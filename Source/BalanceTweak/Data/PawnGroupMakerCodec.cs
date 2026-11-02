@@ -143,7 +143,7 @@ internal static class PawnGroupMakerCodec
         foreach (var leftover in pool)
         {
             if (used.Contains(leftover)) continue;
-            Log.Message($"[BalanceTweak] pawnGroupMakers：Def 里的非原版兵种池 {TypeLabel(leftover.GetType())}"
+            TweakLog.Message($"[BalanceTweak] pawnGroupMakers：Def 里的非原版兵种池 {TypeLabel(leftover.GetType())}"
                 + " 不在字段里，已原样保留（追加在末尾）。");
             result.Add(leftover);
         }

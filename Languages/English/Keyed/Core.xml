@@ -54,6 +54,9 @@
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>
     <MST.preparingData>Preparing data... {0}</MST.preparingData>
+    <MST.Diagnostics>Diagnostics</MST.Diagnostics>
+    <MST.VerboseLog>Verbose log</MST.VerboseLog>
+    <MST.VerboseLogTooltip>Writes startup statistics, timings and data-processing details to the log. Only useful when diagnosing a problem; leaving it on just buries the lines that matter.</MST.VerboseLogTooltip>
     <MST.FlatInput>Flat:</MST.FlatInput>
     <MST.PrecInput>Mult:</MST.PrecInput>
     <MST.LowerLimit>Min:</MST.LowerLimit>

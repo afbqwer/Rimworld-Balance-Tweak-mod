@@ -118,18 +118,52 @@ public partial class BalanceTweakSettings
         /// </summary>
         private const int RowsPerInitFrame = 2000;
 
-        /// <summary>首次建表是否还没完成（还没开始时也算 true）。</summary>
-        public static bool InitInProgress => !cached;
+        // === 当前页签的派生值推导（第二段分帧） ===
+        // 和建行缓存分开：那段是"一次性的 43422 行克隆"，这段是"每个页签一次的全量 EnsureDisplayValues"。
+        private static SettingType deriveType;
+        private static List<TweakData>? deriveQueue;
+        private static int deriveCursor;
+        private static bool deriveDone;
+        private static bool deriveDirty = true;
+        private static double deriveElapsedMs;
+        private static int deriveFrames;
 
-        /// <summary>建表进度 0~1，供进度条使用。</summary>
+        /// <summary>每帧留给推导的时间预算（毫秒）。单帧总开销要压在 8ms 以内。</summary>
+        private const double DeriveBudgetMs = 6.0;
+
+        /// <summary>当前正在看的页签。派生值推导只关心这一页，别的页签切过去时自然会重推。</summary>
+        public static SettingType CurrentType => curType;
+
+        /// <summary>当前页签的派生值作废：下次筛选前重推一遍全量派生值。</summary>
+        public static void MarkDerivedDirty() => deriveDirty = true;
+
+        /// <summary>首次建表或当前页签推导还没做完。</summary>
+        public static bool InitInProgress => !cached || !deriveDone;
+
+        /// <summary>准备进度 0~1。克隆占九成权重（它才是大头），推导占一成。</summary>
         public static float InitProgress
-            => initQueue == null || initQueue.Count == 0 ? 1f : initCursor / (float)initQueue.Count;
+        {
+            get
+            {
+                if (!cached)
+                {
+                    if (initQueue == null || initQueue.Count == 0) return 0f;
+                    return 0.9f * initCursor / initQueue.Count;
+                }
+                if (!deriveDone && deriveQueue != null && deriveQueue.Count > 0)
+                    return 0.9f + 0.1f * deriveCursor / deriveQueue.Count;
+                return 1f;
+            }
+        }
 
         public static void InitAndUpdateData()
         {
             if (!cached) AdvanceInit();
             // 没建完就先别筛：此时 cachedData 只有一部分，筛出来的列表会缺行。
             if (!cached) return;
+
+            AdvanceDerive();
+            if (!deriveDone) return;
 
             if (filterDirty)
             {
@@ -139,6 +173,61 @@ public partial class BalanceTweakSettings
                 filterDirty = false;
                 PerfProbe.Report($"筛选/排序（{filteredData.Count} 行 / {allColumnSource.Count} 列）", stampFilter);
             }
+        }
+
+        /// <summary>
+        /// 把<b>当前页签</b>所有行的派生值算完，每帧限时 6ms。
+        /// <para>
+        /// 为什么要全算而不是按需：按需的方案在"按派生列排序 / 搜索"时会把整页行一次性拉起来 ——
+        /// 那是一次不可控的同步停顿，而且正好落在用户点列头那一刻。全算之后排序只是比较已有数字。
+        /// </para>
+        /// <para>
+        /// 每帧预算按<b>时间</b>而不是行数：不同页签的单行成本差两个数量级
+        /// （兵种战力命中缓存约 3µs，武器 DPS 要跑 GenDps）。固定行数要么卡帧，要么浪费。
+        /// </para>
+        /// </summary>
+        private static void AdvanceDerive()
+        {
+            if (deriveDirty || deriveType != curType)
+            {
+                deriveDirty = false;
+                deriveType = curType;
+                deriveDone = false;
+                deriveQueue = null;
+                deriveCursor = 0;
+                deriveElapsedMs = 0;
+                deriveFrames = 0;
+            }
+
+            if (deriveDone) return;
+
+            if (deriveQueue == null)
+            {
+                var rows = cachedData[curType];
+                deriveQueue = new List<TweakData>(rows.Count);
+                foreach (var row in rows.Values) deriveQueue.Add(row);
+
+                // 列定义（反射 + 每条列若干次 Translate）是每类型一次的固定开销，约 20~30ms。
+                // 它反正要在本次打开期间付，挪到进度条阶段比拼在"表格首次显示前"更不突兀。
+                if (deriveQueue.Count > 0) _ = deriveQueue[0].AllColumn;
+            }
+
+            long stamp = PerfProbe.Stamp();
+            while (deriveCursor < deriveQueue.Count && PerfProbe.ElapsedMs(stamp) < DeriveBudgetMs)
+                deriveQueue[deriveCursor++].EnsureDisplayValues();
+
+            deriveElapsedMs += PerfProbe.ElapsedMs(stamp);
+            deriveFrames++;
+
+            if (deriveCursor < deriveQueue.Count) return;
+
+            int total = deriveQueue.Count;
+            deriveDone = true;
+            deriveQueue = null;
+
+            // 只在真的跨帧或耗时可观时打一条，方便确认"排序不再触发全量计算"。
+            if ((deriveFrames > 1 || deriveElapsedMs >= 8.0) && TweakLog.Verbose)
+                TweakLog.Message($"[BalanceTweak][perf] 页签派生值推导完成：{curType} {total} 行 / {deriveFrames} 帧，累计 {deriveElapsedMs:F0}ms");
         }
 
         /// <summary>
@@ -182,7 +271,7 @@ public partial class BalanceTweakSettings
             cached = true;
             filterDirty = true;
 
-            Log.Message($"[BalanceTweak][perf] 首次构建行缓存完成：{total} 行 / {initFrames} 帧，累计 {initElapsedMs:F0}ms");
+            TweakLog.Message($"[BalanceTweak][perf] 首次构建行缓存完成：{total} 行 / {initFrames} 帧，累计 {initElapsedMs:F0}ms");
         }
 
         /// <summary>从数据中移除</summary>

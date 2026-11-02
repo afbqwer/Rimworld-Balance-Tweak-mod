@@ -54,6 +54,9 @@
     <MST.ColumnSelectorTitle>列配置</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>选中列：</MST.CurrentColumn>
     <MST.preparingData>正在准备数据… {0}</MST.preparingData>
+    <MST.Diagnostics>诊断</MST.Diagnostics>
+    <MST.VerboseLog>冗杂日志</MST.VerboseLog>
+    <MST.VerboseLogTooltip>在日志里输出初始化统计、性能耗时和数据处理明细。排查问题时才需要，平时开着只会淹掉有用的行。</MST.VerboseLogTooltip>
     <MST.FlatInput>增减:</MST.FlatInput>
     <MST.PrecInput>倍率:</MST.PrecInput>
     <MST.LowerLimit>下限:</MST.LowerLimit>

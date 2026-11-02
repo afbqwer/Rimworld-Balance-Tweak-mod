@@ -37,7 +37,7 @@ namespace BalanceTweak
             if (lastReportAt.TryGetValue(tag, out long last) && now - last < Stopwatch.Frequency) return;
             lastReportAt[tag] = now;
 
-            Log.Message($"[BalanceTweak][perf] {tag}: {ms:F1}ms");
+            TweakLog.Message($"[BalanceTweak][perf] {tag}: {ms:F1}ms");
         }
 
         /// <summary>测试用：清掉限流状态，让下一次调用一定打日志。</summary>

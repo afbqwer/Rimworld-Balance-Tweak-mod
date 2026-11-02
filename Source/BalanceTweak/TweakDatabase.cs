@@ -220,7 +220,7 @@ public static partial class TweakDatabase
 
         var pendingItems = new List<(Def, TweakData, SettingType)>();
         int thingDefCount = DefDatabase<ThingDef>.DefCount;
-        Log.Message($"[BalanceTweak] Def 统计：ThingDef={thingDefCount}, PawnKindDef={DefDatabase<PawnKindDef>.DefCount}, AbilityDef={DefDatabase<AbilityDef>.DefCount}, ThoughtDef={DefDatabase<ThoughtDef>.DefCount}, GeneDef={DefDatabase<GeneDef>.DefCount}, MemeDef={DefDatabase<MemeDef>.DefCount}, IncidentDef={DefDatabase<IncidentDef>.DefCount}, ResearchProjectDef={DefDatabase<ResearchProjectDef>.DefCount}, FactionDef={DefDatabase<FactionDef>.DefCount}, HediffDef={DefDatabase<HediffDef>.DefCount}, TraitDef={DefDatabase<TraitDef>.DefCount}, TerrainDef={DefDatabase<TerrainDef>.DefCount}");
+        TweakLog.Message($"[BalanceTweak] Def 统计：ThingDef={thingDefCount}, PawnKindDef={DefDatabase<PawnKindDef>.DefCount}, AbilityDef={DefDatabase<AbilityDef>.DefCount}, ThoughtDef={DefDatabase<ThoughtDef>.DefCount}, GeneDef={DefDatabase<GeneDef>.DefCount}, MemeDef={DefDatabase<MemeDef>.DefCount}, IncidentDef={DefDatabase<IncidentDef>.DefCount}, ResearchProjectDef={DefDatabase<ResearchProjectDef>.DefCount}, FactionDef={DefDatabase<FactionDef>.DefCount}, HediffDef={DefDatabase<HediffDef>.DefCount}, TraitDef={DefDatabase<TraitDef>.DefCount}, TerrainDef={DefDatabase<TerrainDef>.DefCount}");
         // 上面那句 Def 统计日志不计入任何阶段（会落到"未归属"），这里重新起表，让"规则分类"只含分类本身。
         sw.Restart();
 
@@ -230,7 +230,7 @@ public static partial class TweakDatabase
         pendingItems.AddRange(classify.Items);
         classify.ByDefType.TryGetValue(typeof(ThingDef), out int thingProcessed);
         if (classify.MultiMatched.Count > 0)
-            Log.Message($"[BalanceTweak] 并列挂载：{classify.MultiMatched.Count} 条（{string.Join(", ", classify.MultiMatched.Take(20))}）");
+            TweakLog.Message($"[BalanceTweak] 并列挂载：{classify.MultiMatched.Count} 条（{string.Join(", ", classify.MultiMatched.Take(20))}）");
         Mark($"规则分类（ThingDef {thingProcessed} 个，兜底 {classify.Fallback} 个）");
         //Log.Message($"[BalanceTweak] ThingDef 覆盖：总数 {thingProcessed}，规则分类 {thingProcessed - classify.Fallback - classify.Uncovered}，兜底 Misc {classify.Fallback}，放弃 {classify.Uncovered}（无编辑价值，不建实例）");
         //Log.Message($"[BalanceTweak] 兜底 Misc 按 ThingCategory：{string.Join(", ", classify.FallbackByCategory.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value}"))}");
@@ -258,7 +258,7 @@ public static partial class TweakDatabase
         var typeCounts = sortedItems.GroupBy(x => x.Item3)
                                      .Select(g => $"{g.Key}: {g.Count()}")
                                      .ToList();
-        Log.Message($"[BalanceTweak] pendingItems 按类型统计：{string.Join(", ", typeCounts)}");
+        TweakLog.Message($"[BalanceTweak] pendingItems 按类型统计：{string.Join(", ", typeCounts)}");
         Mark("Def 排序与统计");
 
         int originalAdded = 0;
@@ -373,7 +373,7 @@ public static partial class TweakDatabase
         if (nullEntryCount > 0)
             Log.Warning($"[BalanceTweak] 有 {nullEntryCount} 条已存数据的类型无法识别（数据类被改名或删除？），已跳过。");
         if (skipResolveCount > 0)
-            Log.Message($"[BalanceTweak] 有 {skipResolveCount} 条已存数据含无法解析的引用（相关 Mod 可能已移除），已保留原值待日后重试："
+            TweakLog.Message($"[BalanceTweak] 有 {skipResolveCount} 条已存数据含无法解析的引用（相关 Mod 可能已移除），已保留原值待日后重试："
                       + string.Join(", ", failedResolveItems.Take(20).Select(d => d.id.ToString())));
         Mark($"已存数据 ResolveDefs ({resolvedCount} 解析/{skipResolveCount} 未解析)");
 
@@ -422,7 +422,7 @@ public static partial class TweakDatabase
         }
 
         if (notFoundCount > 0)
-            Log.Message($"[BalanceTweak] 有 {notFoundCount} 个修改项未找到对应的 Def（可能因 Mod 变动导致），已跳过。");
+            TweakLog.Message($"[BalanceTweak] 有 {notFoundCount} 个修改项未找到对应的 Def（可能因 Mod 变动导致），已跳过。");
         Mark($"直接修改项 Apply ({appliedModified} 已应用)");
 
         // 分类规则调整会让旧存档里的 settingType 与新规则不一致。
@@ -443,7 +443,7 @@ public static partial class TweakDatabase
                 tweakDatas[data.id] = data;
                 rekeyed++;
             }
-            Log.Message($"[BalanceTweak] 分类漂移：{drifted.Count} 条已按当前规则重新归类，{rekeyed} 条已改挂页签。示例：{string.Join(", ", drifted.Take(10).Select(d => $"{d.oldKey} -> {d.data.id}"))}");
+            TweakLog.Message($"[BalanceTweak] 分类漂移：{drifted.Count} 条已按当前规则重新归类，{rekeyed} 条已改挂页签。示例：{string.Join(", ", drifted.Take(10).Select(d => $"{d.oldKey} -> {d.data.id}"))}");
             Mark($"分类漂移重挂 ({rekeyed} 条改挂页签)");
         }
 
@@ -500,11 +500,11 @@ public static partial class TweakDatabase
         }
 
         if (parentNotFoundCount > 0)
-            Log.Message($"[BalanceTweak] 有 {parentNotFoundCount} 个延迟项未找到父项，已跳过。");
+            TweakLog.Message($"[BalanceTweak] 有 {parentNotFoundCount} 个延迟项未找到父项，已跳过。");
         if (setParentFailedCount > 0)
-            Log.Message($"[BalanceTweak] 有 {setParentFailedCount} 个延迟项与父项对不上（阶段/招式被重排或改名），已跳过。");
+            TweakLog.Message($"[BalanceTweak] 有 {setParentFailedCount} 个延迟项与父项对不上（阶段/招式被重排或改名），已跳过。");
         if (parentBrokenCount > 0)
-            Log.Message($"[BalanceTweak] 有 {parentBrokenCount} 个延迟项挂载到父项时抛异常（父项结构变化），已跳过。");
+            TweakLog.Message($"[BalanceTweak] 有 {parentBrokenCount} 个延迟项挂载到父项时抛异常（父项结构变化），已跳过。");
         Mark($"延迟修改项 Apply ({lazyApplied} 已应用)");
 
         // 上游错误优先：目标 Def / 父项都找不到的条目，不再重复计入「内部解析失败」。
@@ -518,7 +518,7 @@ public static partial class TweakDatabase
         foreach (var (d, _) in failedDelayedItems) upstream.Add(d.id);
         int reclassified = upstream.Count == 0 ? 0 : failedResolveItems.RemoveAll(d => upstream.Contains(d.id));
         if (reclassified > 0)
-            Log.Message($"[BalanceTweak] 有 {reclassified} 条数据的目标 Def/父项已不存在，已归入上游错误，不再计入内部引用解析失败。");
+            TweakLog.Message($"[BalanceTweak] 有 {reclassified} 条数据的目标 Def/父项已不存在，已归入上游错误，不再计入内部引用解析失败。");
 
         // 各阶段之和若小于总计，差额就是没被任何阶段认领的开销 —— 显式打出来，免得"账对不上"却无从判断。
         totalSw.Stop();
@@ -526,7 +526,7 @@ public static partial class TweakDatabase
         timings.Add($"  未归属: {elapsedMs - measuredMs:F1}ms");
 
         var report = string.Join("\n", timings);
-        Log.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {elapsedMs:F1}ms");
+        TweakLog.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {elapsedMs:F1}ms");
 
         // 研究解锁缓存必须在两轮 Apply 之后再打回一次，理由是时序：
         // 加载期 CompProperties_Techprint.ResolveReferences 就调过 project.UnlockedDefs（拼物品描述），

@@ -280,6 +280,12 @@ internal static class CombatPower
     {
         if (!cachedData.TryGetValue(type, out var rows)) return;
         foreach (var data in rows.Values) data.InvalidateDisplayValues();
+
+        // 正在看这个页签 → 全量推导的结果作废，下次筛选前重推一遍。
+        // 别的页签不用管：切过去时 deriveType != curType 会自然重来。
+        // 不判断类型的话，改一把枪会让武器页（几千行 DPS）莫名其妙重推一次。
+        if (type == TweakUtility.CurrentType)
+            TweakUtility.MarkDerivedDirty();
     }
 
     /// <summary>哪些页签的改动会让兵种战斗力失效。</summary>
