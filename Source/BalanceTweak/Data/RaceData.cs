@@ -40,9 +40,15 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         Hidden = nameof(HiddenIfNoKindWeaponTags))]
     public TweakID? weaponLinks = null;
 
-    /// <summary>名下兵种全都没有武器标签（动物、昆虫、无枪机械）→ 该格留白。</summary>
+    /// <summary>
+    /// 名下兵种全都没有武器标签（动物、昆虫、无枪机械）→ 该格留白。
+    /// <para>
+    /// 这个谓词每帧每格都会被求值，所以走 <see cref="CombatPower.HasArmedKind"/> 的缓存，
+    /// 不在绘制路径上遍历兵种列表。
+    /// </para>
+    /// </summary>
     public static bool HiddenIfNoKindWeaponTags(TweakData data)
-        => data.def is ThingDef race && !CombatPower.KindsOf(race).Any(k => !k.weaponTags.NullOrEmpty());
+        => data.def is ThingDef race && !CombatPower.HasArmedKind(race);
 
     // === 战斗力参考值（只读派生列，见 CombatPower.FillRace） ===
     // race 自己只有身体与基础数值，装备 / 技能 / 预算都在 pawnkind 上，所以这三列 = 名下兵种的平均值。

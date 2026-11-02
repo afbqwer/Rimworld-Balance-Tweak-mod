@@ -572,12 +572,21 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | 规则 | 说明 |
 | --- | --- |
 | `SetDef` 只填**镜像与可编辑字段的原值** | 例如 `WeaponData` 的 `SetDef` 只跑 `GenMirrors`（verb / 伤害 / 穿透 / 射程…），不跑 `GenDps` |
-| 派生列在**第一次被读**时算 | 入口是 `UpdateFilters`（切页签 / 改筛选 / 编辑后重建列表）→ `EnsureDisplayValues()`；各数据类自己决定算什么 |
+| 派生列在**第一次被读**时算 | 入口是 `StatColumnConfig.EnsureForDisplay`（由 `GetString` / `GetNumericValue` 触发），也就是**画到 / 排到 / 搜到**那一格时才跑 `EnsureDisplayValues()`；各数据类自己决定算什么 |
 | 算完置 `displayValuesEnsured = true` 缓存 | `Apply()` 结束时会把它置回 false：参考值按"当前 def 现算"，改完成本 / 招式后下一次读就是新值 |
 | 只有**原始快照**需要在 `Apply` 之前定格 | `PrepareDeferredDisplayValues` 只遍历 `tweakDatas.Keys`，成本与改动条数成正比；未修改的行 def 没被动过，现算与提前算完全等价 |
 
+> **不要在 `UpdateFilters` 里补算**。那是全表遍历（几千行），而表格绘制是行 / 列双虚拟化的，
+> 一屏只有几十格。在那里补一句 `EnsureDisplayValues()`，整条"按需"链路就断了 ——
+> 卡顿会精确地落在玩家刚点开页签的那一帧。
+>
+> 三个可接受的全表触发点：① 按派生列**排序**（`GetNumericValue`）；② 搜索框在 label 未命中时
+> 按排序列再试一次（`GetString`）；③ 编辑 / 清空 / 重置后给被改的**那一行**补算。
+> 前两个是玩家主动要求的全表操作，第三个只碰一行。
+
 > `GenValues()`（镜像 + DPS + 强度全量重算）只给"数据真的变了"的路径用：`Apply` / 弹丸推送 / 招式编辑 / 自检。
 > 新增 Display 列时照这个来：字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏，不要在 `SetDef` 里算。
+> 关联入口列（`Link` / `PawnWeaponLinks` 等）不进 `EnsureForDisplay`：它们的字段永远是 null，点了才去查。
 
 ### 7.9 炮塔枪的 DPS：节奏在建筑上
 

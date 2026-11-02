@@ -94,6 +94,15 @@ internal static class CombatPower
     /// </summary>
     private static Dictionary<string, List<PawnKindDef>>? kindsByRace;
 
+    /// <summary>
+    /// 种族 defName → 名下有没有带武器标签的兵种。
+    /// <para>
+    /// 种族页的武器反查列用它决定留白，而 <c>IsHidden</c> 是<b>每帧每格</b>求值的 ——
+    /// 不缓存就得每帧把该种族的一百多个兵种扫一遍（Human 有 125 个）。只在兵种页签改动时失效。
+    /// </para>
+    /// </summary>
+    private static readonly Dictionary<string, bool> armedKindCache = [];
+
     #endregion
 
     #region 入口
@@ -178,6 +187,25 @@ internal static class CombatPower
     }
 
     /// <summary>某个种族下的全部兵种。只建一次索引（race → pawnkind 的归属在运行期不变）。</summary>
+    /// <summary>该种族名下有没有「带武器标签」的兵种 —— 没有就说明武器反查列该留白。</summary>
+    internal static bool HasArmedKind(ThingDef race)
+    {
+        if (race?.race == null) return false;
+        if (armedKindCache.TryGetValue(race.defName, out bool cached)) return cached;
+
+        bool has = false;
+        var kinds = KindsOf(race);
+        for (int i = 0; i < kinds.Count; i++)
+        {
+            if (kinds[i].weaponTags.NullOrEmpty()) continue;
+            has = true;
+            break;
+        }
+
+        armedKindCache[race.defName] = has;
+        return has;
+    }
+
     internal static List<PawnKindDef> KindsOf(ThingDef race)
     {
         if (race == null) return [];
@@ -232,6 +260,8 @@ internal static class CombatPower
         {
             // 只改了兵种的标签 / 预算：签名变了，画像与防御重算即可，池子不用碰。
             CombatGear.ClearGear();
+            // 标签还会改变"种族武器反查列是否留白"，那份判定同样得重来。
+            armedKindCache.Clear();
         }
         else if (type is SettingType.Race or SettingType.BodyDef)
         {
@@ -277,6 +307,7 @@ internal static class CombatPower
         rangedValueCache.Clear();
         unarmedValueCache.Clear();
         kindsByRace = null;
+        armedKindCache.Clear();
         CombatGear.Clear();
     }
 

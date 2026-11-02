@@ -288,6 +288,8 @@ public class StatColumnConfig
     public float? GetNumericValue(TweakData data)
     {
         if (field == null) return null;
+        // 按派生列排序时，这里就是全表的触发点 —— 排序本来就要每行的值，也没有更好的办法。
+        EnsureForDisplay(data);
 
         object? rawValue = GetRawValue(data);
         float? result;
@@ -922,11 +924,36 @@ public class StatColumnConfig
     /// <summary>这一格在本行是否留白。列级不适用走 <see cref="isAvailableDelegate"/>，行级走这个。</summary>
     public bool IsHidden(TweakData data) => isHiddenDelegate?.Invoke(data) ?? false;
 
+    /// <summary>
+    /// 派生列<b>按需</b>计算：真的有人读这一格时才跑 <see cref="TweakData.EnsureDisplayValues"/>。
+    /// <para>
+    /// 之前是在筛选流程里对整表强制算一遍（几千行），"按需推导"因此名存实亡 ——
+    /// 卡顿正好落在玩家刚点开页签那一刻。而绘制是行 / 列双虚拟化的，一屏只有几十格，
+    /// 把触发点挪到这里，成本自然只剩"看得见的那部分"。
+    /// </para>
+    /// <para>
+    /// 排序与搜索要全表值时也走同一条路（<see cref="GetNumericValue"/> / <see cref="GetString"/>），
+    /// 那本来就是玩家主动要求的全表操作，且 <c>displayValuesEnsured</c> 保证每行只算一次。
+    /// </para>
+    /// </summary>
+    private void EnsureForDisplay(TweakData data)
+    {
+        if (columnDataType != ColumnDataType.Display) return;
+        // 关联入口列（Link / RaceLinks / BodyLinks / WeaponLinks / PawnWeaponLinks / UnlockList）
+        // 是"点了才查"的触发列，字段本身永远是 null，读它不需要任何派生值。
+        // 不排除的话，只看武器列的行也会被拖着算一遍战斗力。
+        if (columnType is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks
+            or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList) return;
+        data.EnsureDisplayValues();
+    }
+
     // 用于数据的显示
     public string GetString(TweakData data)
     {
         // 整格留白：不适用 ≠ 算不出来。Null 的语义是"没有值"，这里连值都不该出现。
         if (IsHidden(data)) return "";
+        // 先判留白再算：不适用格不必为了一次不会画出来的取值买单。
+        EnsureForDisplay(data);
 
         if (columnType == ColumnStyle.Link)
         {

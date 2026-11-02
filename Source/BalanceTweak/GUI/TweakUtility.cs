@@ -250,7 +250,12 @@ public partial class BalanceTweakSettings
                 foreach (var data in datas.Values)
                 {
                     if (data.propType != filterPropType) continue;
-                    data.EnsureDisplayValues();
+                    // 这里**不能**调 EnsureDisplayValues：
+                    // 这是全表遍历（几千行），而绘制是行 / 列双虚拟化的，真正要看的一屏不过几十行。
+                    // 一旦在这里补算，"按需推导"就名存实亡 —— 打开页签的瞬间整表算完，
+                    // 卡顿正好落在玩家最敏感的"刚点开"那一刻。
+                    // 现在的约定：值由 GetString / GetNumericValue / GetRawValue 的调用方按需触发
+                    // （见 StatColumnConfig.EnsureForDisplay），排序与搜索也走同一条路。
                     firstData ??= data;
                     if (!string.IsNullOrEmpty(data.modPackName))
                         tempPacks.Add(data.modPackName);

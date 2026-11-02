@@ -121,9 +121,12 @@ internal static class CombatGear
     private sealed class ApparelEntry
     {
         public ThingDef def = null!;
-        public float price;
-        public float sharp;
-        public float blunt;
+        /// <summary>市价；-1 = 未求值（见 <see cref="EnsureApparelStats"/>）。</summary>
+        public float price = -1f;
+        /// <summary>锐器护甲；-1 = 未求值。</summary>
+        public float sharp = -1f;
+        /// <summary>钝器护甲；-1 = 未求值。</summary>
+        public float blunt = -1f;
         public int id;
     }
 
@@ -441,17 +444,11 @@ internal static class CombatGear
             var def = defs[i];
             if (def.apparel == null || def.apparel.tags.NullOrEmpty()) continue;
 
-            var stuff = DataUtility.GetDefaultStuffFromDef(def);
-            float sharp = def.GetStatValueAbstract(StatDefOf.ArmorRating_Sharp, stuff);
-            float blunt = def.GetStatValueAbstract(StatDefOf.ArmorRating_Blunt, stuff);
-            if (sharp <= 0f && blunt <= 0f) continue;
-
+            // 建池只分桶，不碰任何 stat —— 一个 mod 包有上千件服装，每件三次 StatWorker 求值
+            // 就是打开人形分组那一帧的主要开销。护甲与市价推迟到 <see cref="EnsureApparelStats"/>。
             var entry = new ApparelEntry
             {
                 def = def,
-                price = DataUtility.GetDefaultMarketValue(def),
-                sharp = sharp,
-                blunt = blunt,
                 id = apparelEntries.Count,
             };
             apparelEntries.Add(entry);
@@ -460,6 +457,24 @@ internal static class CombatGear
             for (int t = 0; t < def.apparel.tags.Count; t++)
                 Bucket(apparelByTag, def.apparel.tags[t]).Add(entry.id);
         }
+
+        // 和武器池同一套限流。排序键用 ThingDef.BaseMarketValue（静态基础值），
+        // 因为精确市价要跑 StatWorker，而这里只需要一个单调的价格代理。
+        CapBuckets(apparelByTag, e => apparelEntries[e].def.BaseMarketValue);
+    }
+
+    /// <summary>
+    /// 求一件服装的护甲与市价（只对真正进入候选的少数条目做）。
+    /// 求完若两门护甲都是 0，说明它不提供防护，从候选里跳过。
+    /// </summary>
+    private static void EnsureApparelStats(ApparelEntry entry)
+    {
+        if (entry.sharp >= 0f) return;
+
+        var stuff = DataUtility.GetDefaultStuffFromDef(entry.def);
+        entry.sharp = entry.def.GetStatValueAbstract(StatDefOf.ArmorRating_Sharp, stuff);
+        entry.blunt = entry.def.GetStatValueAbstract(StatDefOf.ArmorRating_Blunt, stuff);
+        entry.price = DataUtility.GetDefaultMarketValue(entry.def);
     }
 
     /// <summary>
@@ -490,6 +505,10 @@ internal static class CombatGear
                 if (required == null || !apparelByDef.TryGetValue(required.defName, out var entry)) continue;
                 if (!allowHeadgear && PawnApparelGenerator.IsHeadgear(required)) continue;
 
+                EnsureApparelStats(entry);
+                // 不提供防护的强制服装（部落袍之类）按旧行为视作不存在：它不占预算，也不进护甲集。
+                if (entry.sharp <= 0f && entry.blunt <= 0f) continue;
+
                 chosen.Add(entry);
                 chosenDefs.Add(required);
                 budget -= entry.price;
@@ -497,11 +516,15 @@ internal static class CombatGear
         }
 
         var candidates = Matching(kind.apparelTags, apparelByTag);
+        // 护甲值只对候选求（已被标签桶限流到几十条），排好序后循环里就不再重复求值。
+        for (int c = 0; c < candidates.Count; c++)
+            EnsureApparelStats(apparelEntries[candidates[c]]);
         candidates.Sort((a, b) => Score(apparelEntries[b]).CompareTo(Score(apparelEntries[a])));
 
         for (int c = 0; c < candidates.Count; c++)
         {
             var entry = apparelEntries[candidates[c]];
+            if (entry.sharp <= 0f && entry.blunt <= 0f) continue;   // 不提供防护（斗篷、帽子之类）
             if (!allowHeadgear && PawnApparelGenerator.IsHeadgear(entry.def)) continue;
             if (entry.price > budget) continue;
             if (Overlaps(chosenDefs, entry.def)) continue;
