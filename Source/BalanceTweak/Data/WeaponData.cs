@@ -154,9 +154,37 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
+    /// <summary>
+    /// Fortified 重型档位（<c>HeavyEquippableExtension.EquippableDef</c>）：这把武器要求使用者达到哪个档位。
+    /// <para>
+    /// 只在武器真的挂了重型扩展的行上出现（<see cref="HiddenIfNoHeavyExtension"/>）；留空 = 该武器没有重型要求。
+    /// 下拉选项由 <see cref="FortifiedHeavy"/> 在全部 Def 加载后填进 <see cref="HeavyTierOptions"/>。
+    /// </para>
+    /// <para>
+    /// 存 defName 而不是 Def 引用：档位类型来自可选 Mod，字段类型不能用它的强类型。
+    /// 写法与 <c>ToolData.damageType</c> 等 Def 引用列不同，但三态 / 存档行为一致（String 字段）。
+    /// </para>
+    /// </summary>
+    [TweakField(Style = ColumnStyle.Enum, OptionsList = nameof(HeavyTierOptions),
+        MayRequire = TweakDatabase.FFF,
+        Hidden = nameof(HiddenIfNoHeavyExtension))]
+    public string? heavyTier = null;
+
+    /// <summary>
+    /// 重型档位下拉的数据源。<c>OptionsList</c> 只认 Data 类型自己的静态字段，因此必须挂在这里；
+    /// 内容由 <see cref="FortifiedHeavy"/> 的静态构造填充（clear + add，不换引用）。
+    /// </summary>
+    public static readonly List<string> HeavyTierOptions = new();
+
+    /// <summary>没有重型扩展的武器不适用这一格（每帧每格求值，只扫 1~3 个 modExtensions）。</summary>
+    public static bool HiddenIfNoHeavyExtension(TweakData data)
+        => FortifiedHeavy.FindExtension(data.def) == null;
+
 
     private float? LMAXRangedDPS = null;
     private VerbProperties? verb = null;
+    /// <summary>重型扩展的引用（SetDef 时解析一次）。读档后由 SetDef 重新绑定，Clone 共享同一实例。</summary>
+    private object? heavyExtension = null;
     static FieldInfo ForcedMissRadius = Reflect.Field(typeof(VerbProperties), "forcedMissRadius");
     public override int LoadingOrd => 300;
 
@@ -630,6 +658,10 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
                 reloadableReplenishAfterCooldown ??= reloadable.replenishAfterCooldown;
                 reloadableMaxCharges ??= reloadable.maxCharges;
             }
+
+            // 重型扩展只解析一次；字段值随扩展走（没有扩展 → 保持 null，Apply 也不会写）。
+            heavyExtension = FortifiedHeavy.FindExtension(td);
+            heavyTier ??= FortifiedHeavy.TierNameOf(heavyExtension);
         }
         // 品质影响是**派生值**（def 上有没有 CompQuality），未修改时一律按 def 重算，不信存档里的旧值。
         // 为什么不能只靠 GenValues 的"没有值才填"：那个值一旦是错的就会被永久固化。
@@ -702,12 +734,44 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         ApplyDefLabel(nameof(defLabel), def);
         ApplyDefStats(def);
         ApplyWeaponProp(def);
+        ApplyHeavyTier();
         // GenValues 已经把镜像 / DPS / 强度都算成"当前 def"的值了，只剩参考价值没覆盖。
         GenValues();
         normalMarketValue = (float?)GetNormalMarketValue(this);
         // 标记置"已就绪"而不是置脏：调用方（ApplyValue）紧接着会调 EnsureDisplayValues，
         // 置脏就等于把 DPS / 强度再算一遍 —— 批量改上千行时那是纯浪费。
         displayValuesEnsured = true;
+    }
+
+    /// <summary>已告警过的档位 defName（每局一次，避免拖拽涂抹时刷屏）。</summary>
+    private static readonly HashSet<string> _warnedMissingHeavyTiers = new();
+
+    /// <summary>
+    /// 把武器行的重型档位写回 Fortified 扩展。
+    /// <para>
+    /// 没有扩展就什么都不做（这一格本来也不显示）：不在这里凭空给 Def 添加扩展 ——
+    /// 那会改变装备判定却没走 XML / 存档，属于另一件事。
+    /// </para>
+    /// <para>
+    /// 档位 Def 被删时不把扩展置空：Fortified 见到 null 会告警并<b>放行所有角色</b>，
+    /// 是一个会把平衡改崩的静默状态；保持原值 + 告警更安全。
+    /// </para>
+    /// </summary>
+    private void ApplyHeavyTier()
+    {
+        if (heavyExtension == null) return;
+        ApplyS(nameof(heavyTier), name =>
+        {
+            if (name.NullOrEmpty()) return;
+            var tier = FortifiedHeavy.FindTier(name);
+            if (tier == null)
+            {
+                if (_warnedMissingHeavyTiers.Add(name))
+                    Log.Warning($"[BalanceTweak] 重型档位 {name} 不存在（Fortified 或对应 Def 已被移除），保持原值。");
+                return;
+            }
+            FortifiedHeavy.SetTier(heavyExtension, tier);
+        });
     }
 
     static float? RDPS = null;

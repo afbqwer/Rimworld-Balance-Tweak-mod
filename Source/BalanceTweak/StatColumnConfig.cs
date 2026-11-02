@@ -78,7 +78,9 @@ public class StatColumnConfig
         { FieldType.Float, new[] { ColumnStyle.Float, ColumnStyle.Prec, ColumnStyle.Int} },
         { FieldType.Int, new[] { ColumnStyle.Int } },
         { FieldType.Bool, new[] { ColumnStyle.Bool } },
-        { FieldType.String, new[] { ColumnStyle.String } },
+        // String 允许 Enum：用于"值本身是字符串、但只能从固定列表里选"的可选 Mod 数据
+        // （例如 Fortified 的重型档位 defName）。编辑器走 OptionsList，写入仍是字符串，不经过 EnumType。
+        { FieldType.String, new[] { ColumnStyle.String, ColumnStyle.Enum } },
         { FieldType.FloatRange, new[] { ColumnStyle.Range } },
         { FieldType.IntRange, new[] { ColumnStyle.Range } },
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },

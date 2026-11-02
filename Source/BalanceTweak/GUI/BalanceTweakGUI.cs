@@ -1309,6 +1309,10 @@ public partial class BalanceTweakSettings : ModSettings
     {
         Text.WordWrap = false;
         var config = visibleColumns[col];
+        // 按行留白的可编辑字段（Hidden）：整格不画，也不接受编辑 / 涂抹。
+        // 显示列在 DrawDisplayCell 里判一次就够了；可编辑列不提前返回的话，会留下一个能输入、
+        // 但 Apply 根本没有写入目标的空输入框（例：没有重型扩展的武器行）。
+        if (config.columnDataType == ColumnDataType.Field && config.IsHidden(data)) return;
         Rect cellBack = new(DataColWidth * col, line * LineHeight, DataColWidth, LineHeight);
         Rect cellRect = cellBack.ContractedBy(2f, 0f);
 
@@ -1648,6 +1652,9 @@ public partial class BalanceTweakSettings : ModSettings
                     {
                         if (data.def is ThingDef projectile)
                             Find.WindowStack.Add(new TweakLinksWindow(data, "MST.weaponLinks", ProjectileData.FindWeaponLinks(projectile)));
+                        // 重型档位页：反查使用该档位的武器 / 装备（同一个只读关联窗口，反查在打开时做）。
+                        else if (data is HeavyEquippableDefData)
+                            Find.WindowStack.Add(new TweakLinksWindow(data, "MST.weaponLinks", FortifiedHeavy.FindUsages(data.def)));
                     }
                     else if (config.columnType == ColumnStyle.PawnWeaponLinks)
                     {

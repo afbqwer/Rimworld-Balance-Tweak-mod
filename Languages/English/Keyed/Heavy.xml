@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.HeavyEquipment>Heavy gear</MST.HeavyEquipment>
+
+    <!-- Type groups (type filter) -->
+    <MST.BodySize>BodySize</MST.BodySize>
+    <MST.Mounted>Mounted</MST.Mounted>
+
+    <!-- Tier fields -->
+    <MST.equippableBaseBodySize>MinSize</MST.equippableBaseBodySize>
+    <MST.equippableBaseBodySizeComment>Minimum body size required to use the gear (BodySize ≥ this value). A negative value means "mounted only": body size is not compared at all and only the whitelists below apply. Takes effect on the next equip check; already-equipped weapons are not re-validated.</MST.equippableBaseBodySizeComment>
+    <MST.equippableByRace>Races</MST.equippableByRace>
+    <MST.equippableByRaceComment>These races can always use it. OR-ed with the apparel / hediff / gene whitelists; any single match passes, before the body-size check.</MST.equippableByRaceComment>
+    <MST.equippableWithApparel>Apparel</MST.equippableWithApparel>
+    <MST.equippableWithApparelComment>Wearing any one of these apparel items is enough to use the tier (power armor, mech suits…).</MST.equippableWithApparelComment>
+    <MST.equippableWithHediff>Hediffs</MST.equippableWithHediff>
+    <MST.equippableWithHediffComment>Having any one of these hediffs is enough (vanilla bionic / archotech arms work this way).</MST.equippableWithHediffComment>
+    <MST.equippableWithGene>Genes</MST.equippableWithGene>
+    <MST.equippableWithGeneComment>Having any one of these genes is enough (requires Biotech).</MST.equippableWithGeneComment>
+    <MST.isMountedWeapon>Mounted</MST.isMountedWeapon>
+    <MST.isMountedWeaponComment>Read-only: true when the minimum body size is negative, i.e. the tier is only usable on vehicles / turret mounts.</MST.isMountedWeaponComment>
+    <MST.usedByWeapons>Weapons</MST.usedByWeapons>
+    <MST.usedByWeaponsComment>Click to list every weapon / gear item using this heavy tier; click an entry to jump. Read-only, computed by a reverse lookup.</MST.usedByWeaponsComment>
+
+    <!-- Weapon-row tier column -->
+    <MST.heavyTier>HeavyTier</MST.heavyTier>
+    <MST.heavyTierComment>The heavy tier this weapon requires. Empty = no heavy requirement. Mech weapons are additionally limited by the race's weapon filter (tags / tech / class); when that filter is enabled it bypasses the body-size gate.</MST.heavyTierComment>
+</LanguageData>

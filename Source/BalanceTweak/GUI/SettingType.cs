@@ -42,5 +42,6 @@ public partial class BalanceTweakSettings
         RaidStrategy = 34,
         Landmark = 35,
         WeaponTrait = 36,
+        HeavyEquipment = 37,
     }
 }

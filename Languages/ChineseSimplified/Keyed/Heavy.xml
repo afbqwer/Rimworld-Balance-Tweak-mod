@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.HeavyEquipment>重型装备</MST.HeavyEquipment>
+
+    <!-- 类型分组（类型下拉） -->
+    <MST.BodySize>体型档位</MST.BodySize>
+    <MST.Mounted>机载专用</MST.Mounted>
+
+    <!-- 档位字段 -->
+    <MST.equippableBaseBodySize>体型门槛</MST.equippableBaseBodySize>
+    <MST.equippableBaseBodySizeComment>装备所需的最低体型：角色体型 ≥ 该值才能使用。填负数表示「机载专用」——不比较体型，只认下面的四组白名单。修改对下一次装备判定立即生效，已经拿在手上的不会重新校验。</MST.equippableBaseBodySizeComment>
+    <MST.equippableByRace>种族白名单</MST.equippableByRace>
+    <MST.equippableByRaceComment>这些种族无条件可用。与护甲 / Hediff / 基因白名单是「任一命中即放行」的关系，优先级高于体型门槛。</MST.equippableByRaceComment>
+    <MST.equippableWithApparel>护甲白名单</MST.equippableWithApparel>
+    <MST.equippableWithApparelComment>穿着其中任意一件护甲即可使用该档位（例如动力装甲、机兵套装）。</MST.equippableWithApparelComment>
+    <MST.equippableWithHediff>Hediff</MST.equippableWithHediff>
+    <MST.equippableWithHediffComment>拥有其中任意一个 Hediff 即可使用（原版仿生臂 / 阿基泰手臂就走这条）。</MST.equippableWithHediffComment>
+    <MST.equippableWithGene>基因白名单</MST.equippableWithGene>
+    <MST.equippableWithGeneComment>拥有其中任意一个基因即可使用（需要 Biotech）。</MST.equippableWithGeneComment>
+    <MST.isMountedWeapon>机载专用</MST.isMountedWeapon>
+    <MST.isMountedWeaponComment>只读：体型门槛为负数时为真，表示该档位只能装在载具 / 炮塔上。</MST.isMountedWeaponComment>
+    <MST.usedByWeapons>使用武器</MST.usedByWeapons>
+    <MST.usedByWeaponsComment>点击查看所有使用该重型档位的武器 / 装备，点条目可跳转。只读，由全库反查得出。</MST.usedByWeaponsComment>
+
+    <!-- 武器行的档位列 -->
+    <MST.heavyTier>重型档位</MST.heavyTier>
+    <MST.heavyTierComment>这把武器要求的重型档位。留空 = 没有重型要求。机械族的武器还受种族上的武器过滤（标签 / 科技 / 类别）限制；开启武器过滤时体型门槛会被绕开。</MST.heavyTierComment>
+</LanguageData>

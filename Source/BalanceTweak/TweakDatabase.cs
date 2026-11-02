@@ -66,6 +66,8 @@ public static partial class TweakDatabase
     public const string CE = "ceteam.combatextended";
     public const string VEF = "oskarpotocki.vanillafactionsexpanded.core";
     public const string VEP = "vanillaexpanded.vpsycastse";
+    /// <summary>Fortified Features Framework（重型装备 / 多炮塔 / 中继指挥的提供方）。</summary>
+    public const string FFF = "AOBA.Framework";
     public static bool VCTAPDown = false;
     public static bool VCTAMDown = false;
 
