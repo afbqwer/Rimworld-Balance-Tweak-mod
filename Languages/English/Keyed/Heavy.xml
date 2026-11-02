@@ -25,4 +25,26 @@
     <!-- Weapon-row tier column -->
     <MST.heavyTier>HeavyTier</MST.heavyTier>
     <MST.heavyTierComment>The heavy tier this weapon requires. Empty = no heavy requirement. Mech weapons are additionally limited by the race's weapon filter (tags / tech / class); when that filter is enabled it bypasses the body-size gate.</MST.heavyTierComment>
+
+    <!-- Mech weapon filter (single-window editor) -->
+    <MST.mechWeaponFilter>MechFilter</MST.mechWeaponFilter>
+    <MST.mechWeaponFilterComment>Click to open the mech weapon filter window: tags / tech levels / weapon classes / bypass weapons in one place. Only affects mechs implementing Fortified IWeaponUsable.</MST.mechWeaponFilterComment>
+    <MST.mechWeaponFilterEdit>Edit</MST.mechWeaponFilterEdit>
+    <MST.mechWeaponFilterIntro>These settings only affect mechs implementing Fortified IWeaponUsable (DMS automatroid). Every change is written back to the DefModExtension and recorded immediately.</MST.mechWeaponFilterIntro>
+    <MST.enableWeaponFilter>Enable weapon filter</MST.enableWeaponFilter>
+    <MST.enableWeaponFilterOnComment>On: only the tag / tech / class filters below apply; the heavy tier's body-size gate no longer applies to this mech (heavy-tier whitelists can still let it through).</MST.enableWeaponFilterOnComment>
+    <MST.enableWeaponFilterOffComment>Off: the heavy tier's body-size gate applies; weapons without a heavy extension are allowed outright.</MST.enableWeaponFilterOffComment>
+    <MST.usableWeaponTags>Usable weapon tags</MST.usableWeaponTags>
+    <MST.enableTechLevelFilter>Enable tech-level filter</MST.enableTechLevelFilter>
+    <MST.usableTechLevels>TechLevels</MST.usableTechLevels>
+    <MST.usableTechLevelsComment>Only the checked tech levels are accepted. Takes effect when the tech-level filter is enabled.</MST.usableTechLevelsComment>
+    <MST.enableClassFilter>Enable weapon-class filter</MST.enableClassFilter>
+    <MST.usableWeaponClasses>Usable weapon classes</MST.usableWeaponClasses>
+    <MST.usableWeaponClassesComment>A weapon must have at least one of these weaponClasses. Takes effect when the class filter is enabled.</MST.usableWeaponClassesComment>
+    <MST.bypassUsableWeapons>Bypass weapons</MST.bypassUsableWeapons>
+    <MST.bypassUsableWeaponsComment>Matched by weapon defName; overrides every filter rule. Add them with the weapon picker.</MST.bypassUsableWeaponsComment>
+    <MST.mechWeaponFilterStatusOn>Current: tag / tech / class filter only; the body-size gate is bypassed.</MST.mechWeaponFilterStatusOn>
+    <MST.mechWeaponFilterStatusOff>Current: heavy-tier body-size gate (weapons without a heavy extension are allowed outright).</MST.mechWeaponFilterStatusOff>
+    <MST.mechWeaponFilterWarningEmptyTags>Warning: the filter is on but no usable tags are set — every weapon with weaponTags will be rejected (Fortified also logs a warning).</MST.mechWeaponFilterWarningEmptyTags>
+    <MST.mechWeaponFilterBodySize>Current body size: {0} (heavy tiers compare BodySize ≥ threshold).</MST.mechWeaponFilterBodySize>
 </LanguageData>

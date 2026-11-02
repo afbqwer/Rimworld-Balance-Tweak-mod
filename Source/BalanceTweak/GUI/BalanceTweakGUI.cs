@@ -219,6 +219,15 @@ public partial class BalanceTweakSettings : ModSettings
 
     #endregion
     #region 初始化
+    // 注意：这两行同时是 CheckLoc 识别 MST.{SettingType} 翻译键的来源（键是动态拼的），别改成别的写法。
+    private readonly static List<string> curSettingTypeStr = Enum.GetNames(typeof(SettingType)).Select(s => "MST." + s).ToList();
+    /// <summary>
+    /// 页签下拉的索引 → 枚举值映射。Enum.GetNames 与 Enum.GetValues 的排序一致，
+    /// 所以第 i 项对应的就是这个列表的第 i 项 —— 不再依赖"枚举值必须从 0 起连续"这一隐含约束。
+    /// 实际下拉会先按 <see cref="IsTabVisible"/> 过滤（索引映射在过滤后的列表上做）。
+    /// </summary>
+    private readonly static List<SettingType> curSettingTypeValues = Enum.GetValues(typeof(SettingType)).Cast<SettingType>().ToList();
+
     /// <summary>
     /// 可选 Mod 专属页签在缺少该 Mod 时整项隐藏（而不是留一个永远空着的页签）。
     /// <para>
@@ -726,12 +735,13 @@ public partial class BalanceTweakSettings : ModSettings
         if (Widgets.ButtonText(typeFilterRect, ("MST." + curType).Translate().RawText))
         {
             // 每次打开现算：可选 Mod 专属页签（重型装备）在缺少对应 Mod 时不进入下拉。
-            // 两个列表必须同源生成，回调里的 selectedIndex 才能正确映射回枚举值。
-            var visibleTabs = Enum.GetValues(typeof(SettingType)).Cast<SettingType>()
-                .Where(IsTabVisible).ToList();
-            OpenFilterMenu(visibleTabs.Select(t => "MST." + t).ToList(), selectedIndex =>
+            // 保留原始索引，名称列表与枚举值列表才能一一对应。
+            var visibleIndices = Enumerable.Range(0, curSettingTypeValues.Count)
+                .Where(i => IsTabVisible(curSettingTypeValues[i]))
+                .ToList();
+            OpenFilterMenu(visibleIndices.Select(i => curSettingTypeStr[i]).ToList(), selectedIndex =>
             {
-                curType = visibleTabs[selectedIndex];
+                curType = curSettingTypeValues[visibleIndices[selectedIndex]];
                 filterPropType = 0;
                 selectedCol = null;
                 sortCol = null;
@@ -1639,7 +1649,7 @@ public partial class BalanceTweakSettings : ModSettings
                     Event.current.Use();
                 }
             }
-            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList)
+            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList or ColumnStyle.MechWeaponFilter)
             {
                 // 只读的关联入口：点击打开链接列表窗口（关联列 / 研究解锁列共用同一套绘制）。
                 // 兵种侧对「没有武器标签」的行返回空串 —— 那种行没有可列的候选，画个空按钮只会误导。
@@ -1673,6 +1683,12 @@ public partial class BalanceTweakSettings : ModSettings
                         // 种族页：与兵种页同名列，取名下所有兵种的并集。
                         else if (data is RaceData && data.def is ThingDef race)
                             Find.WindowStack.Add(new TweakLinksWindow(data, "MST.weaponLinks", RaceData.FindWeaponLinks(race), GetPawnWeaponTip));
+                    }
+                    else if (config.columnType == ColumnStyle.MechWeaponFilter)
+                    {
+                        // 一组字段（标签 / 科技 / 类别 / 豁免）放在同一个窗口里编辑，没有逐列展示的价值。
+                        if (data is RaceData)
+                            Find.WindowStack.Add(new MechWeaponFilterWindow(data));
                     }
                     else if (config.columnType == ColumnStyle.BodyLinks)
                     {

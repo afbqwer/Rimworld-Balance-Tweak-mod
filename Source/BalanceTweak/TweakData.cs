@@ -396,7 +396,7 @@ public abstract partial class TweakData : IExposable
     }
     public bool EqualsData(TweakData other)
     {
-        foreach (var c in AllColumn)
+        foreach (var c in AllComparableColumns)
         {
             // Display 列是派生展示值（可能延迟计算、原值也可能还没算过），不参与"是否已恢复原样"的判定。
             if (c.columnDataType == ColumnDataType.Display) continue;
@@ -495,6 +495,24 @@ public abstract partial class TweakData : IExposable
     internal virtual List<string> DetectRevivedFields() => new();
 
     public abstract List<StatColumnConfig> AllColumn { get; }
+
+    /// <summary>
+    /// 参与"是否已恢复原样"判定的列：<see cref="AllColumn"/> 再加上 <c>NotAColumn</c> 的字段。
+    /// 隐藏字段虽然不在表格里，但它们的修改同样在存档里 —— 少比一个，
+    /// <c>ResetSingleItem</c> / <c>ResetSelectedColumn</c> 末尾就会误判"这一行已经恢复原样"，
+    /// 把只改了隐藏字段的行从修改表里删掉（Def 上这次会话有改动，存档里却没有）。
+    /// </summary>
+    internal virtual IEnumerable<StatColumnConfig> AllComparableColumns => AllColumn;
+
+    /// <summary>
+    /// 按字段名取列配置。
+    /// <para>
+    /// 默认只在可见列（<see cref="AllColumn"/>）里找；<c>TweakData&lt;T&gt;</c> 重写为查询全部字段，
+    /// 以便自定义编辑窗口读写 <c>[TweakField(NotAColumn = true)]</c> 的字段。
+    /// </para>
+    /// </summary>
+    public virtual StatColumnConfig? GetFieldConfig(string fieldName)
+        => AllColumn.FirstOrDefault(c => c.fieldName == fieldName);
     public abstract List<string> TypeStrings { get; }
     public virtual int LoadingOrd => 100;
     /// <summary>按需计算只用于 UI 显示的派生值；默认无操作。</summary>

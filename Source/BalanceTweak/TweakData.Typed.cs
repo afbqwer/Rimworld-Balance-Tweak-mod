@@ -313,21 +313,35 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// <summary>字段名 → 元数据 的索引，随 <see cref="Fields"/> 的惰性初始化一起建（供 RawVal 用）。</summary>
     private static Dictionary<string, StatFieldMeta>? _fieldIndex;
 
+    private static List<StatColumnConfig>? _allFieldConfigs;
+    /// <summary>全部字段（含 <c>NotAColumn</c>）的列配置。自定义编辑窗口按字段名读写隐藏字段用。</summary>
+    private static IReadOnlyList<StatColumnConfig> AllFieldConfigs
+        => _allFieldConfigs ??= Fields.Select(CreateColumnConfig).ToList();
+
     private static List<StatColumnConfig>? _allColumn;
     public override List<StatColumnConfig> AllColumn => _allColumn ??= Fields
-            .Select(f => new StatColumnConfig(f.Field,
-                style: f.Attr.Style,
-                type: f.Attr.DataType,
-                stat: f.StatDef,
-                isAvailable: f.AvailableChecker,
-                getAbstract: f.GetAbstractMethod,
-                isSPStat: f.isEquippedStat || f.isStuffFactorStat || f.isStuffOffsetStat,
-                enumType: f.EnumType,
-                optionsListField: f.OptionsListField,
-                isMirror: f.Attr.IsMirror,
-                isHidden: f.HiddenChecker
-                ))
+            .Where(f => !f.Attr.NotAColumn)
+            .Select(CreateColumnConfig)
             .ToList();
+
+    public override StatColumnConfig? GetFieldConfig(string fieldName)
+        => AllFieldConfigs.FirstOrDefault(c => c.fieldName == fieldName);
+
+    internal override IEnumerable<StatColumnConfig> AllComparableColumns => AllFieldConfigs;
+
+    /// <summary>一条 [TweakField] → 列配置的唯一构造点。AllColumn 与 AllFieldConfigs 共用，避免两处分叉。</summary>
+    private static StatColumnConfig CreateColumnConfig(StatFieldMeta f)
+        => new(f.Field,
+            style: f.Attr.Style,
+            type: f.Attr.DataType,
+            stat: f.StatDef,
+            isAvailable: f.AvailableChecker,
+            getAbstract: f.GetAbstractMethod,
+            isSPStat: f.isEquippedStat || f.isStuffFactorStat || f.isStuffOffsetStat,
+            enumType: f.EnumType,
+            optionsListField: f.OptionsListField,
+            isMirror: f.Attr.IsMirror,
+            isHidden: f.HiddenChecker);
 
     private static List<StatFieldMeta> InitStaticFields()
     {

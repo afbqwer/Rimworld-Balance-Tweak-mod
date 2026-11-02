@@ -32,6 +32,7 @@
     <MST.RaceLinks>RaceLinks</MST.RaceLinks>
     <MST.BodyLinks>BodyLinks</MST.BodyLinks>
     <MST.WeaponLinks>WeaponLinks</MST.WeaponLinks>
+    <MST.MechWeaponFilter>MechFilter</MST.MechWeaponFilter>
     <MST.Range>Range</MST.Range>
     <MST.SkillReqList>SkillReqList</MST.SkillReqList>
     <MST.TraitReqList>TraitReqList</MST.TraitReqList>

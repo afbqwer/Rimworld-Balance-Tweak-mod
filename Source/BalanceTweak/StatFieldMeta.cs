@@ -192,6 +192,16 @@ public class TweakFieldAttribute : Attribute
     public bool IsMirror { get; set; }
     /// <summary>检测是否显示时调用的方法名称（决定<b>整列</b>是否出现，按页签第一行求值一次）</summary>
     public string? Available { get; set; }
+
+    /// <summary>
+    /// 只落盘、不出现在表格里的字段。
+    /// <para>
+    /// 用于"一组字段由一个自定义编辑窗口统一编辑、没有逐列展示价值"的可选 Mod 数据
+    /// （如 Fortified 的机械武器过滤）。它们照常参与三态 / 存档 / 克隆 / 重置，
+    /// 只是从 <c>AllColumn</c> 里排除；窗口通过 <c>TweakData.GetFieldConfig</c> 按字段名取配置读写。
+    /// </para>
+    /// </summary>
+    public bool NotAColumn { get; set; }
     /// <summary>
     /// 按<b>行</b>判定这一格要不要留白的方法名称（返回 true = 不显示）。
     /// <para>

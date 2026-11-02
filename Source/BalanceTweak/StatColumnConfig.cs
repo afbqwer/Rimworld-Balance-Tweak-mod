@@ -86,7 +86,7 @@ public class StatColumnConfig
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
         { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList, ColumnStyle.XenotypeChanceList, ColumnStyle.ThingSetTags, ColumnStyle.FactionCurveList, ColumnStyle.SkillRangeList, ColumnStyle.BackstoryTraitList, ColumnStyle.PossessionList, ColumnStyle.PawnGroupMakerList, ColumnStyle.UnlockList, ColumnStyle.MutatorChanceList, ColumnStyle.ExtraDamageList } },
-        { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks, ColumnStyle.WeaponLinks, ColumnStyle.PawnWeaponLinks } },
+        { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks, ColumnStyle.WeaponLinks, ColumnStyle.PawnWeaponLinks, ColumnStyle.MechWeaponFilter } },
     };
 
     private Func<TweakData, object?>? _getter;
@@ -186,7 +186,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks, PawnGroupMakerList, UnlockList, PawnWeaponLinks, MutatorChanceList, ExtraDamageList }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks, PawnGroupMakerList, UnlockList, PawnWeaponLinks, MutatorChanceList, ExtraDamageList, MechWeaponFilter }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -947,7 +947,8 @@ public class StatColumnConfig
         // 是"点了才查"的触发列，字段本身永远是 null，读它不需要任何派生值。
         // 不排除的话，只看武器列的行也会被拖着算一遍战斗力。
         if (columnType is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks
-            or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList) return;
+            or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList
+            or ColumnStyle.MechWeaponFilter) return;
         data.EnsureDisplayValues();
     }
 
@@ -985,6 +986,11 @@ public class StatColumnConfig
             // 只返回静态文字：候选武器要扫全库并算市价，绝不能放进绘制阶段。
             // "这一行有没有可列的武器"由字段上的 Hidden 谓词负责（每行只读自己的 def）。
             return "MST.weaponLinks".Translate().RawText;
+        }
+        if (columnType == ColumnStyle.MechWeaponFilter)
+        {
+            // 只读触发列：一组字段由一个窗口统一编辑，表格里不展示值。
+            return "MST.mechWeaponFilterEdit".Translate().RawText;
         }
         if (cachedFieldType == FieldType.FloatRange)
         {

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -191,6 +192,40 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     [TweakField(Style = ColumnStyle.DefSelector, Available = nameof(AvailableIfMech))]
     public ThingDef? turretDef = null;
 
+    // ── Fortified 机械武器过滤（可选 Mod，见 MechWeaponFilterWindow）──
+    // 一组字段共同决定"这台机兵能用哪些武器"，逐列展示没有价值：表格里只留一个触发列，
+    // 其余字段只落盘、不出现在列里（NotAColumn），由窗口统一编辑。
+
+    /// <summary>只读触发列：打开机械武器过滤窗口。没有 <c>MechWeaponExtension</c> 的行整格留白。</summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.MechWeaponFilter,
+        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoMechWeaponExtension))]
+    public TweakID? mechWeaponFilter = null;
+
+    /// <summary>没有 Fortified 机械武器扩展的种族不适用这一格。</summary>
+    public static bool HiddenIfNoMechWeaponExtension(TweakData data)
+        => FortifiedMech.FindExtension(data.def) == null;
+
+    // 以下字段由窗口编辑，只在存档里存在，不进表格。
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? enableWeaponFilter = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.StringList, MayRequire = TweakDatabase.FFF)]
+    public List<string>? usableWeaponTags = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? enableTechLevelFilter = null;
+    /// <summary>存 <see cref="TechLevel"/> 的整数值，避开"List&lt;enum&gt; 没有现成列样式"的问题。</summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.IntList, MayRequire = TweakDatabase.FFF)]
+    public List<int>? usableTechLevels = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? enableClassFilter = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.DefList, MayRequire = TweakDatabase.FFF)]
+    public List<WeaponClassDef>? usableWeaponClasses = null;
+    /// <summary>按武器 <b>defName</b> 豁免（不是标签）。窗口里用武器选择器编辑。</summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.StringList, MayRequire = TweakDatabase.FFF)]
+    public List<string>? bypassUsableWeapons = null;
+
+    /// <summary>机械武器扩展的引用（SetDef 时解析一次）。</summary>
+    private object? mechWeaponExtension = null;
+
     // EggLayer comp
     [TweakField(Available = nameof(AvailableIfAnimal))]
     public float? eggLayIntervalDays = null;
@@ -308,6 +343,10 @@ class RaceData : TweakData<RaceData>, ISubItemHost
                     woolAmount ??= shearable.woolAmount;
                 }
             }
+
+            // Fortified：机械武器过滤（可选 Mod，只按全名反射）。
+            mechWeaponExtension = FortifiedMech.FindExtension(d);
+            if (mechWeaponExtension != null) LoadMechWeaponFilter(mechWeaponExtension);
         }
     }
 
@@ -321,6 +360,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         ApplyDefLabel(nameof(defLabel), def);
         ApplyRaceProp(def);
         ApplyMechProps(def);
+        ApplyMechWeaponFilter();
         ApplyDefStats(def);
         ApplyEntityCompProps(def);
         ApplyAnimalCompProps(def);
@@ -339,6 +379,68 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         {
             var props = def.GetCompProperties<CompProperties_TurretGun>();
             if (props != null) props.turretDef = v;
+        });
+    }
+
+    /// <summary>
+    /// 从 <c>Fortified.MechWeaponExtension</c> 回填窗口字段。
+    /// 列表一律带 <c>!IsFieldModified</c> 守卫：已清空的字段读档后不得被扩展回填"复活"。
+    /// </summary>
+    private void LoadMechWeaponFilter(object extension)
+    {
+        enableWeaponFilter ??= DataUtility.GetByName(extension, "EnableWeaponFilter") as bool?;
+        enableTechLevelFilter ??= DataUtility.GetByName(extension, "EnableTechLevelFilter") as bool?;
+        enableClassFilter ??= DataUtility.GetByName(extension, "EnableClassFilter") as bool?;
+
+        if (!IsFieldModified(nameof(usableWeaponTags)))
+            usableWeaponTags ??= DataUtility.GetByName(extension, "UsableWeaponTags") as List<string>;
+        if (!IsFieldModified(nameof(bypassUsableWeapons)))
+            bypassUsableWeapons ??= DataUtility.GetByName(extension, "BypassUsableWeapons") as List<string>;
+        if (!IsFieldModified(nameof(usableWeaponClasses)))
+            usableWeaponClasses ??= DataUtility.GetByName(extension, "UsableWeaponClasses") as List<WeaponClassDef>;
+
+        if (!IsFieldModified(nameof(usableTechLevels)) && usableTechLevels == null
+            && DataUtility.GetByName(extension, "UsableTechLevels") is IEnumerable levels)
+        {
+            usableTechLevels = new List<int>();
+            foreach (var level in levels)
+                if (level is TechLevel t) usableTechLevels.Add((int)t);
+        }
+    }
+
+    /// <summary>
+    /// 把窗口里的值写回 <c>MechWeaponExtension</c>。三态门控，未动过的字段不写；
+    /// 没有扩展的种族直接跳过（窗口本来也打不开）。
+    /// </summary>
+    private void ApplyMechWeaponFilter()
+    {
+        if (mechWeaponExtension == null) return;
+        var extension = mechWeaponExtension; // 闭包只捕获 object，绝不捕获可选 Mod 类型
+
+        // 目标是 bool（不可空），但字段是 bool?：用 ApplyN 避免"字段为 null 却处于 Set"这种
+        // 异常存档在拆箱时抛异常；null 视为"没有可写的值"，保持扩展现状。
+        ApplyN<bool>(nameof(enableWeaponFilter),
+            v => { if (v.HasValue) DataUtility.SetByName(extension, "EnableWeaponFilter", v.Value); });
+        ApplyN<bool>(nameof(enableTechLevelFilter),
+            v => { if (v.HasValue) DataUtility.SetByName(extension, "EnableTechLevelFilter", v.Value); });
+        ApplyN<bool>(nameof(enableClassFilter),
+            v => { if (v.HasValue) DataUtility.SetByName(extension, "EnableClassFilter", v.Value); });
+
+        ApplyL<string>(nameof(usableWeaponTags),
+            v => DataUtility.SetByName(extension, "UsableWeaponTags", v));
+        ApplyL<string>(nameof(bypassUsableWeapons),
+            v => DataUtility.SetByName(extension, "BypassUsableWeapons", v));
+        ApplyL<WeaponClassDef>(nameof(usableWeaponClasses),
+            v => DataUtility.SetByName(extension, "UsableWeaponClasses", v));
+
+        // 字段是 List<int>（避开 List<enum> 的列样式问题），扩展要 List<TechLevel>。
+        ApplyL<int>(nameof(usableTechLevels), v =>
+        {
+            var levels = new List<TechLevel>();
+            if (v != null)
+                foreach (var raw in v)
+                    if (raw >= 0 && raw <= byte.MaxValue) levels.Add((TechLevel)raw);
+            DataUtility.SetByName(extension, "UsableTechLevels", levels);
         });
     }
 

@@ -25,4 +25,26 @@
     <!-- 武器行的档位列 -->
     <MST.heavyTier>重型档位</MST.heavyTier>
     <MST.heavyTierComment>这把武器要求的重型档位。留空 = 没有重型要求。机械族的武器还受种族上的武器过滤（标签 / 科技 / 类别）限制；开启武器过滤时体型门槛会被绕开。</MST.heavyTierComment>
+
+    <!-- 机械武器过滤（单窗口编辑） -->
+    <MST.mechWeaponFilter>武器过滤</MST.mechWeaponFilter>
+    <MST.mechWeaponFilterComment>点击打开机械武器过滤窗口：武器标签 / 科技等级 / 武器类别 / 豁免武器一次改完。只对实现了 Fortified IWeaponUsable 的机械单位生效。</MST.mechWeaponFilterComment>
+    <MST.mechWeaponFilterEdit>编辑</MST.mechWeaponFilterEdit>
+    <MST.mechWeaponFilterIntro>这些设置只影响实现了 Fortified IWeaponUsable 的机械单位（DMS 的机兵）。所有改动立即写回 DefModExtension 并记入修改表。</MST.mechWeaponFilterIntro>
+    <MST.enableWeaponFilter>启用武器过滤</MST.enableWeaponFilter>
+    <MST.enableWeaponFilterOnComment>开启后只按下面的标签 / 科技 / 类别过滤；重型档位的体型门槛对这台机兵不再生效（重型档位的白名单仍可额外放行）。</MST.enableWeaponFilterOnComment>
+    <MST.enableWeaponFilterOffComment>关闭后按重型档位的体型门槛判定；没有重型扩展的武器直接放行。</MST.enableWeaponFilterOffComment>
+    <MST.usableWeaponTags>可用的武器标签</MST.usableWeaponTags>
+    <MST.enableTechLevelFilter>启用科技等级过滤</MST.enableTechLevelFilter>
+    <MST.usableTechLevels>科技等级</MST.usableTechLevels>
+    <MST.usableTechLevelsComment>只有勾选的科技等级会被接受。仅在开启科技等级过滤时生效。</MST.usableTechLevelsComment>
+    <MST.enableClassFilter>启用武器类别过滤</MST.enableClassFilter>
+    <MST.usableWeaponClasses>可用的武器类别</MST.usableWeaponClasses>
+    <MST.usableWeaponClassesComment>武器的 weaponClasses 至少命中一个才会被接受。仅在开启武器类别过滤时生效。</MST.usableWeaponClassesComment>
+    <MST.bypassUsableWeapons>豁免武器</MST.bypassUsableWeapons>
+    <MST.bypassUsableWeaponsComment>按武器 defName 豁免，优先于所有过滤规则。用武器选择器添加。</MST.bypassUsableWeaponsComment>
+    <MST.mechWeaponFilterStatusOn>当前：只按标签 / 科技 / 类别过滤，体型门槛不生效。</MST.mechWeaponFilterStatusOn>
+    <MST.mechWeaponFilterStatusOff>当前：按重型档位的体型门槛判定（没有重型扩展的武器直接放行）。</MST.mechWeaponFilterStatusOff>
+    <MST.mechWeaponFilterWarningEmptyTags>警告：过滤已开启但可用标签为空 —— 所有带 weaponTags 的武器都会被拒绝（Fortified 还会额外打一条日志）。</MST.mechWeaponFilterWarningEmptyTags>
+    <MST.mechWeaponFilterBodySize>当前体型：{0}（重型档位按「体型 ≥ 门槛」比较）。</MST.mechWeaponFilterBodySize>
 </LanguageData>

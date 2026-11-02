@@ -146,6 +146,9 @@ public static partial class CodeKeyExtractor
             var content = File.ReadAllText(csFile);
             foreach (Match match in TweakFieldRegex().Matches(content))
             {
+                // NotAColumn 字段不进表格，没有列标题可量宽度（标签只出现在自定义窗口里，
+                // 由窗口自己排版）。它们的 MST.{字段名} 键仍由 ExtractTweakFieldKeys 要求存在。
+                if (match.Groups[1].Value.Contains("NotAColumn")) continue;
                 names.Add(match.Groups[2].Value);
             }
         }
