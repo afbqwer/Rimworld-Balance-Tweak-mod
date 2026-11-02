@@ -58,6 +58,7 @@ public class FieldCodecsTests
     [InlineData(typeof(List<StockGenerator>))]
     [InlineData(typeof(List<PawnGroupMaker>))]
     [InlineData(typeof(List<MutatorChance>))]
+    [InlineData(typeof(List<ExtraDamage>))]
     public void 精确类型都能查到(Type fieldType)
         => Assert.NotNull(TweakData.FieldCodecs.Find(fieldType));
 

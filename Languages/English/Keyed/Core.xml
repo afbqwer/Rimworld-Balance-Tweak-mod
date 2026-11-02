@@ -145,6 +145,9 @@
     <MST.DefSelector>DefSel</MST.DefSelector>
     <MST.CapModList>CapList</MST.CapModList>
     <MST.DamageModList>DmgList</MST.DamageModList>
+    <MST.ExtraDamageList>ExtraDmg</MST.ExtraDamageList>
+    <MST.AddExtraDamage>Add Extra Dmg</MST.AddExtraDamage>
+    <MST.ArmorPenetration>AP</MST.ArmorPenetration>
     <MST.AddCapMod>Add Cap</MST.AddCapMod>
     <MST.CapModCapacity>Capacity</MST.CapModCapacity>
     <MST.CapModOffset>Offset</MST.CapModOffset>

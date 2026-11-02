@@ -22,7 +22,7 @@ namespace BalanceTweak.Tests;
 /// </summary>
 public class SerializationCodecsTests
 {
-    /// <summary>迁移到字段表的 22 个类型。</summary>
+    /// <summary>迁移到字段表的 23 个类型。</summary>
     private static readonly Type[] MigratedTypes =
     {
         typeof(StatModifier), typeof(PawnCapacityModifier), typeof(DamageFactor), typeof(SkillGain),
@@ -32,7 +32,7 @@ public class SerializationCodecsTests
         typeof(BiomeDiseaseRecord), typeof(WeatherCommonalityRecord), typeof(TerrainThreshold),
         typeof(ProcessIngredientItem), typeof(ProcessResultItem), typeof(FactionCurve),
         typeof(BackstoryTrait), typeof(PossessionThingDefCountClass),
-        typeof(MutatorChance),
+        typeof(MutatorChance), typeof(ExtraDamage),
     };
 
     /// <summary>
@@ -116,6 +116,7 @@ public class SerializationCodecsTests
             (typeof(BackstoryTrait), new[] { "def", "degree" }),
             (typeof(PossessionThingDefCountClass), new[] { "key", "value" }),
             (typeof(MutatorChance), new[] { "mutator", "chance", "required" }),
+            (typeof(ExtraDamage), new[] { "def", "amount", "armorPenetration", "chance" }),
         };
 
         Assert.Equal(MigratedTypes.Length, expected.Length);

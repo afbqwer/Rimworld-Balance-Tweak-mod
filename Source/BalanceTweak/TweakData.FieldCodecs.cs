@@ -186,6 +186,9 @@ public abstract partial class TweakData
             PocoList<PawnCapacityModifier>(
                 "capacity", "offset", "setMax", "postFactor", "statFactorMod", "setMaxCurveEvaluateStat");
             PocoList<DamageFactor>("damageDef", "factor");
+            // 附加伤害（WeaponTraitDef.extraDamages）：armorPenetration 的 -1 表示"按伤害自动折算"，
+            // chance 默认 1（必中），两者都是 PocoCodec 的"等于新实例初值就省略"。
+            PocoList<ExtraDamage>("def", "amount", "armorPenetration", "chance");
             PocoList<SkillGain>("skill", "amount");
             PocoList<Aptitude>("skill", "level");
             PocoList<GeneticTraitData>("def", "degree");

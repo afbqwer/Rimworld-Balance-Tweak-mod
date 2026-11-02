@@ -253,6 +253,7 @@ public partial class BalanceTweakSettings : ModSettings
         { ColumnStyle.StatModList, (c, d) => new StatModListEditorWindow(c, d) },
         { ColumnStyle.CapModList, (c, d) => new CapModListEditorWindow(c, d) },
         { ColumnStyle.DamageModList, (c, d) => new DamageModListEditorWindow(c, d) },
+        { ColumnStyle.ExtraDamageList, (c, d) => new ExtraDamageListEditorWindow(c, d) },
         { ColumnStyle.DefList, (c, d) => new DefListEditorWindow(c, d) },
         { ColumnStyle.HediffGiverList, (c, d) => new HediffGiverListEditorWindow(c, d) },
         { ColumnStyle.MentalStateGiverList, (c, d) => new MentalStateGiverListEditorWindow(c, d) },

@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.WeaponTrait>武器特性</MST.WeaponTrait>
+    <MST.Bladelink>人格特性</MST.Bladelink>
+    <MST.Attachment>改装特性</MST.Attachment>
+
+    <!-- ── 名称与生成（只影响之后生成的武器）── -->
+    <MST.weaponCategory>武器分类</MST.weaponCategory>
+    <MST.weaponCategoryComment>该特性只会出现在这个分类的武器上（原版 WeaponCategoryDef：BladeLink / Gun / Bow / BulletFiring …）。改这项只影响之后生成的武器。</MST.weaponCategoryComment>
+    <MST.canGenerateAlone>单独生成</MST.canGenerateAlone>
+    <MST.canGenerateAloneComment>关闭时，只有武器已经带有其它特性，这个特性才会被抽到（用于"配件""后缀"类特性）。改这项只影响之后生成的武器。</MST.canGenerateAloneComment>
+    <MST.exclusionTagsComment>与其它特性互斥的标签：两条特性只要有一个标签相同就不会同时出现在同一把武器上。</MST.exclusionTagsComment>
+    <MST.traitAdjectives>形容词</MST.traitAdjectives>
+    <MST.traitAdjectivesComment>生成武器名字时可用的形容词（"XX的突击步枪"）。只影响之后生成的武器命名。</MST.traitAdjectivesComment>
+    <MST.forcedColor>强制颜色</MST.forcedColor>
+    <MST.forcedColorComment>带此特性的武器生成时强制使用该颜色。已生成的武器把颜色存在自己的 comp 里，改这项不会追溯生效。</MST.forcedColorComment>
+
+    <!-- ── 射击与伤害（立即生效）── -->
+    <MST.damageDefOverride>伤害覆盖</MST.damageDefOverride>
+    <MST.damageDefOverrideComment>把武器的伤害类型整体替换成此伤害（燃烧弹/EMP 弹这类"换弹种"的特性用它）。留空 = 不覆盖。</MST.damageDefOverrideComment>
+    <MST.extraDamages>附加伤害</MST.extraDamages>
+    <MST.extraDamagesComment>命中时额外结算的伤害，可以有多条（每条独立按几率判定）。与"伤害覆盖"可同时存在。</MST.extraDamagesComment>
+    <MST.extraDamageAmountComment>每一次命中额外造成的伤害量。</MST.extraDamageAmountComment>
+    <MST.extraDamageArmorPenetrationComment>这条附加伤害的穿甲。填 -1 表示按伤害量自动折算（原版默认口径）。</MST.extraDamageArmorPenetrationComment>
+    <MST.extraDamageChanceComment>每次命中触发这条附加伤害的几率。1 = 必中，0.5 = 一半。</MST.extraDamageChanceComment>
+    <MST.additionalStoppingPower>附加停止力</MST.additionalStoppingPower>
+    <MST.additionalStoppingPowerComment>叠加到武器的停止力（影响撞击/击退结算）。加算。</MST.additionalStoppingPowerComment>
+    <MST.burstShotSpeedMultiplier>连射速度</MST.burstShotSpeedMultiplier>
+    <MST.burstShotSpeedMultiplierComment>连发内两发之间间隔的除数：1.2 = 间隔缩短到 1/1.2（射得更快），小于 1 = 变慢。不改变点射次数。</MST.burstShotSpeedMultiplierComment>
+    <MST.burstShotCountMultiplier>连射次数</MST.burstShotCountMultiplier>
+    <MST.burstShotCountMultiplierComment>点射发数的倍率：1.5 = 每轮多打一半（向上取整）。1 = 不变。</MST.burstShotCountMultiplierComment>
+    <MST.ignoresAccuracyMaluses>忽略精度</MST.ignoresAccuracyMaluses>
+    <MST.ignoresAccuracyMalusesComment>开启后，武器自身的精度惩罚（如劣质瞄具、短枪管）不再影响该武器的命中率。</MST.ignoresAccuracyMalusesComment>
+    <MST.marketValueOffset>价值偏移</MST.marketValueOffset>
+    <MST.marketValueOffsetComment>带此特性的武器市价直接加减这个银币数（原版 StatPart_WeaponTraitsMarketValueOffset 现读）。</MST.marketValueOffsetComment>
+
+    <!-- ── 属性修正：statOffsets / statFactors 的标题与说明在 Core.xml，equippedStatOffsets 在 Weapon.xml，共用不重复定义 ── -->
+
+    <!-- ── 心情与健康 ── -->
+    <MST.bondedThought>绑定想法</MST.bondedThought>
+    <MST.bondedThoughtComment>武器与角色绑定后持续给予的想法（人格武器的"善良/嗜血"就是这么实现的）。</MST.bondedThoughtComment>
+    <MST.killThought>击杀想法</MST.killThought>
+    <MST.killThoughtComment>用这把武器击杀后给予的想法。</MST.killThoughtComment>
+    <MST.equippedHediffs>装备状态</MST.equippedHediffs>
+    <MST.equippedHediffsComment>握着这把武器期间附加的健康状态，卸下时移除。</MST.equippedHediffsComment>
+    <MST.bondedHediffs>绑定状态</MST.bondedHediffs>
+    <MST.bondedHediffsComment>武器与角色绑定后附加的健康状态，解绑时移除。</MST.bondedHediffsComment>
+    <MST.neverBond>永不绑定</MST.neverBond>
+    <MST.neverBondComment>开启后这把武器永远不会与角色绑定（与其它带 NeverBond 互斥标签的特性搭配使用）。</MST.neverBondComment>
+</LanguageData>

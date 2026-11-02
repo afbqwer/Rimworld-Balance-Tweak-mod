@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.WeaponTrait>Weapon traits</MST.WeaponTrait>
+    <MST.Bladelink>Persona</MST.Bladelink>
+    <MST.Attachment>Attachment</MST.Attachment>
+
+    <!-- ── Name & generation (affects only weapons generated afterwards) ── -->
+    <MST.weaponCategory>WpnCat</MST.weaponCategory>
+    <MST.weaponCategoryComment>Only weapons of this WeaponCategoryDef can roll the trait (vanilla: BladeLink / Gun / Bow / BulletFiring …). Only affects weapons generated afterwards.</MST.weaponCategoryComment>
+    <MST.canGenerateAlone>SoloGen</MST.canGenerateAlone>
+    <MST.canGenerateAloneComment>When off, the trait is only rolled if the weapon already has another trait (used for "attachment"/"suffix" style traits). Only affects weapons generated afterwards.</MST.canGenerateAloneComment>
+    <MST.exclusionTagsComment>Mutual-exclusion tags: two traits sharing any tag never appear on the same weapon.</MST.exclusionTagsComment>
+    <MST.traitAdjectives>Adjectiv</MST.traitAdjectives>
+    <MST.traitAdjectivesComment>Adjectives used when naming generated weapons ("kind assault rifle"). Only affects naming of weapons generated afterwards.</MST.traitAdjectivesComment>
+    <MST.forcedColor>ForceCol</MST.forcedColor>
+    <MST.forcedColorComment>Color forced onto the weapon when it is generated. Already-generated weapons store their color in their own comp, so this does not apply retroactively.</MST.forcedColorComment>
+
+    <!-- ── Shooting & damage (takes effect immediately) ── -->
+    <MST.damageDefOverride>DmgTypeOv</MST.damageDefOverride>
+    <MST.damageDefOverrideComment>Replaces the weapon's damage type entirely (incendiary/EMP rounds do it this way). Empty = no override.</MST.damageDefOverrideComment>
+    <MST.extraDamages>ExtraDmg</MST.extraDamages>
+    <MST.extraDamagesComment>Additional damage dealt on hit; each entry rolls its own chance independently. Stacks with the damage-type override.</MST.extraDamagesComment>
+    <MST.extraDamageAmountComment>Extra damage dealt by this entry per hit.</MST.extraDamageAmountComment>
+    <MST.extraDamageArmorPenetrationComment>Armor penetration of this entry. -1 means "derive it from the damage amount" (vanilla default).</MST.extraDamageArmorPenetrationComment>
+    <MST.extraDamageChanceComment>Chance for this entry to trigger per hit. 1 = always, 0.5 = half the time.</MST.extraDamageChanceComment>
+    <MST.additionalStoppingPower>StopPower</MST.additionalStoppingPower>
+    <MST.additionalStoppingPowerComment>Added to the weapon's stopping power (impact/knockback). Additive.</MST.additionalStoppingPowerComment>
+    <MST.burstShotSpeedMultiplier>BurstSpeed</MST.burstShotSpeedMultiplier>
+    <MST.burstShotSpeedMultiplierComment>Divisor for the interval between shots in a burst: 1.2 = interval / 1.2 (faster), below 1 = slower. Does not change burst length.</MST.burstShotSpeedMultiplierComment>
+    <MST.burstShotCountMultiplier>BurstCount</MST.burstShotCountMultiplier>
+    <MST.burstShotCountMultiplierComment>Multiplier on shots per burst: 1.5 = half again as many per burst (rounded up). 1 = unchanged.</MST.burstShotCountMultiplierComment>
+    <MST.ignoresAccuracyMaluses>NoAccMalus</MST.ignoresAccuracyMaluses>
+    <MST.ignoresAccuracyMalusesComment>When on, the weapon's own accuracy maluses (bad sights, sawn-off barrel…) no longer reduce its hit chance.</MST.ignoresAccuracyMalusesComment>
+    <MST.marketValueOffset>ValueOff</MST.marketValueOffset>
+    <MST.marketValueOffsetComment>Silver added to / subtracted from the market value of a weapon with this trait (read live by StatPart_WeaponTraitsMarketValueOffset).</MST.marketValueOffsetComment>
+
+    <!-- ── Stat modifiers: statOffsets / statFactors labels and tooltips live in Core.xml, equippedStatOffsets in Weapon.xml — reused, not redefined ── -->
+
+    <!-- ── Mood & health ── -->
+    <MST.bondedThought>BondThgt</MST.bondedThought>
+    <MST.bondedThoughtComment>Situational thought granted while the weapon is bonded to the pawn (this is how persona "kind"/"bloodthirsty" works).</MST.bondedThoughtComment>
+    <MST.killThought>KillThgt</MST.killThought>
+    <MST.killThoughtComment>Thought granted after killing someone with this weapon.</MST.killThoughtComment>
+    <MST.equippedHediffs>EquipHedf</MST.equippedHediffs>
+    <MST.equippedHediffsComment>Hediffs applied while the weapon is equipped; removed when unequipped.</MST.equippedHediffsComment>
+    <MST.bondedHediffs>BondHedf</MST.bondedHediffs>
+    <MST.bondedHediffsComment>Hediffs applied once the weapon is bonded to the pawn; removed when the bond breaks.</MST.bondedHediffsComment>
+    <MST.neverBond>NeverBond</MST.neverBond>
+    <MST.neverBondComment>When on, the weapon never bonds with a pawn (pairs with the NeverBond exclusion tag).</MST.neverBondComment>
+</LanguageData>

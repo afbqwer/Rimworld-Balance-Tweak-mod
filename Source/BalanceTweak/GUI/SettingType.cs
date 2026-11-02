@@ -41,5 +41,6 @@ public partial class BalanceTweakSettings
         Backstory = 33,
         RaidStrategy = 34,
         Landmark = 35,
+        WeaponTrait = 36,
     }
 }

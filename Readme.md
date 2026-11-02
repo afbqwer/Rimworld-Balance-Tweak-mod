@@ -214,6 +214,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `RaidStrategy` | `RaidStrategy.xml` |
 | `Backstory` | `Backstory.xml` |
 | `Landmark` | `Landmark.xml` |
+| `WeaponTrait` | `WeaponTrait.xml` |
 
 > 新增 SettingType 枚举值时，需同时创建对应的 XML 文件，并在 `Core.xml` 中添加通用 UI 相关的 key。
 
@@ -257,6 +258,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `StatModList` | `List<StatModifier>?` | StatModifier 列表编辑器 |
 | `CapModList` | `List<PawnCapacityModifier>?` | PawnCapacityModifier 列表编辑器 |
 | `DamageModList` | `List<DamageFactor>?` | DamageFactor 列表编辑器 |
+| `ExtraDamageList` | `List<ExtraDamage>?` | 附加伤害列表编辑器（damageDef + amount + armorPenetration + chance），服务 `WeaponTraitDef.extraDamages`；`armorPenetration = -1` 是原版"自动折算"语义 |
 | `DefList` | `List<T>?` where T : Def | Def 列表编辑器（添加/删除/替换） |
 | `HediffGiverList` | `List<HediffGiver>?` | HediffGiver 列表编辑器 |
 | `MentalStateGiverList` | `List<MentalStateGiver>?` | MentalStateGiver 列表编辑器 |
@@ -765,6 +767,7 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | `StatModList` | 弹出窗口 | `StatModListEditorWindow` | `List<StatModifier>?` |
 | `CapModList` | 弹出窗口 | `CapModListEditorWindow` | `List<PawnCapacityModifier>?` |
 | `DamageModList` | 弹出窗口 | `DamageModListEditorWindow` | `List<DamageFactor>?` |
+| `ExtraDamageList` | 弹出窗口 | `ExtraDamageListEditorWindow` | `List<ExtraDamage>?`（每行 = 伤害类型 + 伤害量 + 穿甲 + 几率） |
 | `DefList` | 弹出窗口 | `DefListEditorWindow` | `List<T>? where T : Def` |
 | `HediffGiverList` | 弹出窗口 | `HediffGiverListEditorWindow` | `List<HediffGiver>?` |
 | `MentalStateGiverList` | 弹出窗口 | `MentalStateGiverListEditorWindow` | `List<MentalStateGiver>?` |

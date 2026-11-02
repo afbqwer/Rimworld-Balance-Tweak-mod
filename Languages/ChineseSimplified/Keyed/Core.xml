@@ -145,6 +145,9 @@
     <MST.DefSelector>Def选择</MST.DefSelector>
     <MST.CapModList>机能列表</MST.CapModList>
     <MST.DamageModList>伤害列表</MST.DamageModList>
+    <MST.ExtraDamageList>附加伤害</MST.ExtraDamageList>
+    <MST.AddExtraDamage>添加附加伤害</MST.AddExtraDamage>
+    <MST.ArmorPenetration>穿甲</MST.ArmorPenetration>
     <MST.AddCapMod>添加机能</MST.AddCapMod>
     <MST.CapModCapacity>能力</MST.CapModCapacity>
     <MST.CapModOffset>偏移</MST.CapModOffset>
