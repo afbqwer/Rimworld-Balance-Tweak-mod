@@ -4,7 +4,6 @@
     <MST.orbital>轨道</MST.orbital>
     <MST.requestable>可请求</MST.requestable>
     <MST.hideThingsNotWillingToTrade>隐藏拒售</MST.hideThingsNotWillingToTrade>
-    <MST.category>分类</MST.category>
     <MST.tradeCurrency>交易货币</MST.tradeCurrency>
     <MST.faction>派系</MST.faction>
     <MST.permitRequiredForTrading>所需许可</MST.permitRequiredForTrading>
@@ -52,7 +51,6 @@
 
     <MST.requestableComment>是否可由玩家在通讯台主动请求该商人前来交易。</MST.requestableComment>
     <MST.hideThingsNotWillingToTradeComment>在交易界面中隐藏该商人不愿交易的物品。</MST.hideThingsNotWillingToTradeComment>
-    <MST.categoryComment>分类标记（如 Slaver、TributeCollector）。</MST.categoryComment>
     <MST.tradeCurrencyComment>交易使用的货币：Silver 为白银，Favor 为荣誉点（需 Royalty）。</MST.tradeCurrencyComment>
     <MST.permitRequiredForTradingComment>需要持有许可才能与之交易（需 Royalty）。</MST.permitRequiredForTradingComment>
     <MST.commonalityMultFromPopulationIntentComment>按人口意图（population intent）对 commonality 的修正曲线。</MST.commonalityMultFromPopulationIntentComment>

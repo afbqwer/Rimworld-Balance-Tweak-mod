@@ -49,6 +49,7 @@
     <MST.SkillRangeList>技能区间列表</MST.SkillRangeList>
     <MST.BackstoryTraitList>背景特性列表</MST.BackstoryTraitList>
     <MST.PossessionList>随身物品列表</MST.PossessionList>
+    <MST.MutatorChanceList>突变器列表</MST.MutatorChanceList>
     <MST.empty>空</MST.empty>
     <MST.ColumnConfig>列配置</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>列配置</MST.ColumnSelectorTitle>
@@ -246,6 +247,11 @@
     <MST.aptitudesComment>该定义赋予的技能天赋（技能等级加成）。</MST.aptitudesComment>
     <MST.baseMoodEffect>心情影响</MST.baseMoodEffect>
     <MST.baseOpinionOffset>看法影响</MST.baseOpinionOffset>
+    <!-- 跨类型共用的字段标题：特性 / 商人 / 地标都有一列，统一放在这里（CheckLoc 以本文件为规范位置） -->
+    <MST.commonality>出现权重</MST.commonality>
+    <MST.commonalityComment>随机生成时抽中该项的基础权重，越大越常见。</MST.commonalityComment>
+    <MST.category>分类</MST.category>
+    <MST.categoryComment>分类标记，取值由所属 Def 定义（商人如 Slaver，地标如 lake / coastal / mountain / structure），只影响分组与筛选。</MST.categoryComment>
     <MST.canOpenAnyDoor>强制开门</MST.canOpenAnyDoor>
     <MST.capMods>机能修正</MST.capMods>
     <MST.changePerDamage>伤害变化</MST.changePerDamage>

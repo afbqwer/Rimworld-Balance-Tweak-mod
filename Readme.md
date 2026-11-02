@@ -7,7 +7,7 @@
 | 禁止 | 原因 |
 |------|------|
 | 重命名 / 改 namespace / 删除仍在用的 `XxxData` 类 | 存档每条都写 `Class="BalanceTweak.XxxData"`；解析失败整条数据变 null（`Init` 里已加 null 防御，但数据仍会丢） |
-| 重命名 / 删除 `SettingType` 枚举成员 | 存档按**名称**写入（`SettingType.cs` 里是显式赋值 `= 1..32`），解析失败退化为 `None` 并失效。重排**声明顺序**是安全的，前提是保留每个成员原有的显式数值；改数值才危险 |
+| 重命名 / 删除 `SettingType` 枚举成员 | 存档按**名称**写入（`SettingType.cs` 里是显式赋值 `= 1..35`），解析失败退化为 `None` 并失效。重排**声明顺序**是安全的，前提是保留每个成员原有的显式数值；改数值才危险 |
 | 重命名 `[TweakField]` 字段 | 字段名 = XML 元素名，改名即丢该字段的修改（新增字段安全） |
 | 直接删除还在使用的 `[TweakFor]` 规则 | 先确认没有已存数据落在该页签；确需删除时保留一个继承它的空壳子类 |
 | 用「值 == null / 值为空」反推"用户清空了该字段" | L0 三态只认两个**显式**集合（`TweakData.StateOf`）：`_modifiedFieldNames`（Set）与 `_clearedFieldNames`（Cleared）。清空**只能**由编辑器的清空动作（`MarkFieldCleared`）写入；判定不清空/不写入一律走 `ApplyV/ApplyN/ApplyL/ApplyD/ApplyS/ApplyF` 门控 |
@@ -213,6 +213,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `ArrivalMode` | `ArrivalMode.xml` |
 | `RaidStrategy` | `RaidStrategy.xml` |
 | `Backstory` | `Backstory.xml` |
+| `Landmark` | `Landmark.xml` |
 
 > 新增 SettingType 枚举值时，需同时创建对应的 XML 文件，并在 `Core.xml` 中添加通用 UI 相关的 key。
 
@@ -285,6 +286,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `SkillRangeList` | `List<SkillRange>?` | 技能区间列表编辑器（skill + IntRange）；`SkillRange` 两个字段都是 private，读写走 PocoCodec 字段表 |
 | `BackstoryTraitList` | `List<BackstoryTrait>?` | 背景特性列表编辑器（trait + degree）；与 `TraitReqList` 形状相同但元素类型不同 |
 | `PossessionList` | `List<PossessionThingDefCountClass>?` | 随身物品列表编辑器（ThingDef + 数量区间 `value`） |
+| `MutatorChanceList` | `List<MutatorChance>?` | 地块突变器列表编辑器（mutator + 几率 + 是否必需），服务地标的 `mutatorChances` / `comboLandmarkMutators` |
 | `PawnGroupMakerList` | `List<PawnGroupMaker>?` | 兵种池列表编辑器（每行一个兵种池：kindDef + commonality + 各子列表条目数；`options`/`traders`/`carriers`/`guards` 是 `PawnGenOption` 子列表）；非原版子类只读透传，见 [§7.6.1](#761-兵种池paingroupmaker复用同一套字段表) |
 | `UnlockList` | `List<Def>?` | **只读派生列**：研究项目解锁的 Def，由全库反查得出（`Display`，不落盘、不参与 Apply），见 [§8](#8-研究解锁派生列不是字段) |
 
@@ -792,6 +794,7 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | `SkillRangeList` | 弹出窗口 | `SkillRangeListEditorWindow` | `List<SkillRange>?`（每行 = 技能选择 + 最低/最高等级；`skill` / `range` 均为 private，经 PocoCodec `ReadField` / `WriteField` 读写） |
 | `BackstoryTraitList` | 弹出窗口 | `BackstoryTraitListEditorWindow` | `List<BackstoryTrait>?`（每行 = 特性选择 + 程度） |
 | `PossessionList` | 弹出窗口 | `PossessionListEditorWindow` | `List<PossessionThingDefCountClass>?`（每行 = 物品选择 + 数量区间 min/max） |
+| `MutatorChanceList` | 弹出窗口 | `MutatorChanceListEditorWindow` | `List<MutatorChance>?`（每行 = 突变器选择 + 几率 + 必需勾选） |
 | `PawnGroupMakerList` | 弹出窗口 | `PawnGroupMakerListEditorWindow`（+ `PawnGroupMakerEditorWindow` / `SGComplexListEditorWindow`） | `List<PawnGroupMaker>?`（字段即对象列表，字段表见 [§7.6.1](#761-兵种池paingroupmaker复用同一套字段表)） |
 | `UnlockList` | 弹出窗口 | `ResearchUnlockWindow` | `List<Def>?`（`Display` 只读列；点击列出明细，可跳转到有数据行的目标） |
 | `DefSelector` | 弹出窗口 | `DefSelectionWindow` | `T? where T : Def` |

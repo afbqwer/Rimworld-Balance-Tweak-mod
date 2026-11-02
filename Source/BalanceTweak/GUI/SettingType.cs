@@ -40,5 +40,6 @@ public partial class BalanceTweakSettings
         ArrivalMode = 32,
         Backstory = 33,
         RaidStrategy = 34,
+        Landmark = 35,
     }
 }

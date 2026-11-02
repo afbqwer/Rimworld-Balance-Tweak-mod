@@ -207,6 +207,9 @@ public abstract partial class TweakData
             PocoList<SkillRange>("skill", "range");
             PocoList<ProcessIngredientItem>("thing", "thingCategory", "disallowedThingDefs", "countNeeded");
             PocoList<ProcessResultItem>(r => r.count >= 0, "thing", "count");
+            // 地标突变器（LandmarkDef.mutatorChances / comboLandmarkMutators）。同一形状用在地标的两个列表上：
+            // 突变器 + 几率 + 是否必需。字段名必须与 MutatorChance 的字段一致（required 是 bool，走 Kind.Bool）。
+            PocoList<MutatorChance>("mutator", "chance", "required");
             // FactionCurve.selectionWeightPerPointsCurve 是 private 的 SimpleCurve，由 PocoCodec 的 Kind.Curve 编解码
             PocoList<FactionCurve>("faction", "selectionWeightPerPointsCurve");
             // 兵种池（FactionDef.pawnGroupMakers）。PawnGroupMaker 的 options / traders / carriers / guards

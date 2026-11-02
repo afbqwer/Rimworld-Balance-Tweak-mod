@@ -4,7 +4,6 @@
     <MST.TraitDegree>特性程度</MST.TraitDegree>
     <MST.SingleDegree>单程度</MST.SingleDegree>
     <MST.MultiDegree>多程度</MST.MultiDegree>
-    <MST.commonality>通用权重</MST.commonality>
     <MST.commonalityFemale>女性权重</MST.commonalityFemale>
     <MST.canBeSuppressed>可压制</MST.canBeSuppressed>
     <MST.allowOnHostileSpawn>敌对生成</MST.allowOnHostileSpawn>
@@ -34,7 +33,6 @@
     <MST.theOnlyAllowedMentalBreaks>仅限崩溃</MST.theOnlyAllowedMentalBreaks>
     <MST.skillGains>技能增益</MST.skillGains>
     <MST.FirstDegree>首个程度</MST.FirstDegree>
-    <MST.commonalityComment>该特性在角色生成时的基础出现权重。值越高越常见。</MST.commonalityComment>
     <MST.commonalityFemaleComment>女性角色专用的出现权重。-1 = 使用通用权重。</MST.commonalityFemaleComment>
     <MST.disableHostilityFromAnimalTypeComment>此特性禁用敌意的动物类型。</MST.disableHostilityFromAnimalTypeComment>
     <MST.disableHostilityFromFactionComment>此特性禁用敌意的派系。</MST.disableHostilityFromFactionComment>

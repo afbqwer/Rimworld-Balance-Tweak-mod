@@ -50,6 +50,7 @@
     <MST.SkillRangeList>SkillRanges</MST.SkillRangeList>
     <MST.BackstoryTraitList>BstoryTraits</MST.BackstoryTraitList>
     <MST.PossessionList>Possessions</MST.PossessionList>
+    <MST.MutatorChanceList>Mutators</MST.MutatorChanceList>
     <MST.ColumnConfig>ColCfg</MST.ColumnConfig>
     <MST.ColumnSelectorTitle>ColCfg</MST.ColumnSelectorTitle>
     <MST.CurrentColumn>SelCol:</MST.CurrentColumn>
@@ -246,6 +247,11 @@
     <MST.aptitudesComment>Skill aptitudes (skill level bonuses) granted by this def. Format: skill + level bonus.</MST.aptitudesComment>
     <MST.baseMoodEffect>MoodEff</MST.baseMoodEffect>
     <MST.baseOpinionOffset>OpnOff</MST.baseOpinionOffset>
+    <!-- Shared column titles: traits / traders / landmarks each have one of these, so they live here (CheckLoc treats this file as the canonical location) -->
+    <MST.commonality>common</MST.commonality>
+    <MST.commonalityComment>Base weight for this entry to be selected during random generation. Higher = more common.</MST.commonalityComment>
+    <MST.category>Category</MST.category>
+    <MST.categoryComment>Free-text category tag; the meaning depends on the def (traders: Slaver, TributeCollector...; landmarks: lake / coastal / mountain / structure). Only affects grouping and filtering.</MST.categoryComment>
     <MST.canOpenAnyDoor>Open Doors</MST.canOpenAnyDoor>
     <MST.capMods>CapMods</MST.capMods>
     <MST.changePerDamage>Chg/Dmg</MST.changePerDamage>

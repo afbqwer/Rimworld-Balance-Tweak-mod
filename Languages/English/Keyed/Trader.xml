@@ -4,7 +4,6 @@
     <MST.orbital>Orbital</MST.orbital>
     <MST.requestable>Request</MST.requestable>
     <MST.hideThingsNotWillingToTrade>HideRefuse</MST.hideThingsNotWillingToTrade>
-    <MST.category>Category</MST.category>
     <MST.tradeCurrency>Currency</MST.tradeCurrency>
     <MST.faction>Faction</MST.faction>
     <MST.permitRequiredForTrading>Permit</MST.permitRequiredForTrading>
@@ -52,7 +51,6 @@
 
     <MST.requestableComment>Whether the player can request this trader to come via the comms console.</MST.requestableComment>
     <MST.hideThingsNotWillingToTradeComment>Hide things this trader is not willing to trade in the trade window.</MST.hideThingsNotWillingToTradeComment>
-    <MST.categoryComment>Free-text category tag (vanilla uses Slaver, TributeCollector...). Only affects display grouping.</MST.categoryComment>
     <MST.tradeCurrencyComment>Currency used for trading: Silver, or Favor (requires Royalty).</MST.tradeCurrencyComment>
     <MST.permitRequiredForTradingComment>Requires holding this imperial permit to trade (requires Royalty).</MST.permitRequiredForTradingComment>
     <MST.commonalityMultFromPopulationIntentComment>Curve multiplying commonality by population intent.</MST.commonalityMultFromPopulationIntentComment>

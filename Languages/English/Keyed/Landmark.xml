@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Landmark>Landmarks</MST.Landmark>
+    <MST.Lake>Lake</MST.Lake>
+    <MST.Coastal>Coast</MST.Coastal>
+    <MST.Mountain>Mount</MST.Mountain>
+    <MST.mutatorChances>mutators</MST.mutatorChances>
+    <MST.mutatorChancesComment>Tile mutators rolled when the landmark is placed (each entry is rolled independently). Only affects worlds generated after the change.</MST.mutatorChancesComment>
+    <MST.comboLandmarkMutators>comboMut</MST.comboLandmarkMutators>
+    <MST.comboLandmarkMutatorsComment>Combination mutators: rolled in order, the first success is applied and the rest are skipped (the tile becomes a combo landmark). Only affects worlds generated after the change.</MST.comboLandmarkMutatorsComment>
+    <MST.AddMutator>Add mutator</MST.AddMutator>
+    <MST.SelectMutator>(Select mutator)</MST.SelectMutator>
+    <MST.Chance>chance</MST.Chance>
+    <MST.ChanceComment>A value between 0 and 1: the odds that this mutator is applied (1 = always, 0 = never).</MST.ChanceComment>
+    <MST.Required>required</MST.Required>
+</LanguageData>

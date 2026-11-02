@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Landmark>地标</MST.Landmark>
+    <MST.Lake>湖泊</MST.Lake>
+    <MST.Coastal>海岸</MST.Coastal>
+    <MST.Mountain>山地</MST.Mountain>
+    <MST.mutatorChances>突变器</MST.mutatorChances>
+    <MST.mutatorChancesComment>放置地标时逐条独立判定的地块突变器（决定这块地的动植物、气候、遗迹等）。只影响之后新生成的世界。</MST.mutatorChancesComment>
+    <MST.comboLandmarkMutators>组合突变</MST.comboLandmarkMutators>
+    <MST.comboLandmarkMutatorsComment>组合突变器：按顺序判定，命中一条即应用并停止（该地块成为组合地标）。只影响之后新生成的世界。</MST.comboLandmarkMutatorsComment>
+    <MST.AddMutator>添加突变器</MST.AddMutator>
+    <MST.SelectMutator>(选择突变器)</MST.SelectMutator>
+    <MST.Chance>几率</MST.Chance>
+    <MST.ChanceComment>0~1 之间的小数：判定时按这个几率决定是否附加该突变器（1 = 必定，0 = 永不）。</MST.ChanceComment>
+    <MST.Required>必需</MST.Required>
+</LanguageData>

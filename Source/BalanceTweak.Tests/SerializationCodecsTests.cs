@@ -22,7 +22,7 @@ namespace BalanceTweak.Tests;
 /// </summary>
 public class SerializationCodecsTests
 {
-    /// <summary>迁移到字段表的 21 个类型。</summary>
+    /// <summary>迁移到字段表的 22 个类型。</summary>
     private static readonly Type[] MigratedTypes =
     {
         typeof(StatModifier), typeof(PawnCapacityModifier), typeof(DamageFactor), typeof(SkillGain),
@@ -32,6 +32,7 @@ public class SerializationCodecsTests
         typeof(BiomeDiseaseRecord), typeof(WeatherCommonalityRecord), typeof(TerrainThreshold),
         typeof(ProcessIngredientItem), typeof(ProcessResultItem), typeof(FactionCurve),
         typeof(BackstoryTrait), typeof(PossessionThingDefCountClass),
+        typeof(MutatorChance),
     };
 
     /// <summary>
@@ -114,6 +115,7 @@ public class SerializationCodecsTests
             (typeof(FactionCurve), new[] { "faction", "selectionWeightPerPointsCurve" }),
             (typeof(BackstoryTrait), new[] { "def", "degree" }),
             (typeof(PossessionThingDefCountClass), new[] { "key", "value" }),
+            (typeof(MutatorChance), new[] { "mutator", "chance", "required" }),
         };
 
         Assert.Equal(MigratedTypes.Length, expected.Length);
@@ -273,6 +275,14 @@ public class SerializationCodecsTests
         var skr = RoundTrip(NewSkillRange(null, new IntRange(2, 8)));
         Assert.Equal(new IntRange(2, 8), skr!.Range);
         Assert.Null(skr.Skill);
+
+        // MutatorChance：字段表里第一个 bool 字段（required）。false 等于新实例初值 ⇒ 省略，true 才写。
+        // mutator 留空（Def 解码要 DefDatabase），这里只钉 chance / required 的文本形状与往返。
+        var mc = RoundTrip(new MutatorChance { chance = 0.25f, required = true });
+        Assert.Equal(0.25f, mc!.chance);
+        Assert.True(mc.required);
+        Assert.Equal("chance=0.25", Item(new MutatorChance { chance = 0.25f }));
+        Assert.Equal("chance=0.25|required=true", Item(new MutatorChance { chance = 0.25f, required = true }));
     }
 
     /// <summary>

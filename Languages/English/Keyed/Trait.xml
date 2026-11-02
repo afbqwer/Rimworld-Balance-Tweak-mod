@@ -4,7 +4,6 @@
     <MST.TraitDegree>TrDegree</MST.TraitDegree>
     <MST.SingleDegree>Single</MST.SingleDegree>
     <MST.MultiDegree>Multi</MST.MultiDegree>
-    <MST.commonality>Common</MST.commonality>
     <MST.commonalityFemale>CommonF</MST.commonalityFemale>
     <MST.canBeSuppressed>Suppress</MST.canBeSuppressed>
     <MST.allowOnHostileSpawn>HostSpawn</MST.allowOnHostileSpawn>
@@ -34,7 +33,6 @@
     <MST.theOnlyAllowedMentalBreaks>OnlyMB</MST.theOnlyAllowedMentalBreaks>
     <MST.skillGains>SkillGain</MST.skillGains>
     <MST.FirstDegree>FirstDeg</MST.FirstDegree>
-    <MST.commonalityComment>Base weight for this trait to appear on pawn generation. Higher = more common.</MST.commonalityComment>
     <MST.commonalityFemaleComment>Female-specific commonality. -1 = use commonality value.</MST.commonalityFemaleComment>
     <MST.disableHostilityFromAnimalTypeComment>Animal type that this trait disables hostility from.</MST.disableHostilityFromAnimalTypeComment>
     <MST.disableHostilityFromFactionComment>Faction that this trait disables hostility from.</MST.disableHostilityFromFactionComment>
