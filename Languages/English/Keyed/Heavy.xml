@@ -52,6 +52,7 @@
     <MST.relayConfig>Relay</MST.relayConfig>
     <MST.relayConfigComment>Click to open the relay config window: command relay / sub relay / overseer / overseer facility are shown per Comp actually present. Existing comps are edited in place; nothing is added or removed.</MST.relayConfigComment>
     <MST.relayConfigEdit>Edit</MST.relayConfigEdit>
+    <MST.relayConfigAdd>Add</MST.relayConfigAdd>
     <MST.relayConfigIntro>These settings are written back to the Fortified relay comps and recorded in the tweak list. Radii are in cells; sections without a matching comp are not shown. Facility link rules are only evaluated when a link is created.</MST.relayConfigIntro>
     <MST.relayCompSection>Enabled comps</MST.relayCompSection>
     <MST.relayHasCommandRelay>Command relay</MST.relayHasCommandRelay>

@@ -67,6 +67,44 @@ public partial class BalanceTweakSettings : ModSettings
     private static bool cached = false;
     public static Dictionary<SettingType, Dictionary<string, int>> columnOrders = new();
 
+    // === 列过滤 ===
+    // 与搜索词 / 排序方式同级：只活在本次会话里，不写 ModSettings（理由见 ColumnFilter 的类注释）。
+    /// <summary>每个页签一份：列 id → 过滤条件。列 id 在不同页签之间会重名（都是 <c>{数据类型}_{字段名}</c>），所以必须按页签分组。</summary>
+    public static Dictionary<SettingType, Dictionary<string, ColumnFilter>> columnFilters = new();
+
+    public static Dictionary<string, ColumnFilter> CurrentColumnFilters
+    {
+        get
+        {
+            if (!columnFilters.TryGetValue(curType, out var dict))
+                columnFilters[curType] = dict = new Dictionary<string, ColumnFilter>();
+            return dict;
+        }
+    }
+
+    /// <summary>当前页签里有生效过滤的列 id（每次重建列表时刷新）。绘制期的橙色底只查这个集合，不碰字典。</summary>
+    private static readonly HashSet<string> filteredColumnIds = new();
+
+    /// <summary>这一列此刻有没有生效的列过滤 —— 表头与数据格据此上橙色。</summary>
+    public static bool IsColumnFiltered(StatColumnConfig col) => filteredColumnIds.Contains(col.id);
+
+    /// <summary>取这一列生效的过滤条件（没有则 null）。</summary>
+    public static ColumnFilter? GetColumnFilter(StatColumnConfig col)
+        => CurrentColumnFilters.TryGetValue(col.id, out var filter) ? filter : null;
+
+    /// <summary>取消一列的过滤。</summary>
+    public static void ClearColumnFilter(StatColumnConfig col)
+    {
+        if (!CurrentColumnFilters.Remove(col.id)) return;
+        TweakUtility.MarkFilterDirty();
+    }
+
+    /// <summary>表头被过滤的列：橙色底。与排序的黄色底可以叠加，橙色画在上面（它是本列的状态，不是全表状态）。</summary>
+    private static readonly Color ColumnFilterHeaderColor = new(1f, 0.58f, 0.1f, 0.5f);
+
+    /// <summary>数据区的同色淡底：只求"看得到这条链"，不能盖住已修改 / 已损坏的底色，所以压到很淡。</summary>
+    private static readonly Color ColumnFilterCellColor = new(1f, 0.6f, 0.15f, 0.12f);
+
     // UI 状态
     public static SortModeType curSortMode = SortModeType.NoSort;
     public static StatColumnConfig? selectedCol = null;
@@ -204,6 +242,8 @@ public partial class BalanceTweakSettings : ModSettings
         public Vector2 dataScroll;
         public Vector2 headerScroll;
         public TweakData? highlight;
+        /// <summary>这一页签的列过滤。存的是同一批 <see cref="BalanceTweak.ColumnFilter"/> 引用 —— 条件建好后不再改，浅拷贝就够。</summary>
+        public Dictionary<string, ColumnFilter> filters = new();
     }
 
     // 右键菜单状态
@@ -585,6 +625,7 @@ public partial class BalanceTweakSettings : ModSettings
         headerScroll = headerScrollPosition,
         // 高亮已经淡完就不必记了，只记「还看得见」的那一次
         highlight = jumpHighlightFrame > 0 ? jumpHighlightData : null,
+        filters = new Dictionary<string, ColumnFilter>(CurrentColumnFilters),
     };
 
     private static void NavBack()
@@ -614,6 +655,8 @@ public partial class BalanceTweakSettings : ModSettings
     private static void ApplyNavState(NavState state)
     {
         curType = state.type;
+        // 列过滤跟着视图一起还原：必须在下面 InitAndUpdateData 之前，否则会按上一份条件筛一遍。
+        columnFilters[state.type] = new Dictionary<string, ColumnFilter>(state.filters);
         filterModPack = state.modPack;
         filterPropType = state.propType;
         searchFilter.Text = state.search;
@@ -938,8 +981,24 @@ public partial class BalanceTweakSettings : ModSettings
                 GUI.color = prevColor;
             }
 
+            // 有列过滤的列：橙色背景（画在排序高光之后 —— 两者可以同时成立，橙色说明的是"这列在筛"）
+            if (IsColumnFiltered(visibleColumns[i]))
+            {
+                var prevColor = GUI.color;
+                GUI.color = ColumnFilterHeaderColor;
+                GUI.DrawTexture(headerCell, BaseContent.WhiteTex);
+                GUI.color = prevColor;
+            }
+
             GUI.color = (visibleColumns[i] == selectedCol) ? Color.cyan : Color.gray;
-            if (visibleColumns[i].comment != null) TooltipHandler.TipRegion(headerCell, visibleColumns[i].comment);
+            if (visibleColumns[i].comment != null)
+            {
+                // 悬浮时把当前过滤条件一并说清：橙色只说明"筛了"，说不出"按什么筛的"。
+                var active = GetColumnFilter(visibleColumns[i]);
+                TooltipHandler.TipRegion(headerCell, active == null
+                    ? visibleColumns[i].comment
+                    : visibleColumns[i].comment + "\n" + "MST.FilterActive".Translate(active.Describe()).RawText);
+            }
             Widgets.Label(headerCell, $"<b>{visibleColumns[i].label}</b>");
             GUI.color = Color.white;
 
@@ -973,13 +1032,9 @@ public partial class BalanceTweakSettings : ModSettings
                 }
                 else if (Event.current.button == 1)
                 {
-                    // 右键：仅排序，不改变选中
+                    // 右键：列菜单（过滤 / 排序），不改变选中列
                     Event.current.Use();
-                    sortCol = visibleColumns[i];
-                    if (curSortMode != SortModeType.NoSort)
-                    {
-                        filterDirty = true;
-                    }
+                    ShowColumnContextMenu(visibleColumns[i]);
                 }
             }
         }
@@ -1335,6 +1390,16 @@ public partial class BalanceTweakSettings : ModSettings
         if (config.columnDataType == ColumnDataType.Field && config.IsHidden(data)) return;
         Rect cellBack = new(DataColWidth * col, line * LineHeight, DataColWidth, LineHeight);
         Rect cellRect = cellBack.ContractedBy(2f, 0f);
+
+        // 有列过滤的列：整列铺一层淡橙底，把表头的橙色一路接到表尾。
+        // 画在内容之前（而不是像"已修改"那样画在之后）：加了橙之后文字必须还是原来的清晰度。
+        if (IsColumnFiltered(config))
+        {
+            var prevColor = GUI.color;
+            GUI.color = ColumnFilterCellColor;
+            GUI.DrawTexture(cellBack, BaseContent.WhiteTex);
+            GUI.color = prevColor;
+        }
 
         // === 拖拽涂抹（赋值式：Shift + 左键拖动，把起始格的值复制到扫过的同列行）===
         // 命中区用整格 cellBack 而不是内缩后的 cellRect —— 行与行之间不能留缝，否则起拖会落在缝里「怎么拖都没反应」
@@ -2117,6 +2182,52 @@ public partial class BalanceTweakSettings : ModSettings
             menuOptions.Add(new FloatMenuOption(options[i].Translate().RawText, () => onIndexSelected(tmp)));
         }
         Find.WindowStack.Add(new FloatMenu(menuOptions));
+    }
+
+    /// <summary>
+    /// 表头右键菜单：这一列的过滤入口 + 排序。
+    /// <para>
+    /// 左键仍然是「选中 + 排序」；右键原本是"只排序"，现在换成一个菜单 ——
+    /// 过滤需要一个入口，而把"按当前排序方式排一下"这种隐含状态塞进菜单只会让人猜。
+    /// 菜单里的排序因此写成显式的升序 / 降序 / 无排序。
+    /// </para>
+    /// </summary>
+    private static void ShowColumnContextMenu(StatColumnConfig config)
+    {
+        var options = new List<FloatMenuOption>();
+
+        // 过滤：只有字段类型支持才有入口（触发列 / Def 引用 / 过滤器 / 曲线都没有可比的值）
+        if (config.filterKind != ColumnFilterKind.None)
+        {
+            var active = GetColumnFilter(config);
+            if (active != null)
+            {
+                options.Add(new FloatMenuOption(
+                    "MST.CancelColumnFilter".Translate().RawText + ": " + active.Describe(),
+                    () => ClearColumnFilter(config)));
+            }
+            options.Add(new FloatMenuOption("MST.ColumnFilter".Translate().RawText + "…",
+                () => Find.WindowStack.Add(new ColumnFilterWindow(config))));
+        }
+
+        options.Add(new FloatMenuOption("MST.Ascending".Translate().RawText,
+            () => SetSort(config, SortModeType.Ascending)));
+        options.Add(new FloatMenuOption("MST.Descending".Translate().RawText,
+            () => SetSort(config, SortModeType.Descending)));
+        if (sortCol == config && curSortMode != SortModeType.NoSort)
+        {
+            options.Add(new FloatMenuOption("MST.NoSort".Translate().RawText,
+                () => SetSort(config, SortModeType.NoSort)));
+        }
+
+        Find.WindowStack.Add(new FloatMenu(options));
+    }
+
+    private static void SetSort(StatColumnConfig config, SortModeType sortMode)
+    {
+        sortCol = config;
+        curSortMode = sortMode;
+        filterDirty = true;
     }
 
     /// <summary>显示右键上下文菜单</summary>

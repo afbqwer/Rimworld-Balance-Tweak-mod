@@ -125,19 +125,7 @@ public class TurretConfigWindow : EditorWindowBase
                 current, v => config.ApplyValue(data!, v));
         }
 
-        var follow = data?.GetFieldConfig(nameof(RaceData.vehicleTurretRotationFollowPawn));
-        if (follow != null)
-        {
-            bool value = follow.GetRawValue(data!) as bool? ?? false;
-            DrawBoolRow(x, ref y, width, "MST.vehicleTurretRotationFollowPawn",
-                "MST.vehicleTurretRotationFollowPawnComment", value, v => follow.ApplyValue(data!, v));
-        }
-
-        DrawFloatRowForField(x, ref y, width, nameof(RaceData.vehicleRotationSmoothTime),
-            "MST.vehicleRotationSmoothTime", "MST.vehicleRotationSmoothTimeComment");
-        DrawFloatRowForField(x, ref y, width, nameof(RaceData.vehicleDrawSize),
-            "MST.vehicleDrawSize", "MST.vehicleDrawSizeComment");
-
+        // 旋转跟随 / 平滑时间 / 绘制尺寸属于表现层，不开放编辑。
         DrawWrappedText(ref y, x, width, "MST.turretMainNote", GameFont.Tiny, Color.gray);
         y += SectionGap;
     }
@@ -152,11 +140,8 @@ public class TurretConfigWindow : EditorWindowBase
 
         DrawFloatRow(x, ref y, width, prefix + "warmingTime", "MST.warmingTime", "MST.warmingTimeComment",
             slot.warmingTime, v => { slot.warmingTime = v; CommitSlots(); });
-        DrawFloatRow(x, ref y, width, prefix + "angleOffset", "MST.angleOffset", "MST.angleOffsetComment",
-            slot.angleOffset, v => { slot.angleOffset = v; CommitSlots(); });
-        DrawFloatRow(x, ref y, width, prefix + "idleAngleOffset", "MST.idleAngleOffset", "MST.idleAngleOffsetComment",
-            slot.idleAngleOffset, v => { slot.idleAngleOffset = v; CommitSlots(); });
 
+        // 瞄准 / 待机角度属于表现层：记录仍随 TurretSlotRecord 往返（不改原值），但不提供编辑。
         DrawBoolRow(x, ref y, width, "MST.autoAttack", "MST.autoAttackComment",
             slot.autoAttack, v => { slot.autoAttack = v; CommitSlots(); });
 
@@ -248,14 +233,6 @@ public class TurretConfigWindow : EditorWindowBase
 
     // ── 数字行 ──
 
-    private void DrawFloatRowForField(float x, ref float y, float width, string field, string labelKey, string commentKey)
-    {
-        var config = data?.GetFieldConfig(field);
-        if (config == null) return;
-        float value = (config.GetRawValue(data!) as float?) ?? 0f;
-        DrawFloatRow(x, ref y, width, "main." + field, labelKey, commentKey, value, v => config.ApplyValue(data!, v));
-    }
-
     private void DrawFloatRow(float x, ref float y, float width, string id, string labelKey, string commentKey,
         float value, Action<float> set)
     {
@@ -338,10 +315,7 @@ public class TurretConfigWindow : EditorWindowBase
             return;
         }
 
-        // 瞄准 / 待机角度可以（且通常是）负值，例如 DMS 常用的 -90；其余尺寸 / 时间不允许负数。
-        bool allowNegative = id.EndsWith(".angleOffset", StringComparison.Ordinal)
-            || id.EndsWith(".idleAngleOffset", StringComparison.Ordinal);
-        if (!allowNegative) parsed = Mathf.Max(0f, parsed);
+        parsed = Mathf.Max(0f, parsed);
         buffers[id] = parsed.ToString("0.###", CultureInfo.InvariantCulture);
         if (!Mathf.Approximately(parsed, row.Value)) row.Set(parsed);
     }

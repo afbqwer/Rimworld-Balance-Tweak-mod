@@ -52,6 +52,7 @@
     <MST.relayConfig>中继配置</MST.relayConfig>
     <MST.relayConfigComment>点击打开中继配置窗口：移动中继 / 副中继 / 代理机械师 / 代理设施按实际存在的 Comp 分节显示。只修改已有 Comp，不会新增或删除。</MST.relayConfigComment>
     <MST.relayConfigEdit>编辑</MST.relayConfigEdit>
+    <MST.relayConfigAdd>添加</MST.relayConfigAdd>
     <MST.relayConfigIntro>这些设置写回 Fortified 的中继 Comp，并记入修改表。半径单位为格；没有对应 Comp 的 Def 不会显示该节。设施的连接规则只在建立连接时判定。</MST.relayConfigIntro>
     <MST.relayCompSection>启用组件</MST.relayCompSection>
     <MST.relayHasCommandRelay>移动中继</MST.relayHasCommandRelay>

@@ -746,6 +746,52 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 
 ---
 
+## 9. 列过滤（视图过滤，与 ColumnStyle 无关）
+
+表头**右键** → 「过滤…」打开 `ColumnFilterWindow`，条件按列的**字段类型**给出，不给用户选：
+
+| 列类型 | 判据（`StatColumnConfig.filterKind`） | 比较 | 取值来源 |
+| --- | --- | --- | --- |
+| `FieldType.Float` / `Int`（Float / Prec / Int 样式） | `Number` | 大于 / 小于 / 等于 / 范围（闭区间） | `GetRawValue` 的 float / int，**不受"显示默认值 / 显示结果值"影响**；`Prec` 列的过滤值按**屏幕单位**（百分数）收，比较前 ×0.01 |
+| `FieldType.String`（String 样式，含走 OptionsList 的 Enum 样式） | `Text` | 原版 `QuickSearchFilter.Matches` | `GetString`（= 格子里显示的那串字） |
+| 任何列表样式（`isListStyle`） | `ListCount` | 项数 大于 / 小于 / 等于 / 范围（闭区间） | `IList.Count`（null 视为 0） |
+| 触发列 / Def 引用 / `ThingFilter` / 曲线 / 枚举 | `None` | 右键菜单里没有过滤项 | — |
+
+区间是 `下限 <= 值 <= 上限`，**两端都算**；只有一边的条件用「大于 / 小于」写，不做"留空即无界"
+（同一个意思一条路，免得界面上出现两种写法的区间）。上下限填反了在「确定」时自动换过来。
+
+四条不变式：
+
+- **文本判据只能是原版组件**：`QuickSearchFilter`（Trim + 不区分大小写子串 + 5000 条命中缓存）。
+  自己写 `Contains` 会悄悄多出"大小写 / 首尾空格"两种语义差异，顶栏搜索和列过滤就不再是同一件事。
+- **数字判据不走 `GetNumericValue`**：那个方法对"当前选中列"有两条旁路（`showAbstract` / `showChanged`），
+  混进过滤会让同一份数据在"点了列头之后"筛出不同的行。派生列先 `EnsureDisplayValues()` 再读字段
+  （进页签时已全算过，这里是 O(1) 早退）。
+- **条件属于视图，不落盘**：`columnFilters` 是 `Dictionary<SettingType, Dictionary<列 id, ColumnFilter>>`，
+  与搜索词 / 排序方式同级，只活在本次会话。理由：过滤会把行藏起来，落盘后"数据怎么少了"只能靠用户想起；
+  而搜索词本来就不落盘，一半落盘一半不落盘更难解释。列 id 跨页签会重名（都是 `{数据类型}_{字段名}`），
+  所以**必须按页签分组**（与 `hiddenColumnIds` 同一套做法）。
+- **条件建好后不再改**：改动 = 建一条新的。因此后退/前进的快照（`BalanceTweakSettings.NavState.filters`）只做浅拷贝存引用。
+
+与既有功能的接缝：
+
+| 位置 | 行为 |
+| --- | --- |
+| `UpdateFilters` | 所有生效条件取"与"，排在 Mod 筛选之后、搜索之前（数字比较比字符串匹配便宜，先挡行） |
+| 固定项（`pinnedIds`） | 与其它筛选一致：**绕过**过滤，始终出现在列表里 |
+| 批量修改 / 重置选中列 / 重置显示项 | 只作用于 `filteredData` ⇒ 只动筛出来的行，与搜索的既有口径一致 |
+| `JumpToData` | 清空**当前页签**的过滤（否则目标行被藏起来，`IndexOf` 返回 -1 表现为"点跳转没反应"）；`NavState` 存了旧条件，后退能恢复 |
+| 绘制 | `filteredColumnIds`（重建列表时刷新的 id 集合）→ 表头橙色底（`0.5` 透明）+ 数据格同色淡底（`0.12`，画在内容之前，不压文字清晰度）。表头 tooltip 追加「当前过滤：…」 |
+
+> 取消过滤：表头右键 →「取消过滤: 5 ~ 10」（菜单项自带条件摘要）。过滤窗口里把文本清空再确定，等同于取消
+> —— 空条件会让列徒有橙色却一行都不筛，所以 `Apply` 直接把它当"取消"处理。
+
+加一种新的过滤方式要动两处：`ColumnFilterKind` 加成员 + `StatColumnConfig.ResolveFilterKind` 给它一个来源，
+然后 `ColumnFilter.Matches` / `Describe` / `ColumnFilterWindow.DrawValueRow` 各补一个分支。
+`filterKind == None` 的列右键菜单里自动没有过滤项，不必维护白名单。
+
+---
+
 ## 附1. ColumnStyle 编辑窗口与用法
 
 | ColumnStyle | 编辑方式 | 窗口类 | C# 类型 |

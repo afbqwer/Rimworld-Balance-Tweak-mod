@@ -9,6 +9,24 @@
     <MST.NoSort>无排序</MST.NoSort>
     <MST.Ascending>升序</MST.Ascending>
     <MST.Descending>降序</MST.Descending>
+    <!-- 列过滤（表头右键 → 过滤） -->
+    <MST.ColumnFilter>过滤</MST.ColumnFilter>
+    <MST.CancelColumnFilter>取消过滤</MST.CancelColumnFilter>
+    <MST.FilterCondition>条件</MST.FilterCondition>
+    <MST.FilterGreater>大于</MST.FilterGreater>
+    <MST.FilterLess>小于</MST.FilterLess>
+    <MST.FilterEqual>等于</MST.FilterEqual>
+    <MST.FilterRange>范围</MST.FilterRange>
+    <MST.FilterLower>下限</MST.FilterLower>
+    <MST.FilterUpper>上限</MST.FilterUpper>
+    <MST.FilterRangeDesc>{0} ~ {1}</MST.FilterRangeDesc>
+    <MST.FilterValue>过滤值</MST.FilterValue>
+    <MST.FilterText>包含文本</MST.FilterText>
+    <MST.FilterTextHint>与顶栏搜索同一套匹配方式：去掉首尾空格后，不区分大小写的子串匹配。</MST.FilterTextHint>
+    <MST.FilterTextDesc>包含“{0}”</MST.FilterTextDesc>
+    <MST.FilterCountDesc>项数 {0}</MST.FilterCountDesc>
+    <MST.FilterActive>当前过滤：{0}</MST.FilterActive>
+    <MST.OK>确定</MST.OK>
     <MST.ShowAll>显示全部</MST.ShowAll>
     <MST.HideAll>隐藏全部</MST.HideAll>
     <MST.ByType>按类型操作</MST.ByType>
@@ -91,17 +109,18 @@
     <MST.ResetCurTooltip>重置目前所显示的全部数据。不会重置未显示在列表中的数据。</MST.ResetCurTooltip>
     <MST.ApplyToolTip>修改选中列的所有值。只会修改显示在目前列表中的数据。数值的结果=(值+增减)*倍率，启用步长时按步长取整，再按已启用的上下限截断。</MST.ApplyToolTip>
     <MST.HelpTooltip>操作说明
-- 表头：左键 选中并排序，右键 仅排序，拖动 调整列顺序，悬浮 查看列说明。
+- 表头：左键 选中并排序，右键 过滤/排序，拖动 调整列顺序，悬浮 查看列说明与当前过滤条件。
 - 顶栏：统一修改 =(值+增减)*倍率 → 按步长取整 → 按已启用的上下限截断（点击 下限/上限 标签可切换是否启用，标签底色高亮表示启用），作用于选中列的可见数据；另有 重置选中列/重置显示项。
-- 标题行：右侧依次是 后退/前进（跳转历史，会还原筛选、搜索词与滚动位置）、列配置、总体设置、? 帮助。
+- 标题行：右侧依次是 后退/前进（跳转历史，会还原筛选、搜索词、列过滤与滚动位置）、列配置、总体设置、? 帮助。
 - 筛选行：搜索、类型/Mod 筛选、排序；显示结果值/显示默认值 仅改显示，查看模式 整表只读。
+- 列过滤：表头右键 → 过滤，数字列比大小或填区间（两端都算），文本列按搜索匹配，列表列比项数；被过滤的列显示橙色底，右键 → 取消过滤 可撤销。过滤只影响显示，不改数据。
 - 单元格：开关点击切换，数值/百分比原地输入，枚举下拉，文本/列表/曲线/Def 打开编辑窗口。
 - 批量：Shift+左键拖动，复制起始格的值到同列拖过的单元格。
 - 名称列：左键跳转条目，右键 固定/重置/复制 defName，右侧 R 重置。
 - 数据格右键：复制/粘贴/重置该字段，Def 引用列可跳转。</MST.HelpTooltip>
     <MST.NavBack>后退</MST.NavBack>
     <MST.NavForward>前进</MST.NavForward>
-    <MST.NavBackTooltip>回到上一次跳转前的视图：页签、二级筛选、搜索词、排序和滚动位置都会还原。</MST.NavBackTooltip>
+    <MST.NavBackTooltip>回到上一次跳转前的视图：页签、二级筛选、搜索词、列过滤、排序和滚动位置都会还原。</MST.NavBackTooltip>
     <MST.NavForwardTooltip>前进到刚才「后退」离开的那个视图。只有刚用过后退时才可用。</MST.NavForwardTooltip>
     <MST.SimpleDefEditer>简单Def编辑器</MST.SimpleDefEditer>
     <MST.SettingsHint>编辑窗口已自动打开。关闭编辑窗口会一并退出本页；游戏内也可以直接点屏幕底部的「Def 编辑器」主按钮。</MST.SettingsHint>

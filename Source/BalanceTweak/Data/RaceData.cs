@@ -292,15 +292,10 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     [TweakField(NotAColumn = true, Style = ColumnStyle.TurretSlotList, MayRequire = TweakDatabase.FFF)]
     public List<TurretSlotRecord>? turretSlots = null;
 
-    // 主炮（CompProperties_VehicleWeapon）也放在窗口里编辑，避免在种族页多出四列空格子。
+    // 主炮（CompProperties_VehicleWeapon）：只开放影响平衡的 defaultWeapon；
+    // 旋转跟随 / 平滑时间 / 绘制尺寸属于表现层，不提供编辑。
     [TweakField(NotAColumn = true, Style = ColumnStyle.DefSelector, MayRequire = TweakDatabase.FFF)]
     public ThingDef? vehicleDefaultWeapon = null;
-    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
-    public bool? vehicleTurretRotationFollowPawn = null;
-    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
-    public float? vehicleRotationSmoothTime = null;
-    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
-    public float? vehicleDrawSize = null;
 
     private object? multipleTurretProps = null;
     private object? vehicleWeaponProps = null;
@@ -645,9 +640,6 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         if (vehicleWeaponProps == null) return;
         var props = vehicleWeaponProps;
         vehicleDefaultWeapon ??= DataUtility.GetByName(props, "defaultWeapon") as ThingDef;
-        vehicleTurretRotationFollowPawn ??= DataUtility.GetByName(props, "turretRotationFollowPawn") as bool?;
-        vehicleRotationSmoothTime ??= DataUtility.AsFloat(DataUtility.GetByName(props, "rotationSmoothTime"));
-        vehicleDrawSize ??= DataUtility.AsFloat(DataUtility.GetByName(props, "drawSize"));
     }
 
     /// <summary>
@@ -666,9 +658,6 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         if (vehicle == null) return;
         var props = vehicle;
         ApplyD<ThingDef>(nameof(vehicleDefaultWeapon), v => DataUtility.SetByName(props, "defaultWeapon", v));
-        ApplyV<bool>(nameof(vehicleTurretRotationFollowPawn), v => DataUtility.SetByName(props, "turretRotationFollowPawn", v));
-        ApplyV<float>(nameof(vehicleRotationSmoothTime), v => DataUtility.SetByName(props, "rotationSmoothTime", v));
-        ApplyV<float>(nameof(vehicleDrawSize), v => DataUtility.SetByName(props, "drawSize", v));
     }
 
     private void ApplyRaceProp(ThingDef def)

@@ -374,6 +374,17 @@ public partial class BalanceTweakSettings
             availableModPacks.Clear();
             availableModPacks.Add("All");
 
+            // 列过滤：本页签当前生效的条件。绘制层的橙色底只认 filteredColumnIds，
+            // 每格一次字典查询换成一次集合命中 —— 数据区是行/列双虚拟化的，这里省下的是每帧几百次。
+            var activeColumnFilters = new List<ColumnFilter>();
+            filteredColumnIds.Clear();
+            foreach (var (id, filter) in CurrentColumnFilters)
+            {
+                if (!filter.IsActive) continue;
+                activeColumnFilters.Add(filter);
+                filteredColumnIds.Add(id);
+            }
+
             var datas = cachedData[curType];
             if (datas == null)
             {
@@ -402,6 +413,9 @@ public partial class BalanceTweakSettings
                         tempPacks.Add(data.modPackName);
 
                     if (filterModPack != "All" && data.modPackName != filterModPack) continue;
+                    // 列过滤：多条条件取"与"。放在搜索之前 —— 数字比较比字符串匹配便宜，
+                    // 先挡掉行能让后面的搜索少跑一次（QuickSearchFilter 的缓存按字符串命中，省下的正是它的 key 计算）。
+                    if (!MatchesColumnFilters(data, activeColumnFilters)) continue;
                     // 搜索
                     if (!searchFilter.Matches(data.searchString))
                     {
@@ -508,6 +522,26 @@ public partial class BalanceTweakSettings
                     jumpdataScrollY = Mathf.Max(index * LineHeight, 0f);
             }
         }
+
+        /// <summary>
+        /// 一条行记录是否通过<b>全部</b>列过滤条件（取"与"）。
+        /// 无生效条件时 <paramref name="filters"/> 为空表，这里直接返回 true，不额外判空。
+        /// </summary>
+        private static bool MatchesColumnFilters(TweakData data, List<ColumnFilter> filters)
+        {
+            foreach (var filter in filters)
+            {
+                if (!filter.Matches(data)) return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 列过滤条件变了：只需要重筛，不必重推派生值（<see cref="MarkDerivedDirty"/> 是另一件事）。
+        /// 编辑窗口 / 右键菜单 / 取消过滤都走这里。
+        /// </summary>
+        public static void MarkFilterDirty() => filterDirty = true;
+
         /// <summary>跳转到数据</summary>
         public static void JumpToData(TweakData target)
         {
@@ -518,6 +552,9 @@ public partial class BalanceTweakSettings
 
             // 设置筛选条件
             curType = target.id.settingType;
+            // 列过滤会挡住目标行（按下标定位行号时 IndexOf 返回 -1，表现为"点了跳转没反应"），
+            // 与清空搜索词同理一并撤掉；历史里已经存好，后退能原样恢复。
+            CurrentColumnFilters.Clear();
             selectedCol = null;
             sortCol = null;
             var mp = string.IsNullOrEmpty(target.modPackName) ? "All" : target.modPackName;

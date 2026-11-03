@@ -23,6 +23,7 @@ public class TurretSlotRecord
     public ThingDef? turret = null;
     public string supportedWeaponTag = "";
     public List<string> generateWithWeapons = new();
+    /// <summary>表现层角度：仍随记录落盘并原样写回（不改 Def 原值），但编辑窗口不开放。</summary>
     public float idleAngleOffset;
     public float angleOffset;
     public bool autoAttack = true;

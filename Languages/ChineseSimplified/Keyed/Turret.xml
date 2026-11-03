@@ -4,7 +4,7 @@
     <MST.turretConfig>炮塔配置</MST.turretConfig>
     <MST.turretConfigComment>点击打开炮塔配置窗口：主炮按 CompProperties_VehicleWeapon 显示，副炮槽按 CompPropertiesMultipleTurretGun.subTurrets 逐槽分节。只改字段，不增删槽位。</MST.turretConfigComment>
     <MST.turretConfigEdit>编辑</MST.turretConfigEdit>
-    <MST.turretConfigIntro>副炮槽按 Def 实际配置分节显示，本轮不提供槽位增删与 ID 改名。标量（预热 / 角度 / 自动攻击）实时生效；更换副炮武器只影响新生成或重新初始化的单位。</MST.turretConfigIntro>
+    <MST.turretConfigIntro>副炮槽按 Def 实际配置分节显示，本轮不提供槽位增删与 ID 改名。标量（预热 / 自动攻击）实时生效；更换副炮武器只影响新生成或重新初始化的单位。</MST.turretConfigIntro>
 
     <MST.turretSlots>副炮槽</MST.turretSlots>
     <MST.turretSlotsComment>副炮槽的可编辑快照（只存下面这些字段）。写回时按槽位 ID 原地合并，渲染配置始终留在 Def 上。</MST.turretSlotsComment>
@@ -16,10 +16,6 @@
     <MST.turretComment>该槽位的固定副炮武器。改动只影响新生成或重新初始化的单位；已存在的副炮保留原武器。</MST.turretComment>
     <MST.warmingTime>预热时间</MST.warmingTime>
     <MST.warmingTimeComment>开火前的预热时长（秒）。实时读取，改动立即生效。</MST.warmingTimeComment>
-    <MST.angleOffset>瞄准角度</MST.angleOffset>
-    <MST.angleOffsetComment>瞄准时叠加的旋转角度（度）。DMS 常用 -90。</MST.angleOffsetComment>
-    <MST.idleAngleOffset>待机角度</MST.idleAngleOffset>
-    <MST.idleAngleOffsetComment>无目标时叠加的待机旋转角度（度）。</MST.idleAngleOffsetComment>
     <MST.autoAttack>自动攻击</MST.autoAttack>
     <MST.autoAttackComment>是否自动索敌开火。关闭后只能手动指定目标。实时读取。</MST.autoAttackComment>
     <MST.supportedWeaponTag>支持标签</MST.supportedWeaponTag>
@@ -28,14 +24,8 @@
     <MST.generateWithWeaponsComment>NPC 生成时随机挑选副炮的武器标签集合。只影响之后生成的单位。</MST.generateWithWeaponsComment>
 
     <MST.turretMainSection>主炮（VehicleWeapon）</MST.turretMainSection>
-    <MST.turretMainNote>默认主炮只在单位生成（且没有主武器）或修理补武器时生效，不会替换已存在的主武器；旋转与尺寸每帧读取，立即生效。</MST.turretMainNote>
+    <MST.turretMainNote>默认主炮只在单位生成（且没有主武器）或修理补武器时生效，不会替换已存在的主武器。</MST.turretMainNote>
     <MST.vehicleDefaultWeapon>默认主炮</MST.vehicleDefaultWeapon>
     <MST.vehicleDefaultWeaponComment>生成时没有主武器、或修理补武器时使用的武器。不会替换已装备的主武器。</MST.vehicleDefaultWeaponComment>
     <MST.vehicleSelectWeapon>选择主炮</MST.vehicleSelectWeapon>
-    <MST.vehicleTurretRotationFollowPawn>炮随人转</MST.vehicleTurretRotationFollowPawn>
-    <MST.vehicleTurretRotationFollowPawnComment>主炮是否跟随角色朝向旋转。实时读取。</MST.vehicleTurretRotationFollowPawnComment>
-    <MST.vehicleRotationSmoothTime>旋转平滑</MST.vehicleRotationSmoothTime>
-    <MST.vehicleRotationSmoothTimeComment>主炮旋转的平滑时间（秒）；越小越生硬。实时读取。</MST.vehicleRotationSmoothTimeComment>
-    <MST.vehicleDrawSize>绘制尺寸</MST.vehicleDrawSize>
-    <MST.vehicleDrawSizeComment>主炮的绘制缩放。实时读取。</MST.vehicleDrawSizeComment>
 </LanguageData>

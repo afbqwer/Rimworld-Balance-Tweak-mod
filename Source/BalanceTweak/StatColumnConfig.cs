@@ -46,6 +46,15 @@ public class StatColumnConfig
     public readonly bool isListStyle; // 缓存 IsListStyle() 结果
 
     /// <summary>
+    /// 这一列能做什么样的列过滤（见 <see cref="ColumnFilter"/>）。<see cref="ColumnFilterKind.None"/> = 不给过滤入口。
+    /// <para>
+    /// 由<b>字段类型</b>推出，不让用户选：数字列只比大小，文本列只走原版搜索匹配，列表列只比项数。
+    /// 触发列（Link / 各类 Links / 配置入口 / 解锁列表）字段恒为 null，没有可比的值。
+    /// </para>
+    /// </summary>
+    public readonly ColumnFilterKind filterKind;
+
+    /// <summary>
     /// 该列能否"清空"（右键菜单里的「清空」）。
     /// <para>
     /// <b>清空的语义只有一条：从集合里移除一项或全部项。</b>所以只有两类列开这个口子：
@@ -142,6 +151,7 @@ public class StatColumnConfig
         CacheFieldType();
         ValidateFieldTypeStyle();
         CompileAccessors();
+        filterKind = ResolveFilterKind(style);
         canClear = type == ColumnDataType.Field
             && !isMirror
             && (stat != null || typeof(IList).IsAssignableFrom(field.FieldType));
@@ -212,6 +222,32 @@ public class StatColumnConfig
             or ColumnStyle.ExtraDamageList
             or ColumnStyle.TurretSlotList
             or ColumnStyle.UnlockList;
+    }
+
+    /// <summary>
+    /// 「点了才查」的触发列：字段本身不存值（恒为 <c>null</c>），只是一扇通往窗口 / 跳转的门。
+    /// <para>
+    /// 派生值推导（<see cref="EnsureForDisplay"/>）与列过滤（<see cref="filterKind"/>）都要跳过它们 ——
+    /// 前者会白算一遍整页战斗力，后者会得到一个"永远是 0 / 永远空"的假条件。
+    /// 两处共用这一个判据，免得将来加了一种 Links 只改了一边。
+    /// </para>
+    /// </summary>
+    public static bool IsTriggerStyle(ColumnStyle style)
+        => style is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks
+            or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList
+            or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig or ColumnStyle.TurretConfig;
+
+    /// <summary>按字段类型决定这一列能用哪种列过滤。判据只在构造时算一次。</summary>
+    private ColumnFilterKind ResolveFilterKind(ColumnStyle style)
+    {
+        if (IsTriggerStyle(style)) return ColumnFilterKind.None;
+        if (isListStyle) return ColumnFilterKind.ListCount;
+        return cachedFieldType switch
+        {
+            FieldType.Float or FieldType.Int => ColumnFilterKind.Number,
+            FieldType.String => ColumnFilterKind.Text,
+            _ => ColumnFilterKind.None,
+        };
     }
 
     private void ValidateFieldTypeStyle()
@@ -947,12 +983,10 @@ public class StatColumnConfig
     private void EnsureForDisplay(TweakData data)
     {
         if (columnDataType != ColumnDataType.Display) return;
-        // 关联入口列（Link / RaceLinks / BodyLinks / WeaponLinks / PawnWeaponLinks / UnlockList）
+        // 关联入口列（Link / RaceLinks / BodyLinks / WeaponLinks / PawnWeaponLinks / UnlockList …）
         // 是"点了才查"的触发列，字段本身永远是 null，读它不需要任何派生值。
         // 不排除的话，只看武器列的行也会被拖着算一遍战斗力。
-        if (columnType is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks
-            or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList
-            or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig or ColumnStyle.TurretConfig) return;
+        if (IsTriggerStyle(columnType)) return;
         data.EnsureDisplayValues();
     }
 
@@ -998,8 +1032,10 @@ public class StatColumnConfig
         }
         if (columnType == ColumnStyle.RelayConfig)
         {
-            // 同上：中继 Comp 的字段全部在 RelayConfigWindow 里编辑。
-            return "MST.relayConfigEdit".Translate().RawText;
+            // 没有任何中继 Comp 时按钮显示"添加"（窗口里可以勾选新增），否则显示"编辑"。
+            return FortifiedRelay.HasAny(data.def)
+                ? "MST.relayConfigEdit".Translate().RawText
+                : "MST.relayConfigAdd".Translate().RawText;
         }
         if (columnType == ColumnStyle.TurretConfig)
         {
