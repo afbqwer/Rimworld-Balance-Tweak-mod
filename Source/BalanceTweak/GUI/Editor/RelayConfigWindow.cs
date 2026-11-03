@@ -89,6 +89,8 @@ public class RelayConfigWindow : EditorWindowBase
         DrawWrappedText(ref y, x, width, "MST.relayConfigIntro", GameFont.Tiny, Color.gray);
         y += SectionGap;
 
+        DrawCompToggles(ref y, x, width);
+
         var def = data?.def;
         if (FortifiedRelay.FindCommandRelay(def) != null && HasField(nameof(RaceData.commandRelayMaxWorldMapRadius)))
             DrawCommandRelay(ref y, x, width);
@@ -102,9 +104,32 @@ public class RelayConfigWindow : EditorWindowBase
         if (FortifiedRelay.FindOverseerFacility(def) != null && HasField(nameof(BuildingData.facilityMaxSimultaneous)))
             DrawFacility(ref y, x, width);
 
-        DrawStatus(ref y, x, width);
+        DrawHostStats(ref y, x, width);
 
         Widgets.EndScrollView();
+    }
+
+    /// <summary>Comp 增删开关：字段只存在于对应宿主类型（种族 / 建筑 / 服装）上。</summary>
+    private void DrawCompToggles(ref float y, float x, float width)
+    {
+        bool any = HasField(nameof(RaceData.relayHasCommandRelay))
+            || HasField(nameof(RaceData.relayHasOverseer))
+            || HasField(nameof(BuildingData.relayHasSubRelay))
+            || HasField(nameof(BuildingData.relayHasOverseerFacility))
+            || HasField(nameof(ApparelData.relayHasSubRelay));
+        if (!any) return;
+
+        DrawSectionTitle(ref y, x, width, "MST.relayCompSection");
+        DrawBoolRow(x, ref y, width, nameof(RaceData.relayHasCommandRelay),
+            "MST.relayHasCommandRelay", "MST.relayHasCommandRelayComment");
+        DrawBoolRow(x, ref y, width, nameof(BuildingData.relayHasSubRelay),
+            "MST.relayHasSubRelay", "MST.relayHasSubRelayComment");
+        DrawBoolRow(x, ref y, width, nameof(RaceData.relayHasOverseer),
+            "MST.relayHasOverseer", "MST.relayHasOverseerComment");
+        DrawBoolRow(x, ref y, width, nameof(BuildingData.relayHasOverseerFacility),
+            "MST.relayHasOverseerFacility", "MST.relayHasOverseerFacilityComment");
+        DrawWrappedText(ref y, x, width, "MST.relayCompToggleNote", GameFont.Tiny, Color.gray);
+        y += SectionGap;
     }
 
     private void DrawCommandRelay(ref float y, float x, float width)
@@ -156,34 +181,30 @@ public class RelayConfigWindow : EditorWindowBase
             "MST.facilityMustBePlacedAdjacent", "MST.facilityMustBePlacedAdjacentComment");
         DrawListRow(x, ref y, width, nameof(BuildingData.facilityStatOffsets),
             "MST.facilityStatOffsets", "MST.facilityStatOffsetsComment");
+        DrawWrappedText(ref y, x, width, "MST.relayFacilityNote", GameFont.Tiny, Color.gray);
         y += SectionGap;
     }
 
-    private void DrawStatus(ref float y, float x, float width)
+    /// <summary>代理机械师宿主的三个 stat（带宽 / 控制组 / 指挥范围）改为窗口内编辑。</summary>
+    private void DrawHostStats(ref float y, float x, float width)
     {
         if (data?.def is not ThingDef td) return;
-        // 只有真正的代理机械师宿主才显示这些 stat；设施行自己的 statBases 不代表它给宿主的加成。
+        // 只有真正的代理机械师宿主才显示；设施行自己的 statBases 不代表它给宿主的加成。
         if (FortifiedRelay.FindOverseer(td) == null) return;
+        // 只有 Race / Building 有这三个宿主字段；Apparel 的 mechBandwidth 是装备 stat，不是这里的东西。
+        if (!HasField(nameof(RaceData.mechControlGroups))) return;
 
-        var bandwidth = DefDatabase<StatDef>.GetNamedSilentFail("MechBandwidth");
-        var groups = DefDatabase<StatDef>.GetNamedSilentFail("MechControlGroups");
-        var range = DefDatabase<StatDef>.GetNamedSilentFail("FFF_MechCommandRange");
-
-        string format = "MST.relayEffectiveStats".Translate().RawText;
-        string text = string.Format(CultureInfo.InvariantCulture, format,
-            StatText(td, bandwidth), StatText(td, groups), StatText(td, range));
-        DrawWrappedText(ref y, x, width, text, GameFont.Small, Color.white);
-
-        if (FortifiedRelay.FindOverseerFacility(td) != null)
-            DrawWrappedText(ref y, x, width, "MST.relayFacilityNote", GameFont.Tiny, Color.gray);
+        DrawSectionTitle(ref y, x, width, "MST.relayHostStatsSection");
+        DrawNumberRow(x, ref y, width, nameof(RaceData.mechBandwidth), "MST.mechBandwidth");
+        DrawNumberRow(x, ref y, width, nameof(RaceData.mechControlGroups), "MST.mechControlGroups");
+        DrawNumberRow(x, ref y, width, nameof(RaceData.mechCommandRange), "MST.mechCommandRange");
+        DrawWrappedText(ref y, x, width, "MST.relayHostStatsNote", GameFont.Tiny, Color.gray);
+        y += SectionGap;
     }
-
-    private static string StatText(ThingDef def, StatDef? stat)
-        => stat == null ? "-" : def.GetStatValueAbstract(stat).ToString("0.##", CultureInfo.InvariantCulture);
 
     // ── 行绘制 ──
 
-    private void DrawNumberRow(float x, ref float y, float width, string field, string labelKey, string commentKey)
+    private void DrawNumberRow(float x, ref float y, float width, string field, string labelKey, string? commentKey = null)
     {
         var cfg = data?.GetFieldConfig(field);
         if (cfg == null) return;
@@ -195,12 +216,12 @@ public class RelayConfigWindow : EditorWindowBase
 
         var fieldRect = new Rect(x + width - FieldWidth, y, FieldWidth, LineHeight);
         DrawNumberField(fieldRect, cfg);
-        if (commentKey.TryTranslate(out var tip))
+        if (!commentKey.NullOrEmpty() && commentKey.TryTranslate(out var tip))
             TooltipHandler.TipRegion(fieldRect, tip);
         y += LineHeight;
     }
 
-    private void DrawBoolRow(float x, ref float y, float width, string field, string labelKey, string commentKey)
+    private void DrawBoolRow(float x, ref float y, float width, string field, string labelKey, string? commentKey = null)
     {
         var cfg = data?.GetFieldConfig(field);
         if (cfg == null) return;
@@ -211,7 +232,7 @@ public class RelayConfigWindow : EditorWindowBase
         Widgets.CheckboxLabeled(rowRect, labelKey.Translate().RawText, ref next);
         if (next != current) cfg.ApplyValue(data!, next);
 
-        if (commentKey.TryTranslate(out var tip))
+        if (!commentKey.NullOrEmpty() && commentKey.TryTranslate(out var tip))
             TooltipHandler.TipRegion(rowRect, tip);
         y += LineHeight;
     }
@@ -370,7 +391,12 @@ public class RelayConfigWindow : EditorWindowBase
             value = 0f;
             return false;
         }
-        value = Mathf.Max(0f, f);
+
+        // 带宽 / 控制组 / 指挥范围允许负值（惩罚型种族 / 建筑配置）；半径、间隔、距离不允许。
+        bool allowNegative = cfg.fieldName is nameof(RaceData.mechBandwidth)
+            or nameof(RaceData.mechControlGroups)
+            or nameof(RaceData.mechCommandRange);
+        value = allowNegative ? f : Mathf.Max(0f, f);
         return true;
     }
 

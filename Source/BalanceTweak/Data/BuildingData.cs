@@ -95,34 +95,32 @@ class BuildingData : TweakData<BuildingData>
     // 建筑可能挂 SubRelay / Overseer / OverseerFacility 三种 Comp；只留一个只读触发列，
     // 其余字段 NotAColumn，由窗口按实际存在的 Comp 分节编辑。
 
-    /// <summary>只读触发列：打开中继配置窗口。没有任何中继 Comp 的建筑整格留白。</summary>
+    /// <summary>
+    /// 只读触发列：打开中继配置窗口。即使没有任何中继 Comp 也要能打开窗口来新增 Comp，
+    /// 所以不做行级留白。
+    /// </summary>
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.RelayConfig,
-        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoRelayConfig))]
+        MayRequire = TweakDatabase.FFF)]
     public TweakID? relayConfig = null;
 
-    public static bool HiddenIfNoRelayConfig(TweakData data) => !FortifiedRelay.HasAny(data.def);
+    // 中继 Comp 的新增 / 移除开关（与 ApparelData.isCompQuality 同一模式）。
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? relayHasSubRelay = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? relayHasOverseer = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? relayHasOverseerFacility = null;
 
-    /// <summary>没有代理机械师 Comp 的行不显示带宽 / 控制组 / 指挥范围。</summary>
-    public static bool HiddenIfNoOverseer(TweakData data) => FortifiedRelay.FindOverseer(data.def) == null;
-
-    /// <summary>整列只在 Fortified 加载时出现（判据与行无关，Available 按第一行求值一次是安全的）。</summary>
-    public static bool AvailableIfFortified(TweakData data) => DataUtility.MayRequire(TweakDatabase.FFF);
-
-    // 宿主 stat：写在 def.statBases 上，与 ApplyDefStats 同一个写者。
-    [TweakField(StatDef = "MechBandwidth", Style = ColumnStyle.Int,
-        MayRequire = "ludeon.rimworld.biotech",
-        Available = nameof(AvailableIfFortified),
-        Hidden = nameof(HiddenIfNoOverseer))]
+    // 宿主 stat：带宽 / 控制组 / 指挥范围由 ApplyDefStats 唯一写入；
+    // NotAColumn = 不进表格，改到 RelayConfigWindow 里编辑。
+    [TweakField(NotAColumn = true, StatDef = "MechBandwidth", Style = ColumnStyle.Int,
+        MayRequire = "ludeon.rimworld.biotech")]
     public float? mechBandwidth = null;
-    [TweakField(StatDef = "MechControlGroups", Style = ColumnStyle.Int,
-        MayRequire = "ludeon.rimworld.biotech",
-        Available = nameof(AvailableIfFortified),
-        Hidden = nameof(HiddenIfNoOverseer))]
+    [TweakField(NotAColumn = true, StatDef = "MechControlGroups", Style = ColumnStyle.Int,
+        MayRequire = "ludeon.rimworld.biotech")]
     public float? mechControlGroups = null;
-    [TweakField(StatDef = "FFF_MechCommandRange",
-        MayRequire = TweakDatabase.FFF,
-        Available = nameof(AvailableIfFortified),
-        Hidden = nameof(HiddenIfNoOverseer))]
+    [TweakField(NotAColumn = true, StatDef = "FFF_MechCommandRange",
+        MayRequire = TweakDatabase.FFF)]
     public float? mechCommandRange = null;
 
     // 以下字段由 RelayConfigWindow 编辑，只在存档里存在，不进表格。
@@ -466,6 +464,9 @@ class BuildingData : TweakData<BuildingData>
             }
 
             LoadRelay(d);
+            relayHasSubRelay ??= subRelayProps != null;
+            relayHasOverseer ??= overseerProps != null;
+            relayHasOverseerFacility ??= overseerFacilityProps != null;
         }
     }
 
@@ -612,41 +613,56 @@ class BuildingData : TweakData<BuildingData>
     }
 
     /// <summary>
-    /// 从三种中继 Comp 回填窗口字段。标量用 <c>??=</c>；列表带 <c>!IsFieldModified</c> 守卫，
-    /// 否则已清空的字段读档后会被 Comp 回填"复活"（硬约束表第 7 行）。
+    /// 从三种中继 Comp 回填窗口字段。<paramref name="syncUnmodified"/> = true 时未修改字段跟随
+    /// Comp 当前值（外部改动 / 重新解析后界面保持一致）；列表始终带 <c>!IsFieldModified</c> 守卫。
     /// </summary>
-    private void LoadRelay(ThingDef d)
+    private void LoadRelay(ThingDef d, bool syncUnmodified = false)
     {
         subRelayProps = FortifiedRelay.FindSubRelay(d);
         if (subRelayProps != null)
         {
             var props = subRelayProps;
-            subRelayRange ??= DataUtility.AsFloat(DataUtility.GetByName(props, "relayRange"));
-            subRelayCoverWholeMap ??= DataUtility.GetByName(props, "coverWholeMap") as bool?;
+            Sync(ref subRelayRange, nameof(subRelayRange),
+                DataUtility.AsFloat(DataUtility.GetByName(props, "relayRange")), syncUnmodified);
+            Sync(ref subRelayCoverWholeMap, nameof(subRelayCoverWholeMap),
+                DataUtility.GetByName(props, "coverWholeMap") as bool?, syncUnmodified);
         }
 
         overseerProps = FortifiedRelay.FindOverseer(d);
         if (overseerProps != null)
         {
             var props = overseerProps;
-            overseerCanRepair ??= DataUtility.GetByName(props, "canRepair") as bool?;
-            overseerTicksPerHeal ??= DataUtility.AsInt(DataUtility.GetByName(props, "ticksPerHeal"));
-            overseerInstantControl ??= DataUtility.GetByName(props, "instantControl") as bool?;
+            Sync(ref overseerCanRepair, nameof(overseerCanRepair),
+                DataUtility.GetByName(props, "canRepair") as bool?, syncUnmodified);
+            Sync(ref overseerTicksPerHeal, nameof(overseerTicksPerHeal),
+                DataUtility.AsInt(DataUtility.GetByName(props, "ticksPerHeal")), syncUnmodified);
+            Sync(ref overseerInstantControl, nameof(overseerInstantControl),
+                DataUtility.GetByName(props, "instantControl") as bool?, syncUnmodified);
         }
 
         overseerFacilityProps = FortifiedRelay.FindOverseerFacility(d);
         if (overseerFacilityProps != null)
         {
             var props = overseerFacilityProps;
-            facilityMaxSimultaneous ??= DataUtility.AsInt(DataUtility.GetByName(props, "maxSimultaneous"));
-            facilityMaxDistance ??= DataUtility.AsFloat(DataUtility.GetByName(props, "maxDistance"));
-            facilityRequiresLOS ??= DataUtility.GetByName(props, "requiresLOS") as bool?;
-            facilityMustBePlacedAdjacent ??= DataUtility.GetByName(props, "mustBePlacedAdjacent") as bool?;
-            if (!IsFieldModified(nameof(facilityStatOffsets)))
-                facilityStatOffsets ??= DataUtility.GetByName(props, "statOffsets") is List<StatModifier> list
+            Sync(ref facilityMaxSimultaneous, nameof(facilityMaxSimultaneous),
+                DataUtility.AsInt(DataUtility.GetByName(props, "maxSimultaneous")), syncUnmodified);
+            Sync(ref facilityMaxDistance, nameof(facilityMaxDistance),
+                DataUtility.AsFloat(DataUtility.GetByName(props, "maxDistance")), syncUnmodified);
+            Sync(ref facilityRequiresLOS, nameof(facilityRequiresLOS),
+                DataUtility.GetByName(props, "requiresLOS") as bool?, syncUnmodified);
+            Sync(ref facilityMustBePlacedAdjacent, nameof(facilityMustBePlacedAdjacent),
+                DataUtility.GetByName(props, "mustBePlacedAdjacent") as bool?, syncUnmodified);
+            if (!IsFieldModified(nameof(facilityStatOffsets)) && (syncUnmodified || facilityStatOffsets == null))
+                facilityStatOffsets = DataUtility.GetByName(props, "statOffsets") is List<StatModifier> list
                     ? new List<StatModifier>(list)
                     : null;
         }
+    }
+
+    private void Sync<T>(ref T? field, string name, T? value, bool syncUnmodified) where T : struct
+    {
+        if (IsFieldModified(name)) return;
+        if (syncUnmodified || field == null) field = value;
     }
 
     /// <summary>
@@ -655,27 +671,38 @@ class BuildingData : TweakData<BuildingData>
     /// </summary>
     private void ApplyRelay(ThingDef def)
     {
-        var subRelay = subRelayProps ??= FortifiedRelay.FindSubRelay(def);
-        if (subRelay != null)
+        if (!DataUtility.MayRequire(TweakDatabase.FFF)) return;
+
+        // Comp 增删：与 isCompQuality 同一模式，只改 def.comps。已存在的单位保留出生时的 Comp。
+        ApplyV<bool>(nameof(relayHasSubRelay),
+            v => FortifiedRelay.SetCompEnabled(def, FortifiedRelay.SubRelayPropsType, v));
+        ApplyV<bool>(nameof(relayHasOverseer),
+            v => FortifiedRelay.SetCompEnabled(def, FortifiedRelay.OverseerPropsType, v));
+        ApplyV<bool>(nameof(relayHasOverseerFacility),
+            v => FortifiedRelay.SetCompEnabled(def, FortifiedRelay.OverseerFacilityPropsType, v));
+
+        // 重新解析（Comp 可能刚被增删），并让未修改字段跟随当前值。
+        // 权威重置时不覆盖：那时字段里是要写回的原值。
+        LoadRelay(def, syncUnmodified: !forceWriteAll);
+
+        if (subRelayProps != null)
         {
-            var props = subRelay; // 闭包只捕获 object
+            var props = subRelayProps; // 闭包只捕获 object
             ApplyV<float>(nameof(subRelayRange), v => DataUtility.SetByName(props, "relayRange", v));
             ApplyV<bool>(nameof(subRelayCoverWholeMap), v => DataUtility.SetByName(props, "coverWholeMap", v));
         }
 
-        var overseer = overseerProps ??= FortifiedRelay.FindOverseer(def);
-        if (overseer != null)
+        if (overseerProps != null)
         {
-            var props = overseer;
+            var props = overseerProps;
             ApplyV<bool>(nameof(overseerCanRepair), v => DataUtility.SetByName(props, "canRepair", v));
             ApplyV<int>(nameof(overseerTicksPerHeal), v => DataUtility.SetByName(props, "ticksPerHeal", v));
             ApplyV<bool>(nameof(overseerInstantControl), v => DataUtility.SetByName(props, "instantControl", v));
         }
 
-        var facility = overseerFacilityProps ??= FortifiedRelay.FindOverseerFacility(def);
-        if (facility != null)
+        if (overseerFacilityProps != null)
         {
-            var props = facility;
+            var props = overseerFacilityProps;
             ApplyV<int>(nameof(facilityMaxSimultaneous), v => DataUtility.SetByName(props, "maxSimultaneous", v));
             ApplyV<float>(nameof(facilityMaxDistance), v => DataUtility.SetByName(props, "maxDistance", v));
             ApplyV<bool>(nameof(facilityRequiresLOS), v => DataUtility.SetByName(props, "requiresLOS", v));
@@ -704,7 +731,10 @@ class BuildingData : TweakData<BuildingData>
         || Touched(nameof(facilityMaxDistance))
         || Touched(nameof(facilityRequiresLOS))
         || Touched(nameof(facilityMustBePlacedAdjacent))
-        || Touched(nameof(facilityStatOffsets));
+        || Touched(nameof(facilityStatOffsets))
+        || Touched(nameof(relayHasSubRelay))
+        || Touched(nameof(relayHasOverseer))
+        || Touched(nameof(relayHasOverseerFacility));
 
     private bool Touched(string field)
         => IsFieldModified(field) || forceWriteAll || forceWriteFields?.Contains(field) == true;

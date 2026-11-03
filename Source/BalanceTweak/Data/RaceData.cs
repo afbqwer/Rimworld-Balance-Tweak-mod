@@ -198,7 +198,8 @@ class RaceData : TweakData<RaceData>, ISubItemHost
 
     /// <summary>只读触发列：打开机械武器过滤窗口。没有 <c>MechWeaponExtension</c> 的行整格留白。</summary>
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.MechWeaponFilter,
-        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoMechWeaponExtension))]
+        MayRequire = TweakDatabase.FFF, Available = nameof(AvailableIfMech),
+        Hidden = nameof(HiddenIfNoMechWeaponExtension))]
     public TweakID? mechWeaponFilter = null;
 
     /// <summary>没有 Fortified 机械武器扩展的种族不适用这一格。</summary>
@@ -230,36 +231,31 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     // 中继配置全部挂在 CompProperties 上。这里只留一个只读触发列，其余字段 NotAColumn：
     // 照常落盘 / 走三态 / 参与重置，由窗口统一编辑。
 
-    /// <summary>只读触发列：打开中继配置窗口。没有任何中继 Comp 的行整格留白。</summary>
+    /// <summary>
+    /// 只读触发列：打开中继配置窗口。种族页只在机械分组出现（AvailableIfMech）；
+    /// 没有中继 Comp 的机械也要能打开窗口来新增 Comp，所以不做行级留白。
+    /// </summary>
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.RelayConfig,
-        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoRelayConfig))]
+        MayRequire = TweakDatabase.FFF, Available = nameof(AvailableIfMech))]
     public TweakID? relayConfig = null;
 
-    /// <summary>没有中继 Comp 的种族不适用这一格。</summary>
-    public static bool HiddenIfNoRelayConfig(TweakData data) => !FortifiedRelay.HasAny(data.def);
-
-    /// <summary>没有代理机械师 Comp 的行不显示带宽 / 控制组 / 指挥范围。</summary>
-    public static bool HiddenIfNoOverseer(TweakData data) => FortifiedRelay.FindOverseer(data.def) == null;
-
-    /// <summary>整列只在 Fortified 加载时出现（判据与行无关，Available 按第一行求值一次是安全的）。</summary>
-    public static bool AvailableIfFortified(TweakData data) => DataUtility.MayRequire(TweakDatabase.FFF);
-
-    // 宿主 stat：带宽 / 控制组 / 指挥范围写在 def.statBases 上，与 ApplyDefStats 同一个写者。
-    [TweakField(StatDef = "MechBandwidth", Style = ColumnStyle.Int,
-        MayRequire = "ludeon.rimworld.biotech",
-        Available = nameof(AvailableIfFortified),
-        Hidden = nameof(HiddenIfNoOverseer))]
+    // 宿主 stat：带宽 / 控制组 / 指挥范围写在 def.statBases 上，仍由 ApplyDefStats 唯一写入；
+    // NotAColumn = 不进表格，改到 RelayConfigWindow 里编辑（一个组件不值得占三列）。
+    [TweakField(NotAColumn = true, StatDef = "MechBandwidth", Style = ColumnStyle.Int,
+        MayRequire = "ludeon.rimworld.biotech")]
     public float? mechBandwidth = null;
-    [TweakField(StatDef = "MechControlGroups", Style = ColumnStyle.Int,
-        MayRequire = "ludeon.rimworld.biotech",
-        Available = nameof(AvailableIfFortified),
-        Hidden = nameof(HiddenIfNoOverseer))]
+    [TweakField(NotAColumn = true, StatDef = "MechControlGroups", Style = ColumnStyle.Int,
+        MayRequire = "ludeon.rimworld.biotech")]
     public float? mechControlGroups = null;
-    [TweakField(StatDef = "FFF_MechCommandRange",
-        MayRequire = TweakDatabase.FFF,
-        Available = nameof(AvailableIfFortified),
-        Hidden = nameof(HiddenIfNoOverseer))]
+    [TweakField(NotAColumn = true, StatDef = "FFF_MechCommandRange",
+        MayRequire = TweakDatabase.FFF)]
     public float? mechCommandRange = null;
+
+    // 中继 Comp 的新增 / 移除开关：与 ApparelData.isCompQuality 同一模式（Apply 时增删 def.comps）。
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? relayHasCommandRelay = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? relayHasOverseer = null;
 
     // 以下字段由 RelayConfigWindow 编辑，只在存档里存在，不进表格。
     [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
@@ -287,7 +283,8 @@ class RaceData : TweakData<RaceData>, ISubItemHost
 
     /// <summary>只读触发列：打开炮塔配置窗口。既没有副炮槽也没有主炮的行整格留白。</summary>
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.TurretConfig,
-        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoTurretComp))]
+        MayRequire = TweakDatabase.FFF, Available = nameof(AvailableIfMech),
+        Hidden = nameof(HiddenIfNoTurretComp))]
     public TweakID? turretConfig = null;
 
     public static bool HiddenIfNoTurretComp(TweakData data) => !FortifiedTurret.HasAny(data.def);
@@ -430,6 +427,8 @@ class RaceData : TweakData<RaceData>, ISubItemHost
             mechWeaponExtension = FortifiedMech.FindExtension(d);
             if (mechWeaponExtension != null) LoadMechWeaponFilter(mechWeaponExtension);
             LoadRelay(d);
+            relayHasCommandRelay ??= commandRelayProps != null;
+            relayHasOverseer ??= overseerProps != null;
             LoadTurret(d);
         }
     }
@@ -532,50 +531,76 @@ class RaceData : TweakData<RaceData>, ISubItemHost
 
     /// <summary>
     /// 从 <c>CompProperties_CommandRelay</c> / <c>CompProperties_Overseer</c> 回填窗口字段。
-    /// 标量用 <c>??=</c>（值类型不会"复活"）；<c>object</c> 缓存供 Apply 复用，不在闭包里出现可选 Mod 类型。
+    /// <paramref name="syncUnmodified"/> = true 时，未修改的字段也跟随 Comp 的当前值
+    /// （用于 Comp 新增 / 移除后让界面与实际一致）；已修改 / 已清空的字段永远不动。
     /// </summary>
-    private void LoadRelay(ThingDef d)
+    private void LoadRelay(ThingDef d, bool syncUnmodified = false)
     {
         commandRelayProps = FortifiedRelay.FindCommandRelay(d);
         if (commandRelayProps != null)
         {
             var props = commandRelayProps;
-            commandRelayMaxWorldMapRadius ??= DataUtility.AsInt(DataUtility.GetByName(props, "maxWorldMapRadius"));
-            commandRelayMaxRelayRadius ??= DataUtility.AsFloat(DataUtility.GetByName(props, "maxRelayRadius"));
-            commandRelayMinRelayRadius ??= DataUtility.AsFloat(DataUtility.GetByName(props, "minRelayRadius"));
-            commandRelayCoverWholeMap ??= DataUtility.GetByName(props, "coverWholeMap") as bool?;
+            Sync(ref commandRelayMaxWorldMapRadius, nameof(commandRelayMaxWorldMapRadius),
+                DataUtility.AsInt(DataUtility.GetByName(props, "maxWorldMapRadius")), syncUnmodified);
+            Sync(ref commandRelayMaxRelayRadius, nameof(commandRelayMaxRelayRadius),
+                DataUtility.AsFloat(DataUtility.GetByName(props, "maxRelayRadius")), syncUnmodified);
+            Sync(ref commandRelayMinRelayRadius, nameof(commandRelayMinRelayRadius),
+                DataUtility.AsFloat(DataUtility.GetByName(props, "minRelayRadius")), syncUnmodified);
+            Sync(ref commandRelayCoverWholeMap, nameof(commandRelayCoverWholeMap),
+                DataUtility.GetByName(props, "coverWholeMap") as bool?, syncUnmodified);
         }
 
         overseerProps = FortifiedRelay.FindOverseer(d);
         if (overseerProps != null)
         {
             var props = overseerProps;
-            overseerCanRepair ??= DataUtility.GetByName(props, "canRepair") as bool?;
-            overseerTicksPerHeal ??= DataUtility.AsInt(DataUtility.GetByName(props, "ticksPerHeal"));
-            overseerInstantControl ??= DataUtility.GetByName(props, "instantControl") as bool?;
+            Sync(ref overseerCanRepair, nameof(overseerCanRepair),
+                DataUtility.GetByName(props, "canRepair") as bool?, syncUnmodified);
+            Sync(ref overseerTicksPerHeal, nameof(overseerTicksPerHeal),
+                DataUtility.AsInt(DataUtility.GetByName(props, "ticksPerHeal")), syncUnmodified);
+            Sync(ref overseerInstantControl, nameof(overseerInstantControl),
+                DataUtility.GetByName(props, "instantControl") as bool?, syncUnmodified);
         }
     }
 
+    private void Sync<T>(ref T? field, string name, T? value, bool syncUnmodified) where T : struct
+    {
+        if (IsFieldModified(name)) return;
+        if (syncUnmodified || field == null) field = value;
+    }
+
     /// <summary>
-    /// 把窗口里的值写回中继 Comp。三态门控，未动过的字段不写；没有对应 Comp 的种族直接跳过。
+    /// 把窗口里的值写回中继 Comp。先处理 Comp 增删，再原地写字段；没有对应 Comp 的种族直接跳过。
     /// 宿主 stat（带宽 / 控制组 / 指挥范围）由 <see cref="ApplyDefStats"/> 负责，这里只登记缓存刷新。
     /// </summary>
     private void ApplyRelay(ThingDef def)
     {
-        var commandRelay = commandRelayProps ??= FortifiedRelay.FindCommandRelay(def);
-        if (commandRelay != null)
+        // FFF 缺席时中继字段全部不在 Fields 里，任何 ApplyV 都可能撞到不存在的字段；直接跳过。
+        if (!DataUtility.MayRequire(TweakDatabase.FFF)) return;
+
+        // Comp 增删：与 isCompQuality 同一模式，只改 def.comps。已存在的单位保留出生时的 Comp。
+        ApplyV<bool>(nameof(relayHasCommandRelay),
+            v => FortifiedRelay.SetCompEnabled(def, FortifiedRelay.CommandRelayPropsType, v));
+        ApplyV<bool>(nameof(relayHasOverseer),
+            v => FortifiedRelay.SetCompEnabled(def, FortifiedRelay.OverseerPropsType, v));
+
+        // Comp 集合可能刚被增删：重新解析引用，并让未修改字段跟随 Comp 的当前值（新增后显示默认值）。
+        // 权威重置（forceWriteAll）时不能同步：那一刻字段里放的正是"要写回的原值"，
+        // 让 Comp 的新默认值盖掉它就等于重置失败。
+        LoadRelay(def, syncUnmodified: !forceWriteAll);
+
+        if (commandRelayProps != null)
         {
-            var props = commandRelay; // 闭包只捕获 object
+            var props = commandRelayProps; // 闭包只捕获 object
             ApplyV<int>(nameof(commandRelayMaxWorldMapRadius), v => DataUtility.SetByName(props, "maxWorldMapRadius", v));
             ApplyV<float>(nameof(commandRelayMaxRelayRadius), v => DataUtility.SetByName(props, "maxRelayRadius", v));
             ApplyV<float>(nameof(commandRelayMinRelayRadius), v => DataUtility.SetByName(props, "minRelayRadius", v));
             ApplyV<bool>(nameof(commandRelayCoverWholeMap), v => DataUtility.SetByName(props, "coverWholeMap", v));
         }
 
-        var overseer = overseerProps ??= FortifiedRelay.FindOverseer(def);
-        if (overseer != null)
+        if (overseerProps != null)
         {
-            var props = overseer;
+            var props = overseerProps;
             ApplyV<bool>(nameof(overseerCanRepair), v => DataUtility.SetByName(props, "canRepair", v));
             ApplyV<int>(nameof(overseerTicksPerHeal), v => DataUtility.SetByName(props, "ticksPerHeal", v));
             ApplyV<bool>(nameof(overseerInstantControl), v => DataUtility.SetByName(props, "instantControl", v));
@@ -599,7 +624,9 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         || Touched(nameof(commandRelayCoverWholeMap))
         || Touched(nameof(overseerCanRepair))
         || Touched(nameof(overseerTicksPerHeal))
-        || Touched(nameof(overseerInstantControl));
+        || Touched(nameof(overseerInstantControl))
+        || Touched(nameof(relayHasCommandRelay))
+        || Touched(nameof(relayHasOverseer));
 
     private bool Touched(string field)
         => IsFieldModified(field) || forceWriteAll || forceWriteFields?.Contains(field) == true;
@@ -629,6 +656,9 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     /// </summary>
     private void ApplyTurret(ThingDef def)
     {
+        // FFF 缺席时炮塔字段全部不在 Fields 里，避免撞到不存在的字段。
+        if (!DataUtility.MayRequire(TweakDatabase.FFF)) return;
+
         var multiple = multipleTurretProps ??= FortifiedTurret.FindMultipleTurret(def);
         ApplyL<TurretSlotRecord>(nameof(turretSlots), v => FortifiedTurret.WriteSlots(def, multiple, v));
 

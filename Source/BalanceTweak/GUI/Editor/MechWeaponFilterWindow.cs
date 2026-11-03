@@ -4,6 +4,7 @@ using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
+using static BalanceTweak.TweakData;
 
 namespace BalanceTweak;
 
@@ -27,9 +28,14 @@ public class MechWeaponFilterWindow : EditorWindowBase
     private const float LineHeight = 24f;
     private const float SectionGap = 10f;
     private const float EditButtonWidth = 110f;
-    private const float ViewHeight = 560f;
+    private const float ViewHeight = 720f;
 
     private Vector2 scroll;
+
+    // 可用武器列表按"当前设置"现算；只在窗口里的设置变化后重算，绘制阶段不扫全库。
+    private List<TweakID>? usableWeaponLinks;
+    private List<string>? usableWeaponLabels;
+    private bool usableWeaponsDirty = true;
 
     public MechWeaponFilterWindow(TweakData data)
     {
@@ -150,12 +156,154 @@ public class MechWeaponFilterWindow : EditorWindowBase
         });
         y += LineHeight;
         DrawWrappedText(ref y, x, width, "MST.bypassUsableWeaponsComment", GameFont.Tiny, Color.gray);
-        y += SectionGap * 2;
+        y += SectionGap;
+
+        // ── 可用武器 ──
+        DrawUsableWeapons(ref y, x, width);
 
         // ── 状态 ──
         DrawStatus(ref y, x, width);
 
         Widgets.EndScrollView();
+    }
+
+    /// <summary>
+    /// 按窗口当前设置列出可用武器。列表只在设置改动后重算一次（<see cref="Apply"/> 置脏），
+    /// 绘制时只读缓存；完整列表复用 <see cref="TweakLinksWindow"/>（虚拟滚动 + 点击跳转）。
+    /// </summary>
+    private void DrawUsableWeapons(ref float y, float x, float width)
+    {
+        EnsureUsableWeapons();
+
+        var labelRect = new Rect(x, y, width - EditButtonWidth - Spacing, LineHeight);
+        Text.Anchor = TextAnchor.MiddleLeft;
+        Widgets.Label(labelRect, "MST.usableWeapons".Translate().RawText);
+        Text.Anchor = TextAnchor.UpperLeft;
+
+        var buttonRect = new Rect(labelRect.xMax + Spacing, y, EditButtonWidth, LineHeight);
+        int count = usableWeaponLinks?.Count ?? 0;
+        string text = $"{("MST.usableWeaponsView".Translate().RawText)} ({count})";
+        if (Widgets.ButtonText(buttonRect, text) && count > 0)
+        {
+            OpenChildWindow(new TweakLinksWindow(
+                data!, "MST.usableWeapons", new List<TweakID>(usableWeaponLinks!)));
+        }
+        y += LineHeight;
+
+        if (count == 0)
+        {
+            DrawWrappedText(ref y, x, width, "MST.usableWeaponsEmpty", GameFont.Tiny, Color.gray);
+            y += SectionGap;
+            return;
+        }
+
+        const int previewCount = 12;
+        var labels = usableWeaponLabels!;
+        string preview = string.Join(" / ", labels.Take(previewCount));
+        if (labels.Count > previewCount) preview += " …";
+        string format = "MST.usableWeaponsPreview".Translate().RawText;
+        DrawWrappedText(ref y, x, width, string.Format(format, preview), GameFont.Tiny, Color.gray);
+        y += SectionGap;
+    }
+
+    private void EnsureUsableWeapons()
+    {
+        if (!usableWeaponsDirty && usableWeaponLinks != null && usableWeaponLabels != null) return;
+        usableWeaponsDirty = false;
+        usableWeaponLinks = new List<TweakID>();
+        usableWeaponLabels = new List<string>();
+
+        if (data?.def is not ThingDef raceDef || raceDef.race == null) return;
+
+        bool filter = Bool("enableWeaponFilter");
+        bool techFilter = Bool("enableTechLevelFilter");
+        bool classFilter = Bool("enableClassFilter");
+        var tags = ListOf<string>("usableWeaponTags");
+        var techLevels = ListOf<int>("usableTechLevels");
+        var classes = ListOf<WeaponClassDef>("usableWeaponClasses");
+        var bypass = ListOf<string>("bypassUsableWeapons");
+
+        float bodySize = raceDef.race.baseBodySize;
+        var matches = new List<(string label, TweakID id)>();
+
+        foreach (var weapon in DefDatabase<ThingDef>.AllDefsListForReading)
+        {
+            if (weapon == null || !weapon.IsWeapon) continue;
+
+            bool usable;
+            if (filter)
+            {
+                usable = FilterAccepts(weapon, tags, techFilter, techLevels, classFilter, classes, bypass)
+                    || HeavyRuntimeAccepts(weapon, raceDef, filter, bodySize);
+            }
+            else
+            {
+                usable = HeavyStaticAccepts(weapon, bodySize)
+                    || HeavyRuntimeAccepts(weapon, raceDef, filter, bodySize);
+            }
+            if (!usable) continue;
+
+            var rule = TweakData.FindRuleFor(weapon, includeFallback: true);
+            if (rule == null) continue;
+            var id = new TweakID(weapon.defName, rule.Tab);
+            if (TweakDatabase.GetOriginal(id) == null) continue;
+            matches.Add((weapon.label, id));
+        }
+
+        matches.Sort((a, b) => string.Compare(a.label, b.label, StringComparison.CurrentCultureIgnoreCase));
+        foreach (var (label, id) in matches)
+        {
+            usableWeaponLabels.Add(label);
+            usableWeaponLinks.Add(id);
+        }
+    }
+
+    private static bool FilterAccepts(ThingDef weapon, List<string> tags,
+        bool techFilter, List<int> techLevels, bool classFilter,
+        List<WeaponClassDef> classes, List<string> bypass)
+    {
+        // 与 Fortified.MechWeaponExtension.CanUse 同一顺序：豁免 → 标签 → 科技 → 类别。
+        if (bypass.Contains(weapon.defName)) return true;
+        if (weapon.weaponTags.NullOrEmpty()) return false;
+        if (!tags.Any(t => weapon.weaponTags.Contains(t))) return false;
+        if (techFilter && !techLevels.Contains((int)weapon.techLevel)) return false;
+        if (classFilter &&
+            (weapon.weaponClasses.NullOrEmpty() || !weapon.weaponClasses.Any(classes.Contains)))
+            return false;
+        return true;
+    }
+
+    /// <summary>过滤关闭时的静态判定（<c>MechWeaponExtension.CanUseAsHeavyWeapon</c>）。</summary>
+    private static bool HeavyStaticAccepts(ThingDef weapon, float bodySize)
+    {
+        var extension = FortifiedHeavy.FindExtension(weapon);
+        if (extension == null) return true;
+
+        // 直接读扩展上的档位对象，省掉 TypeByName + defName 反查（列表要扫全库武器）。
+        var tier = DataUtility.GetByName(extension, "EquippableDef") as Def;
+        if (tier == null) return true;
+        if (DataUtility.GetByName(tier, "IsMountedWeapon") as bool? == true) return false;
+        float threshold = DataUtility.AsFloat(DataUtility.GetByName(tier, "EquippableBaseBodySize")) ?? 1f;
+        return bodySize < threshold;
+    }
+
+    /// <summary>
+    /// 重型武器的运行时判定（<c>HeavyEquippableExtension.CanEquippedBy(ThingDef)</c> 的静态近似）。
+    /// 只看种族白名单 / 体型；具体单位穿着的护甲 / Hediff / 基因不在列表里展开。
+    /// </summary>
+    private static bool HeavyRuntimeAccepts(ThingDef weapon, ThingDef raceDef, bool filter, float bodySize)
+    {
+        var extension = FortifiedHeavy.FindExtension(weapon);
+        if (extension == null) return false;
+
+        var tier = DataUtility.GetByName(extension, "EquippableDef") as Def;
+        if (tier == null) return true;
+        if (DataUtility.GetByName(tier, "EquippableByRace") is List<ThingDef> races && races.Contains(raceDef))
+            return true;
+        if (filter) return false;
+        if (DataUtility.GetByName(tier, "IsMountedWeapon") as bool? == true) return false;
+        float threshold = DataUtility.AsFloat(DataUtility.GetByName(tier, "EquippableBaseBodySize")) ?? 1f;
+        return bodySize >= threshold;
     }
 
     private void DrawTechLevelToggles(ref float y, float x, float width)
@@ -265,5 +413,7 @@ public class MechWeaponFilterWindow : EditorWindowBase
     {
         if (data == null) return;
         data.GetFieldConfig(fieldName)?.ApplyValue(data, value);
+        // 设置一变，可用武器列表下次绘制时重算（每帧扫全库太贵）。
+        usableWeaponsDirty = true;
     }
 }

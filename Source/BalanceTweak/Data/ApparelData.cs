@@ -154,10 +154,11 @@ public class ApparelData : TweakData<ApparelData>
     // ── Fortified 中继指挥（可选 Mod，见 RelayConfigWindow）──
     // 服装只支持 CompProperties_SubRelay（Fortified 把穿在身上的服装也当作副中继）。
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.RelayConfig,
-        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoRelayConfig))]
+        MayRequire = TweakDatabase.FFF)]
     public TweakID? relayConfig = null;
 
-    public static bool HiddenIfNoRelayConfig(TweakData data) => !FortifiedRelay.HasAny(data.def);
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? relayHasSubRelay = null;
 
     [TweakField(NotAColumn = true, MayRequire = TweakDatabase.FFF)]
     public float? subRelayRange = null;
@@ -277,6 +278,7 @@ public class ApparelData : TweakData<ApparelData>
                 reloadableMaxCharges ??= reloadable.maxCharges;
             }
             LoadRelay(d);
+            relayHasSubRelay ??= subRelayProps != null;
             LoadTurret(d);
         }
         //equipCP = (float?)GetEquipCP(this, isCompQuality, equipPower);
@@ -347,23 +349,31 @@ public class ApparelData : TweakData<ApparelData>
         // 参考列按"当前 def 现算"：改完成本 / 材料后，下一次读就该是新值。
         displayValuesEnsured = false;
     }
-    /// <summary>从 <c>CompProperties_SubRelay</c> 回填窗口字段。</summary>
-    private void LoadRelay(ThingDef d)
+    /// <summary>从 <c>CompProperties_SubRelay</c> 回填窗口字段；sync 时未修改字段跟随 Comp 当前值。</summary>
+    private void LoadRelay(ThingDef d, bool syncUnmodified = false)
     {
         subRelayProps = FortifiedRelay.FindSubRelay(d);
         if (subRelayProps == null) return;
         var props = subRelayProps;
-        subRelayRange ??= DataUtility.AsFloat(DataUtility.GetByName(props, "relayRange"));
-        subRelayCoverWholeMap ??= DataUtility.GetByName(props, "coverWholeMap") as bool?;
+        if (!IsFieldModified(nameof(subRelayRange)) && (syncUnmodified || subRelayRange == null))
+            subRelayRange = DataUtility.AsFloat(DataUtility.GetByName(props, "relayRange"));
+        if (!IsFieldModified(nameof(subRelayCoverWholeMap)) && (syncUnmodified || subRelayCoverWholeMap == null))
+            subRelayCoverWholeMap = DataUtility.GetByName(props, "coverWholeMap") as bool?;
     }
 
-    /// <summary>把窗口里的值写回副中继 Comp；没有 Comp 的服装直接跳过，并登记缓存刷新。</summary>
+    /// <summary>先处理 Comp 增删，再原地写字段；没有 Comp 的服装直接跳过，并登记缓存刷新。</summary>
     private void ApplyRelay(ThingDef def)
     {
-        var subRelay = subRelayProps ??= FortifiedRelay.FindSubRelay(def);
-        if (subRelay != null)
+        if (!DataUtility.MayRequire(TweakDatabase.FFF)) return;
+
+        ApplyV<bool>(nameof(relayHasSubRelay),
+            v => FortifiedRelay.SetCompEnabled(def, FortifiedRelay.SubRelayPropsType, v));
+
+        LoadRelay(def, syncUnmodified: !forceWriteAll);
+
+        if (subRelayProps != null)
         {
-            var props = subRelay; // 闭包只捕获 object
+            var props = subRelayProps; // 闭包只捕获 object
             ApplyV<float>(nameof(subRelayRange), v => DataUtility.SetByName(props, "relayRange", v));
             ApplyV<bool>(nameof(subRelayCoverWholeMap), v => DataUtility.SetByName(props, "coverWholeMap", v));
         }
@@ -374,7 +384,8 @@ public class ApparelData : TweakData<ApparelData>
     /// <summary>比三态多判 <c>forceWriteAll</c> / <c>forceWriteFields</c>：重置先写回原值再清标记。</summary>
     private bool RelayTouched
         => Touched(nameof(subRelayRange))
-        || Touched(nameof(subRelayCoverWholeMap));
+        || Touched(nameof(subRelayCoverWholeMap))
+        || Touched(nameof(relayHasSubRelay));
 
     private bool Touched(string field)
         => IsFieldModified(field) || forceWriteAll || forceWriteFields?.Contains(field) == true;
@@ -390,6 +401,7 @@ public class ApparelData : TweakData<ApparelData>
     /// <summary>按槽位 ID 原地写回副炮槽；没有该 Comp 的服装直接跳过。</summary>
     private void ApplyTurret(ThingDef def)
     {
+        if (!DataUtility.MayRequire(TweakDatabase.FFF)) return;
         var multiple = multipleTurretProps ??= FortifiedTurret.FindMultipleTurret(def);
         ApplyL<TurretSlotRecord>(nameof(turretSlots), v => FortifiedTurret.WriteSlots(def, multiple, v));
     }

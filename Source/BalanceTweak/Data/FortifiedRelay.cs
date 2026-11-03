@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using HarmonyLib;
 using RimWorld;
 using Verse;
 
@@ -65,6 +66,53 @@ internal static class FortifiedRelay
                 return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// 新增 / 移除一个中继 Comp（与 ApparelData.isCompQuality 同一模式）。
+    /// 只改 <c>def.comps</c>：已经生成的单位保留出生时初始化好的 Comp 实例，
+    /// 因此增删对"新生成 / 重新初始化的单位"生效。
+    /// </summary>
+    /// <returns>是否真的发生了增删。</returns>
+    internal static bool SetCompEnabled(ThingDef def, string fullTypeName, bool enabled)
+    {
+        bool present = FindComp(def, fullTypeName) != null;
+        if (enabled)
+        {
+            if (present) return false;
+
+            var type = AccessTools.TypeByName(fullTypeName);
+            if (type == null || !typeof(CompProperties).IsAssignableFrom(type))
+            {
+                TweakLog.Message($"[BalanceTweak] 找不到中继 Comp 类型：{fullTypeName}");
+                return false;
+            }
+
+            if (Activator.CreateInstance(type) is not CompProperties props)
+            {
+                TweakLog.Message($"[BalanceTweak] 无法创建中继 Comp：{fullTypeName}");
+                return false;
+            }
+
+            def.comps ??= new List<CompProperties>();
+            def.comps.Add(props);
+            try
+            {
+                // 与 XML 加载后的流程一致：加入 def.comps 后补一次 ResolveReferences
+                // （CompProperties_Facility 会在这里生成 linkableBuildings）。
+                props.ResolveReferences(def);
+            }
+            catch (Exception e)
+            {
+                TweakLog.Message($"[BalanceTweak] 初始化中继 Comp 失败（{def.defName}/{fullTypeName}）：{e.Message}");
+            }
+            return true;
+        }
+
+        if (!present) return false;
+        int removed = def.comps.RemoveAll(cp =>
+            cp != null && DataUtility.IsTypeOrSubclassOfName(cp.GetType(), fullTypeName));
+        return removed > 0;
     }
 
     // ── 运行时缓存刷新 ──

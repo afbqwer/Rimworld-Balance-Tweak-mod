@@ -338,7 +338,10 @@ public class TurretConfigWindow : EditorWindowBase
             return;
         }
 
-        parsed = Mathf.Max(0f, parsed);
+        // 瞄准 / 待机角度可以（且通常是）负值，例如 DMS 常用的 -90；其余尺寸 / 时间不允许负数。
+        bool allowNegative = id.EndsWith(".angleOffset", StringComparison.Ordinal)
+            || id.EndsWith(".idleAngleOffset", StringComparison.Ordinal);
+        if (!allowNegative) parsed = Mathf.Max(0f, parsed);
         buffers[id] = parsed.ToString("0.###", CultureInfo.InvariantCulture);
         if (!Mathf.Approximately(parsed, row.Value)) row.Set(parsed);
     }

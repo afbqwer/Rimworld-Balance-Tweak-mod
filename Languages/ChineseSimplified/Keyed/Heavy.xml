@@ -53,6 +53,18 @@
     <MST.relayConfigComment>点击打开中继配置窗口：移动中继 / 副中继 / 代理机械师 / 代理设施按实际存在的 Comp 分节显示。只修改已有 Comp，不会新增或删除。</MST.relayConfigComment>
     <MST.relayConfigEdit>编辑</MST.relayConfigEdit>
     <MST.relayConfigIntro>这些设置写回 Fortified 的中继 Comp，并记入修改表。半径单位为格；没有对应 Comp 的 Def 不会显示该节。设施的连接规则只在建立连接时判定。</MST.relayConfigIntro>
+    <MST.relayCompSection>启用组件</MST.relayCompSection>
+    <MST.relayHasCommandRelay>移动中继</MST.relayHasCommandRelay>
+    <MST.relayHasCommandRelayComment>在当前种族上增删 CompProperties_CommandRelay。只影响新生成 / 重新初始化的单位；已存在的单位保留出生时的组件。取消勾选后下面的配置会保留，重新勾选即可恢复。</MST.relayHasCommandRelayComment>
+    <MST.relayHasSubRelay>副中继</MST.relayHasSubRelay>
+    <MST.relayHasSubRelayComment>在当前建筑 / 服装上增删 CompProperties_SubRelay。只影响新生成 / 重新初始化的单位；已存在的单位保留出生时的组件。</MST.relayHasSubRelayComment>
+    <MST.relayHasOverseer>代理机械师</MST.relayHasOverseer>
+    <MST.relayHasOverseerComment>在当前宿主上增删 CompProperties_Overseer。只影响新生成 / 重新初始化的单位；已存在的单位保留出生时的组件。</MST.relayHasOverseerComment>
+    <MST.relayHasOverseerFacility>代理设施</MST.relayHasOverseerFacility>
+    <MST.relayHasOverseerFacilityComment>在当前建筑上增删 CompProperties_OverseerFacility。只影响新生成 / 重新初始化的单位；已存在的单位保留出生时的组件。</MST.relayHasOverseerFacilityComment>
+    <MST.relayCompToggleNote>增删只改 Def 上的 Comp：已存在的单位不会即时获得或丢失组件。</MST.relayCompToggleNote>
+    <MST.relayHostStatsSection>代理机械师属性</MST.relayHostStatsSection>
+    <MST.relayHostStatsNote>写入宿主 Def 的 statBases（带宽 / 控制组 / 指挥范围），对代理机械师生效；已生成的代理机械师会在下一次读取时重算。</MST.relayHostStatsNote>
     <MST.relayCommandSection>移动中继（CommandRelay）</MST.relayCommandSection>
     <MST.relaySubSection>副中继（SubRelay）</MST.relaySubSection>
     <MST.relayOverseerSection>代理机械师（Overseer）</MST.relayOverseerSection>
@@ -90,6 +102,10 @@
     <MST.facilityStatOffsets>设施加成</MST.facilityStatOffsets>
     <MST.facilityStatOffsetsComment>设施给宿主建筑提供的 stat 加成（带宽、指挥范围、控制组等）。与宿主自身的 statBases 分开。</MST.facilityStatOffsetsComment>
 
-    <MST.relayEffectiveStats>当前有效：带宽 {0} / 控制组 {1} / 指挥范围 {2}</MST.relayEffectiveStats>
     <MST.relayFacilityNote>「同时连接」「连接距离」「需要视线」「必须相邻」都只在建立连接时判定：调小不会断开现有连接，调大也不会自动补连。</MST.relayFacilityNote>
+
+    <MST.usableWeapons>可用武器</MST.usableWeapons>
+    <MST.usableWeaponsView>查看</MST.usableWeaponsView>
+    <MST.usableWeaponsPreview>匹配当前设置的武器（前 12 项）：{0}</MST.usableWeaponsPreview>
+    <MST.usableWeaponsEmpty>当前设置下没有可用武器。</MST.usableWeaponsEmpty>
 </LanguageData>

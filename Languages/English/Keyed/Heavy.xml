@@ -53,6 +53,18 @@
     <MST.relayConfigComment>Click to open the relay config window: command relay / sub relay / overseer / overseer facility are shown per Comp actually present. Existing comps are edited in place; nothing is added or removed.</MST.relayConfigComment>
     <MST.relayConfigEdit>Edit</MST.relayConfigEdit>
     <MST.relayConfigIntro>These settings are written back to the Fortified relay comps and recorded in the tweak list. Radii are in cells; sections without a matching comp are not shown. Facility link rules are only evaluated when a link is created.</MST.relayConfigIntro>
+    <MST.relayCompSection>Enabled comps</MST.relayCompSection>
+    <MST.relayHasCommandRelay>Command relay</MST.relayHasCommandRelay>
+    <MST.relayHasCommandRelayComment>Adds or removes CompProperties_CommandRelay on this race. Only affects newly spawned / re-initialized units; existing units keep the comps they spawned with. Unchecking keeps the settings below and re-checking restores them.</MST.relayHasCommandRelayComment>
+    <MST.relayHasSubRelay>Sub relay</MST.relayHasSubRelay>
+    <MST.relayHasSubRelayComment>Adds or removes CompProperties_SubRelay on this building / apparel. Only affects newly spawned / re-initialized units; existing units keep the comps they spawned with.</MST.relayHasSubRelayComment>
+    <MST.relayHasOverseer>Overseer</MST.relayHasOverseer>
+    <MST.relayHasOverseerComment>Adds or removes CompProperties_Overseer on this host. Only affects newly spawned / re-initialized units; existing units keep the comps they spawned with.</MST.relayHasOverseerComment>
+    <MST.relayHasOverseerFacility>Overseer facility</MST.relayHasOverseerFacility>
+    <MST.relayHasOverseerFacilityComment>Adds or removes CompProperties_OverseerFacility on this building. Only affects newly spawned / re-initialized units; existing units keep the comps they spawned with.</MST.relayHasOverseerFacilityComment>
+    <MST.relayCompToggleNote>Adding / removing only changes the def's comps; existing units neither gain nor lose a comp immediately.</MST.relayCompToggleNote>
+    <MST.relayHostStatsSection>Overseer stats</MST.relayHostStatsSection>
+    <MST.relayHostStatsNote>Written to the host def's statBases (bandwidth / control groups / command range) and used by the overseer. Existing overseers recalculate on their next read.</MST.relayHostStatsNote>
     <MST.relayCommandSection>Command relay</MST.relayCommandSection>
     <MST.relaySubSection>Sub relay</MST.relaySubSection>
     <MST.relayOverseerSection>Overseer</MST.relayOverseerSection>
@@ -90,6 +102,10 @@
     <MST.facilityStatOffsets>Offsets</MST.facilityStatOffsets>
     <MST.facilityStatOffsetsComment>Stat offsets the facility grants to its host (bandwidth, command range, control groups…). Separate from the host's own statBases.</MST.facilityStatOffsetsComment>
 
-    <MST.relayEffectiveStats>Current: bandwidth {0} / control groups {1} / command range {2}</MST.relayEffectiveStats>
     <MST.relayFacilityNote>"MaxLinks", "LinkDist", "NeedsLOS" and "Adjacent" are only checked when a link is created: lowering them will not break existing links, and raising them will not link anything automatically.</MST.relayFacilityNote>
+
+    <MST.usableWeapons>Usable weapons</MST.usableWeapons>
+    <MST.usableWeaponsView>View</MST.usableWeaponsView>
+    <MST.usableWeaponsPreview>Weapons matching the current settings (first 12): {0}</MST.usableWeaponsPreview>
+    <MST.usableWeaponsEmpty>No usable weapons with the current settings.</MST.usableWeaponsEmpty>
 </LanguageData>

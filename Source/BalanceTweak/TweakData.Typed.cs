@@ -321,6 +321,9 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     private static List<StatColumnConfig>? _allColumn;
     public override List<StatColumnConfig> AllColumn => _allColumn ??= Fields
             .Where(f => !f.Attr.NotAColumn)
+            // 可选 Mod / DLC 的列统一排在最后：默认列序 = 本体列 → 可选列（组内保持声明顺序）。
+            // 用户手动拖过列序时，columnOrders 里的显式顺序仍然优先（见 TweakUtility.SyncVisibleColumns）。
+            .OrderBy(f => f.Attr.MayRequire.NullOrEmpty() ? 0 : 1)
             .Select(CreateColumnConfig)
             .ToList();
 
