@@ -752,13 +752,21 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 
 | 列类型 | 判据（`StatColumnConfig.filterKind`） | 比较 | 取值来源 |
 | --- | --- | --- | --- |
-| `FieldType.Float` / `Int`（Float / Prec / Int 样式） | `Number` | 大于 / 小于 / 等于 / 范围（闭区间） | `GetRawValue` 的 float / int，**不受"显示默认值 / 显示结果值"影响**；`Prec` 列的过滤值按**屏幕单位**（百分数）收，比较前 ×0.01 |
+| `FieldType.Float` / `Int`（Float / Prec / Int 样式） | `Number` | 大于 / 小于 / 等于 / 范围 | `GetRawValue` 的 float / int，**不受"显示默认值 / 显示结果值"影响**；`Prec` 列的过滤值按**屏幕单位**（百分数）收，比较前 ×0.01 |
 | `FieldType.String`（String 样式，含走 OptionsList 的 Enum 样式） | `Text` | 原版 `QuickSearchFilter.Matches` | `GetString`（= 格子里显示的那串字） |
-| 任何列表样式（`isListStyle`） | `ListCount` | 项数 大于 / 小于 / 等于 / 范围（闭区间） | `IList.Count`（null 视为 0） |
+| 任何列表样式（`isListStyle`） | `ListCount` | 项数 大于 / 小于 / 等于 / 范围 | `IList.Count`（null 视为 0） |
 | 触发列 / Def 引用 / `ThingFilter` / 曲线 / 枚举 | `None` | 右键菜单里没有过滤项 | — |
 
-区间是 `下限 <= 值 <= 上限`，**两端都算**；只有一边的条件用「大于 / 小于」写，不做"留空即无界"
-（同一个意思一条路，免得界面上出现两种写法的区间）。上下限填反了在「确定」时自动换过来。
+**端点归 `ColumnFilter.inclusive` 一个开关管**（默认开 = 含边界），而不是每种比较各留一个：
+
+| 开关 | 大于 | 小于 | 范围 |
+| --- | --- | --- | --- |
+| 含边界（默认） | `≥` | `≤` | 闭区间 `[a, b]` |
+| 严格 | `>` | `<` | 开区间 `(a, b)` |
+
+「等于」不受影响。摘要按这个口径写（右键菜单 / 表头 tooltip 里能直接读出来）：`≥ 5`、`> 5`、
+`[5 ~ 10]`、`(20% ~ 50%)`、`项数 [2 ~ 5]`。区间不做"留空即无界"—— 单边条件用「大于 / 小于」写，
+同一个意思只留一条路；上下限填反了在「确定」时自动换过来。
 
 四条不变式：
 
@@ -783,8 +791,12 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 | `JumpToData` | 清空**当前页签**的过滤（否则目标行被藏起来，`IndexOf` 返回 -1 表现为"点跳转没反应"）；`NavState` 存了旧条件，后退能恢复 |
 | 绘制 | `filteredColumnIds`（重建列表时刷新的 id 集合）→ 表头橙色底（`0.5` 透明）+ 数据格同色淡底（`0.12`，画在内容之前，不压文字清晰度）。表头 tooltip 追加「当前过滤：…」 |
 
-> 取消过滤：表头右键 →「取消过滤: 5 ~ 10」（菜单项自带条件摘要）。过滤窗口里把文本清空再确定，等同于取消
+> 取消过滤：表头右键 →「取消过滤: [5 ~ 10]」（菜单项自带条件摘要）。过滤窗口里把文本清空再确定，等同于取消
 > —— 空条件会让列徒有橙色却一行都不筛，所以 `Apply` 直接把它当"取消"处理。
+>
+> 窗口里的模式选择是**分段控件**：选中项用原版选项底（`Widgets.DrawOptionBackground`，暖色填充 + 3px 粗边）
+> + 粗体字。原来只把文字变黄，四个按钮长得一样时看不出选了哪个。底纹自己画，所以点击走 `ButtonInvisible`
+> 而不是 `ButtonText`（后者会把底纹整个盖掉）。
 
 加一种新的过滤方式要动两处：`ColumnFilterKind` 加成员 + `StatColumnConfig.ResolveFilterKind` 给它一个来源，
 然后 `ColumnFilter.Matches` / `Describe` / `ColumnFilterWindow.DrawValueRow` 各补一个分支。

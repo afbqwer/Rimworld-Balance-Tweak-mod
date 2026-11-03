@@ -10,7 +10,7 @@ public enum ColumnFilterMode
     Greater,
     Less,
     Equal,
-    /// <summary>闭区间 <c>[下限, 上限]</c>：两端都算命中。</summary>
+    /// <summary>区间 <c>[下限, 上限]</c> 或 <c>(下限, 上限)</c>，端点算不算看 <see cref="ColumnFilter.inclusive"/>。</summary>
     Range,
 }
 
@@ -62,19 +62,32 @@ public sealed class ColumnFilter
     public readonly float numberMax;
 
     /// <summary>
+    /// 端点算不算命中。一个开关同时管三种比较方式，而不是给每种各留一个：
+    /// <list type="bullet">
+    /// <item>大于：<c>true</c> → <c>≥</c>，<c>false</c> → <c>&gt;</c></item>
+    /// <item>小于：<c>true</c> → <c>≤</c>，<c>false</c> → <c>&lt;</c></item>
+    /// <item>范围：<c>true</c> → 闭区间 <c>[a, b]</c>，<c>false</c> → 开区间 <c>(a, b)</c></item>
+    /// </list>
+    /// 默认 <c>true</c>：填 5~10 的人想的是"5 和 10 都留着"，而界面上这个开关一直看得见，不会变成暗中生效的语义。
+    /// </summary>
+    public readonly bool inclusive;
+
+    /// <summary>
     /// 文本过滤用的匹配器 —— <b>就是原版搜索组件本身</b>，与顶栏搜索同一套语义：
     /// <c>Trim</c> 后不区分大小写的子串匹配，命中结果进 5000 条 LRU 缓存。
     /// 自己写 <c>Contains</c> 会悄悄多出大小写 / 前后空格两种差异，所以这里绝不复刻一遍。
     /// </summary>
     public readonly QuickSearchFilter search = new();
 
-    public ColumnFilter(StatColumnConfig column, ColumnFilterMode mode, float number, float numberMax, string? text = null)
+    public ColumnFilter(StatColumnConfig column, ColumnFilterMode mode, float number, float numberMax,
+        bool inclusive, string? text = null)
     {
         this.column = column;
         kind = column.filterKind;
         this.mode = mode;
         this.number = number;
         this.numberMax = mode == ColumnFilterMode.Range ? numberMax : number;
+        this.inclusive = inclusive;
         isPercent = column.columnType == StatColumnConfig.ColumnStyle.Prec;
         search.Text = text ?? "";
     }
@@ -119,12 +132,14 @@ public sealed class ColumnFilter
 
     private bool Compare(float value) => mode switch
     {
-        ColumnFilterMode.Greater => value > Target,
-        ColumnFilterMode.Less => value < Target,
+        ColumnFilterMode.Greater => inclusive ? value >= Target : value > Target,
+        ColumnFilterMode.Less => inclusive ? value <= Target : value < Target,
         ColumnFilterMode.Equal => value == Target,
-        // 闭区间：两端都算。用"上界 + 等于"凑区间（> 5 ∧ < 10）会把边界行漏掉，
-        // 而用户填 5~10 时想的就是"5 到 10 都留着"。
-        _ => value >= Target && value <= TargetMax,
+        // 区间用"一个比较"表达开闭，而不是让用户拿两条单边条件去凑：
+        // 凑出来的 (> 5 ∧ < 10) 边界行会被漏掉，而填 5~10 的人想的就是"5 到 10 都留着"。
+        _ => inclusive
+            ? value >= Target && value <= TargetMax
+            : value > Target && value < TargetMax,
     };
 
     /// <summary>
@@ -146,7 +161,7 @@ public sealed class ColumnFilter
         };
     }
 
-    /// <summary>条件摘要，给列头 tooltip 与右键菜单看：<c>&gt; 5</c> / <c>5 ~ 10</c> / <c>包含 ab</c> / <c>项数 = 0</c>。</summary>
+    /// <summary>条件摘要，给列头 tooltip 与右键菜单看：<c>≥ 5</c> / <c>&gt; 5</c> / <c>[5 ~ 10]</c> / <c>(5 ~ 10)</c> / <c>包含 ab</c>。</summary>
     public string Describe()
     {
         if (kind == ColumnFilterKind.Text) return "MST.FilterTextDesc".Translate(search.Text).RawText;
@@ -155,15 +170,17 @@ public sealed class ColumnFilter
         string expression;
         if (mode == ColumnFilterMode.Range)
         {
-            expression = "MST.FilterRangeDesc"
-                .Translate($"{number:0.##}{unit}", $"{numberMax:0.##}{unit}").RawText;
+            // 方括号 / 圆括号一眼就能看出端点算不算，比再写一句"含端点"省地方（这一行要做菜单标签）。
+            expression = "MST.FilterRangeDesc".Translate(
+                (inclusive ? "[" : "(") + $"{number:0.##}{unit}",
+                $"{numberMax:0.##}{unit}" + (inclusive ? "]" : ")")).RawText;
         }
         else
         {
             string symbol = mode switch
             {
-                ColumnFilterMode.Greater => ">",
-                ColumnFilterMode.Less => "<",
+                ColumnFilterMode.Greater => inclusive ? "≥" : ">",
+                ColumnFilterMode.Less => inclusive ? "≤" : "<",
                 _ => "=",
             };
             expression = $"{symbol} {number:0.##}{unit}";

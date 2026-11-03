@@ -24,6 +24,8 @@ public partial class BalanceTweakSettings
         private const float RowHeight = 30f;
         private const float LabelWidth = 80f;
         private const float Gap = 4f;
+        /// <summary>模式按钮之间的间距。比 <see cref="Gap"/> 宽：选中态要往外描 3px 粗边（原版选项底），挤在一起会互相压边。</summary>
+        private const float ModeGap = 8f;
         private const float ButtonRowHeight = 32f;
 
         private readonly StatColumnConfig config;
@@ -31,6 +33,7 @@ public partial class BalanceTweakSettings
 
         // 草稿状态。number 是「单值或区间下限」，numberMax 是区间上限；列表列也走这两个字段（值就是项数）。
         private ColumnFilterMode mode;
+        private bool inclusive;
         private float number;
         private float numberMax;
         private string numberBuffer;
@@ -46,6 +49,7 @@ public partial class BalanceTweakSettings
             if (CurrentColumnFilters.TryGetValue(config.id, out var existing))
             {
                 mode = existing.mode;
+                inclusive = existing.inclusive;
                 number = existing.number;
                 numberMax = existing.numberMax;
                 text = existing.search.Text;
@@ -53,6 +57,8 @@ public partial class BalanceTweakSettings
             else
             {
                 mode = ColumnFilterMode.Greater;
+                // 默认含端点：填 5~10 的人想的是"5 和 10 都留着"。
+                inclusive = true;
                 number = 0f;
                 numberMax = 0f;
                 text = "";
@@ -69,10 +75,10 @@ public partial class BalanceTweakSettings
 
         /// <summary>
         /// 高度按<b>最坏情况</b>（区间模式要两行输入）给足，不随模式变 ——
-        /// 窗口开起来之后再切模式时高度不会跟着长，留白比溢出好。文本条件只有一个框，矮一截。
+        /// 窗口开起来之后再切模式时高度不会跟着长，留白比溢出好。文本条件只有一个搜索框，矮一截。
         /// 余量要够放大字号（UI 缩放会改字高）。
         /// </summary>
-        public override Vector2 InitialSize => new(460f, kind == ColumnFilterKind.Text ? 175f : 235f);
+        public override Vector2 InitialSize => new(460f, kind == ColumnFilterKind.Text ? 175f : 250f);
 
         public override void DoWindowContents(Rect inRect)
         {
@@ -80,7 +86,11 @@ public partial class BalanceTweakSettings
             Text.Anchor = TextAnchor.MiddleLeft;
 
             float curY = 0f;
-            if (kind != ColumnFilterKind.Text) DrawModeRow(ref curY, inRect.width);
+            if (kind != ColumnFilterKind.Text)
+            {
+                DrawModeRow(ref curY, inRect.width);
+                DrawInclusiveRow(ref curY, inRect.width);
+            }
             DrawValueRows(ref curY, inRect.width);
 
             DrawBottomRow(new Rect(0f, inRect.height - ButtonRowHeight, inRect.width, ButtonRowHeight));
@@ -88,6 +98,10 @@ public partial class BalanceTweakSettings
             Text.Anchor = TextAnchor.UpperLeft;
         }
 
+        /// <summary>
+        /// 四个模式做成"分段选择"：选中的那个用原版选项底（暖色填充 + 3px 粗边）+ 粗体字，
+        /// 其余是暗底细边。原来只靠文字变黄区分，四个按钮长得一样时几乎看不出选了哪个。
+        /// </summary>
         private void DrawModeRow(ref float curY, float width)
         {
             Widgets.Label(new Rect(0f, curY, LabelWidth, RowHeight), "MST.FilterCondition".Translate().RawText);
@@ -96,20 +110,35 @@ public partial class BalanceTweakSettings
             {
                 ColumnFilterMode.Greater, ColumnFilterMode.Less, ColumnFilterMode.Equal, ColumnFilterMode.Range,
             };
-            float btnWidth = (width - LabelWidth - Gap * (modes.Length - 1)) / modes.Length;
+            float btnWidth = (width - LabelWidth - ModeGap * (modes.Length - 1)) / modes.Length;
             float x = LabelWidth;
             foreach (var m in modes)
             {
                 Rect btnRect = new(x, curY, btnWidth, RowHeight - 2f);
-                // 选中态用文字颜色区分：ButtonText 自己画底纹，在它下面铺色块是看不见的。
-                if (Widgets.ButtonText(btnRect, ModeLabel(m), drawBackground: true, doMouseoverSound: true,
-                        textColor: m == mode ? Color.yellow : Color.white))
-                {
-                    mode = m;
-                }
-                x += btnWidth + Gap;
+                bool selected = m == mode;
+
+                Widgets.DrawOptionBackground(btnRect, selected);
+                Text.Anchor = TextAnchor.MiddleCenter;
+                Widgets.Label(btnRect, selected ? $"<b>{ModeLabel(m)}</b>" : ModeLabel(m));
+                Text.Anchor = TextAnchor.MiddleLeft;
+                // 底纹由上面自己画，这里只要点击（EmptyStyle 不画东西，也不会盖掉刚画的字）
+                if (Widgets.ButtonInvisible(btnRect)) mode = m;
+
+                x += btnWidth + ModeGap;
             }
             curY += RowHeight + Gap;
+        }
+
+        /// <summary>端点开关：一个开关同时管大于 / 小于 / 范围（等于不吃端点，所以选「等于」时置灰不可点）。</summary>
+        private void DrawInclusiveRow(ref float curY, float width)
+        {
+            const float CheckRowHeight = 24f;
+            Rect checkRect = new(0f, curY, width, CheckRowHeight);
+            // placeCheckboxNearText：勾选框紧跟文字，而不是贴到整行最右边（那一版看起来像两个控件）。
+            Widgets.CheckboxLabeled(checkRect, "MST.FilterInclusive".Translate().RawText, ref inclusive,
+                disabled: mode == ColumnFilterMode.Equal, placeCheckboxNearText: true);
+            TooltipHandler.TipRegion(checkRect, "MST.FilterInclusiveTooltip".Translate().RawText);
+            curY += CheckRowHeight + 6f;
         }
 
         /// <summary>
@@ -208,7 +237,7 @@ public partial class BalanceTweakSettings
                     (lower, upper) = (upper, lower);
                 }
 
-                CurrentColumnFilters[config.id] = new ColumnFilter(config, mode, lower, upper, text);
+                CurrentColumnFilters[config.id] = new ColumnFilter(config, mode, lower, upper, inclusive, text);
             }
             TweakUtility.MarkFilterDirty();
             Close();

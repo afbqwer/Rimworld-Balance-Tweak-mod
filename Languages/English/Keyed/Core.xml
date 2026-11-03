@@ -20,6 +20,8 @@
     <MST.FilterLower>Min</MST.FilterLower>
     <MST.FilterUpper>Max</MST.FilterUpper>
     <MST.FilterRangeDesc>{0} ~ {1}</MST.FilterRangeDesc>
+    <MST.FilterInclusive>Inclusive</MST.FilterInclusive>
+    <MST.FilterInclusiveTooltip>When checked, Greater / Less / Range all count the endpoints as matches: ≥, ≤, closed range [a, b]. Unchecked means strict comparison: &gt;, &lt;, open range (a, b). Equal is unaffected.</MST.FilterInclusiveTooltip>
     <MST.FilterValue>Filter value</MST.FilterValue>
     <MST.FilterText>Contains</MST.FilterText>
     <MST.FilterTextHint>Same matching as the top-bar search: trimmed, case-insensitive substring.</MST.FilterTextHint>
@@ -113,7 +115,7 @@
 - Top bar: Apply computes (value + flat) * multiplier over the selected column's visible data, snaps it to the step, and clamps to the enabled limits (click the Min / Max label to toggle a limit; a highlighted label means enabled); also Reset Column / Reset Shown Items.
 - Title row: Back / Forward (jump history, restores filters, search text, column filters and scroll position), Columns, Settings, and the ? help button.
 - Filter row: search, type / mod filters, sort; Show Result and Show Default only change the display; Display Mode makes the table read-only.
-- Column filters: header right-click -> Filter. Numeric columns compare a value or an inclusive range, text columns use the search match, list columns compare entry counts. A filtered column is tinted orange; right-click -> Clear filter removes it. Filtering only hides rows, it never changes data.
+- Column filters: header right-click -> Filter. Numeric columns compare a value or a range (the Inclusive switch decides whether the endpoints count), text columns use the search match, list columns compare entry counts. A filtered column is tinted orange; right-click -> Clear filter removes it. Filtering only hides rows, it never changes data.
 - Cells: a checkbox toggles, numbers / percents are typed in place, an enum opens a dropdown, text / lists / curves / def pickers open their editor window.
 - Batch: Shift + drag to copy the start cell's value across the dragged cells in the same column.
 - Name column: left-click jumps to the entry, right-click for Pin / Reset / Copy defName, R resets it.

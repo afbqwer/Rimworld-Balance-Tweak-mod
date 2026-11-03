@@ -20,6 +20,8 @@
     <MST.FilterLower>下限</MST.FilterLower>
     <MST.FilterUpper>上限</MST.FilterUpper>
     <MST.FilterRangeDesc>{0} ~ {1}</MST.FilterRangeDesc>
+    <MST.FilterInclusive>含边界</MST.FilterInclusive>
+    <MST.FilterInclusiveTooltip>勾选时「大于 / 小于 / 范围」都把端点算作命中：≥、≤、闭区间 [a, b]；不勾选则是严格比较：&gt;、&lt;、开区间 (a, b)。「等于」不受影响。</MST.FilterInclusiveTooltip>
     <MST.FilterValue>过滤值</MST.FilterValue>
     <MST.FilterText>包含文本</MST.FilterText>
     <MST.FilterTextHint>与顶栏搜索同一套匹配方式：去掉首尾空格后，不区分大小写的子串匹配。</MST.FilterTextHint>
@@ -113,7 +115,7 @@
 - 顶栏：统一修改 =(值+增减)*倍率 → 按步长取整 → 按已启用的上下限截断（点击 下限/上限 标签可切换是否启用，标签底色高亮表示启用），作用于选中列的可见数据；另有 重置选中列/重置显示项。
 - 标题行：右侧依次是 后退/前进（跳转历史，会还原筛选、搜索词、列过滤与滚动位置）、列配置、总体设置、? 帮助。
 - 筛选行：搜索、类型/Mod 筛选、排序；显示结果值/显示默认值 仅改显示，查看模式 整表只读。
-- 列过滤：表头右键 → 过滤，数字列比大小或填区间（两端都算），文本列按搜索匹配，列表列比项数；被过滤的列显示橙色底，右键 → 取消过滤 可撤销。过滤只影响显示，不改数据。
+- 列过滤：表头右键 → 过滤，数字列比大小或填区间（「含边界」开关决定端点算不算），文本列按搜索匹配，列表列比项数；被过滤的列显示橙色底，右键 → 取消过滤 可撤销。过滤只影响显示，不改数据。
 - 单元格：开关点击切换，数值/百分比原地输入，枚举下拉，文本/列表/曲线/Def 打开编辑窗口。
 - 批量：Shift+左键拖动，复制起始格的值到同列拖过的单元格。
 - 名称列：左键跳转条目，右键 固定/重置/复制 defName，右侧 R 重置。
