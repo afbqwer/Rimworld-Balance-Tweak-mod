@@ -74,7 +74,34 @@ public static partial class TweakDatabase
     static TweakDatabase()
     {
         //Init();
-        LongEventHandler.QueueLongEvent(Init, "BalanceTweak initializing", doAsynchronously: false, null);
+        // 诊断报告放在 finally：Init 抛异常时也要把已登记的反射失配吐出来 ——
+        // 那些失配往往正是 Init 失败的原因，跟着异常一起消失等于什么都没查。
+        LongEventHandler.QueueLongEvent(() =>
+        {
+            try
+            {
+                Init();
+            }
+            finally
+            {
+                // 诊断层自己绝不能变成新的故障源：TweakRegistry 的静态构造若抛异常，
+                // 这里会变成 TypeInitializationException 并把真正的 Initialize 异常挤掉。
+                TryReport("可选 Mod 兼容概览", TweakRegistry.ReportCompat);
+                TryReport("反射失配汇总", Diagnostics.Report);
+            }
+        }, "BalanceTweak initializing", doAsynchronously: false, null);
+    }
+
+    private static void TryReport(string what, Action report)
+    {
+        try
+        {
+            report();
+        }
+        catch (Exception e)
+        {
+            Log.Warning($"[BalanceTweak] {what}输出失败（不影响 Mod 运行）：{e}");
+        }
     }
 
     #region 规则驱动的分类与派发
@@ -585,7 +612,10 @@ public static partial class TweakDatabase
 
     private static void InitAllMeleeDamageDef()
     {
-        var t = AccessTools.TypeByName("VanillaCombatTweaks.VCTModSettings");
+        // 没有 MayRequire 常量（这个 Mod 没有登记 packageId），退回"程序集短名"判定：
+        // 不在就静默跳过，在却拿不到类型则由 Diagnostics 记一条失配 —— 否则 VCT 更新改名后
+        // APNerf 永远读到 false，DPS 换算静默换了一套口径。
+        var t = DataUtility.OptionalType("VanillaCombatTweaks.VCTModSettings", null, nameof(InitAllMeleeDamageDef));
         if (t != null)
         {
             var apn = AccessTools.Field(t, "APNerf");

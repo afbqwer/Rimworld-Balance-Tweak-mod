@@ -89,13 +89,13 @@ public class StatFieldMeta
             OptionsListField = type.GetField(attr.OptionsList, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             if (OptionsListField == null)
             {
-                Log.Error($"[BalanceTweak]无法找到OptionsList字段: {attr.OptionsList}");
+                Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：找不到 OptionsList 字段 {attr.OptionsList}（下拉选项会为空）");
             }
         }
 
         if (!attr.MayRequire.NullOrEmpty() && !field.FieldType.IsClass && Nullable.GetUnderlyingType(field.FieldType) == null)
         {
-            Log.Error($"[BalanceTweak]MayRequire field must be nullable:{type}|{field}");
+            Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：带 MayRequire 的字段必须是可空 / 引用类型，否则 Mod 缺席时无法表达\"不适用\"");
             return;
         }
         if (!string.IsNullOrEmpty(attr.Available))
@@ -105,7 +105,7 @@ public class StatFieldMeta
             if (method != null)
                 AvailableChecker = (IsAvailable)Delegate.CreateDelegate(typeof(IsAvailable), method);
             else
-                Log.Error($"[BalanceTweak]无法找到{attr.Available}");
+                Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：找不到 Available 判定方法 {attr.Available}(TweakData)（该列会一直显示）");
         }
         if (!string.IsNullOrEmpty(attr.Hidden))
         {
@@ -114,7 +114,7 @@ public class StatFieldMeta
             if (method != null)
                 HiddenChecker = (IsAvailable)Delegate.CreateDelegate(typeof(IsAvailable), method);
             else
-                Log.Error($"[BalanceTweak]无法找到{attr.Hidden}");
+                Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：找不到 Hidden 判定方法 {attr.Hidden}(TweakData)（该列不会按行留白）");
         }
         if (!string.IsNullOrEmpty(attr.GetAbstract))
         {
@@ -122,7 +122,7 @@ public class StatFieldMeta
             if (method != null)
                 GetAbstractMethod = (GetAbstract)Delegate.CreateDelegate(typeof(GetAbstract), method);
             else
-                Log.Error($"[BalanceTweak]无法找到{attr.GetAbstract}");
+                Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：找不到 GetAbstract 方法 {attr.GetAbstract}(TweakData)（抽象值列会为空）");
         }
         if (!string.IsNullOrEmpty(attr.StatDef))
         {

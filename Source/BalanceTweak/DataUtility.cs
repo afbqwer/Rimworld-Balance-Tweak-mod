@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -42,8 +44,17 @@ public static class DataUtility
         return false;
     }
 
-    /// <summary>按名字找字段或属性（含继承链）；找不到返回 null。</summary>
-    public static MemberInfo? FindMember(Type? type, string name)
+    /// <summary>
+    /// 按名字找字段或属性（含继承链）；找不到返回 null，<b>并登记一条失配</b>（见 <see cref="Diagnostics"/>）。
+    /// <para>
+    /// 登记是本方法的默认行为，因为绝大多数调用点都是「该成员必须存在」：可选 Mod 的扩展已被
+    /// <c>MayRequire</c> / <c>IsTypeOrSubclassOfName</c> 闸住，走到这里就说明 Mod 在、成员却没了。
+    /// <paramref name="type"/> 为 null 时不登记 —— 那说明上游没拿到对象（该 Def 没有这个扩展），
+    /// 不是成员缺失。
+    /// </para>
+    /// </summary>
+    /// <param name="context">发起访问的方法名，自动填入，用于日志定位到「谁在问」。</param>
+    public static MemberInfo? FindMember(Type? type, string name, [CallerMemberName] string context = "")
     {
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
         for (var t = type; t != null; t = t.BaseType)
@@ -51,6 +62,7 @@ public static class DataUtility
             if (t.GetField(name, flags) is FieldInfo f) return f;
             if (t.GetProperty(name, flags) is PropertyInfo p) return p;
         }
+        Diagnostics.MissMember(type, name, "成员", context);
         return null;
     }
 
@@ -66,9 +78,58 @@ public static class DataUtility
         else ((PropertyInfo)member).SetValue(target, value);
     }
 
-    /// <summary>按名字直读直写（便捷版）。</summary>
-    public static object? GetByName(object? target, string name) => GetMember(target, FindMember(target?.GetType(), name));
-    public static void SetByName(object? target, string name, object? value) => SetMember(target, FindMember(target?.GetType(), name), value);
+    /// <summary>按名字直读直写（便捷版）。失配登记与 <see cref="FindMember"/> 一致。</summary>
+    public static object? GetByName(object? target, string name, [CallerMemberName] string context = "")
+        => GetMember(target, FindMember(target?.GetType(), name, context));
+
+    public static void SetByName(object? target, string name, object? value, [CallerMemberName] string context = "")
+        => SetMember(target, FindMember(target?.GetType(), name, context), value);
+
+    /// <summary>
+    /// 解析可选 Mod 的类型，并区分「Mod 没装」与「Mod 装了但类型不在」。
+    ///
+    /// <para>
+    /// 直接 <c>AccessTools.TypeByName</c> 拿到 null 时这两种情况长得一模一样，
+    /// 而处理方式相反：前者是设计行为（静默跳过），后者是兼容失效（必须留痕，否则整页空白却零线索）。
+    /// 判定顺序：给了 <paramref name="modId"/> 就看它是否启用；没给就扫已加载程序集的短名 ——
+    /// 程序集在、类型却不在，同样按失配处理（类型名首段通常就是程序集名，如
+    /// <c>VanillaCombatTweaks.VCTModSettings</c> ↔ <c>VanillaCombatTweaks.dll</c>）。
+    /// </para>
+    /// </summary>
+    /// <returns>类型；未加载对应 Mod 时返回 null 且不登记。</returns>
+    public static Type? OptionalType(string typeName, string? modId, [CallerMemberName] string context = "")
+    {
+        var type = AccessTools.TypeByName(typeName);
+        if (type != null) return type;
+
+        bool ownerLoaded = modId.NullOrEmpty() ? AssemblyNameMatchesRootNamespace(typeName) : MayRequire(modId);
+        if (ownerLoaded)
+        {
+            Diagnostics.MissType(typeName, context,
+                modId.NullOrEmpty() ? null : modId);
+        }
+        return null;
+    }
+
+    /// <summary>某个已加载程序集的短名等于类型名首段（粗略判断"归属 Mod 在不在"）。</summary>
+    private static bool AssemblyNameMatchesRootNamespace(string typeName)
+    {
+        int dot = typeName.IndexOf('.');
+        if (dot <= 0) return false;
+        string root = typeName.Substring(0, dot);
+        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            try
+            {
+                if (string.Equals(asm.GetName().Name, root, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            catch
+            {
+                // 动态程序集 / 反射失败：跳过这个名字，不影响其余判定。
+            }
+        }
+        return false;
+    }
 
     public static float? AsFloat(object? v) => v switch { float f => f, int i => i, double d => (float)d, _ => null };
     public static int? AsInt(object? v) => v switch { int i => i, float f => (int)f, double d => (int)d, _ => null };

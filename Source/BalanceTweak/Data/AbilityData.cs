@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -134,9 +135,10 @@ class AbilityData : TweakData<AbilityData>
     }
 
     /// <summary>走 ApplyV 门控 + 反射写入；闭包只捕获 object 与 MemberInfo，不引入可选 Mod 类型。</summary>
-    private void ApplyMember<TV>(object target, string memberName, string tweakField) where TV : struct
+    private void ApplyMember<TV>(object target, string memberName, string tweakField,
+        [CallerMemberName] string context = "") where TV : struct
     {
-        var member = DataUtility.FindMember(target.GetType(), memberName);
+        var member = DataUtility.FindMember(target.GetType(), memberName, context);
         if (member == null) return;
         ApplyV<TV>(tweakField, v => DataUtility.SetMember(target, member, v));
     }

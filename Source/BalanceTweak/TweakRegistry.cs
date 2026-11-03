@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 using HarmonyLib;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -80,6 +81,16 @@ public sealed class TweakRule
     public override string ToString() => $"{DataType.Name}->{DefType.Name}:{Tab}";
 }
 
+/// <summary>跨 Mod 规则 × 它所需 Mod 的状态，用于启动日志里的兼容性概览。</summary>
+public sealed class CrossModRule
+{
+    public string DataType = "";
+    public string TypeName = "";
+    public SettingType Tab;
+    public string? ModId;
+    public bool Registered;
+}
+
 /// <summary>
 /// 规则注册表：启动时反射扫描全部 TweakData 子类的 [TweakFor] 特性，
 /// 并统一维护"defName → Def"的查询表，替代原先散落的一堆 allXxxdef 静态字典。
@@ -93,23 +104,53 @@ public static class TweakRegistry
     private static readonly Dictionary<Type, List<TweakRule>> byDataType = new();
     private static readonly Dictionary<Type, Dictionary<string, Def>> defDicts = new();
     private static readonly List<string> buildErrors;
+    private static readonly List<CrossModRule> crossModRules;
 
     static TweakRegistry()
     {
         var errors = new List<string>();
-        rules = Build(errors);
+        var crossMod = new List<CrossModRule>();
+        rules = Build(errors, crossMod);
         buildErrors = errors;
+        crossModRules = crossMod;
     }
 
     /// <summary>全部规则（含 MayRequire 不满足的，用前请查 IsAvailable）。</summary>
     public static IReadOnlyList<TweakRule> Rules => rules;
 
-    /// <summary>注册期发现的问题（缺 Match 方法、找不到跨 Mod 类型等），供启动日志输出。</summary>
+    /// <summary>注册期发现的问题（缺 Match 方法、跨 Mod 类型失配等），已在注册时逐条 <c>Log.Error</c>。</summary>
     public static IReadOnlyList<string> BuildErrors => buildErrors;
+
+    /// <summary>
+    /// 打印跨 Mod 规则的兼容性概览：每个 Mod 是否启用、它负责哪几条规则、有没有注册成功。
+    ///
+    /// <para>
+    /// 走 <see cref="TweakLog.Message"/>（受「总体设置 → 冗余日志」控制）：<b>Mod 没装导致规则跳过是设计行为，
+    /// 不是错误</b>，默认不该出现在玩家日志里。真正的失配（Mod 在、类型不在）由 <see cref="Diagnostics"/>
+    /// 汇总成 <c>Log.Error</c>，那条永远输出。
+    /// </para>
+    /// </summary>
+    public static void ReportCompat()
+    {
+        if (crossModRules.Count == 0) return;
+
+        var sb = new StringBuilder();
+        sb.Append("[BalanceTweak] 可选 Mod 兼容（跨 Mod 规则 ").Append(crossModRules.Count).Append(" 条）：");
+        foreach (var group in crossModRules.GroupBy(r => r.ModId).OrderBy(g => g.Key ?? "", StringComparer.OrdinalIgnoreCase))
+        {
+            bool present = DataUtility.MayRequire(group.Key);
+            sb.Append('\n').Append("  ").Append(group.Key ?? "（规则未声明 MayRequire）")
+              .Append(present ? " 已启用：" : " 未启用（相关规则跳过）：");
+            sb.Append(string.Join("，", group.Select(r => r.Registered
+                ? $"{r.DataType}→{r.TypeName}"
+                : $"{r.DataType}→{r.TypeName}（未注册，页签 {r.Tab}）")));
+        }
+        TweakLog.Message(sb.ToString());
+    }
 
     #region 注册
 
-    private static List<TweakRule> Build(List<string> buildErrors)
+    private static List<TweakRule> Build(List<string> buildErrors, List<CrossModRule> crossMod)
     {
         var list = new List<TweakRule>();
         Type[] types;
@@ -132,7 +173,7 @@ public static class TweakRegistry
 
             foreach (var attr in attrs)
             {
-                var rule = TryCreateRule(type, attr);
+                var rule = TryCreateRule(type, attr, buildErrors, crossMod);
                 if (rule != null) list.Add(rule);
             }
         }
@@ -144,15 +185,33 @@ public static class TweakRegistry
         return list;
     }
 
-    private static TweakRule? TryCreateRule(Type dataType, TweakForAttribute attr)
+    private static TweakRule? TryCreateRule(Type dataType, TweakForAttribute attr, List<string> buildErrors, List<CrossModRule> crossMod)
     {
-        // 跨 Mod 类型：用反射拿 Type，拿不到就跳过（不算错误）
+        // 跨 Mod 类型：用反射拿 Type。拿不到有两种完全不同的含义，必须分开处理 ——
+        //   · Mod 没装            → 设计行为，静默跳过（只在冗余日志的概览里列一行）
+        //   · Mod 装了但类型不在   → 兼容失效（对方改名 / 换程序集），必须留痕，否则整页空白却零线索
         Type? defType;
         if (!attr.TypeName.NullOrEmpty())
         {
             defType = AccessTools.TypeByName(attr.TypeName!);
+            crossMod.Add(new CrossModRule
+            {
+                DataType = dataType.Name,
+                TypeName = attr.TypeName!,
+                Tab = attr.Tab,
+                ModId = attr.MayRequire,
+                Registered = defType != null,
+            });
+
             if (defType == null)
+            {
+                if (attr.MayRequire.NullOrEmpty())
+                    buildErrors.Add($"{dataType.Name} 声明了跨 Mod 类型 \"{attr.TypeName}\" 却没声明 MayRequire："
+                                  + "无法分辨是 Mod 未安装还是类型失配，请补上 MayRequire");
+                else if (DataUtility.MayRequire(attr.MayRequire))
+                    Diagnostics.MissType(attr.TypeName!, $"{dataType.Name} 的 [TweakFor]（页签 {attr.Tab}）", attr.MayRequire);
                 return null;
+            }
         }
         else
         {

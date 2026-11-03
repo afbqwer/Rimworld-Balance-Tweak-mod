@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
@@ -24,8 +25,9 @@ public class RecipeProcessHelper
 
     private static bool IsProcessDef(Def? def) => def != null && DataUtility.IsTypeOrSubclassOfName(def.GetType(), ProcessDefType);
 
-    private static object? G(object? o, string name) => DataUtility.GetByName(o, name);
-    private static void S(object? o, string name, object? v) => DataUtility.SetByName(o, name, v);
+    // 转发 CallerMemberName：否则反射失配的日志只会写「来自 G」，定位不到是哪个调用点。
+    private static object? G(object? o, string name, [CallerMemberName] string context = "") => DataUtility.GetByName(o, name, context);
+    private static void S(object? o, string name, object? v, [CallerMemberName] string context = "") => DataUtility.SetByName(o, name, v, context);
 
     private static object? FirstItem(object? collection)
     {
@@ -38,9 +40,10 @@ public class RecipeProcessHelper
         => collection is ICollection c ? c.Count : collection is IEnumerable e ? e.Cast<object>().Count() : 0;
 
     /// <summary>走 ApplyV 门控 + 反射写入；闭包只捕获 object 与 MemberInfo，不引入 PipeSystem 类型。</summary>
-    private static void ApplyMember<TV>(RecipeData data, object target, string memberName, string tweakField) where TV : struct
+    private static void ApplyMember<TV>(RecipeData data, object target, string memberName, string tweakField,
+        [CallerMemberName] string context = "") where TV : struct
     {
-        var member = DataUtility.FindMember(target.GetType(), memberName);
+        var member = DataUtility.FindMember(target.GetType(), memberName, context);
         if (member == null) return;
         data.ApplyV<TV>(tweakField, v => DataUtility.SetMember(target, member, v));
     }

@@ -81,16 +81,18 @@ internal static class FortifiedRelay
         {
             if (present) return false;
 
-            var type = AccessTools.TypeByName(fullTypeName);
+            var type = DataUtility.OptionalType(fullTypeName, TweakDatabase.FFF, nameof(SetCompEnabled));
             if (type == null || !typeof(CompProperties).IsAssignableFrom(type))
             {
-                TweakLog.Message($"[BalanceTweak] 找不到中继 Comp 类型：{fullTypeName}");
+                // 以前只走 TweakLog.Message（默认不输出）：点了勾选没反应，日志里也查不到原因。
+                Log.Warning($"[BalanceTweak] 无法添加中继 Comp「{fullTypeName}」："
+                          + (type == null ? "类型不存在（Fortified 版本变更？）" : "该类型不是 CompProperties"));
                 return false;
             }
 
             if (Activator.CreateInstance(type) is not CompProperties props)
             {
-                TweakLog.Message($"[BalanceTweak] 无法创建中继 Comp：{fullTypeName}");
+                Log.Warning($"[BalanceTweak] 无法创建中继 Comp 实例：{fullTypeName}（缺无参构造？）");
                 return false;
             }
 

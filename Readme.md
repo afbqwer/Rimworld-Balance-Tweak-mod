@@ -1,142 +1,161 @@
-# Rimworld BalanceTweak Mod 开发流程
+# BalanceTweak 开发指南
 
-## 硬约束（改代码前必读）
+改代码的操作指南：能做什么、在哪改、改完怎么验。
+设计取舍、历史讨论与改进计划见 `Docs/`，本文不重复。
 
-存档里每条修改的身份是三元组 `(数据类 FullName, defName, SettingType 枚举名)`，三者任一变动都会让旧数据失配：
+## 0. 硬约束（改代码前必读）
 
-| 禁止 | 原因 |
+存档里每条修改的身份是三元组 `(数据类 FullName, defName, SettingType 枚举名)`，任一变动都会让旧数据失配。
+
+| 禁止 | 说明 |
 |------|------|
-| 重命名 / 改 namespace / 删除仍在用的 `XxxData` 类 | 存档每条都写 `Class="BalanceTweak.XxxData"`；解析失败整条数据变 null（`Init` 里已加 null 防御，但数据仍会丢） |
-| 重命名 / 删除 `SettingType` 枚举成员 | 存档按**名称**写入（`SettingType.cs` 里是显式赋值 `= 1..35`），解析失败退化为 `None` 并失效。重排**声明顺序**是安全的，前提是保留每个成员原有的显式数值；改数值才危险 |
+| 重命名 / 改 namespace / 删除仍在用的 `XxxData` 类 | 存档每条都写 `Class="BalanceTweak.XxxData"`，解析失败整条变 null（`Init` 有 null 防御，但数据会丢） |
+| 重命名 / 删除 `SettingType` 枚举成员 | 存档按**名称**写入。重排声明顺序安全（须保留各成员原有显式数值），改数值才危险 |
 | 重命名 `[TweakField]` 字段 | 字段名 = XML 元素名，改名即丢该字段的修改（新增字段安全） |
-| 直接删除还在使用的 `[TweakFor]` 规则 | 先确认没有已存数据落在该页签；确需删除时保留一个继承它的空壳子类 |
-| 用「值 == null / 值为空」反推"用户清空了该字段" | L0 三态只认两个**显式**集合（`TweakData.StateOf`）：`_modifiedFieldNames`（Set）与 `_clearedFieldNames`（Cleared）。清空**只能**由编辑器的清空动作（`MarkFieldCleared`）写入；判定不清空/不写入一律走 `ApplyV/ApplyN/ApplyL/ApplyD/ApplyS/ApplyF` 门控 |
-| 把「清空」实现成给集合赋 `null`（`def.list = null` / 字段 = null） | 清空的语义**只有**「从集合里移除一项或全部项」，集合的终态是**空集合**（`List<T>` 的 `Count == 0`），永远不是 `null`。原版从不区分 null 与空列表（`NullOrEmpty` 等价），而列表字段为 `null` 在原版里总是**错误情况** —— 大量裸 `.Contains` / `foreach` / `.Count` 会直接 NRE。stat 列的"清空"同样是「从 `statBases` / `equippedStatOffsets` 里移除该条 `StatModifier`」。参见 [§A 门控表](#a-apply-系列-tweakdatatypedcs访问级别-protected-internal) 与 `Docs/NullSemantics_L0_Plan.md` §15 |
-| 绕过 `MarkFieldCleared` 直接改 `_clearedFieldNames`，或让同一字段同时出现在两个集合里 | 两集合互斥是 Set/Cleared 的唯一判据；破坏互斥会让 `StateOf` 二义、`IsFieldModified` 回填守卫与 `Apply` 门控错乱 |
-| 给 `List<>` / `ThingFilter` 字段加 `??=` 回填点却不带 `!IsFieldModified(...)` 守卫 | Cleared 字段读档后会被 Def 回填"复活"，清空意图重启即失效。运行期自检 SC2 会报 `[BT/SELFCHECK] 复活:` |
-| 在代码里**静态引用可选 Mod 的类型**（`typeof` / `is` / 泛型参数 / 把该类型变量捕获进 lambda） | C# 会把 lambda 捕获的变量编成闭包类的**公共字段**；未加载该 Mod 的玩家在启动期 `StaticConstructorOnStartupUtility` 对全部类型调 `GetFields()` → `TypeLoadException`（`Could not load type of field '...<>c__DisplayClass...'`）。一律按全名反射：`DataUtility.IsTypeOrSubclassOfName / FindMember / GetByName / SetByName / FindModExtension`，闭包里只许出现 `object`/`MemberInfo` |
-| 给可选 Mod 的 dll 加 csproj `<Reference>` | 有引用，编译器才**能**编出跨程序集 typeref；**不引用** = 编译期杜绝（可选 Mod 的成员只能按字符串名字访问）。`PipeSystem` / `VEF` / `VanillaPsycastsExpanded` 均已移除引用 |
+| 直接删除仍在使用的 `[TweakFor]` 规则 | 先确认没有已存数据落在该页签；确需删除时保留一个继承它的空壳子类 |
+| 用「值 == null / 值为空」反推"用户清空了该字段" | 三态只认两个**显式**集合（`TweakData.StateOf`）：`_modifiedFieldNames` / `_clearedFieldNames`。清空**只能**由 `MarkFieldCleared` 写入；判定一律走 `Apply*` 门控 |
+| 把「清空」实现成给集合赋 `null` | 清空语义只有「从集合里移除项」，终态是**空集合**（`Count == 0`），永远不是 `null`。列表为 `null` 在原版里是错误状态，裸 `.Contains` / `foreach` 会 NRE。stat 列的清空 = `RemoveWhere` 掉那条 `StatModifier` |
+| 绕过 `MarkFieldCleared` 改 `_clearedFieldNames`，或让同一字段同时进两个集合 | 两集合互斥是 Set/Cleared 的唯一判据，破坏后 `StateOf` 二义、`Apply` 门控错乱 |
+| 给 `List<>` / `ThingFilter` 字段加 `??=` 回填却不带 `!IsFieldModified(...)` 守卫 | Cleared 字段读档后会被 Def 回填"复活"（SC2 报 `[BT/SELFCHECK] 复活:`） |
+| 静态引用可选 Mod 的类型（`typeof` / `is` / 泛型参数 / 把该类型变量捕获进 lambda） | 未装该 Mod 的玩家启动期 `GetFields()` → `TypeLoadException`。一律按全名反射，闭包里只许出现 `object` / `MemberInfo` |
+| 给可选 Mod 的 dll 加 csproj `<Reference>` | 有引用就能编出跨程序集 typeref；不引用 = 编译期杜绝。`PipeSystem` / `VEF` / `VanillaPsycastsExpanded` 均已移除引用 |
 
-安全的改动：末尾追加枚举成员、新增 `[TweakField]` 字段、调整 `MatchMethod` 判定与 `Priority`（分类漂移会被自动检测并重新归类）、修改 `Apply` 逻辑。
+安全的改动：末尾追加枚举成员、新增 `[TweakField]` 字段、调整 `MatchMethod` 与 `Priority`、修改 `Apply` 逻辑。
 
-## Apply 门控与可选 Mod 反射 helper 索引
+## 1. Apply 门控（`TweakData.Typed.cs`，`protected internal`）
 
-### A. Apply 系列（`TweakData.Typed.cs`，访问级别 `protected internal`）
-
-三态门控的**唯一写入入口**：按 `StateOf(f)` 决定写不写、怎么写，**绝不用 `!= null` / `HasValue` 短路**（硬约束表第 5 行）。
-`Set` → 写字段当前值；`Unset` → 什么都不做；`Cleared` → 按下面最后一列处理。
+三态写入的**唯一入口**：按 `StateOf(f)` 决定写不写、怎么写，绝不用 `!= null` / `HasValue` 短路。
+`Set` → 写当前值；`Unset` → 什么都不做；`Cleared` → 见下表最后一列。
 
 | helper | 目标 | 签名 | `Cleared` 的动作 |
 | ------ | ---- | ---- | ---------------- |
 | `ApplyV<TV>` | 非空目标 / 标量（`Action<float>`、`Action<int>`、`Action<FloatRange>`…） | `ApplyV<TV>(string f, Action<TV> set)` | 还原原值（`Revert`） |
-| `ApplyN<TV>` `where TV:struct` | 可空目标（`float?` / `int?` / `IntRange?` / `QualityCategory?`…） | `ApplyN<TV>(string f, Action<TV?> set)` | 还原原值（`Revert`）—— **不写 `null`**：可空值置 `null` 在本工程里等于"重置"，与重置按钮重复，且把"用户清空"和"本来没配"混成一态 |
-| `ApplyL<TV>` | 集合（`List<T>`） | `ApplyL<TV>(string f, Action<List<TV>?> set)` | **写成空列表**（`new List<TV>()`）：清空 = 移除全部项，**永不写 `null`**；权威重置路径同样不给 `null` |
-| `ApplyD<TV>` `where TV:Def` | Def 引用 | `ApplyD<TV>(string f, Action<TV?> set)` | 还原原引用（`Revert`） |
-| `ApplyS` | `string` | `ApplyS(string f, Action<string> set)` | 还原原字符串（`Revert`） |
+| `ApplyN<TV>` `where TV:struct` | 可空目标（`float?` / `int?` / `IntRange?` / `QualityCategory?`…） | `ApplyN<TV>(string f, Action<TV?> set)` | 还原原值——**不写 `null`**（置 `null` 等于重置，会与"本来没配"混成一态） |
+| `ApplyL<TV>` | 集合（`List<T>`） | `ApplyL<TV>(string f, Action<List<TV>?> set)` | **写成空列表**，永不写 `null` |
+| `ApplyD<TV>` `where TV:Def` | Def 引用 | `ApplyD<TV>(string f, Action<TV?> set)` | 还原原引用 |
+| `ApplyS` | `string` | `ApplyS(string f, Action<string> set)` | 还原原字符串 |
 | `ApplyF` | `ThingFilter` | `ApplyF(string f, Action<ThingFilter> set)` | 无 Cleared 分支（空过滤器是有效值） |
 
-- `f` 一律写 `nameof(字段名)`；setter 里直接赋给目标：`ApplyV<float>(nameof(workAmount), v => def.workAmount = v)`。
-- **标量选 `ApplyV` 还是 `ApplyN`**：只看目标字段在 Def 上是否可空（`float?` 用 `ApplyN`、`float` 用 `ApplyV`）；两者的 `Cleared` 都是还原原值。
-- **setter 收到的集合永远可安全遍历**：`ApplyL` 不会给 `null`，所以 `v => def.list = v` 就够；个别地方还留着 `v ?? new List<T>()`，那只是给"字段为 null 的权威重置"兜底，不是必需。
-- `Revert` 原值取自 `TweakDatabase.GetOriginal(id)`；原值缺席时**保持现状 + 每字段告警一次，不抛异常**。
-- `StatDef` 字段**不要**用这些 helper，改用 `ApplyDefStats(def)`（见 §7.2）；其中"清空一条 stat"= 从列表里 `RemoveWhere` 掉该条，不是把列表置 null。
-- 字符串列不开放清空，故 `ApplyS` 的 Cleared 分支平时不走。
+- `f` 一律写 `nameof(字段名)`：`ApplyV<float>(nameof(workAmount), v => def.workAmount = v)`。
+- 标量选 `ApplyV` 还是 `ApplyN` 只看**目标字段在 Def 上是否可空**；两者 Cleared 行为相同。
+- setter 收到的集合永远可安全遍历（`ApplyL` 不给 `null`），`v => def.list = v` 即够。
+- `Revert` 原值取自 `TweakDatabase.GetOriginal(id)`；原值缺席时保持现状 + 每字段告警一次。
+- **重置路径不看三态**：整行重置（`forceWriteAll`）、单格重置（`forceWriteFields`）由 `Apply*` 内部的 `IsForceWriteField(f)` 接管，直接把字段值当权威值写回。自定义判据（如"这次 Apply 有没有动过射速"）必须用 `IsForceWriteField` 而不是 `IsFieldModified`——重置是先写回原值再清标记，那一刻三态已是 `Unset`。
+- `StatDef` 字段不用这些 helper，改用 `ApplyDefStats(def)`（见 §3.2 / §4.1）；字符串列不开放清空，`ApplyS` 的 Cleared 分支平时不走。
 
-### B. 可选 Mod 反射系列（`DataUtility`，全名反射，严禁静态引用）
+## 2. 可选 Mod 反射（`DataUtility`）
 
-未加载可选 Mod 时不得出现跨程序集 typeref（硬约束表最后两行）。跨 Mod 兼容一律按**字符串全名**访问，命名空间 `using` 与 csproj `<Reference>` 都**不要**加。
+未加载可选 Mod 时不得出现跨程序集 typeref：跨 Mod 兼容一律按**字符串全名**访问，命名空间 `using` 与 csproj `<Reference>` 都不要加。
 
 | helper | 用途 |
 | ------ | ---- |
-| `IsTypeOrSubclassOfName(Type?, string fullName)` | 类型或其基类是否等于某全名（替代 `is` / `typeof(...) ==` 判断） |
-| `FindMember(Type?, string name)` | 沿继承链找 `MemberInfo`（字段或属性，含非公开，`DeclaredOnly`）。返回可空 |
-| `GetMember(object?, MemberInfo?)` / `SetMember(object?, MemberInfo?, object?)` | 用已缓存的 `MemberInfo` 读 / 写 |
-| `GetByName(object?, string)` / `SetByName(object?, string, object?)` | 一步式（内部 `FindMember`）。**高频访问请先缓存 `MemberInfo`** |
-| `AsFloat` / `AsInt` / `AsBool` / `AsIntList(object?)` | 把反射取回的 `object` 安全转成目标类型（失败返回 `null` / `false`） |
-| `FindModExtension(Def?, string fullTypeName)` | 按全名找 `DefModExtension` |
-| `MayRequire(string? packageId)` | 判断某 Mod 是否加载（`[TweakFor(MayRequire = ...)]` 也用它） |
+| `IsTypeOrSubclassOfName(Type?, string)` | 类型或其基类是否等于某全名（替代 `is` / `typeof(...) ==`） |
+| `FindMember(Type?, string)` | 沿继承链找 `MemberInfo`（字段 / 属性，含非公开） |
+| `GetMember` / `SetMember(object?, MemberInfo?, ...)` | 用已缓存的 `MemberInfo` 读写 |
+| `GetByName(...)` / `SetByName(...)` | 一步式（内部 `FindMember`）；高频访问请先缓存 `MemberInfo` |
+| `AsFloat` / `AsInt` / `AsBool` / `AsIntList(object?)` | 反射结果安全转换（失败返回 `null` / `false`） |
+| `FindModExtension(Def?, string)` | 按全名找 `DefModExtension` |
+| `MayRequire(string?)` | 判断某 Mod 是否加载（`[TweakFor(MayRequire = ...)]` 也用它） |
 
-约定：
-- **lambda 只许捕获 `object` / `MemberInfo`**，绝不能把可选 Mod 类型的变量捕获进闭包 —— C# 会把它编成闭包类的公共字段，未装该 Mod 的玩家启动期 `GetFields()` 直接 `TypeLoadException`。
-- 引用实现：`Data/AbilityData.cs`（VEF / VanillaPsycastsExpanded）、`Data/ProcessItems/RecipeProcessHelper.cs`（PipeSystem）。
+**lambda 只许捕获 `object` / `MemberInfo`**。参考实现：`Data/AbilityData.cs`、`Data/ProcessItems/RecipeProcessHelper.cs`。
 
-## 新增可编辑 Def 类型的工作流程
+原版 / 本工程类型的私有成员不用这套：一律 `Reflect.Field(type, "字段名")`（`AccessTools.Field` + 缺失即登记，把"1.7 改名导致的静默 null"变成启动日志里的一条）。
 
-### 1. 查 RimWorld 源码
-可使用 `decompiler` 工具（如果有）查看 C# 定义。
-可用 `rimworld-source` 工具（如果有）查看 C# 定义以及游戏中实际数据。
-可用 `rimworld-data` 工具（如果有）查看游戏中实际数据。
+### 2.1 失配必须留痕（`Diagnostics`）
 
-### 2. 参考已有的 Data 文件
-在 `Source/BalanceTweak/Data/` 下找类似模板。
-- **关键模式**：类继承 `TweakData<T>`、`[TweakField()]` 标记字段、实现 `SetDef/Apply/GetPropType/TypeStrings`，并加上声明式注册特性 `[TweakFor]`（见第 4 步）。
-- **Apply 中的 Stat 写入**：对于 `StatDef` 标记的字段，子类 `Apply()` 中**调用基类的 `ApplyDefStats(def)` 一行即可**。它会按 `IsEquippedStat` / `IsStuffFactorStat` / `IsStuffOffsetStat` 自动选择正确的写入位置，并把 `statBases` 等 `List<StatModifier>` 字段与 def 双向同步。
-- **子项**：若该类型自带子项（阶段、招式、程度……），实现 `ISubItemHost`（见第 5 步）。
-- **分类**：不再需要改 `TweakDatabase`。分类、Apply 阶段的 Def 解析、`GetData(Def)` 的自动探测全部由 `[TweakFor]` 规则表驱动。
+光"按名反射"不够：拿不到成员就返回 `null`，调用点一句 `as bool?` 之后还是 `null`，那一列从此恒空白 —— 玩家以为"这个 Mod 不支持"，日志里一个字都没有。所有失败都进 `Diagnostics` 登记表，初始化收尾由 `Diagnostics.Report()` 合成**一条** `Log.Error`（挂在 `finally` 里，`Init` 抛异常也照发）。
 
-### 3. 编写 Data 文件
-在 `Source/BalanceTweak/Data/` 下创建 `{Name}Data.cs`。参考现有实现（如 `WeatherData` 或 `FoodData`）作为模板。
+| 失败形态 | 登记点 | 日志样例 |
+|---|---|---|
+| 成员找不到 | `DataUtility.FindMember`（`GetByName` / `SetByName` / `FindMember` 自动，`[CallerMemberName]` 带出调用方法） | `成员 Fortified.CompProperties_SubRelay.relayRange —— 来自 LoadRelay` |
+| 跨 Mod 类型不存在 | `TweakRegistry.TryCreateRule`（`[TweakFor(TypeName=...)]`） | `类型 X —— 来自 AbilityData 的 [TweakFor]（页签 Ability）；所需的 Mod Y 已启用，但该类型不存在` |
+| 可选 Mod 类型不存在 | `DataUtility.OptionalType` | 同上（未给 packageId 时按"归属程序集已加载"判定） |
+| 原版私有成员找不到 | `Reflect.Field` | `字段 ResearchProjectDef.cachedDescription —— 来自 Reflect.Field` |
+
+四条口径：
+
+- **「目标为 null」不登记**。`GetByName(null, "x")` 是上游没拿到对象（该 Def 没有这个扩展 / Mod 未装），不是成员缺失。只有"类型在、成员不在"才算失配。
+- **同一 (类型, 成员) 只登记一条**，只累加次数。一次版本升级改名五个字段时日志是五行，不是五百行；绘制期反复走到失配也只有两条字典查找。
+- **可选 Mod 类型一律走 `OptionalType`，禁止裸 `AccessTools.TypeByName`**。后者让「没装」和「装了但改名」长得一模一样，而两者处理方式相反：前者静默跳过（设计行为），后者必须报。判据就是 `MayRequire`；没有 packageId 时退回程序集短名比对。
+- **失败走 `Log.Error`（永远输出），成功清单走 `TweakLog.Message`**（受「冗杂日志」开关控制）—— 没装 Mod 导致规则跳过不是错误，别用 Error 污染玩家日志。
+
+### 2.2 排查「改了没反应 / 某列全空」
+
+按顺序看启动日志，通常三步内定位：
+
+1. `[BalanceTweak] 可选 Mod 兼容`（需开冗杂日志）—— 目标 Mod 是「已启用」还是「未启用（相关规则跳过）」。
+2. `[BalanceTweak] ===== 兼容性诊断：反射失配` —— 有它就到此为止：清单直接给出 `类型.成员` + 谁在问。
+3. `TweakRegistry 注册失败` / `有 N 条已存数据含无法解析的引用`（Def 被删）/ `N 条已存数据的类型无法识别`（Data 类改名）—— 分别对应注册期与存档侧失配。
+
+三步都干净，说明反射层是好的，问题在 `Apply` 门控或 Def 解析；再查 §1 的 `StateOf` 与 `failedResolveItems`。
+
+## 3. 新增可编辑 Def 类型
+
+### 3.1 查 RimWorld 源码
+
+按需用 `decompiler` / `rimworld-source`（C# 定义）与 `rimworld-data`（游戏内实际数据）工具。
+
+### 3.2 参考已有 Data 文件
+
+在 `Source/BalanceTweak/Data/` 找类似模板（如 `WeatherData`、`FoodData`）。关键模式：
+
+- 类继承 `TweakData<T>`，`[TweakField()]` 标记字段，实现 `SetDef/Apply/GetPropType/TypeStrings`，加 `[TweakFor]`。
+- **Stat 写入**：`Apply()` 里调用基类 `ApplyDefStats(def)` 一行即可 —— 它按 `IsEquippedStat` / `IsStuffFactorStat` / `IsStuffOffsetStat` 选择写入位置，并把 `statBases` 等 `List<StatModifier>` 字段与 def 双向同步（`StatModList` 样式字段一并处理，不需要额外的 Sync 方法）。
+- 自带子项（阶段 / 招式 / 程度…）时实现 `ISubItemHost`（§3.6）。
+- 分类不需改 `TweakDatabase`：分类、Apply 阶段的 Def 解析、`GetData(Def)` 探测全由 `[TweakFor]` 驱动。
+
+### 3.3 编写 `{Name}Data.cs`
 
 | 字段来源 | 读写方式 | 示例 |
 |---------|---------|------|
-| **StatDef 字段** | `GetStatValueAbstract` / `SetStatBaseValue`，`[TweakField(StatDef = "字段名")]` | Nutrition |
+| **StatDef 字段** | `[TweakField(StatDef = "字段名")]`，由 `ApplyDefStats` 写入 | Nutrition |
 | **直接字段** | 直接读写 `def.字段名` | `stackLimit` |
 | **子对象字段** | `def.ingestible.字段名`，SetDef/Apply 中判空 | `baseIngestTicks` |
 | **Enum 字段** | `[TweakField(Style = ColumnStyle.Enum, EnumType = typeof(XxxEnum))]` | FoodPreferability |
-| **Def 引用字段** | `[TweakField(Style = ColumnStyle.DefSelector)]`，`??=` 从 def 读取 | `spawnThingOnRemoved` |
-| **`List<T>`** | `[TweakField(Style = ColumnStyle.DefList)]`，**带守卫** `??= def.list`（见下） | `makeImmuneTo`、`enablesNeeds` |
-
+| **Def 引用字段** | `[TweakField(Style = ColumnStyle.DefSelector)]` | `foragedFood`、`reloadableAmmoDef` |
+| **`List<T>`** | `[TweakField(Style = ColumnStyle.DefList)]`，回填带守卫 | `makeImmuneTo`、`enablesNeeds` |
 
 默认值来源按字段类型分三种，**不要一律写 `??=`**：
 
-- **`[TweakField(StatDef = "...")]` 字段**：**不写** `??=`。`StatFieldMeta` 的 `DefaultGetter` + `InitFieldValue`（在 `SetProps` 里）会自动从 def 取默认值，已改 / 已清空的字段不会被回填。
+- **`[TweakField(StatDef = "...")]` 字段**：**不写** `??=`，由 `StatFieldMeta` 的 `DefaultGetter` + `InitFieldValue` 从 def 回填，已改 / 已清空的字段不会被覆盖。
 - **标量 / `string` / Def 引用 / 子对象字段**：`field ??= def.字段名;`
-- **`List<T>` / `ThingFilter`**：必须带守卫，否则已清空的字段读档后会被 def 回填"复活"（硬约束表第 7 行）：
+- **`List<T>` / `ThingFilter`**：必须带守卫（硬约束表）：
   ```csharp
   if (!IsFieldModified(nameof(makeImmuneTo))) makeImmuneTo ??= stage.makeImmuneTo;
   ```
   先例：`HediffStageData.cs:243`、`FoodData.cs:129`、`TraderData.cs:87`。
 
-> **Def 的 private 字段与懒加载缓存**：目标字段是 private（如 `BiomeDef.wildAnimals`）时，用 `AccessTools.Field(typeof(XxxDef), "字段名")` 缓存 `FieldInfo` 读写（先例见 `SerializationHelper.cs` 的 ThingFilter 内部字段）。
-> 若 Def 把派生数据缓存在私有字段里（如 BiomeDef 的 `cachedAnimalCommonalities` / `cachedPlantCommonalities` / `cachedDiseaseCommonalities` / `cachedWildPlants` 等，懒加载且无失效机制），Apply 写完列表后需反射把这些缓存字段置 `null` 强制重建，否则运行中修改不生效。参考 `BiomeData.cs`。
->
-> **复合对象子字段的列表**：若字段是复合对象（如 `BiomeDef.fishTypes` 的 `freshwater_Common` 等 List 子字段），在 Data 类上按子字段逐个建 `[TweakField]`；Apply 中任一子字段非空时先 `def.fishTypes ??= new BiomeFishTypes()` 再赋值。DLC 专属内容（Odyssey/Biotech）用 `[TweakField(MayRequire = "ludeon.rimworld.odyssey")]` 门控列显示。
+> **private 字段**：目标字段非公开（如 `BiomeDef.wildAnimals`）时，用 `Reflect.Field(type, "字段名")` 缓存 `FieldInfo` 再读写 —— 它内部是 `AccessTools.Field` + 找不到就 `Log.Error`，别直接用裸 `AccessTools`（1.7 改名时只会得到静默 null，最后在某处 NRE）。先例 `BiomeData.cs`。
+> **懒加载缓存**：Def 把派生数据缓存在私有字段里（`BiomeDef.cached*` 等，无失效机制）时，Apply 写完列表要反射把这些缓存置 `null` 强制重建，否则运行中不生效（参考 `BiomeData.cs`）。
+> **复合对象子字段的列表**：按子字段逐个建 `[TweakField]`，Apply 中任一子字段非空时先 `def.fishTypes ??= new BiomeFishTypes()` 再赋值；DLC 内容用 `[TweakField(MayRequire = "ludeon.rimworld.odyssey")]` 门控列显示。
 
-### 3b. 处理 Comp（CompProperties）
+### 3.4 处理 Comp（CompProperties）
 
-- **Bool 开关（添加/移除 Comp）**：参考 `ApparelData.isCompQuality`。`false` 移除、`true` 添加（先检查防重复）。
-- **修改已有 Comp 属性**：参考 `BuildingData`，在 `SetDef/Apply` 中遍历 `def.comps` 用 `is` 匹配子类型后读写字段。
-- **Comp 存在性检查**：`def.HasComp<T>()` / `def.HasAssignableCompFrom<T>()` / `def.GetCompProperties<T>()` / `def.comps.Any(...)`。
-- **添加 Comp**：`new CompProperties(typeof(CompX))`，添加前务必检查是否已存在。
+- **Bool 开关（添加/移除 Comp）**：参考 `ApparelData.isCompQuality`，`true` 添加、`false` 移除（先检查防重复）。
+- **修改已有 Comp 属性**：参考 `BuildingData`，遍历 `def.comps` 用 `is` 匹配子类型后读写字段。
+- **存在性检查**：`def.HasComp<T>()` / `HasAssignableCompFrom<T>()` / `GetCompProperties<T>()` / `comps.Any(...)`。
+- **添加**：`new CompProperties(typeof(CompX))`，添加前务必查重。
 
-### 4. 声明分类规则（唯一的注册步骤）
+### 3.5 声明分类规则（唯一注册步骤）
 
-在 Data 类上加 `[TweakFor]`，声明它负责哪一类 Def、显示在哪个页签、以什么优先级参与分类：
+在 Data 类上加 `[TweakFor]`，声明负责哪一类 Def、显示在哪个页签、分类优先级：
 
 ```csharp
 [TweakFor(typeof(WeatherDef), SettingType.Weather)]
 class WeatherData : TweakData<WeatherData> { /* ... */ }
 ```
 
-**五种声明方式：**
+| 方式 | 写法 |
+|------|------|
+| 专用 Def 类型 | 构造参数直接写 Def 类型（`DefType` 是只读属性，只能由构造参数给） |
+| ThingDef 子类别 | 构造参数写 `typeof(ThingDef)` + `MatchMethod = nameof(DataUtility.MatchWeapon)`，`Priority` 大者先匹配（等价原 `else if` 链顺序）；判定方法可写在本类或复用 `DataUtility.MatchXxx` |
+| 跨 Mod 反射类型 | `TypeName = "PipeSystem.ProcessDef"` + `MayRequire = TweakDatabase.VEF`（反射取不到则跳过） |
+| 兜底类型 | `IsFallback = true`，同 Def 类型下无规则命中时生效（如 `MiscThingData`） |
+| 并列挂载 | `Exclusive = false` 允许一个 Def 挂多个 Data；默认 `true` = 命中即停 |
 
-- **专用 Def 类型**：`DefType` 直接写 Def 类型即可，该类全部 Def 都归它管。
-- **ThingDef 子类别**：`DefType = typeof(ThingDef)` + `MatchMethod` 指定判定方法，`Priority` 决定抢占顺序（大者先匹配，等价于原 `else if` 链的先后）。判定方法可以写在自己的 Data 类里，也可以复用 `DataUtility.MatchXxx`：
-  ```csharp
-  [TweakFor(typeof(ThingDef), SettingType.Weapon, Priority = 200, MatchMethod = nameof(DataUtility.MatchWeapon))]
-  ```
-- **跨 Mod 反射类型**：用 `TypeName` 指定类型全名（反射获取，拿不到就跳过），`MayRequire` 指定所需 Mod：
-  ```csharp
-  [TweakFor(typeof(RecipeDef), SettingType.Recipe, TypeName = "PipeSystem.ProcessDef", MayRequire = TweakDatabase.VEF)]
-  ```
-- **兜底类型**：`IsFallback = true`，只在同 Def 类型下没有任何规则命中时生效（如 `MiscThingData`）。
-- **并列挂载**：`Exclusive = false` 允许一个 Def 同时挂多个 Data；默认 `true`，与原 if/else-if 链的"命中即停"语义一致。
+`TweakDatabase` 不需要任何改动。注册失败（Match 方法找不到、缺无参构造等）会在启动日志报 `TweakRegistry 注册失败：…`。
 
-`TweakDatabase` **不需要任何改动**。注册失败（Match 方法找不到、缺无参构造等）会在启动日志里以 `TweakRegistry 注册失败：…` 报出。
-
-### 5. 注册子项（可选）
-
-若该类型会产出子项（招式 / 阶段 / 特性程度……），实现 `ISubItemHost`：
+### 3.6 注册子项（可选）
 
 ```csharp
 class ThoughtData : TweakData<ThoughtData>, ISubItemHost
@@ -155,378 +174,417 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 }
 ```
 
-实现方负责设置 `index`、调用 `SetParentTweak`、跳过空条目。`TweakDatabase` 会自动收集，不必在初始化流程里加分支。
+实现方负责设置 `index`、调用 `SetParentTweak`、跳过空条目；`TweakDatabase` 自动收集，初始化流程不用加分支。
 
-### 6. 添加本地化翻译
+### 3.7 本地化
 
-在 `Languages/English/Keyed/` 和 `Languages/ChineseSimplified/Keyed/` 目录下，根据新增 Def 类型对应的功能分类，在相应的 XML 文件中添加 key（格式 `<MST.名称>值</MST.名称>`）。
+在 `Languages/English/Keyed/` 与 `Languages/ChineseSimplified/Keyed/` 对应 XML 里加 key（`<MST.名称>值</MST.名称>`）：
 
-**文件映射规则**：多数 SettingType 一个对应一个 XML 文件；子项页签与父页签共用同一文件（`ThoughtStage` / `HediffStage` / `TraitDegree`），`Misc` 归入 `Core.xml`。新增枚举值时需创建对应的新文件。
+| 内容 | Key |
+|------|-----|
+| SettingType 页签标题 | `MST.{枚举值}` |
+| `[TweakField]` 字段列标题 | `MST.{字段名}` |
+| 私有 enum 分类名 | `MST.{枚举值}` |
+| 字段 tooltip（含义不直观或带风险时加） | `MST.{字段名}Comment` |
 
-> **共享键不要重复定义**：`defLabel` / `statBases` / `pathCost` / `stackLimit` / `destroyable` / `Misc`
-> 这类被多个类型共用的键，直接复用已有定义（多数在 `Core.xml`），**不要在新类型的 XML 里再写一遍**。
-> `CheckLoc` 把 `Core.xml` 当作跨文件重复键的规范位置，重复定义会产生告警。
+**文件映射**：多数 SettingType 一个对应一个 XML 文件（对照表见 §5.3）；子项页签与父页签共用文件（`ThoughtStage` / `HediffStage` / `TraitDegree`），`Misc` 归 `Core.xml`。新增枚举值时需创建对应新文件。
 
-| 需要本地化的内容 | Key 格式 | 说明 |
-|----------------|---------|------|
-| SettingType 标签页标题 | `MST.{枚举值}` | 新增的 SettingType 枚举值 |
-| [TweakField] 字段列标题 | `MST.{字段名}` |
-| 私有 enum 分类名 | `MST.{枚举值}` | Data 中用于分类的 enum |
-| 字段 tooltip 说明 | `MST.{字段名}Comment` | 含义不直观或带风险的字段添加 |
+> **共享键不要重复定义**：`defLabel` / `statBases` / `pathCost` / `stackLimit` / `destroyable` / `Misc` 这类跨类型共用的键只定义一处，新类型直接复用。**先 grep 现有位置再加**（`statBases` / `Misc` 在 `Core.xml`，`defLabel` 在 `Damage.xml`，并不都在 Core）；`CheckLoc` 报跨文件重复时会以 `Core.xml` 那份为准——也就是说复制到 Core 只会让原来那处的定义被删。
 
-**SettingType 与 XML 文件对照表：**
+## 4. 给现有 Data 类添加字段
 
-| SettingType | XML 文件名 |
-|------------|-----------|
-| `Core`（通用 UI） | `Core.xml` |
-| `Race` | `Race.xml` |
-| `Apparel` | `Apparel.xml` |
-| `Weapon` | `Weapon.xml` |
-| `MeleeTool` | `MeleeTool.xml` |
-| `Ability` | `Ability.xml` |
-| `Stuff` | `Stuff.xml` |
-| `Building` | `Building.xml` |
-| `Projectile` | `Projectile.xml` |
-| `Thought` | `Thought.xml` |
-| `ThoughtStage` | `Thought.xml`（合并于 Thought 文件） |
-| `PawnKind` | `PawnKind.xml` |
-| `Gene` | `Gene.xml` |
-| `Meme` | `Meme.xml` |
-| `Incident` | `Incident.xml` |
-| `Research` | `Research.xml` |
-| `Weather` | `Weather.xml` |
-| `Faction` | `Faction.xml` |
-| `Food` | `Food.xml` |
-| `Hediff` | `Hediff.xml` |
-| `HediffStage` | `Hediff.xml`（合并于 Hediff 文件） |
-| `Trait` | `Trait.xml` |
-| `TraitDegree` | `Trait.xml`（合并于 Trait 文件） |
-| `Terrain` | `Terrain.xml` |
-| `Recipe` | `Recipe.xml` |
-| `Misc` | `Core.xml` |
-| `Damage` | `Damage.xml` |
-| `BodyPart` | `BodyPart.xml` |
-| `BodyDef` | `BodyDef.xml` |
-| `Biome` | `Biome.xml` |
-| `Trader` | `Trader.xml` |
-| `Xenotype` | `Xenotype.xml` |
-| `ArrivalMode` | `ArrivalMode.xml` |
-| `RaidStrategy` | `RaidStrategy.xml` |
-| `Backstory` | `Backstory.xml` |
-| `Landmark` | `Landmark.xml` |
-| `WeaponTrait` | `WeaponTrait.xml` |
-
-> 新增 SettingType 枚举值时，需同时创建对应的 XML 文件，并在 `Core.xml` 中添加通用 UI 相关的 key。
-
-## TweakField 属性说明
-
-| 参数 | 用途 | 示例 |
-|------|------|------|
-| `Style` | 列显示样式 | `ColumnStyle.Float / String / Enum / Int / Bool / Prec / Link / RaceLinks / BodyLinks / WeaponLinks / StatModList / CapModList / DamageModList / DefList / DefSelector / StringList / IntList / StockGenList` |
-| `EnumType` | Enum 类型（下拉菜单） | `typeof(FoodPreferability)` |
-| `StatDef` | 关联 StatDef 名称 | `"Nutrition"` |
-| `MayRequire` | 需要某 Mod 才显示 | `"ceteam.combatextended"` |
-| `IsEquippedStat` | 是否为装备 stat | `true` |
-| `IsStuffFactorStat` | 是否为材料倍率 stat | `true` |
-| `IsStuffOffsetStat` | 是否为材料加成 stat（`stuffProps.statOffsets`） | `true` |
-| `DataType` | `Field`（可编辑）或 `Display`（只读） | `ColumnDataType.Display` |
-| `IsMirror` | 值属于**另一行**（镜像列），不参与 `EqualsData` 的"已恢复原样"判定；见 §7.8 | `true` |
-| `Available` | 显示条件方法名 | `"AvailableMethodName"` |
-| `Hidden` | **按行**留白条件方法名（返回 true = 该格不显示）。与 `Available` 的区别：`Available` 是列级（整列出现与否，按第一行求值一次），`Hidden` 只影响单行，且语义是"不适用"而不是"没有值" | `"HiddenIfHumanlike"` |
-| `GetAbstract` | 获取抽象值方法名 | `"GetAbstractMethodName"` |
-| `OptionsList` | 静态列表字段名（动态选项） | `"ResearchTabDefs"` |
-
-### ColumnStyle 与字段类型对照
-
-| ColumnStyle | 适用的 C# 类型 | 说明 |
-|------------|---------------|------|
-| `Float`（默认） | `float?` | 浮点数输入 |
-| `Int` | `int?` | 整数输入 |
-| `Bool` | `bool?` | 开关切换 |
-| `String` | `string?` | 文本输入 |
-| `Enum` | `Nullable<Enum>` | 下拉菜单，需配合 `EnumType` |
-| `Flags` | `Nullable<Enum>`（带 `[Flags]`） | 标志位多选编辑器 |
-| `Prec` | `float?` | 高精度浮点（值/100） |
-| `Range` | `FloatRange?` / `IntRange?` | 区间输入，文本写成 `min~max`（内联文本框） |
-| `Curve` | `SimpleCurve` | 曲线编辑器 |
-| `Link` | `TweakID?` | 跳转到关联子项目链接 |
-| `RaceLinks` | `TweakID?` | 只读关联入口：点击列出反向关联的种族数据（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
-| `BodyLinks` | `TweakID?` | 只读关联入口：点击列出反向关联的身体数据（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
-| `WeaponLinks` | `TweakID?` | 只读关联入口：点击列出使用该投射物的武器（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
-| `PawnWeaponLinks` | `TweakID?` | 只读关联入口：点击列出该兵种抽得到的手持武器（见 [附2](#附2-关联列racelinks--bodylinks--weaponlinks)） |
-| `DefSelector` | `T?` where T : Def | Def 选择器（弹出搜索窗口） |
-| `StatModList` | `List<StatModifier>?` | StatModifier 列表编辑器 |
-| `CapModList` | `List<PawnCapacityModifier>?` | PawnCapacityModifier 列表编辑器 |
-| `DamageModList` | `List<DamageFactor>?` | DamageFactor 列表编辑器 |
-| `ExtraDamageList` | `List<ExtraDamage>?` | 附加伤害列表编辑器（damageDef + amount + armorPenetration + chance），服务 `WeaponTraitDef.extraDamages`；`armorPenetration = -1` 是原版"自动折算"语义 |
-| `DefList` | `List<T>?` where T : Def | Def 列表编辑器（添加/删除/替换） |
-| `HediffGiverList` | `List<HediffGiver>?` | HediffGiver 列表编辑器 |
-| `MentalStateGiverList` | `List<MentalStateGiver>?` | MentalStateGiver 列表编辑器 |
-| `SkillGainList` | `List<SkillGain>?` | SkillGain 列表编辑器 |
-| `SkillReqList` | `List<SkillRequirement>?` | SkillRequirement 列表编辑器 |
-| `TraitReqList` | `List<TraitRequirement>?` | TraitRequirement 列表编辑器（trait + degree） |
-| `AptitudeList` | `List<Aptitude>?` | Aptitude 列表编辑器 |
-| `GeneticTraitList` | `List<GeneticTraitData>?` | GeneticTraitData 列表编辑器 |
-| `StringList` | `List<string>?` | 字符串列表编辑器（添加/编辑/删除） |
-| `ThingSetTags` | `List<string>?` | 同 `StringList` 的编辑器（`StringListEditorWindow`）：保存时先去空白 / 去重。**所有列表编辑器删光保存都走显式 Cleared 路径**（`ListEditorWindow.CommitResult` → `ClearValue`），否则空列表会被判 `Unset`、`ApplyL` 静默跳过，旧项删不干净。本 Style 现在只影响列标题 / 说明文案 |
-| `IntList` | `List<int>?` | 整数列表编辑器（添加/编辑/删除） |
-| `ThingDefCountList` | `List<ThingDefCountClass>?` | ThingDefCountClass 列表编辑器 |
-| `IngredientList` | `List<IngredientCount>?` | IngredientCount 列表编辑器 |
-| `IngredientFilter` | `ThingFilter?` | ThingFilter 过滤器编辑器 |
-| `ProcessIngredientList` | `List<ProcessIngredientItem>?` | ProcessDef 原料列表编辑器（PipeSystem / VEF） |
-| `ProcessResultList` | `List<ProcessResultItem>?` | ProcessDef 产物列表编辑器（PipeSystem / VEF） |
-| `BodyPartTree` | `List<string>?` | 部位树编辑器：字段存的是前缀序遍历编码，经 `BodyPartTreeCodec.Encode / SetCorePart` 与 `BodyDef.corePart` 互转（见 `BodyData`） |
-| `BiomePlantList` | `List<BiomePlantRecord>?` | BiomeDef 野生植物列表编辑器（plant + commonality） |
-| `BiomeAnimalList` | `List<BiomeAnimalRecord>?` | BiomeDef 野生动物列表编辑器（animal + commonality） |
-| `FishChanceList` | `List<FishChance>?` | 鱼类列表编辑器（fishDef + chance） |
-| `XenotypeChanceList` | `List<XenotypeChance>?` | 异种人几率列表编辑器（xenotype + chance） |
-| `DiseaseList` | `List<BiomeDiseaseRecord>?` | 疾病列表编辑器（diseaseInc + commonality） |
-| `WeatherCommonalityList` | `List<WeatherCommonalityRecord>?` | 天气列表编辑器（weather + commonality） |
-| `TerrainThresholdList` | `List<TerrainThreshold>?` | 地表肥沃度区间列表（terrain + min/max） |
-| `StockGenList` | `List<StockGenerator>?` | 库存生成器列表编辑器（每行一个生成器，按字段表声明的种类给出输入框/下拉/子列表；类型菜单只列原版类型，非原版条目只读展示类型名）；字段直接持有对象，见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist) |
-| `FactionCurveList` | `List<FactionCurve>?` | 派系曲线列表编辑器（faction + selectionWeightPerPointsCurve）；曲线值文本为 `[x~y;x~y]`（PocoCodec `Kind.Curve`），faction 解码需 DefDatabase |
-| `SkillRangeList` | `List<SkillRange>?` | 技能区间列表编辑器（skill + IntRange）；`SkillRange` 两个字段都是 private，读写走 PocoCodec 字段表 |
-| `BackstoryTraitList` | `List<BackstoryTrait>?` | 背景特性列表编辑器（trait + degree）；与 `TraitReqList` 形状相同但元素类型不同 |
-| `PossessionList` | `List<PossessionThingDefCountClass>?` | 随身物品列表编辑器（ThingDef + 数量区间 `value`） |
-| `MutatorChanceList` | `List<MutatorChance>?` | 地块突变器列表编辑器（mutator + 几率 + 是否必需），服务地标的 `mutatorChances` / `comboLandmarkMutators` |
-| `PawnGroupMakerList` | `List<PawnGroupMaker>?` | 兵种池列表编辑器（每行一个兵种池：kindDef + commonality + 各子列表条目数；`options`/`traders`/`carriers`/`guards` 是 `PawnGenOption` 子列表）；非原版子类只读透传，见 [§7.6.1](#761-兵种池paingroupmaker复用同一套字段表) |
-| `UnlockList` | `List<Def>?` | **只读派生列**：研究项目解锁的 Def，由全库反查得出（`Display`，不落盘、不参与 Apply），见 [§8](#8-研究解锁派生列不是字段) |
-
----
-
-## 7. 为现有 Data 类添加新字段
-
-适用场景：已有的 Data 类（如 `HediffStageData`、`ThoughtStageData`）需要新增可编辑字段。
-
-### 7.1 确定字段类型与 Style
-
-在 RimWorld 源码中找到目标字段类型后，按 [ColumnStyle 与字段类型对照](#columnstyle-与字段类型对照) 选择对应 `ColumnStyle`。
-
-### 7.2 三处修改模式
-
-无论哪种 Data 类，添加字段都涉及 **3 处修改**：
+### 4.1 三处修改
 
 ```csharp
-// 1. 字段声明（文件顶部）
+// 1. 字段声明
 [TweakField(Style = ColumnStyle.DefList)]
 public List<HediffDef>? makeImmuneTo = null;
 
-// 2. 初始化（SetDef / SetParentTweak 中从 def 读取默认值；列表字段必须带守卫）
+// 2. 初始化（SetDef / SetParentTweak；列表字段必须带守卫）
 if (!IsFieldModified(nameof(makeImmuneTo))) makeImmuneTo ??= stage.makeImmuneTo;
 
-// 3. 写入（Apply 中写回 def）—— 用三态门控 helper，不要手写 `if`
+// 3. 写入（Apply；用门控 helper，不要手写 if）
 ApplyL<HediffDef>(nameof(makeImmuneTo), v => stage.makeImmuneTo = v);
 ```
 
-**初始化规则：**
-- 值类型（`float?`/`int?`/`bool?`）：`field ??= def.fieldName;`
-- 引用类型（`string?`、Def 引用、子对象字段）：`field ??= def.fieldName;`
-- 列表类型（`List<T>?` / `ThingFilter`）：**必须带守卫** —— `if (!IsFieldModified(nameof(field))) field ??= def.fieldName;`。裸 `??=` 会让已清空的字段读档后被 def 回填"复活"（硬约束表第 7 行，运行期 SC2 会报 `[BT/SELFCHECK] 复活:`）。
-- `[TweakField(StatDef = "...")]` 字段：**不写** `??=`，由 `InitFieldValue` 统一回填（见 §3）。
+写入 helper 按目标选：标量 `ApplyV` / 可空 `ApplyN` / Def 引用 `ApplyD` / 列表 `ApplyL` / 字符串 `ApplyS`；`[TweakField(StatDef = "...")]` 字段直接调 `ApplyDefStats(def)`：
 
-**写入规则：** 一律走 **Apply 门控 helper**（见文首《Apply 门控与可选 Mod 反射 helper 索引》），**不要手写 `if (field != null)`** —— 那会绕过 `Set`/`Cleared` 判定（硬约束表第 5 行），把用户的清空意图吃掉。按目标选 helper：
-- 标量（非空目标）：`ApplyV<float>(nameof(f), v => def.f = v);`
-- 可空目标：`ApplyN<float>(nameof(f), v => def.f = v);`（选 `ApplyN` 只是因为目标字段可空、setter 收 `float?`；两者的 Cleared 都是还原原值）
-- 引用 / Def 引用：`ApplyD<SkillDef>(nameof(f), v => def.f = v);`
-- 列表：`ApplyL<HediffDef>(nameof(f), v => def.list = v);` —— Cleared 时 setter 收到的是**空列表**，不是 null
-- 字符串：`ApplyS(nameof(f), v => def.f = v);`
+```csharp
+public override void Apply()
+{
+    if (this.def is not ThingDef def) return;
+    ApplyDefStats(def);   // Stat 字段 + statBases/equippedStatOffsets 写入并双向同步
+    // …其余非 stat 字段照常 ApplyV / ApplyN / ApplyL / ApplyD
+}
+```
+参考：`FoodData.Apply()`、`StuffData.Apply()`、`RaceData.Apply()`。
 
-> **对于 `[TweakField(StatDef = "...")]` 标记的 StatDef 字段**，写入步骤**不要手写 `if` 块**，在 `Apply()` 中**直接调用基类 `ApplyDefStats(def)` 一行**即可（`TweakData.Typed.cs`）：
-> - 按 def 的实际类型分派：`ThingDef`（Race / Apparel / Weapon / Building / Food / Stuff 都是它）、`BuildableDef`（含 `TerrainDef`）、`AbilityDef`；
-> - 按 `IsEquippedStat` / `IsStuffOffsetStat` / `IsStuffFactorStat` 选择 `TrySetStatFromEquippedStat` / `TrySetStatFromStuffOffsetStat` / `TrySetStatFromStuffFactorStat`，否则走 `TrySetStat`。
->
-> 它内部是三段：Phase 1 先把 `statBases` / `equippedStatOffsets` / `statOffsets` / `statFactors` 这些 `List<StatModifier>` 字段写回 def；Phase 2 用单个 StatDef 的值覆盖对应条目；Phase 3 再把 def 上的最终列表与值**同步回 Data 字段**（保证 UI 与 def 双向一致）。
->
-> 所以 `[TweakField(Style = ColumnStyle.StatModList)]` 的列表字段（`statBases`、`equippedStatOffsets` 等）**也由这一行一并处理完** —— 不存在、也不需要任何额外的 Sync 方法：
->
-> ```csharp
-> public override void Apply()
-> {
->     if (this.def is not ThingDef def) return;
->     ApplyDefStats(def);   // Stat 字段 + statBases/equippedStatOffsets 写入，并双向同步
->     // …其余非 stat 字段照常 ApplyV / ApplyN / ApplyL / ApplyD
-> }
-> ```
-> 参考实现：`FoodData.Apply()`、`StuffData.Apply()`、`RaceData.Apply()`。
+### 4.2 子项目 Data
 
-### 7.3 子项目（Sub-item）Data 特殊模式
-
-`HediffStageData`、`ThoughtStageData` 等子项目 Data 不继承 `TweakData<T>.SetDef()`，而是使用 **`SetParentTweak`** 模式：
+`HediffStageData`、`ThoughtStageData` 等不重写 `SetDef()`，改用 `SetParentTweak` 模式：
 
 | 特点 | 说明 |
 |------|------|
-| **私有字段** | 持有子对象引用（如 `HediffStage? stage`），通过它读写 def 数据 |
-| **`SetParentTweak`** | 替代 `SetDef`，由父 Data（如 HediffData）回调，接收父 TweakData 引用 |
-| **`parentTweakId`** | 记录父项目 ID，用于 `GetPropType()` 继承父级分类 |
-| **`index`** | 存储子项目在父列表中的索引 |
-| **身份校验** | 通过 `untranslatedLabel` 与保存的 `stageLabel` 比对，防止 HediffDef 重命名后错位 |
-| **空阶段处理** | 空 `<li></li>` 返回 null，跳过初始化 |
+| **私有字段** | 持有子对象引用（`HediffStage? stage`），通过它读写 |
+| **`SetParentTweak`** | 替代 `SetDef`，由父 Data 回调 |
+| **`parentTweakId`** | 记录父项目 ID，`GetPropType()` 继承父级分类 |
+| **`index`** | 子项目在父列表中的索引 |
+| **身份校验** | 用 `untranslatedLabel` 与保存的 `stageLabel` 比对，防重命名后错位 |
+| **空阶段** | 空 `<li></li>` 返回 null，跳过初始化 |
 
-添加字段时，**不是**通过 `def.stages[i].fieldName` 访问，而是通过 `stage.fieldName`（已缓存的子对象引用）。
+访问方式是 `stage.fieldName`，不是 `def.stages[i].fieldName`。
 
-### 7.4 列表 / 复合字段的接线清单
+### 4.3 列表 / 复合字段接线
 
-**存档文本与剪贴板格式只有一处定义**：`TweakData.FieldCodecs.cs` 的字段表（`PocoList<T>(...)`）。
-字段表里登记的列表格式恒为 `字段名=值|字段名=值`，顺序即声明顺序；等于"新实例初值"的字段省略；列表值写成 `[a;b]`。
-`PocoCodec` 负责编解码、转义、任一条失败即整块拒绝。**不要再写逐类型的手写编码器** ——
-元素类型进了字段表，格式就自动有了；`SerializationHelper` 里现存的 `SerializeXxxList` 只剩 bespoke 用途
-（`IngredientCount` / `List<int>` / `List<Def>` / 部位树），新增 POCO 列表不必碰它。
+存档文本与剪贴板格式**只有一处定义**：`TweakData.FieldCodecs.cs` 的字段表（`PocoList<T>(...)`）。格式恒为 `字段名=值|字段名=值`（顺序即声明顺序，等于初值的字段省略，列表写成 `[a;b]`），`PocoCodec` 负责编解码与转义，任一条失败即整块拒绝。**不要再写逐类型的手写编码器。**
 
-判据只有一条：字段 / 元素类型能不能进字段表。先看 [ColumnStyle 与字段类型对照](#columnstyle-与字段类型对照)，
-能复用现成样式就别新增 —— `DefList`（`List<T> where T : Def`）、`StringList`、`IntList`、`StatModList` 这几类都已有。
+先按 §5.2 看能否复用现成样式（`DefList` / `StringList` / `IntList` / `StatModList` 等）。
 
-#### A. 元素类型是普通 POCO —— 绝大多数情况（`SkillRange` / `TerrainThreshold` / `SkillRequirement`）
+#### A. 元素类型是普通 POCO（`SkillRange` / `TerrainThreshold` / `SkillRequirement`）
 
-1. **`TweakData.FieldCodecs.cs`**：`Build()` 里加一行 `PocoList<T>("字段1", "字段2", ...)`。
-   这一行同时完成三件事：声明字段表（**顺序即文本顺序**）、把 `List<T>` 登记进落盘/读档、让剪贴板与窗口的默认实现可用。
-   字段是 `private` 也没问题（按 `FieldInfo` 读写，`SkillRange` 就是先例）；要校验取值范围就写 `PocoList<T>(validate, ...)`。
-2. **`StatColumnConfig.cs`**：`ColumnStyle` 加成员 → 加进 `ValidStyleMap` 的 `FieldType.List` 那行 → 加进 `IsListStyle()`
-   → 在 `GetString()` 的单元素摘要 `switch` 里加一个 case（只影响"列表恰好一条"时表格里的短标签，不加则显示 `[1]`）。
-   ⚠️ `GetCopyData()` / `TryPasteData()` **不用动** —— 元素类型已进字段表就走通用编解码。
-3. **编辑器窗口**：一般都要（见 C）。
-4. **本地化**：`MST.{Style}`（枚举标签，放 `Core.xml`）；字段标题 `MST.{字段名}`，含义不直观再加 `MST.{字段名}Comment`。
-5. **测试**：`Tests/SerializationCodecsTests.cs` 的 `MigratedTypes` 与 `字段声明逐个钉住` 各加一条；
-   `Tests/FieldCodecsTests.cs` 的 `精确类型都能查到` 加一条 `InlineData(typeof(List<T>))`。
+1. `TweakData.FieldCodecs.cs` 的 `Build()` 加一行 `PocoList<T>("字段1", "字段2", ...)` —— 同时完成字段表声明、落盘/读档登记、剪贴板与窗口默认实现。字段 `private` 也可（按 `FieldInfo` 读写）；需校验取值范围用 `PocoList<T>(validate, ...)`。
+2. `StatColumnConfig.cs`：`ColumnStyle` 加成员 → 加进 `ValidStyleMap` 的 `FieldType.List` 行 → 加进 `IsListStyle()` → `GetString()` 的单元素摘要 `switch` 加 case（否则列表恰好一条时显示 `[1]`）。`GetCopyData()` / `TryPasteData()` 不用动。
+3. 编辑器窗口（见 C）。
+4. 本地化：`MST.{Style}`（枚举标签，`Core.xml`）、`MST.{字段名}`，含义不直观再加 `MST.{字段名}Comment`。
+5. 测试：`Tests/SerializationCodecsTests.cs` 的 `MigratedTypes` 与 `字段声明逐个钉住` 各加一条；`Tests/FieldCodecsTests.cs` 的 `精确类型都能查到` 加 `InlineData(typeof(List<T>))`。
 
-#### B. 类型本身进不了字段表（`IngredientCount` / `ThingFilter` / 多态列表）
+#### B. 类型进不了字段表（`IngredientCount` / `ThingFilter` / 多态列表）
 
-只有三种情况走这条：元素带 `GetBaseCount` 语义（`IngredientCount`）、字段本身是过滤器（`ThingFilter`）、
-元素是多态子类（`List<StockGenerator>`，见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist)）。
-在 `FieldCodecs.Build()` 里用 `Exact(typeof(List<T>), "诊断名", ExposeXxx, ResolveXxx)` 手写一对：
+在 `FieldCodecs.Build()` 用 `Exact(typeof(List<T>), "诊断名", ExposeXxx, ResolveXxx)` 手写一对：
 
-- 落盘：`ExposeList(data, meta, v => 对象列表 → List<string>)`；
-- 读档：`ResolveList(data, meta, strList => (result, success))`，返回 `false` ⇒ 整字段标损坏、保持 Def 现状（**绝不写半截**）。
+- 落盘 `ExposeList(data, meta, v => 对象列表 → List<string>)`
+- 读档 `ResolveList(data, meta, strList => (result, success))`，返回 `false` ⇒ 整字段标损坏、保持 Def 现状（绝不写半截）
 
-照 `ExposeIngredientList` / `ResolveIngredientList` 抄即可。
+照 `ExposeIngredientList` / `ResolveIngredientList` 抄。
 
-#### C. 新增编辑窗口的接线清单
+#### C. 新增编辑窗口
 
-1. 新建 `GUI/Editor/{Style}EditorWindow.cs`，继承 `ListEditorWindow<T>`，写**两个构造**：
-   `(StatColumnConfig config, TweakData data)` 与 `(string title, List<T> initialList, Action<List<T>?> onSave)`。
-2. 构造里把 `originalList` / `workingList` 换成**新实例**（`PocoCodec.CloneElement` 或逐字段复制）。
-   直接引用字段里的对象 ⇒ 窗口里改到一半点取消，数据已经被改脏。
-3. 实现 `AddButtonLabel` / `OnAddItem` / `DrawEntry`，需要时覆写 `IsItemValid`（无效行在保存时被丢弃）；
-   行内宽度从 `rect.width` 里先扣掉删除按钮与间距再按比例分配，别写死像素。
-4. **不要覆写 `SerializeList` / `DeserializeList`** —— 元素类型已进字段表时默认实现就是完整实现（存档、剪贴板、
-   拖拽涂抹同源）。多覆写一个会被 `ListEditorWindowContractTests` 判成"多余转发"；确需覆写要登记进
-   `IntentionalOverrides` 并写理由（目前只有 `StockGeneratorListEditorWindow`）。
-5. `GUI/BalanceTweakGUI.cs` 的窗口工厂表加一行 `{ ColumnStyle.Xxx, (c, d) => new XxxEditorWindow(c, d) }`。
-6. 本地化：`MST.AddXxx`（添加按钮）；选择类按钮优先复用已有的 `MST.SelectXxx`（`MST.SelectSkill` / `MST.SelectTerrain` …）。
-7. 验收：`dotnet build` + `dotnet test` + `dotnet run --project Source/CheckLoc`（缺键、重复键、列宽一把过）。
+1. 新建 `GUI/Editor/{Style}EditorWindow.cs`，继承 `ListEditorWindow<T>`，写两个构造：
+   ```csharp
+   public XxxEditorWindow(StatColumnConfig config, TweakData data) : base(config, data) { /* 从 config.GetRawValue 取初值 */ }
+   public XxxEditorWindow(string title, List<Xxx> initialList, Action<List<Xxx>?> onSave) : base(title, onSave) { /* 子窗口调用 */ }
+   ```
+   `initialList` 由子类自己消费——基类只有 `(StatColumnConfig, TweakData)` 和 `(string title, Action<List<T>?>)` 两个构造。元素类型要到运行期才知道的（`DefList`）不套这个基类，直接 `EditorWindowBase` 自己管两份列表（见 `DefListEditorWindow`）。
+2. 构造里把 `originalList` / `workingList` 换成**新实例**（`PocoCodec.CloneElement` 或逐字段复制），否则改到一半点取消已污染数据。
+3. 实现 `AddButtonLabel` / `OnAddItem` / `DrawEntry`，需要时覆写 `IsItemValid`；行内宽度从 `rect.width` 扣掉删除按钮与间距后再按比例分配。
+4. **不要覆写 `SerializeList` / `DeserializeList`** —— 元素进字段表后默认实现即完整实现；多覆写会被 `ListEditorWindowContractTests` 判成"多余转发"（确需覆写要登记进 `IntentionalOverrides`）。
+5. `GUI/BalanceTweakGUI.cs` 窗口工厂表加 `{ ColumnStyle.Xxx, (c, d) => new XxxEditorWindow(c, d) }`。
+6. 本地化：`MST.AddXxx`（添加按钮），选择类按钮优先复用 `MST.SelectXxx`。
+7. 验收：`dotnet build` + `dotnet test` + `dotnet run --project Source/CheckLoc`。
 
-### 7.5 添加本地化
+### 4.4 多态列表（`StockGenList` / `PawnGroupMakerList`）
 
-任何字段需添加列标题翻译。对于含义不直观的字段，建议同时添加 `{FieldName}Comment` tooltip（StatDef由游戏提供Comment，因此无需说明）：
+元素子类各异、字段不同，无法用固定列列表编辑器表达。四条不变式：
 
-```xml
-<MST.makeImmuneTo>免疫</MST.makeImmuneTo>
-<MST.makeImmuneToComment>此阶段使角色免疫的疾病/健康状态列表。</MST.makeImmuneToComment>
-```
-
-`Comment` 后缀的 key 会自动作为 tooltip 显示在列标题上。
-
-### 7.6 多态列表：字段直接持有对象 + 列表窗口编辑（StockGenList）
-
-**目前只有 `StockGenList` 走这条路**（`TraderKindDef.stockGenerators`，`List<StockGenerator>`，原版 15 个子类）：
-元素类型各不相同、每个子类的字段也不一样，没法用"一个固定列的列表编辑器"表达。
-
-四条不变式，改这一列时别破：
-
-- **字段值就是真实对象**，且字段与 Def 的活对象永不共享实例：`SetDef` 克隆进字段、`Apply` 再克隆一份交给 Def，
-  所以"编辑 → 再编辑 → 重复 Apply"不会互相污染。
-
+- **字段值就是真实对象**，且与 Def 的活对象永不共享实例：`SetDef` 克隆进字段，`Apply` 再克隆交给 Def，"编辑 → 再编辑 → 重复 Apply"不会互相污染。
   ```csharp
   if (!IsFieldModified(nameof(stockGenerators)))
       stockGenerators ??= StockGeneratorCodec.CloneAll(d.stockGenerators);
   ApplyL<StockGenerator>(nameof(stockGenerators), ApplyStockGenerators);
   ```
+- **字段表是唯一信息源**（`StockGeneratorCodec` 逐类型 `PocoCodec.Declare(typeof(...), "字段", ...)`）。表里没有的类型按"非原版"处理：只读、编辑/移动/删除禁用、存档只留类型名占位，`Apply` 时按"类型相同 + 出现次序相同"从 Def 找回原实例放回原位置。
+- **文本只出现在两个边界**（存档、剪贴板），由 codec 编码（`StockGenerator_Tag|countRange=1~4|tradeTag=ExoticMisc`，转义安全、非 XML）；编辑路径上没有文本格式，窗口直接读写对象字段。
+- `Apply` 写完列表后对每个元素调 `ResolveReferences(def)`（`trader` 是 `[Unsaved]`，必须靠它写回）。
 
-- **字段表是唯一信息源**（`StockGeneratorCodec` 静态构造里逐类型写 `PocoCodec.Declare(typeof(...), "字段", ...)`，每个原版子类显式列出自己的字段；"是不是原版"由 `PocoCodec.IsDeclared` / `StockGeneratorCodec.IsVanilla` 判定）。表里没有的类型一律按"非原版"处理：
-  **只读**（字段一个都不读不写，编辑 / 移动 / 删除全禁用），存档只留类型名占位，`Apply` 时按"类型相同 + 出现次序相同"
-  从 Def 里找回原实例放回原位置 —— 改了这个商人再读档，既不会弄丢、也不会误改其它 Mod 的数据。
-- **文本只出现在两个边界**（存档、剪贴板），由 `StockGeneratorCodec` 编码
-  （`StockGenerator_Tag|countRange=1~4|tradeTag=ExoticMisc`，转义安全、**非 XML**）。编辑路径上没有任何文本格式 ——
-  窗口直接读写对象字段；粘贴先整体解析，任一条失败即整块拒绝。
-- `Apply` 写完列表后对每个生成器调 `ResolveReferences(def)`（`trader` 是 `[Unsaved]`，必须靠它写回）。
+`PawnGroupMaker` 走同一模式但没有多态（原版无子类）：
 
-实现细节不在这里重复，读这几处就够：`Data/StockGeneratorCodec.cs`（字段表 / 编解码 / 克隆 / `MergeWithDef`）、
-`GUI/Editor/PocoFieldUi.cs`（按 `PocoCodec.Kind` 画控件 + 字段标签字典，标签必须用显式字面量 —— CheckLoc 是静态正则，
-看不见拼接出来的键）、`BalanceTweak.Tests/StockGeneratorCodecTests.cs` 的 `字段表无未解析项` / `字段表覆盖原版全部类型与字段`
-（"原版加类型 / 加字段"的第一道警报）、`Tests/TweakDataSerializationTests.cs` 的 `testStockGen_*`（真实商人数据的整表往返）。
+- 字段声明仍只有一处：`PocoCodec.Declare(typeof(PawnGenOption), "kind", "selectionWeight")` + `PocoList<PawnGroupMaker>(...)`；`options` / `traders` / `carriers` / `guards` 是 `Kind.ComplexList`，**元素类型必须先声明**，否则被判 `Unsupported` 后静默不读不写。
+- 窗口：`PawnGroupMakerListEditorWindow` + `PawnGroupMakerEditorWindow`，子列表打开 `SGComplexListEditorWindow`；表单渲染共用 `PocoFieldUi`。
+- `Data/PawnGroupMakerCodec.cs` 只负责克隆、`MergeWithDef`（非原版子类按"类型 + 出现次序"找回，找不到丢弃并告警）、行摘要，**不含字段表**。
+- 写回 Def 前有一道 `Sanitize`：没有 `kindDef` 的兵种池、没有 `kind` 的 `PawnGenOption` 会在袭击生成期 NRE，必须丢弃（字段里仍保留用户填的内容）。
+- 子列表删光时交**空列表**而非 `null`。
 
-### 7.6.1 兵种池（PawnGroupMaker）：复用同一套字段表
+实现细节读这几处：`Data/StockGeneratorCodec.cs`、`GUI/Editor/PocoFieldUi.cs`（字段标签必须用显式字面量 —— CheckLoc 是静态正则，看不见拼接出来的键）、`Tests/StockGeneratorCodecTests.cs`（"原版加类型 / 加字段"的第一道警报）、`Tests/TweakDataSerializationTests.cs` 的 `testStockGen_*`。
 
-`FactionDef.pawnGroupMakers`（`List<PawnGroupMaker>`）走的是**与 §7.6 相同的模式**，但少了"多态"这一层：
-`PawnGroupMaker` 在**原版里没有子类**，也不是抽象类，所以
+### 4.5 镜像列（`IsMirror`）与 Display 列
 
-- **字段声明仍然只有一处**：`TweakData.FieldCodecs.Build()` 里的
-  `PocoCodec.Declare(typeof(PawnGenOption), "kind", "selectionWeight")` + `PocoList<PawnGroupMaker>(...)`。
-  `options` / `traders` / `carriers` / `guards` 是 `List<PawnGenOption>`，走 `Kind.ComplexList` ——
-  **元素类型必须先声明**，否则 `Classify` 把它们判成 `Unsupported`，字段静默不读不写。
-- **窗口不复用 StockGen 那个**：`PawnGroupMakerListEditorWindow`（行：编辑 / 摘要 / 上下移 / 删除）+
-  `PawnGroupMakerEditorWindow`（字段表表单，四个子列表各自打开 `SGComplexListEditorWindow`）。
-  表单渲染共用 `PocoFieldUi`（原 `StockGeneratorFieldUi`，改名因为它现在不认识任何具体业务类型）。
-- **`Data/PawnGroupMakerCodec.cs` 只保留三件事**：克隆（字段与 Def 永不共享实例）、`MergeWithDef`
-  （非原版子类按"类型 + 出现次序"从 Def 找回原实例，找不到就丢弃并告警）、行摘要。**它不含字段表**。
-- **写回 Def 前有一道 `Sanitize`**：没有 `kindDef` 的兵种池（`CanGenerateFrom` 解引用 `kindDef.Worker`）、
-  没有 `kind` 的 `PawnGenOption`（`GetOptions` 拿它查 `XenotypesAvailableFor`）都会在袭击生成期 NRE，
-  必须丢。字段里仍然保留用户填的内容（编辑窗口里那行还在，补一个兵种就能救回来）。
-- **`SGComplexListEditorWindow` 删光时交出空列表而不是 `null`**：`options` 这类字段会被裸 `foreach`，
-  `null` 直接 NRE；与 `DefListEditorWindow` 的 `onSaveCallback` 口径一致。
+**镜像列**：值属于另一行（武器行的"伤害 / 穿透"其实是关联弹丸的副本）。标 `IsMirror = true` 并遵守两条：
 
-> 已知边界：`PawnGroupKindWorker_Trader` 读 `traders` / `carriers` / `guards`，`Normal` / `Shamblers` 只读
-> `options`。编辑窗口**不按 worker 隐藏字段**（其它 Mod 的 worker 可以按自己的规则读），只在头部把当前的
-> `workerClass` 显示出来，避免"改了一个当前 worker 根本不读的列表"。
+- **编辑即编辑源行**：写时把值推到源行、把修改标记转移到源行，本行不留标记（`WeaponData.PushWeaponEditsToProjectile`），否则本行的重置按钮点了没反应。
+- **`EqualsData` 跳过它**：源行一改，共享它的副本会被派生同步刷新，"我没改、但副本变了"是常态；参与相等判定会让脏行常驻已修改表。
 
-### 7.7 构建验证
+**原始快照**（`TweakDatabase.GetOriginal`）是只读基准，任何派生同步都不许写它：
+
+- 建快照期间（`TweakDatabase.buildingOriginals`）跨行读取走原始层；**不要用 `SetDef(tweaked: false)` 反推**（自检探针 `MakeProbe` 也用 false，它要读当前 def）。
+- `ProjectileData.RefreshSharedWeapons` / `BuildingData.RefreshTurretGun` 跳过快照，只刷活实例。
+- 从快照克隆出的行在 `EnsureDisplayValues` 里补一次镜像同步（`WeaponData.SyncMirrorsFromProjectile`），因此 `Clone()` 必须清 `displayValuesEnsured`（基类 `TweakData.Clone()` 统一清零）。
+- 强度刻度（`GetEquipPower`）同样取快照当基准：原版武器 = 100，共用同一颗弹丸的武器一起变。
+
+**Display 列**（`ColumnDataType.Display`）不落盘、不参与 `Apply`，一律**按需计算**：
+
+| 规则 | 说明 |
+| --- | --- |
+| `SetDef` 只填镜像与可编辑字段的原值 | 不跑 DPS 等派生计算 |
+| 派生列在**进入页签时**全量算完 | 入口 `TweakUtility.AdvanceDerive`，按每帧 6ms 预算逐行 `EnsureDisplayValues()`，显示进度条 |
+| 算完置 `displayValuesEnsured = true` | `Apply()` 结束置回 false（参考值按当前 def 现算） |
+| 只有原始快照需在 `Apply` 前定格 | `PrepareDeferredDisplayValues` 只遍历 `tweakDatas.Keys` |
+
+- **不要在 `UpdateFilters` 里补算**：那是全表遍历，而表格按行列双虚拟化，一屏只有几十格；全量推导只能走 `AdvanceDerive`（只有它分帧、有进度条）。`StatColumnConfig.EnsureForDisplay` 保留但只作 O(1) 兜底。
+- `GenValues()`（镜像 + DPS + 强度全量重算）只给"数据真的变了"的路径用：`Apply` / 弹丸推送 / 招式编辑 / 自检。新增 Display 列 = 字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏。
+- 关联入口列（`Link` / `PawnWeaponLinks` 等）不进 `EnsureForDisplay`：字段永远为 null，点了才查。
+
+**打开窗口分两段准备**（期间 `InitInProgress` 为 true，`DoEditorContents` 画进度条后 return）：
+
+| 段 | 入口 | 规模 | 预算 | 进度 |
+| --- | --- | --- | --- | --- |
+| ① 建行缓存（克隆） | `AdvanceInit` | 全库 4 万级，一次性 | 每帧 2000 行 | 0~90% |
+| ② 页签派生值 | `AdvanceDerive` | 当前页签几百~几千行，每次切页签 | 每帧 6ms（按时间不按行数） | 90~100% |
+
+约束：没建完不许 `UpdateFilters`（`cachedData` 不全，会缺行）；小数据包必须一帧做完（否则进度条闪一下）；`DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor`（提前 return 会把 IMGUI 全局状态漏给下一帧）；第 ② 段按时间给预算（各页签单行成本差两个数量级）。
+
+> 派生值置脏时只有**当前页签**重推（`CombatPower.InvalidateRows` 判 `type == TweakUtility.CurrentType`）。列定义（反射 + `Translate`，约 20~30ms/类型）也在第 ② 段首帧预热。
+> `ApplyFullReset`（"完全重置"）仍是同步重建。
+> 克隆成本在 `TweakData<T>.DeepCopyFields`：只有 `List<T>` 需深拷贝，故那里有 `if (!meta.IsList) continue;`。
+> `[BalanceTweak][perf]` 日志走 `TweakLog.Message`，受「总体设置 → 诊断 → 冗杂日志」控制（默认关）；`Log.Error` / `Log.Warning` 不走这里，永远输出。
+
+### 4.6 关联列（`RaceLinks` / `BodyLinks` / `WeaponLinks`）
+
+反向关联（"谁在用我"）不能用 `Link` 表达（那是一对一）。统一走"只读触发列 + 打开时实时反查"：
+
+| 列 | 所在 Data | 点击后列出 | 反查方法 |
+| --- | --- | --- | --- |
+| `RaceLinks` | `BodyData` | 使用该 `BodyDef` 的种族 | `BodyData.FindRaceLinks` |
+| `RaceLinks` | `BodyPartData` | 身体含该部位的种族 | `BodyPartData.FindRaceLinks` |
+| `BodyLinks` | `BodyPartData` | 部位树含该部位的 `BodyDef` | `BodyPartData.FindBodyLinks` |
+| `WeaponLinks` | `ProjectileData` | 发射该投射物的武器 | `ProjectileData.FindWeaponLinks` |
+| `PawnWeaponLinks` | `PawnKindData` | 该兵种能抽到的手持武器 | `PawnKindData.FindWeaponLinks` |
+| `PawnWeaponLinks` | `RaceData` | 该种族名下所有兵种能抽到的武器（并集） | `RaceData.FindWeaponLinks` |
+
+三条不变式：
+
+- **字段只是触发器，不存值**：值永远 null，`GetString` 直接返回按钮文字，不在绘制阶段扫 Def。
+- **打开窗口时反查一次**，结果交给 `TweakLinksWindow`（绘制阶段不查 Def）；不缓存，数据可能刚被改过。
+- **只列真有数据行的对象**（`TweakDatabase.GetOriginal(id) != null`），否则是死链接。
+
+**新增一个 Links 样式要动 6 处**：`ColumnStyle` 枚举（末尾追加）→ `ValidStyleMap` 的 `FieldType.TweakID` 行 → `StatColumnConfig.IsTriggerStyle`（派生值推导与列过滤都靠这一处跳过触发列，漏了会白算整页战斗力、并得到一个永远为空的过滤条件）→ `GetString` 的按钮文字分支 → `BalanceTweakGUI.DrawDisplayCell` 的点击分发 → `IsPaintableColumn` 的排除列表（只对非 `Display` 的触发列必要，其余已被 `columnDataType` 挡掉）；再补 `MST.XxxLinks` 与字段级 `MST.{字段名}Comment`。
+
+Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `TurretConfig`）走同一套：字段只是 `TweakID?` 占位，真数据在若干 `NotAColumn` 字段里，由各自窗口统一编辑。
+
+> 兵种这条反查的是**规则**：`PawnKindDef` 没有"武器"数据，武器按 `weaponTags` + `weaponMoney` 现抽，只能扫全库套同一套判定（标签交集 / 预算上界 / `generateAllowChance > 0` / `weaponStuffOverride` 的材料可兼容）。预算取上界，攻击列取期望（5 档采样）；功能武器（烟雾 / EMP）会列出，但攻击列按 `harmsHealth` 排除。
+> 种族页与兵种页共用 `PawnKindData.CollectWeaponLinks`（逐兵种各扫一遍在 `Human` 上会变成十几万次重复遍历）。
+
+## 5. 参照表
+
+### 5.1 TweakField 属性
+
+| 参数 | 用途 | 示例 |
+|------|------|------|
+| `Style` | 列显示样式（见 §5.2） | `ColumnStyle.Float` |
+| `EnumType` | Enum 类型（下拉菜单） | `typeof(FoodPreferability)` |
+| `StatDef` | 关联 StatDef 名称 | `"Nutrition"` |
+| `MayRequire` | 需要某 Mod 才显示 | `"ceteam.combatextended"` |
+| `IsEquippedStat` / `IsStuffFactorStat` / `IsStuffOffsetStat` | stat 写入位置（装备 / 材料倍率 / 材料加成） | `true` |
+| `DataType` | `Field`（可编辑）或 `Display`（只读） | `ColumnDataType.Display` |
+| `IsMirror` | 值属于另一行，不参与 `EqualsData`（见 §4.5） | `true` |
+| `Available` | **列级**显示条件方法名，按第一行求值一次 | `"AvailableIfNotHumanlike"` |
+| `Hidden` | **按行**留白条件方法名（true = 该格不显示），语义是"不适用" | `"HiddenIfHumanlike"` |
+| `GetAbstract` | 获取抽象值方法名 | — |
+| `OptionsList` | 静态列表字段名（动态选项） | `"ResearchTabDefs"` |
+| `NotAColumn` | 只落盘、不出现在表格里（配合自定义窗口，`AllColumn` 排除） | `true` |
+
+> `OnChange` / `Default` 已标记 `[Obsolete]`，新代码不要用：逻辑放 `Apply` / 默认值放 `SetDef`。
+
+### 5.2 ColumnStyle ↔ 字段类型 ↔ 编辑窗口
+
+| ColumnStyle | C# 类型 | 编辑方式 / 窗口 |
+|------------|---------|----------------|
+| `Float`（默认） | `float?` | 内联文本框 |
+| `Int` | `int?` | 内联文本框 |
+| `Bool` | `bool?` | 内联复选框 |
+| `String` | `string?` | 弹窗 `StringEditorWindow` |
+| `Enum` | `Nullable<Enum>` | FloatMenu 下拉（需 `EnumType` 或 `OptionsList`） |
+| `Flags` | `Nullable<Enum>`，带 `[Flags]` | 弹窗 `FlagsEditorWindow` |
+| `Prec` | `float?` | 内联文本框 + %（值/100） |
+| `Range` | `FloatRange?` / `IntRange?` | 内联文本框，写 `min~max` |
+| `Curve` | `SimpleCurve?` | 弹窗 `CurveEditorWindow` |
+| `Link` | `TweakID?` | 内联跳转链接（`Display`） |
+| `RaceLinks` / `BodyLinks` / `WeaponLinks` / `PawnWeaponLinks` | `TweakID?` | 弹窗 `TweakLinksWindow`，只读触发列（`Display`，见 §4.6） |
+| `MechWeaponFilter` / `RelayConfig` / `TurretConfig` | `TweakID?` | 弹窗 `MechWeaponFilterWindow` / `RelayConfigWindow` / `TurretConfigWindow`，只读触发列（`Display`，Fortified） |
+| `TurretSlotList` | `List<TurretSlotRecord>?` | 不出列（`NotAColumn`），由 `TurretConfigWindow` 按槽分节编辑 |
+| `DefSelector` | `T? where T : Def` | 弹窗 `DefSelectionWindow` |
+| `StatModList` | `List<StatModifier>?` | 弹窗 `StatModListEditorWindow` |
+| `CapModList` | `List<PawnCapacityModifier>?` | 弹窗 `CapModListEditorWindow` |
+| `DamageModList` | `List<DamageFactor>?` | 弹窗 `DamageModListEditorWindow` |
+| `ExtraDamageList` | `List<ExtraDamage>?` | 弹窗 `ExtraDamageListEditorWindow`（`armorPenetration = -1` 是原版"自动折算"语义） |
+| `DefList` | `List<T>? where T : Def` | 弹窗 `DefListEditorWindow`（添加/删除/替换） |
+| `HediffGiverList` | `List<HediffGiver>?` | 弹窗 `HediffGiverListEditorWindow` |
+| `MentalStateGiverList` | `List<MentalStateGiver>?` | 弹窗 `MentalStateGiverListEditorWindow` |
+| `SkillGainList` | `List<SkillGain>?` | 弹窗 `SkillGainListEditorWindow` |
+| `SkillReqList` | `List<SkillRequirement>?` | 弹窗 `SkillReqListEditorWindow` |
+| `TraitReqList` | `List<TraitRequirement>?` | 弹窗 `TraitReqListEditorWindow`（trait + degree） |
+| `AptitudeList` | `List<Aptitude>?` | 弹窗 `AptitudeListEditorWindow` |
+| `GeneticTraitList` | `List<GeneticTraitData>?` | 弹窗 `GeneticTraitListEditorWindow` |
+| `StringList` | `List<string>?` | 弹窗 `StringListEditorWindow`（添加/编辑/删除） |
+| `ThingSetTags` | `List<string>?` | 复用 `StringListEditorWindow`；保存时去空白 / 去重 |
+| `IntList` | `List<int>?` | 弹窗 `IntListEditorWindow` |
+| `ThingDefCountList` | `List<ThingDefCountClass>?` | 弹窗 `ThingDefCountListEditorWindow` |
+| `IngredientList` | `List<IngredientCount>?` | 弹窗 `IngredientListEditorWindow` |
+| `IngredientFilter` | `ThingFilter?` | 弹窗 `IngredientFilterEditorWindow` |
+| `ProcessIngredientList` / `ProcessResultList` | `List<ProcessIngredientItem>?` / `List<ProcessResultItem>?` | 各自 EditorWindow（PipeSystem / VEF） |
+| `BodyPartTree` | `List<string>?` | 弹窗 `BodyPartTreeEditorWindow`：字段存前缀序遍历编码，经 `BodyPartTreeCodec` 与 `BodyDef.corePart` 互转 |
+| `BiomePlantList` / `BiomeAnimalList` | `List<BiomePlantRecord>?` / `List<BiomeAnimalRecord>?` | 各自 EditorWindow（+ commonality） |
+| `FishChanceList` | `List<FishChance>?` | 弹窗 `FishChanceListEditorWindow` |
+| `XenotypeChanceList` | `List<XenotypeChance>?` | 弹窗 `XenotypeChanceListEditorWindow` |
+| `DiseaseList` | `List<BiomeDiseaseRecord>?` | 弹窗 `DiseaseListEditorWindow` |
+| `WeatherCommonalityList` | `List<WeatherCommonalityRecord>?` | 弹窗 `WeatherCommonalityListEditorWindow` |
+| `TerrainThresholdList` | `List<TerrainThreshold>?` | 弹窗 `TerrainThresholdListEditorWindow` |
+| `StockGenList` | `List<StockGenerator>?` | 弹窗 `StockGeneratorListEditorWindow`（见 §4.4） |
+| `PawnGroupMakerList` | `List<PawnGroupMaker>?` | 弹窗 `PawnGroupMakerListEditorWindow`（见 §4.4） |
+| `FactionCurveList` | `List<FactionCurve>?` | 弹窗 `FactionCurveListEditorWindow`；曲线文本 `[x~y;x~y]` |
+| `SkillRangeList` | `List<SkillRange>?` | 弹窗 `SkillRangeListEditorWindow`（skill + IntRange） |
+| `BackstoryTraitList` | `List<BackstoryTrait>?` | 弹窗 `BackstoryTraitListEditorWindow`（trait + degree） |
+| `PossessionList` | `List<PossessionThingDefCountClass>?` | 弹窗 `PossessionListEditorWindow`（Def + 数量区间） |
+| `MutatorChanceList` | `List<MutatorChance>?` | 弹窗 `MutatorChanceListEditorWindow`（mutator + 几率 + 是否必需） |
+| `UnlockList` | `List<Def>?` | 弹窗 `ResearchUnlockWindow`，**只读派生列**（见 §6.2） |
+
+> 所有列表编辑器删光保存都走显式 Cleared 路径（`ListEditorWindow.CommitResult` → `ClearValue`），否则空列表被判 `Unset`、`ApplyL` 静默跳过，旧项删不干净。
+
+### 5.3 SettingType ↔ XML 文件
+
+| SettingType | 文件 | SettingType | 文件 |
+|---|---|---|---|
+| —（通用 UI，无对应枚举值） | `Core.xml` | `Terrain` | `Terrain.xml` |
+| `Race` | `Race.xml` | `Recipe` | `Recipe.xml` |
+| `Apparel` | `Apparel.xml` | `Misc` | `Core.xml` |
+| `Weapon` | `Weapon.xml` | `Damage` | `Damage.xml` |
+| `MeleeTool` | `MeleeTool.xml` | `BodyPart` | `BodyPart.xml` |
+| `Ability` | `Ability.xml` | `BodyDef` | `BodyDef.xml` |
+| `Stuff` | `Stuff.xml` | `Biome` | `Biome.xml` |
+| `Building` | `Building.xml` | `Trader` | `Trader.xml` |
+| `Projectile` | `Projectile.xml` | `Xenotype` | `Xenotype.xml` |
+| `Thought` / `ThoughtStage` | `Thought.xml` | `ArrivalMode` | `ArrivalMode.xml` |
+| `PawnKind` | `PawnKind.xml` | `RaidStrategy` | `RaidStrategy.xml` |
+| `Gene` | `Gene.xml` | `Backstory` | `Backstory.xml` |
+| `Meme` | `Meme.xml` | `Landmark` | `Landmark.xml` |
+| `Incident` | `Incident.xml` | `WeaponTrait` | `WeaponTrait.xml` |
+| `Research` | `Research.xml` | | |
+| `Weather` | `Weather.xml` | | |
+| `Faction` | `Faction.xml` | | |
+| `Food` | `Food.xml` | | |
+| `Hediff` / `HediffStage` | `Hediff.xml` | | |
+| `Trait` / `TraitDegree` | `Trait.xml` | | |
+| `HeavyEquipment` | `Heavy.xml` | | |
+
+新增 SettingType 枚举值时需同时建对应 `{名称}.xml`（至少写 `MST.{枚举值}` 这条页签标题）。另有不绑定枚举值的功能专用文件（如 `Turret.xml` 的多炮塔窗口文案），按功能命名即可。
+
+## 6. 领域要点
+
+### 6.1 炮塔枪的 DPS：节奏在建筑上
+
+炮塔的"枪"只是挂件，`Building_TurretGun` 的射击节奏**完全由建筑决定**，不能按普通枪算：
+
+| 量 | 取法（`GenRangeDPS`） | 可编辑字段（`BuildingData`） |
+|---|---|---|
+| 冷却 | `def.building.turretBurstCooldownTime >= 0` 用它，否则回落枪的 `cooldown` / verb 默认 | `turretBurstCooldownTime`（`Prec`） |
+| 预热 | **总是** `def.building.turretBurstWarmupTime.Average`（`Verb.TryStartCastOn` 的 warmup 只在 `CasterIsPawn` 时生效） | `turretBurstWarmupTime`（`Range`，`min~max`） |
+
+两个坑：
+
+- 4 个原版炮塔枪（`Gun_ChargeBlasterHeavyTurret` / `Gun_InfernoCannonTurret` / `Artillery_AutoMortar` / `Artillery_Mortar`）既无 `RangedWeapon_Cooldown`、verb 也没设 `defaultCooldownTime`。漏掉建筑冷却 → `cd` 为 null → `GenRangeDPS` 提前 return → 这几行**没有 DPS / 强度**。另有 3 个枪与建筑值不一致（AutoMiniTurret 5.1/2.5、Rocketswarm 3.5/0.1、Tactical 4.8/2.4），游戏里用建筑值。
+- 建筑改完要主动刷挂载的枪（`BuildingData.RefreshTurretGun`），否则武器页签停在旧值。触发判据是**预热 / 冷却任一**被改动，且必须比三态多判 `forceWriteAll` / `forceWriteFields`（重置是先写回原值再清标记，那一刻三态已是 Unset）。
+- `turretBurstWarmupTime` 清空走 `ApplyV` 的 `Revert`（def 上不可空，没有"写成 null"这个状态）。
+
+> `ShootingAccuracyTurret` 与手持武器的 `ShootingAccuracyPawn` 均未乘入 —— "射手因子统一视为 1"是这张表的既有口径，要改就两边一起改，否则炮塔与手持武器不可比。
+
+### 6.2 研究解锁（派生列，不是字段）
+
+1.7 没有"解锁列表"字段（`ResearchProjectDef.UnlockedDefs` 是 getter），所以"改一个研究解锁什么" = 改**别的 Def**，研究行上不存第二份真相。`Data/ResearchUnlocks.cs` 按同一份判定反查全库：
+
+| # | 来源 | 判定 | 登记 |
+|---|---|---|---|
+| 1 | `RecipeDef` | `researchPrerequisite == R` 或 `researchPrerequisites ∋ R` | 各 `products[].thingDef` |
+| 2 | `ThingDef` | `researchPrerequisites ∋ R` | 自身 |
+| 3 | `ThingDef.plant` | `sowResearchPrerequisites ∋ R` | 自身 |
+| 4 | `TerrainDef` | `researchPrerequisites ∋ R` | 自身 |
+| 5 | `RecipeDef` | `IsSurgery && researchPrerequisites ∋ R` | 配方本身 |
+| 6 | `PsychicRitualDef` | `researchPrerequisite == R` | 自身 |
+
+该列是 `Display`：不落盘（`TweakData.Serialization.cs` 按 `DataType != Field` 过滤）、不参与 `Apply`、不参与 `EqualsData` ⇒ 旧档零迁移。
+
+**缓存失效三条路径**：
+
+| 缓存 | 谁清 |
+|---|---|
+| `ResearchUnlocks.cache` | ① `Capture`/`Commit` ② `UpdateFilters` 开头兜底 ③ `Init` 末尾 |
+| `cachedUnlockedDefs` / `cachedHyperlinks` / `cachedDescription`（原版 private，永不失效） | ① `Commit` 只清"该 def 前后槽位上的项目" ② `Init` 末尾全清 |
+
+- **主路径 `Capture`/`Commit`**：`ApplyValue` / `ApplyClear` / `ApplyAuthoritative` 三个落点在 `Apply` 前后各读一次前置槽位，取并集只清这几个项目（整行/完全重置不走 `ApplyValue`；"被移出前置"的项目也得清）。
+- **`UpdateFilters` 兜底**：覆盖第三方 mod 运行时改前置、跨存档残留。
+- **`Init` 末尾全清**：加载期 `CompProperties_Techprint.ResolveReferences` 已按 XML 原值填过一份，而我们的写入在 `StaticConstructorOnStartup` 之后。
+
+**已知边界**：
+
+- 图纸物品由 `ThingDefGenerator_Techprints.ImpliedTechprintDefs` 在 `GenerateImpliedDefs_PreResolve` 生成，早于所有写入：`techprintCount` 从 0 改成正数会被拒绝（运行期不补生成物品，且 `Techprint` 为 null 会让 `GetTip()` NRE）；`techprintMarketValue` 会同步到已生成图纸；图纸 `label` / `description` 生成时拼死。
+- 研究台 `cachedUnlockedDefsGroupedByPrerequisites` 只在 `PreOpen` 清，后台开着研究台时改前置要重开页签。
+- `researchViewX/Y` 只在加载期拷进 `x/y`，改坐标需重开游戏（y 被 clamp 到 6.5，重叠会自动摊开）。
+- 不覆盖 `DesignationCategoryDef.researchPrerequisites` 与 `TerrainTemplateDef`（不在原版 `UnlockedDefs` 里）。
+- 尚无"增 / 删解锁"写入；若要做：载体 ≠ 产物（一个物品 3 个配方要清 3 个），减法要清所有槽位（列表 + 单值 + 植物播种），加法只写列表槽位（`researchPrerequisite` 与 `researchPrerequisites` 是 AND 语义）。
+
+### 6.3 列过滤（视图过滤）
+
+表头右键 → 「过滤…」打开 `ColumnFilterWindow`，条件按列的**字段类型**给出：
+
+| 判据（按此顺序判定，先命中先用） | `filterKind` | 比较 | 取值来源 |
+| --- | --- | --- | --- |
+| 触发列（`IsTriggerStyle`：`Link` / 四种 Links / `UnlockList` / Fortified 三列） | `None` | 右键菜单里没有过滤项 | — |
+| 任何列表样式（`isListStyle`） | `ListCount` | 项数比较 | `IList.Count`（null 视为 0） |
+| `Float` / `Int`（Float / Prec / Int 样式） | `Number` | 大于 / 小于 / 等于 / 范围 | `GetRawValue`，不受"显示默认值 / 结果值"影响；`Prec` 按屏幕单位（百分数）收，比较前 ×0.01 |
+| `String`（含走 `OptionsList` 的 Enum） | `Text` | 原版 `QuickSearchFilter.Matches` | `GetString` |
+| 其余（Def 引用 / `ThingFilter` / 曲线 / 无选项源的枚举） | `None` | 没有过滤项 | — |
+
+> 顺序是有意义的：`UnlockList` 同时是列表样式与触发列，先判触发 → 它没有"项数"过滤。
+
+端点由 `ColumnFilter.inclusive` 一个开关管（默认含边界）：`≥` / `≤` / 闭区间 `[a, b]`，严格则 `>` / `<` / `(a, b)`；「等于」不受影响。摘要按此口径写：`≥ 5`、`[5 ~ 10]`、`(20% ~ 50%)`、`项数 [2 ~ 5]`。区间不做"留空即无界"（单边用大于/小于），上下限填反在「确定」时自动换。
+
+四条不变式：
+
+- **文本判据只能用 `QuickSearchFilter`**：自己写 `Contains` 会多出"大小写 / 首尾空格"两种语义差异，顶栏搜索与列过滤就不再是同一件事。
+- **数字判据不走 `GetNumericValue`**：它对"当前选中列"有 `showAbstract` / `showChanged` 两条旁路，混进过滤会让同一份数据在点了列头后筛出不同的行。派生列先 `EnsureDisplayValues()`（O(1) 早退）。
+- **条件属于视图，不落盘**：`columnFilters` 是 `Dictionary<SettingType, Dictionary<列 id, ColumnFilter>>`，列 id 跨页签会重名，必须按页签分组。
+- **条件建好后不再改**：改动 = 建新的，因此导航快照只做浅拷贝存引用。
+
+接缝：`UpdateFilters` 里所有生效条件取"与"，排在 Mod 筛选之后、搜索之前；固定项（`pinnedIds`）绕过过滤；批量修改 / 重置只作用于 `filteredData`；`JumpToData` 清空**当前页签**的过滤（`NavState` 存了旧条件，后退能恢复）；绘制上表头橙色底 + 数据格淡底 + tooltip 追加「当前过滤：…」。过滤窗口里文本清空再确定等同取消。
+
+新增一种过滤方式：`ColumnFilterKind` 加成员 + `StatColumnConfig.ResolveFilterKind`（private）给它来源，再在 `ColumnFilter.Matches` / `Describe` / `ColumnFilterWindow.DrawValueRows` 各补一个分支。`filterKind == None` 的列自动没有过滤项。
+
+### 6.4 种族页的战斗力三列
+
+`RaceData` 上也有 `attackPower` / `defensePower` / `overallPower`（列标题与兵种页共用），但来源不同：race 自身只有身体与基础数值，装备 / 技能 / 预算都挂在 pawnkind 上，所以这三列是**该种族名下所有兵种的平均值**（`CombatPower.FillRace`）。
+
+- Humanlike 下整列不出现（`Available = nameof(AvailableIfNotHumanlike)`）：一个 race 挂上百个兵种，平均既不代表新兵也不代表甲士。列级不适用用 `Available`，不要用 `Hidden`。
+- 取**算术平均**而非最高值（非人形种族多为一对一，多出的多是 Anomaly 蹒跚者变体）。
+- 刻度与缓存全部复用（`Scale`、`CombatGear.CachedDefense` 按 `(种族, 画像)` 命中）；`CombatPower.Invalidate` 同时置脏 `PawnKind` 与 `Race`；`CombatPower.KindsOf` 建的 race → pawnkind 索引不失效（兵种行的 `Race` 是只读链接）。
+
+## 7. 构建与发版
 
 ```powershell
 cd Source
-dotnet build          # 等价于 dotnet build BalanceTweak.slnx：产物直接落 1.7/Assemblies/
-dotnet test           # 只有测试工程需要 Debug（InternalsVisibleTo 只在 Debug 授权）
+dotnet build          # 等价于 dotnet build BalanceTweak.slnx，产物直接落 1.7/Assemblies/
+dotnet test           # 测试工程需要 Debug（InternalsVisibleTo 只在 Debug 授权）
 dotnet run --project CheckLoc
 ```
 
-**Debug / Release 产物等价**：`OutputPath` 与配置无关（都直接覆盖 `1.7/Assemblies/BalanceTweak.dll`），
-且 Debug 也开 `/optimize+`、也不含自检 —— 所以**构建一次就能发布**，不需要再补一次 `-c Release`。
+- Debug / Release 产物等价：`OutputPath` 与配置无关，`<Optimize>true</Optimize>` 无条件生效、自检靠 `-p:SelfCheck` 单独开 ⇒ **构建一次即可发布**，不必补 `-c Release`。
+- 跑启动期自检（SC1–SC10，会往 `Config` 写 `BalanceTweak_Snapshot_*.txt`）：`dotnet build -p:SelfCheck=true`
+- 但**不要对解决方案用 `-c Release`**：`InternalsVisibleTo` 只在 Debug 授权（`AssemblyInfo.cs` 里 `#if DEBUG`），`BalanceTweak.Tests` 会编不过。要出 Release 就点名主工程（下面 1.6 的命令即是）。
 
-之所以不把默认配置改成 Release：解决方案 / IDE 构建会把 `Configuration=Debug` 当**全局属性**传给每个工程，
-csproj 的默认值改不动它（`Directory.Build.props` 也挡不住），所以只能让 Debug 本身就是发布质量。
-`DEBUG` 常量仍然保留，它只用于给测试程序集开 `InternalsVisibleTo`。
+### 1.6 是 LTS，默认不编译
 
-**要跑启动期自检**（SC1–SC10，会往 `Config` 写 `BalanceTweak_Snapshot_*.txt`）：
-
-```powershell
-dotnet build -p:SelfCheck=true
-```
-
-#### 1.6 是长期支持（LTS）的稳定版 —— 默认不编译
-
-1.6 的 `1.6/Assemblies/BalanceTweak.dll` 是**直接发给玩家的冻结产物**：编一次就等于给全体 1.6 玩家换版。
-因此 `TargetFrameworks` 默认只有 `net10.0`，net48 目标由开关 `IncludeNet48` 按需拉起（csproj 里所有 net48 段
-——输出目录 / `Krafs.Rimworld.Ref` 1.6.x / Harmony 2.4 / PolySharp 垫片——都带 `TargetFramework == 'net48'` 条件，
-开关关闭时不参与求值、也不进 restore 图）。
-
-**只有 1.6 侧确有实打实的缺陷要修时才编**，且优先只编 1.6：
+`1.6/Assemblies/BalanceTweak.dll` 是发给玩家的冻结产物，编一次即全体 1.6 玩家换版。`TargetFrameworks` 默认只有 `net10.0`，net48 由开关 `IncludeNet48` 按需拉起（csproj 里所有 net48 段都带 `TargetFramework == 'net48'` 条件，关闭时不参与求值）。
 
 ```powershell
-# 只编 1.6（隐式 restore；产物落 1.6/Assemblies/）
+# 只编 1.6（产物落 1.6/Assemblies/）
 dotnet build BalanceTweak/BalanceTweak.csproj -c Release -p:IncludeNet48=true -f net48
 
 # 1.6 + 1.7 一起出
 dotnet build BalanceTweak/BalanceTweak.csproj -c Release -p:IncludeNet48=true
 ```
 
-为什么 1.6 不能“随手一编”：源码已用到 `init` 访问器 / `required` 成员 / 切片 / `HashCode.Combine`，
-net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range`、`HashCode`，
-靠 `PolySharp`（编译期源生成器，`PrivateAssets=all`，不进产物、玩家无需安装）补齐。
-编译通过只说明 API 面一致，**行为差异仍需在 1.6 实机验证**（1.6 的引用程序集来自 `Krafs.Rimworld.Ref`，
-不是本机游戏目录）。
+源码用到 `init` / `required` / 切片 / `HashCode.Combine`，net48 缺的 BCL 类型由 `PolySharp`（源生成器，`PrivateAssets=all`）补齐；编译通过只说明 API 面一致，**行为差异仍需在 1.6 实机验证**。
 
-发版前对 1.6 的核对项：产物 `TargetFramework` 应为 `.NETFramework,v4.8`、只引用 `mscorlib` / `Assembly-CSharp` /
-`0Harmony`，**不得**出现 1.7 专属的 `UnityStubs` / `Waylith`。
+发版前核对 1.6 产物：`TargetFramework` 应为 `.NETFramework,v4.8`，只引用 `mscorlib` / `Assembly-CSharp` / `0Harmony`，**不得**出现 1.7 专属的 `UnityStubs` / `Waylith`。
 
-#### 目录结构：版本目录只放 Assemblies
+### 目录结构：版本目录只放 Assemblies
 
 ```
 /Defs          ← 底部主按钮（MainButtonDef）
@@ -535,383 +593,4 @@ net48 的 BCL 没有 `IsExternalInit`、`RequiredMemberAttribute`、`Index/Range
 /1.7/Assemblies/BalanceTweak.dll   ← net10.0
 ```
 
-`LoadFolders.xml` 里 v1.6 与 v1.7 都会加载根目录 `/`，所以 **Defs 与 Languages 放在根目录**，
-两个版本共用同一份；`1.6/` `1.7/` 只放 Assemblies。
-
-别再往版本目录里放 Defs / Languages 的副本 —— 两份会漂移，而且 1.6 那边一旦漏掉就是
-"1.6 玩家没有底部按钮 / 按钮没有翻译"。判断某个 Def 能不能放根目录的唯一前提是：
-它引用的类型（如 `workerClass`）在两个 dll 里都存在。当前 1.6 与 1.7 由同一份源码编译，天然满足；
-历史上 1.6 冻结在归档 dll 时 `MainButtonWorker_OpenEditor` 不存在，`MainButtonDefs` 才被迫放在 `1.7/` 下，
-现已移回根目录。
-
-### 7.8 镜像列（`IsMirror`）与原始快照
-
-有的列**值属于另一行**：武器行的"伤害 / 穿透"其实是关联弹丸的副本（`Bullet_Shotgun` 同时供泵动与链式霰弹枪）。
-这类字段要标 `IsMirror = true`，并遵守两条：
-
-- **编辑即编辑源行**。写的时候把值推到源行、把修改标记转移到源行，本行不留标记
-  （`WeaponData.PushWeaponEditsToProjectile`）——否则本行会亮"已修改"并给出重置按钮，
-  而那个重置按"只重置本行"的规则不会回写源行，点了没反应。
-- **`EqualsData` 跳过它**。源行一改，共享它的每一行副本都会被派生同步刷新，于是"我没改、但副本变了"是常态；
-  若参与相等判定，这些行永远不等于原始数据，`ResetSingleItem` / `ResetSelectedColumn` 末尾的
-  `RemoveData` 就再也不会触发，脏行常驻已修改表。
-
-原始快照（`TweakDatabase.GetOriginal`）是**只读基准**，任何派生同步都不许写它：
-
-- 建快照期间（`TweakDatabase.buildingOriginals`，由 `Init` 的 SetDef 循环持有）跨行读取一律走原始层，
-  否则快照的镜像会读到存档里改过的依赖值，"原值"变成现值。
-  **不要用 `SetDef(tweaked: false)` 反推**：自检探针（`MakeProbe`）也用 false 建实例，那种探针要读的是当前 def。
-- `ProjectileData.RefreshSharedWeapons` / `BuildingData.RefreshTurretGun` 跳过快照，只刷活实例；
-- 代价是快照的镜像可能落后于当前弹丸 → UI 首次打开、从快照克隆出来的行要在
-  `EnsureDisplayValues` 里补一次同步（`WeaponData.SyncMirrorsFromProjectile`），所以 `Clone()` 必须清掉
-  `displayValuesEnsured`（基类字段，`TweakData.Clone()` 统一清零；标记是实例级的，不能跟着抄）。
-
-> 强度刻度（`GetEquipPower`）同理取**原始快照**当基准：刻度必须固定，否则"谁先算谁说了算"。
-> 语义是"原版武器 = 100；改了某颗弹丸，共用它的武器一起变，没共用的纹丝不动"。
-
-### 7.8.1 Display 列一律按需计算（不许在 `SetDef` 里算）
-
-`ColumnDataType.Display` 的列不落盘、不参与 `Apply`，只是 UI 的派生展示值。因此：
-
-| 规则 | 说明 |
-| --- | --- |
-| `SetDef` 只填**镜像与可编辑字段的原值** | 例如 `WeaponData` 的 `SetDef` 只跑 `GenMirrors`（verb / 伤害 / 穿透 / 射程…），不跑 `GenDps` |
-| 派生列在**进入页签时全量算完** | 入口是 `TweakUtility.AdvanceDerive`：切到某页签后按每帧 6ms 的预算把该页签所有行 `EnsureDisplayValues()` 一遍，期间显示进度条。做完之后排序 / 搜索只是比较已有数字，不会在点列头那一刻同步爆算 |
-| 算完置 `displayValuesEnsured = true` 缓存 | `Apply()` 结束时会把它置回 false：参考值按"当前 def 现算"，改完成本 / 招式后下一次读就是新值 |
-| 只有**原始快照**需要在 `Apply` 之前定格 | `PrepareDeferredDisplayValues` 只遍历 `tweakDatas.Keys`，成本与改动条数成正比；未修改的行 def 没被动过，现算与提前算完全等价 |
-
-> **不要在 `UpdateFilters` 里补算**。那是全表遍历（几千行），而表格绘制是行 / 列双虚拟化的，
-> 一屏只有几十格；在那里补一句 `EnsureDisplayValues()`，卡顿会精确地落在玩家刚点开页签的那一帧。
-> 全量推导只能走 `AdvanceDerive`，因为只有它分帧、有进度条。
->
-> `StatColumnConfig.EnsureForDisplay`（`GetString` / `GetNumericValue` 触发）**保留但只作兜底**：
-> 正常情况下进页签时已经全算过，那里是 O(1) 的 `displayValuesEnsured` 早退。
-
-> `GenValues()`（镜像 + DPS + 强度全量重算）只给"数据真的变了"的路径用：`Apply` / 弹丸推送 / 招式编辑 / 自检。
-> 新增 Display 列时照这个来：字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏，不要在 `SetDef` 里算。
-> 关联入口列（`Link` / `PawnWeaponLinks` 等）不进 `EnsureForDisplay`：它们的字段永远是 null，点了才去查。
-
-### 7.8.2 打开窗口要分两段准备（否则卡 400ms）
-
-打开窗口的准备工作有两段，都是分帧的，期间 `InitInProgress` 为 true，
-`DoEditorContents` 画进度条后直接 return：
-
-| 段 | 入口 | 规模 | 预算 | 进度权重 |
-| --- | --- | --- | --- | --- |
-| ① 建行缓存（克隆） | `AdvanceInit` | 全库 4 万级，一次性 | 每帧 2000 行 | 0~90% |
-| ② 页签派生值 | `AdvanceDerive` | 当前页签几百~几千行，**每次切页签** | 每帧 6ms（按时间不按行数） | 90~100% |
-
-约束四条：
-
-| 规则 | 原因 |
-| --- | --- |
-| 没建完时**不许** `UpdateFilters` | 此时 `cachedData` 只有一部分，筛出来会缺行 |
-| 小数据包必须**一帧做完** | 否则进度条会闪一下，反而更差 |
-| `DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor` | 该分支提前 return，IMGUI 的全局状态会漏给下一帧 |
-| 第 ② 段按**时间**给预算 | 不同页签单行成本差两个数量级（兵种战力 3µs，武器 DPS 要跑 `GenDps`），固定行数要么卡帧要么浪费 |
-
-第 ② 段存在的理由：保留"按需算"的话，用户点列头按派生列排序时，会把整页行在那一帧同步拉起来 ——
-那是一次数百毫秒的停顿，正好落在最不该卡的时刻。全算之后排序只是比较已有数字。
-
-> 派生值被置脏（改武器 / 改兵种）时，只有**当前页签**会重推（`CombatPower.InvalidateRows` 里判
-> `type == TweakUtility.CurrentType`）；别的页签切过去时 `deriveType != curType` 会自然重来。
-> 不判断的话，改一把枪会让武器页几千行 DPS 莫名其妙重算一次。
-
-> 列定义（反射 + 每条列若干次 `Translate`，约 20~30ms/类型）也在第 ② 段的第一帧预热，
-> 这样它落在进度条期间，而不是"表格首次显示前卡一下"。
-
-> `ApplyFullReset`（"完全重置"按钮）**仍是同步重建**，没接这套分帧 —— 它是用户主动点击，
-> 且每行还要跑 `ApplyAuthoritative`，语义与首建不同。真觉得卡再单说。
-
-> 克隆本身的成本在 `TweakData<T>.DeepCopyFields`：只有 `List<T>` 字段需要深拷贝，
-> 其余引用类型共享引用。所以那里有 `if (!meta.IsList) continue;` —— 少了这一句，
-> 每行要把几十个字段各反射读一遍、再什么也不做，实测占掉克隆总耗时的九成。
-
-> 上面这些 `[BalanceTweak][perf]` 日志、以及 `TweakDatabase` 的初始化统计，都走 `TweakLog.Message`，
-> 受「总体设置 → 诊断 → 冗杂日志」开关控制（默认关）。**`Log.Error` / `Log.Warning` 不走这里，永远输出** ——
-> 关掉冗杂日志不能等于关掉报错。
-
-### 7.9 炮塔枪的 DPS：节奏在建筑上
-
-炮塔的"枪"只是挂件，`Building_TurretGun` 的射击节奏**完全由建筑决定**，两条都要照抄，不能按普通枪算：
-
-| 量 | 取法（`GenRangeDPS`） | 原版依据 | 可编辑字段（BuildingData） |
-|---|---|---|---|
-| 冷却 | `def.building.turretBurstCooldownTime >= 0` 用它，否则才回落到枪的 `cooldown` / verb 默认 | `Building_TurretGun.BurstCooldownTime()` | `turretBurstCooldownTime`（`Prec`） |
-| 预热 | **总是** `def.building.turretBurstWarmupTime.Average` | `TryStartShootSomething`；`Verb.TryStartCastOn` 的 warmup 只在 `CasterIsPawn` 时生效，炮塔不是 pawn | `turretBurstWarmupTime`（`Range`，写 `min~max`） |
-
-两个容易踩的坑：
-
-- 4 个原版炮塔枪（`Gun_ChargeBlasterHeavyTurret` / `Gun_InfernoCannonTurret` / `Artillery_AutoMortar` /
-  `Artillery_Mortar`）既没有 `RangedWeapon_Cooldown`，verb 也没设 `defaultCooldownTime`。
-  漏掉建筑冷却 → `cd` 为 null → `GenRangeDPS` 提前 return → 这 4 行**根本没有 DPS / 强度**。
-  另有 3 个（AutoMiniTurret 枪 5.1/建筑 2.5、Rocketswarm 3.5/0.1、Tactical 4.8/2.4）枪与建筑不一致，
-  游戏里用的是建筑值。
-- 建筑改完要主动刷挂载的枪（`BuildingData.RefreshTurretGun`），否则武器页签停在旧值。
-  与弹丸刷新同一条规矩：跳过快照、跳过未 SetDef 的行。触发判据是**预热 / 冷却任一**被改动，
-  且必须比三态多判 `forceWriteAll` / `forceWriteFields`（重置是先写回原值再清标记，那一刻三态已是 Unset）。
-- `turretBurstWarmupTime` 是 `FloatRange?`（`ColumnStyle.Range`，编辑框写 `min~max`）。
-  Cleared（清空输入）走 `ApplyV` 的 `Revert` 还原原区间 —— def 上这个字段不可空，没有"写成 null"这个游戏状态。
-
-> 未纳入：`ShootingAccuracyTurret`（默认 0.96，原版按 `0.96^距离` 乘进命中率）。
-> 手持武器同样没乘 `ShootingAccuracyPawn` —— "射手因子统一视为 1"是这张表的既有口径，
-> 否则炮塔与手持武器不可比。要改就两边一起改。
-
----
-
-## 8. 研究解锁（派生列，不是字段）
-
-**1.7 没有"解锁列表"这个字段。** `ResearchProjectDef` 上找不到 `unlocks` / `unlockedDefs`；
-`UnlockedDefs` 是个 getter（`Verse/ResearchProjectDef.cs:301-329`），按下面 6 条规则反查全库推出来。
-所以"改一个研究解锁什么" = 改**别的 Def**，研究行上永远不该存第二份真相。
-
-### 8.1 反查的 6 条来源（本列的边界，多一条少一条都会和研究台对不上）
-
-| # | 来源 | 判定 | 登记什么 |
-|---|---|---|---|
-| 1 | `RecipeDef` | `researchPrerequisite == R` 或 `researchPrerequisites ∋ R` | 各 `products[].thingDef` |
-| 2 | `ThingDef` | `researchPrerequisites ∋ R` | 自身 |
-| 3 | `ThingDef.plant` | `sowResearchPrerequisites ∋ R` | 自身（"能种了"是另一条槽位） |
-| 4 | `TerrainDef` | `researchPrerequisites ∋ R` | 自身 |
-| 5 | `RecipeDef` | `IsSurgery && researchPrerequisites ∋ R` | 配方本身（手术配方通常没有 products） |
-| 6 | `PsychicRitualDef` | `researchPrerequisite == R` | 自身 |
-
-`Data/ResearchUnlocks.cs` 按同一份判定重扫一遍，额外保留**载体**身份（原版把配方产物摊平成
-`ThingDef`，载体信息就此丢失，而"改解锁"最终必须落到载体上）。
-
-### 8.2 为什么是 `Display` 列
-
-- 真相在目标 Def 的字段上（`researchPrerequisites` / `sowResearchPrerequisites` /
-  `researchPrerequisite`），目标行本来就能改（`BuildingData` / `FoodData` / `TerrainData` / `RecipeData`）。
-- 研究行若存一份"解锁列表"，同一字段就有两个写者，谁赢取决于 `Apply` 顺序（`LoadingOrd`），
-  重置语义还得单独发明一套（"重置研究行" ≠ "撤销解锁"）。
-- `Display` 不落盘（`TweakData.Serialization.cs` 按 `DataType != Field` 过滤）、不参与 `Apply`、
-  不参与 `EqualsData` ⇒ **旧档零迁移**。
-
-### 8.3 缓存失效：三条路径
-
-| 缓存 | 谁清 |
-|---|---|
-| `ResearchUnlocks.cache` | ① `Capture`/`Commit` ② `UpdateFilters` 开头兜底 ③ `Init` 末尾 |
-| `cachedUnlockedDefs` / `cachedHyperlinks` / `cachedDescription`（原版 private，永不失效） | ① `Commit` 只清"该 def 前后槽位上的项目"（通常 1~2 个）② `Init` 末尾全清 |
-
-- **主路径 `Capture`/`Commit`**：`ApplyValue`、`ApplyClear`、`ApplyAuthoritative` 三个落点在 `Apply`
-  前后各读一次前置槽位，取**并集**只清这几个项目。要三个落点是因为整行/完全重置不走 `ApplyValue`；
-  要并集是因为"被移出前置"的项目也得清。
-- **`UpdateFilters` 兜底**：覆盖绕过上面三条路径的写入（第三方 mod 运行时改前置、跨存档残留）。
-- **`Init` 末尾全清**：加载期 `CompProperties_Techprint.ResolveReferences` 已按 XML 原值填过一份，
-  而我们的写入在 `StaticConstructorOnStartup` 之后 —— "只改载体前置、没动研究项"的存档只有这里能打回。
-- 多清一个 `cachedDescription`：它是 `GetTip()` 的文案缓存，不在 `ClearCachedData` 覆盖范围内。
-
-**别改成"重建索引来 diff"或"每次编辑全清"**：前者每次编辑一次全库扫描（1~5ms，拖拽/批量线性叠加），
-后者把研究台打回冷启动。
-
-### 8.4 性能
-
-- 建表是一次正向扫描（四个 Def 表各一遍），单行查询 = 字典命中；列值在 `EnsureDisplayValues` 里算，
-  绘制期零查询（§7.8.1）。重建是懒的：当前页签没有研究行就不触发。
-- 一次编辑的失效成本：一次槽位读取 + 最多几个项目的 3 次反射写。改前改后都没挂前置的 def
-  （绝大多数 `ThingDef` 编辑）**一次都不清**。
-
-### 8.5 未做（第二步：增 / 删）
-
-写回本身只有 4 行（`GetEditableData(targetId)` → 目标行的 `researchPrerequisites` 列 →
-`config.ApplyValue`），难点全在语义：
-
-- **载体 ≠ 产物**：一个物品由 3 个配方产出的，删它要清 3 个配方，否则删了还在。
-- **减法要清所有槽位**（列表 + 单值 + 植物播种），漏一个就"移除后还在"。
-- **加法只写列表槽位**：`RecipeDef.researchPrerequisite` 与 `researchPrerequisites` 是 **AND** 语义，
-  两个都填 = 两个都得研究完；"挪项目"别写成"叠加"。
-- 无落点的 Def（`PsychicRitualDef`、`DesignationCategoryDef`、第三方类型）只读，
-  窗口里灰显并说明原因。
-
-### 8.6 已知边界
-
-- **图纸物品是加载期生成的**：`ThingDefGenerator_Techprints.ImpliedTechprintDefs` 在
-  `GenerateImpliedDefs_PreResolve` 里按 XML 原值的 `TechprintCount > 0` 造出 `Techprint_<defName>`，
-  早于我们所有写入。由此：
-  - `techprintCount` 从 0 改成正数会被拒绝（告警 + 字段退回）：运行期不补生成物品，改后该研究永久无法完成，
-    且 `Techprint` 为 null 会让 `GetTip()` / `TechprintUtility` 直接 NRE。
-  - `techprintMarketValue` 会同步到已生成图纸的 `statBases`；`techprintCommonality` 与 N→M 的
-    `techprintCount` 本就是运行时读的，生效。
-  - 图纸的 `label` / `description` 在生成时拼死，改 `defLabel` 不会改图纸名。
-- `CompProperties_Techprint.ResolveReferences` 把 "Unlocks: …" 拼进图纸的 `description` 与
-  `descriptionHyperlinks`，清缓存回滚不了已物化的字符串。
-- 游戏内研究台的 `cachedUnlockedDefsGroupedByPrerequisites` 只在 `PreOpen` 清，后台开着研究台时
-  改前置要重开页签。
-- `researchViewX/Y` 只在加载期拷进 `x/y` 快照（`ResearchViewX => x`），改坐标**重开游戏才生效**，
-  且 y 会被 clamp 到 6.5、重叠坐标会被自动摊开。
-- 不覆盖 `DesignationCategoryDef.researchPrerequisites`（建造菜单页签）与 `TerrainTemplateDef`
-  —— 它们不在原版 `UnlockedDefs` 里。
-
----
-
-## 9. 列过滤（视图过滤，与 ColumnStyle 无关）
-
-表头**右键** → 「过滤…」打开 `ColumnFilterWindow`，条件按列的**字段类型**给出，不给用户选：
-
-| 列类型 | 判据（`StatColumnConfig.filterKind`） | 比较 | 取值来源 |
-| --- | --- | --- | --- |
-| `FieldType.Float` / `Int`（Float / Prec / Int 样式） | `Number` | 大于 / 小于 / 等于 / 范围 | `GetRawValue` 的 float / int，**不受"显示默认值 / 显示结果值"影响**；`Prec` 列的过滤值按**屏幕单位**（百分数）收，比较前 ×0.01 |
-| `FieldType.String`（String 样式，含走 OptionsList 的 Enum 样式） | `Text` | 原版 `QuickSearchFilter.Matches` | `GetString`（= 格子里显示的那串字） |
-| 任何列表样式（`isListStyle`） | `ListCount` | 项数 大于 / 小于 / 等于 / 范围 | `IList.Count`（null 视为 0） |
-| 触发列 / Def 引用 / `ThingFilter` / 曲线 / 枚举 | `None` | 右键菜单里没有过滤项 | — |
-
-**端点归 `ColumnFilter.inclusive` 一个开关管**（默认开 = 含边界），而不是每种比较各留一个：
-
-| 开关 | 大于 | 小于 | 范围 |
-| --- | --- | --- | --- |
-| 含边界（默认） | `≥` | `≤` | 闭区间 `[a, b]` |
-| 严格 | `>` | `<` | 开区间 `(a, b)` |
-
-「等于」不受影响。摘要按这个口径写（右键菜单 / 表头 tooltip 里能直接读出来）：`≥ 5`、`> 5`、
-`[5 ~ 10]`、`(20% ~ 50%)`、`项数 [2 ~ 5]`。区间不做"留空即无界"—— 单边条件用「大于 / 小于」写，
-同一个意思只留一条路；上下限填反了在「确定」时自动换过来。
-
-四条不变式：
-
-- **文本判据只能是原版组件**：`QuickSearchFilter`（Trim + 不区分大小写子串 + 5000 条命中缓存）。
-  自己写 `Contains` 会悄悄多出"大小写 / 首尾空格"两种语义差异，顶栏搜索和列过滤就不再是同一件事。
-- **数字判据不走 `GetNumericValue`**：那个方法对"当前选中列"有两条旁路（`showAbstract` / `showChanged`），
-  混进过滤会让同一份数据在"点了列头之后"筛出不同的行。派生列先 `EnsureDisplayValues()` 再读字段
-  （进页签时已全算过，这里是 O(1) 早退）。
-- **条件属于视图，不落盘**：`columnFilters` 是 `Dictionary<SettingType, Dictionary<列 id, ColumnFilter>>`，
-  与搜索词 / 排序方式同级，只活在本次会话。理由：过滤会把行藏起来，落盘后"数据怎么少了"只能靠用户想起；
-  而搜索词本来就不落盘，一半落盘一半不落盘更难解释。列 id 跨页签会重名（都是 `{数据类型}_{字段名}`），
-  所以**必须按页签分组**（与 `hiddenColumnIds` 同一套做法）。
-- **条件建好后不再改**：改动 = 建一条新的。因此后退/前进的快照（`BalanceTweakSettings.NavState.filters`）只做浅拷贝存引用。
-
-与既有功能的接缝：
-
-| 位置 | 行为 |
-| --- | --- |
-| `UpdateFilters` | 所有生效条件取"与"，排在 Mod 筛选之后、搜索之前（数字比较比字符串匹配便宜，先挡行） |
-| 固定项（`pinnedIds`） | 与其它筛选一致：**绕过**过滤，始终出现在列表里 |
-| 批量修改 / 重置选中列 / 重置显示项 | 只作用于 `filteredData` ⇒ 只动筛出来的行，与搜索的既有口径一致 |
-| `JumpToData` | 清空**当前页签**的过滤（否则目标行被藏起来，`IndexOf` 返回 -1 表现为"点跳转没反应"）；`NavState` 存了旧条件，后退能恢复 |
-| 绘制 | `filteredColumnIds`（重建列表时刷新的 id 集合）→ 表头橙色底（`0.5` 透明）+ 数据格同色淡底（`0.12`，画在内容之前，不压文字清晰度）。表头 tooltip 追加「当前过滤：…」 |
-
-> 取消过滤：表头右键 →「取消过滤: [5 ~ 10]」（菜单项自带条件摘要）。过滤窗口里把文本清空再确定，等同于取消
-> —— 空条件会让列徒有橙色却一行都不筛，所以 `Apply` 直接把它当"取消"处理。
->
-> 窗口里的模式选择是**分段控件**：选中项用原版选项底（`Widgets.DrawOptionBackground`，暖色填充 + 3px 粗边）
-> + 粗体字。原来只把文字变黄，四个按钮长得一样时看不出选了哪个。底纹自己画，所以点击走 `ButtonInvisible`
-> 而不是 `ButtonText`（后者会把底纹整个盖掉）。
-
-加一种新的过滤方式要动两处：`ColumnFilterKind` 加成员 + `StatColumnConfig.ResolveFilterKind` 给它一个来源，
-然后 `ColumnFilter.Matches` / `Describe` / `ColumnFilterWindow.DrawValueRow` 各补一个分支。
-`filterKind == None` 的列右键菜单里自动没有过滤项，不必维护白名单。
-
----
-
-## 附1. ColumnStyle 编辑窗口与用法
-
-| ColumnStyle | 编辑方式 | 窗口类 | C# 类型 |
-|------------|---------|--------|-------------|
-| `Float` | 内联文本框 | — | `float?` |
-| `Int` | 内联文本框 | — | `int?` |
-| `String` | 弹出窗口 | `StringEditorWindow` | `string?` |
-| `Prec` | 内联文本框 + % | — | `float?`（值/100） |
-| `Range` | 内联文本框 | — | `FloatRange?` / `IntRange?`，文本 `min~max` |
-| `Bool` | 内联复选框 | — | `bool?` |
-| `Enum` | FloatMenu 下拉菜单 | — | `Nullable<Enum>`，需 `EnumType` 或 `OptionsList` |
-| `Link` | 内联跳转链接 | — | `TweakID?`，`DataType=Display` |
-| `RaceLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
-| `BodyLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
-| `WeaponLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
-| `PawnWeaponLinks` | 弹出窗口 | `TweakLinksWindow` | `TweakID?`，只读触发列，`DataType=Display` |
-| `Curve` | 弹出窗口 | `CurveEditorWindow` | `SimpleCurve?` |
-| `Flags` | 弹出窗口 | `FlagsEditorWindow` | `Nullable<Enum>`（带 `[Flags]`） |
-| `StatModList` | 弹出窗口 | `StatModListEditorWindow` | `List<StatModifier>?` |
-| `CapModList` | 弹出窗口 | `CapModListEditorWindow` | `List<PawnCapacityModifier>?` |
-| `DamageModList` | 弹出窗口 | `DamageModListEditorWindow` | `List<DamageFactor>?` |
-| `ExtraDamageList` | 弹出窗口 | `ExtraDamageListEditorWindow` | `List<ExtraDamage>?`（每行 = 伤害类型 + 伤害量 + 穿甲 + 几率） |
-| `DefList` | 弹出窗口 | `DefListEditorWindow` | `List<T>? where T : Def` |
-| `HediffGiverList` | 弹出窗口 | `HediffGiverListEditorWindow` | `List<HediffGiver>?` |
-| `MentalStateGiverList` | 弹出窗口 | `MentalStateGiverListEditorWindow` | `List<MentalStateGiver>?` |
-| `SkillGainList` | 弹出窗口 | `SkillGainListEditorWindow` | `List<SkillGain>?` |
-| `SkillReqList` | 弹出窗口 | `SkillReqListEditorWindow` | `List<SkillRequirement>?` |
-| `TraitReqList` | 弹出窗口 | `TraitReqListEditorWindow` | `List<TraitRequirement>?` |
-| `AptitudeList` | 弹出窗口 | `AptitudeListEditorWindow` | `List<Aptitude>?` |
-| `GeneticTraitList` | 弹出窗口 | `GeneticTraitListEditorWindow` | `List<GeneticTraitData>?` |
-| `StringList` | 弹出窗口 | `StringListEditorWindow` | `List<string>?` |
-| `ThingSetTags` | 弹出窗口 | `StringListEditorWindow` | `List<string>?`，删光即清空（走显式 Cleared 路径，与所有列表列一致） |
-| `IntList` | 弹出窗口 | `IntListEditorWindow` | `List<int>?` |
-| `ThingDefCountList` | 弹出窗口 | `ThingDefCountListEditorWindow` | `List<ThingDefCountClass>?` |
-| `IngredientList` | 弹出窗口 | `IngredientListEditorWindow` | `List<IngredientCount>?` |
-| `IngredientFilter` | 弹出窗口 | `IngredientFilterEditorWindow` | `ThingFilter?` |
-| `ProcessIngredientList` | 弹出窗口 | `ProcessIngredientListEditorWindow` | `List<ProcessIngredientItem>?` |
-| `ProcessResultList` | 弹出窗口 | `ProcessResultListEditorWindow` | `List<ProcessResultItem>?` |
-| `BodyPartTree` | 弹出窗口 | `BodyPartTreeEditorWindow` | `List<string>?`（部位树编码） |
-| `BiomePlantList` | 弹出窗口 | `BiomePlantListEditorWindow` | `List<BiomePlantRecord>?` |
-| `BiomeAnimalList` | 弹出窗口 | `BiomeAnimalListEditorWindow` | `List<BiomeAnimalRecord>?` |
-| `FishChanceList` | 弹出窗口 | `FishChanceListEditorWindow` | `List<FishChance>?` |
-| `XenotypeChanceList` | 弹出窗口 | `XenotypeChanceListEditorWindow` | `List<XenotypeChance>?` |
-| `DiseaseList` | 弹出窗口 | `DiseaseListEditorWindow` | `List<BiomeDiseaseRecord>?` |
-| `WeatherCommonalityList` | 弹出窗口 | `WeatherCommonalityListEditorWindow` | `List<WeatherCommonalityRecord>?` |
-| `TerrainThresholdList` | 弹出窗口 | `TerrainThresholdListEditorWindow` | `List<TerrainThreshold>?` |
-| `StockGenList` | 弹出窗口 | `StockGeneratorListEditorWindow`（+ `StockGeneratorEditorWindow` / `SGComplexListEditorWindow`） | `List<StockGenerator>?`（字段即对象列表，字段表见 [§7.6](#76-多态列表字段直接持有对象--列表窗口编辑stockgenlist)） |
-| `FactionCurveList` | 弹出窗口 | `FactionCurveListEditorWindow` | `List<FactionCurve>?`（每行 = 派系选择 + 曲线编辑按钮；`selectionWeightPerPointsCurve` 为 private，克隆/编解码走 PocoCodec 字段表） |
-| `SkillRangeList` | 弹出窗口 | `SkillRangeListEditorWindow` | `List<SkillRange>?`（每行 = 技能选择 + 最低/最高等级；`skill` / `range` 均为 private，经 PocoCodec `ReadField` / `WriteField` 读写） |
-| `BackstoryTraitList` | 弹出窗口 | `BackstoryTraitListEditorWindow` | `List<BackstoryTrait>?`（每行 = 特性选择 + 程度） |
-| `PossessionList` | 弹出窗口 | `PossessionListEditorWindow` | `List<PossessionThingDefCountClass>?`（每行 = 物品选择 + 数量区间 min/max） |
-| `MutatorChanceList` | 弹出窗口 | `MutatorChanceListEditorWindow` | `List<MutatorChance>?`（每行 = 突变器选择 + 几率 + 必需勾选） |
-| `PawnGroupMakerList` | 弹出窗口 | `PawnGroupMakerListEditorWindow`（+ `PawnGroupMakerEditorWindow` / `SGComplexListEditorWindow`） | `List<PawnGroupMaker>?`（字段即对象列表，字段表见 [§7.6.1](#761-兵种池paingroupmaker复用同一套字段表)） |
-| `UnlockList` | 弹出窗口 | `ResearchUnlockWindow` | `List<Def>?`（`Display` 只读列；点击列出明细，可跳转到有数据行的目标） |
-| `DefSelector` | 弹出窗口 | `DefSelectionWindow` | `T? where T : Def` |
----
-
-## 附1.5. 种族页的战斗力三列
-
-`RaceData` 上也有 `attackPower` / `defensePower` / `overallPower`（列标题与兵种页共用同一批 key），
-但**来源不同**：`race` 自己只有身体与基础数值，装备、技能、预算全挂在 pawnkind 上，所以这三列是
-**该种族名下所有兵种的平均值**（`CombatPower.FillRace`）。
-
-- **Humanlike 下整列不出现**（`Available = nameof(AvailableIfNotHumanlike)`）：一个 race 挂一百多个兵种，
-  平均既不代表新兵也不代表甲士。种族页本来就按 `propType` 分组显示（`filterPropType` 选择器），
-  所以和 `Wildness` 之于 Animal 是同一个模式 —— 列级不适用用 `Available`，不要用 `Hidden`。
-- **取算术平均而不是最高值**：非人形种族通常一对一，多出来的多是 Anomaly 的蹒跚者变体，
-  种族的强度不该由最强那个变体代表。
-- **刻度与缓存全部复用**：`Scale` 是两条入口共用的刻度归一，`CombatGear.CachedDefense` / 装备画像
-  都按 `(种族, 画像)` 命中，所以种族页多算一行几乎不额外花钱。
-- **失效一起走**：`CombatPower.Invalidate` 现在同时置脏 `PawnKind` 与 `Race` 两个页签。
-- **race → pawnkind 的归属建一次索引**（`CombatPower.KindsOf`）不失效：兵种行的 `Race` 是只读链接，
-  这个关系在运行期不会变。
-
-## 附2. 关联列（RaceLinks / BodyLinks / WeaponLinks）
-
-反向关联（"谁在用我"）没法用 `Link` 列表达：`Link` 指向的是**字段里存的那个 TweakID**，一对一；
-而身体被多个种族用、弹丸被多把武器用，都是多对一。这类列统一走"只读触发列 + 打开时实时反查"：
-
-| 列 | 所在 Data | 点击后列出 | 反查方法 |
-| --- | --- | --- | --- |
-| `RaceLinks` | `BodyData` | 使用该 `BodyDef` 的种族 | `BodyData.FindRaceLinks` |
-| `RaceLinks` | `BodyPartData` | 身体含该部位的种族 | `BodyPartData.FindRaceLinks` |
-| `BodyLinks` | `BodyPartData` | 部位树含该部位的 `BodyDef` | `BodyPartData.FindBodyLinks` |
-| `WeaponLinks` | `ProjectileData` | 发射该投射物的武器 | `ProjectileData.FindWeaponLinks` |
-| `PawnWeaponLinks` | `PawnKindData` | 该兵种能抽到的手持武器（标签 ∩ 预算） | `PawnKindData.FindWeaponLinks` |
-| `PawnWeaponLinks` | `RaceData` | 该种族名下**所有**兵种能抽到的手持武器（并集） | `RaceData.FindWeaponLinks` |
-
-四条不变式：
-
-- **字段只是触发器，不存值**：`[TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.XxxLinks)] public TweakID? xxxLinks = null;`
-  值永远为 null，`GetString` 直接返回按钮文字（`MST.xxxLinks`），不在绘制阶段扫 Def —— 否则每帧全库查询。
-- **反查在窗口打开时做一次**，结果交给 `TweakLinksWindow`（构造时预计算行数据，绘制阶段不查 Def）。不缓存：数据可能刚被改过。
-- **只列真的有数据行的对象**（`TweakDatabase.GetOriginal(id) != null`），否则点了跳不过去，等于给个死链接。
-- **新加一个 Links 样式要动 5 处**：`ColumnStyle` 枚举（**末尾追加**）→ `ValidStyleMap` 的 `FieldType.TweakID` 行 →
-  `StatColumnConfig.GetString` 的按钮文字分支 → `BalanceTweakGUI.DrawDisplayCell` 的点击分发 →
-  `IsPaintableColumn` 的排除列表；再补 `MST.XxxLinks`（`Core.xml`，列样式枚举标签）与
-  字段名对应的 `MST.{字段名}Comment` tooltip。
-
-> 兵种这条反查的是**规则**而不是字段：`PawnKindDef` 上没有"武器"这个数据，武器是生成时按
-> `weaponTags` + `weaponMoney` 现抽的（`PawnWeaponGenerator.TryGenerateWeaponFor`），所以"能拿哪些枪"
-> 只能扫全库套同一套判定（标签交集 / 预算上界 / `generateAllowChance > 0` / `weaponStuffOverride` 的材料可兼容）。
-> 两条口径差别要记住：预算取**上界**（"最宽可抽范围"），攻击列取**期望**（5 档采样）；功能武器
-> （烟雾 / EMP）会列出来，但攻击列按 `harmsHealth` 把它们排除。
-
-> 种族页是兵种页的同名并集，两边**共用一份实现**（`PawnKindData.CollectWeaponLinks`）：扫一遍武器库，
-> 每把武器问"这组兵种里有没有人抽得到它"。逐兵种各扫一遍在 `Human`（125 个兵种）上会变成十几万次重复遍历。
-
-> 弹丸这条是例外中的例外：`ProjectileData.RangedWeapon` 字段名保留旧名（改名会让旧档的 XML 节点失配），
-> 但值已不再由武器端写入 —— 武器端只在 `ProjectileData` 的**共享索引**（运行期，不序列化）里登记自己，
-> 用于"改弹丸时刷新所有共用武器"。
+`LoadFolders.xml` 里 v1.6 与 v1.7 都加载根目录 `/`，所以 **Defs 与 Languages 放根目录**，两版共用，`1.6/` `1.7/` 只放 Assemblies。别再往版本目录放 Defs / Languages 副本 —— 两份会漂移。某个 Def 能放根目录的前提是它引用的类型（如 `workerClass`）在两个 dll 里都存在。

@@ -71,14 +71,14 @@ internal static class ResearchUnlocks
 
     private static readonly List<Entry> Empty = new();
 
-    /// <summary>原版三个懒加载缓存的字段（private，只能反射清）。</summary>
-    private static readonly FieldInfo? UnlockedDefsField = AccessTools.Field(typeof(ResearchProjectDef), "cachedUnlockedDefs");
-    private static readonly FieldInfo? HyperlinksField = AccessTools.Field(typeof(ResearchProjectDef), "cachedHyperlinks");
+    /// <summary>原版三个懒加载缓存的字段（private，只能反射清）。走 Reflect 而不是裸 AccessTools：改名时留日志。</summary>
+    private static readonly FieldInfo? UnlockedDefsField = Reflect.Field(typeof(ResearchProjectDef), "cachedUnlockedDefs");
+    private static readonly FieldInfo? HyperlinksField = Reflect.Field(typeof(ResearchProjectDef), "cachedHyperlinks");
     /// <summary>
     /// <c>GetTip()</c> 的文案缓存：把 techprint 名称、requiredAnalyzed 列表一次性拼好后存住。
     /// 它不在 <c>ClearCachedData</c> 的覆盖范围内，改那几个字段后研究项 tooltip 会一直是旧文本。
     /// </summary>
-    private static readonly FieldInfo? DescriptionField = AccessTools.Field(typeof(ResearchProjectDef), "cachedDescription");
+    private static readonly FieldInfo? DescriptionField = Reflect.Field(typeof(ResearchProjectDef), "cachedDescription");
 
     /// <summary>丢弃索引。下一次 <see cref="Get"/> 会重建。</summary>
     internal static void Invalidate() => cache = null;

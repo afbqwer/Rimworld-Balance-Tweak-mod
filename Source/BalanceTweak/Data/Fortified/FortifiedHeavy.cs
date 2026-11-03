@@ -40,7 +40,7 @@ internal static class FortifiedHeavy
     static FortifiedHeavy()
     {
         if (!DataUtility.MayRequire(TweakDatabase.FFF)) return;
-        var type = AccessTools.TypeByName(TierDefType);
+        var type = DataUtility.OptionalType(TierDefType, TweakDatabase.FFF, nameof(FortifiedHeavy));
         if (type == null) return;
 
         foreach (var def in GenDefDatabase.GetAllDefsInDatabaseForDef(type))
@@ -68,7 +68,8 @@ internal static class FortifiedHeavy
     internal static Def? FindTier(string? defName)
     {
         if (defName.NullOrEmpty()) return null;
-        var type = AccessTools.TypeByName(TierDefType);
+        if (!DataUtility.MayRequire(TweakDatabase.FFF)) return null;
+        var type = DataUtility.OptionalType(TierDefType, TweakDatabase.FFF, nameof(FindTier));
         return type == null ? null : GenDefDatabase.GetDefSilentFail(type, defName!);
     }
 
