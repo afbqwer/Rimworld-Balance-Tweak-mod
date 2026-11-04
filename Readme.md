@@ -11,6 +11,7 @@
 |------|------|
 | 重命名 / 改 namespace / 删除仍在用的 `XxxData` 类 | 存档每条都写 `Class="BalanceTweak.XxxData"`，解析失败整条变 null（`Init` 有 null 防御，但数据会丢） |
 | 重命名 / 删除 `SettingType` 枚举成员 | 存档按**名称**写入。重排声明顺序安全（须保留各成员原有显式数值），改数值才危险 |
+| 新增 `SettingType` 成员却忘了写进 `TabOrder` | 显示顺序只认 `SettingType.cs` 的 `TabOrder`（见 §5.3）。漏了不会报错，页签直接从下拉里消失 —— `SettingTypeOrderTests` 会在 `dotnet test` 时报红 |
 | 重命名 `[TweakField]` 字段 | 字段名 = XML 元素名，改名即丢该字段的修改（新增字段安全） |
 | 直接删除仍在使用的 `[TweakFor]` 规则 | 先确认没有已存数据落在该页签；确需删除时保留一个继承它的空壳子类 |
 | 用「值 == null / 值为空」反推"用户清空了该字段" | 三态只认两个**显式**集合（`TweakData.StateOf`）：`_modifiedFieldNames` / `_clearedFieldNames`。清空**只能**由 `MarkFieldCleared` 写入；判定一律走 `Apply*` 门控 |
@@ -468,6 +469,8 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 | `HeavyEquipment` | `Heavy.xml` | | |
 
 新增 SettingType 枚举值时需同时建对应 `{名称}.xml`（至少写 `MST.{枚举值}` 这条页签标题）。另有不绑定枚举值的功能专用文件（如 `Turret.xml` 的多炮塔窗口文案），按功能命名即可。
+
+**页签顺序不在枚举里**：下拉顺序的唯一来源是 `SettingType.cs` 的 `TabOrder` 数组，与枚举声明顺序无关 —— 想调顺序只挪那里的行。新增枚举值除了建 XML，还必须往 `TabOrder` 追加一行（漏了页签不出现，`SettingTypeOrderTests` 报红）。`IsTabVisible`（缺可选 Mod 时整项隐藏）只做可见性过滤，与顺序无关。
 
 ## 6. 领域要点
 

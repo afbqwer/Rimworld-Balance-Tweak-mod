@@ -259,14 +259,16 @@ public partial class BalanceTweakSettings : ModSettings
 
     #endregion
     #region 初始化
-    // 注意：这两行同时是 CheckLoc 识别 MST.{SettingType} 翻译键的来源（键是动态拼的），别改成别的写法。
+    // 注意：这一行同时是 CheckLoc 识别 MST.{SettingType} 翻译键的来源（键是动态拼的），别改成别的写法。
     private readonly static List<string> curSettingTypeStr = Enum.GetNames(typeof(SettingType)).Select(s => "MST." + s).ToList();
     /// <summary>
-    /// 页签下拉的索引 → 枚举值映射。Enum.GetNames 与 Enum.GetValues 的排序一致，
-    /// 所以第 i 项对应的就是这个列表的第 i 项 —— 不再依赖"枚举值必须从 0 起连续"这一隐含约束。
-    /// 实际下拉会先按 <see cref="IsTabVisible"/> 过滤（索引映射在过滤后的列表上做）。
+    /// 枚举值 → 页签标题翻译键。Enum.GetNames 与 Enum.GetValues 的排序一致，所以按下标配对即可。
+    /// 它只负责"每个枚举值都能查到标题"，<b>不决定顺序</b>（顺序看 `SettingType.cs` 的 `TabOrder`）。
     /// </summary>
-    private readonly static List<SettingType> curSettingTypeValues = Enum.GetValues(typeof(SettingType)).Cast<SettingType>().ToList();
+    private readonly static Dictionary<SettingType, string> curSettingTypeLabel =
+        Enum.GetValues(typeof(SettingType)).Cast<SettingType>()
+            .Zip(curSettingTypeStr, (type, label) => (type, label))
+            .ToDictionary(p => p.type, p => p.label);
 
     /// <summary>
     /// 可选 Mod 专属页签在缺少该 Mod 时整项隐藏（而不是留一个永远空着的页签）。
@@ -777,14 +779,12 @@ public partial class BalanceTweakSettings : ModSettings
         Rect typeFilterRect = new Rect(curX, bottomrow.y, bottomrow.width * 0.09f + Contracted, bottomrow.height).ContractedBy(Contracted);
         if (Widgets.ButtonText(typeFilterRect, ("MST." + curType).Translate().RawText))
         {
-            // 每次打开现算：可选 Mod 专属页签（重型装备）在缺少对应 Mod 时不进入下拉。
-            // 保留原始索引，名称列表与枚举值列表才能一一对应。
-            var visibleIndices = Enumerable.Range(0, curSettingTypeValues.Count)
-                .Where(i => IsTabVisible(curSettingTypeValues[i]))
-                .ToList();
-            OpenFilterMenu(visibleIndices.Select(i => curSettingTypeStr[i]).ToList(), selectedIndex =>
+            // 每次打开现算：顺序取 SettingType.cs 的 TabOrder，可选 Mod 专属页签（重型装备）
+            // 在缺少对应 Mod 时整项不进入下拉。名称与枚举值都从同一个列表取，不会错位。
+            var visibleTypes = TabOrder.Where(IsTabVisible).ToList();
+            OpenFilterMenu(visibleTypes.Select(t => curSettingTypeLabel[t]).ToList(), selectedIndex =>
             {
-                curType = curSettingTypeValues[visibleIndices[selectedIndex]];
+                curType = visibleTypes[selectedIndex];
                 filterPropType = 0;
                 selectedCol = null;
                 sortCol = null;
