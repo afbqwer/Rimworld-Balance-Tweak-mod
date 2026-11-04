@@ -61,6 +61,8 @@
 
 原版 / 本工程类型的私有成员不用这套：一律 `Reflect.Field(type, "字段名")`（`AccessTools.Field` + 缺失即登记，把"1.7 改名导致的静默 null"变成启动日志里的一条）。
 
+> **回归防线**：`Tests/AssemblyReferenceTests` 读产物元数据表，断言 `AssemblyRef` / `TypeRef` 里没有任何可选 Mod 程序集。`typeof` / `is` / 泛型参数 / 字段类型 / lambda 捕获（编译器会给闭包类生成公共字段）都会留下 typeref，加了就立刻跑红——不用等人肉 review 才发现。字符串写法则不产生 typeref，所以反射写法是安全的。
+
 ### 2.1 失配必须留痕（`Diagnostics`）
 
 光"按名反射"不够：拿不到成员就返回 `null`，调用点一句 `as bool?` 之后还是 `null`，那一列从此恒空白 —— 玩家以为"这个 Mod 不支持"，日志里一个字都没有。所有失败都进 `Diagnostics` 登记表，初始化收尾由 `Diagnostics.Report()` 合成**一条** `Log.Error`（挂在 `finally` 里，`Init` 抛异常也照发）。
