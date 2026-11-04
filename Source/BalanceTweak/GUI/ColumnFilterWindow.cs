@@ -26,6 +26,13 @@ public partial class BalanceTweakSettings
         private const float Gap = 4f;
         /// <summary>模式按钮之间的间距。比 <see cref="Gap"/> 宽：选中态要往外描 3px 粗边（原版选项底），挤在一起会互相压边。</summary>
         private const float ModeGap = 8f;
+        /// <summary>
+        /// 选中态的外扩量。原版 <c>DrawOptionSelected</c> 把粗边画在 <c>ExpandedBy(3)</c> 上 ——
+        /// 那 3px 在按钮<b>外面</b>，所以行的上边和右边必须留出同样宽的空隙，
+        /// 否则贴着内容区边缘的按钮会被窗口裁掉（表现为"上边/右边的框少一条"）。
+        /// 3 是原版硬编码的，vanilla 改了这里要跟着改。
+        /// </summary>
+        private const float OptionHalo = 3f;
         private const float ButtonRowHeight = 32f;
 
         private readonly StatColumnConfig config;
@@ -78,7 +85,7 @@ public partial class BalanceTweakSettings
         /// 窗口开起来之后再切模式时高度不会跟着长，留白比溢出好。文本条件只有一个搜索框，矮一截。
         /// 余量要够放大字号（UI 缩放会改字高）。
         /// </summary>
-        public override Vector2 InitialSize => new(460f, kind == ColumnFilterKind.Text ? 175f : 250f);
+        public override Vector2 InitialSize => new(460f, kind == ColumnFilterKind.Text ? 175f : 260f);
 
         public override void DoWindowContents(Rect inRect)
         {
@@ -110,11 +117,17 @@ public partial class BalanceTweakSettings
             {
                 ColumnFilterMode.Greater, ColumnFilterMode.Less, ColumnFilterMode.Equal, ColumnFilterMode.Range,
             };
-            float btnWidth = (width - LabelWidth - ModeGap * (modes.Length - 1)) / modes.Length;
+            // 上边与右边各让出 OptionHalo：选中态的粗边画在按钮外面，不留位就会被窗口边缘切掉。
+            // 左边不用让 —— 行首是 LabelWidth 处的"条件"两个字，按钮左侧 3px 落在空白上。
+            float top = curY + OptionHalo;
+            float btnHeight = RowHeight - 2f;
+            float usableRight = width - OptionHalo;
+            float btnWidth = (usableRight - LabelWidth - ModeGap * (modes.Length - 1)) / modes.Length;
+
             float x = LabelWidth;
             foreach (var m in modes)
             {
-                Rect btnRect = new(x, curY, btnWidth, RowHeight - 2f);
+                Rect btnRect = new(x, top, btnWidth, btnHeight);
                 bool selected = m == mode;
 
                 Widgets.DrawOptionBackground(btnRect, selected);
@@ -126,7 +139,7 @@ public partial class BalanceTweakSettings
 
                 x += btnWidth + ModeGap;
             }
-            curY += RowHeight + Gap;
+            curY = top + btnHeight + OptionHalo + Gap;
         }
 
         /// <summary>端点开关：一个开关同时管大于 / 小于 / 范围（等于不吃端点，所以选「等于」时置灰不可点）。</summary>

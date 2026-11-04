@@ -538,6 +538,8 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 
 端点由 `ColumnFilter.inclusive` 一个开关管（默认含边界）：`≥` / `≤` / 闭区间 `[a, b]`，严格则 `>` / `<` / `(a, b)`；「等于」不受影响。摘要按此口径写：`≥ 5`、`[5 ~ 10]`、`(20% ~ 50%)`、`项数 [2 ~ 5]`。区间不做"留空即无界"（单边用大于/小于），上下限填反在「确定」时自动换。
 
+> 窗口 UI：模式是分段控件 —— 选中项用 `Widgets.DrawOptionBackground(rect, true)` + 粗体字，点击走 `ButtonInvisible`（`ButtonText` 会把刚画的底纹整个盖掉，这也是之前只能靠文字变黄区分的原因）。选中态的粗边画在 `ExpandedBy(3)` 上，也就是按钮**外面**还有 3px：行的上边与右边要留出 `OptionHalo` 那么多空位，否则贴边的按钮会被窗口裁掉（表现为"选中框少一条边"）；左边不用留，按钮左边是"条件"两个字。
+
 四条不变式：
 
 - **文本判据只能用 `QuickSearchFilter`**：自己写 `Contains` 会多出"大小写 / 首尾空格"两种语义差异，顶栏搜索与列过滤就不再是同一件事。
