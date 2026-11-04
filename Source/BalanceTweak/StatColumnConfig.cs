@@ -76,6 +76,18 @@ public class StatColumnConfig
     /// <summary>字段值是否"已经空了"（null / 空串 / 空集合 / 无允许项的 ThingFilter）——空就没什么可清。</summary>
     public bool IsEmpty(TweakData data) => TweakData.IsEmptyValue(GetRawValue(data));
 
+    /// <summary>
+    /// <see cref="ColumnStyle.Config"/> 触发列点击后打开的窗口类型。其他样式恒为 null。
+    /// <para>
+    /// 这是"新增一种配置 = 写一个窗口类"的关键：列样式只有一个，窗口由字段自己指定，
+    /// 因此不必再动 <c>ColumnStyle</c> 枚举 / <c>ValidStyleMap</c> / <c>IsTriggerStyle</c> /
+    /// <c>GetString</c> / <c>DrawDisplayCell</c> 这五处硬编码清单。
+    /// </para>
+    /// </summary>
+    public readonly Type? configEditorType;
+    private readonly Func<TweakData, string>? configButtonText;
+    private readonly ConstructorInfo? configEditorCtor;
+
     private FieldType cachedFieldType;
     public FieldType SortFieldType => cachedFieldType;
     public readonly Type? EnumType;
@@ -95,7 +107,7 @@ public class StatColumnConfig
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
         { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList, ColumnStyle.XenotypeChanceList, ColumnStyle.ThingSetTags, ColumnStyle.FactionCurveList, ColumnStyle.SkillRangeList, ColumnStyle.BackstoryTraitList, ColumnStyle.PossessionList, ColumnStyle.PawnGroupMakerList, ColumnStyle.UnlockList, ColumnStyle.MutatorChanceList, ColumnStyle.ExtraDamageList, ColumnStyle.TurretSlotList } },
-        { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks, ColumnStyle.WeaponLinks, ColumnStyle.PawnWeaponLinks, ColumnStyle.MechWeaponFilter, ColumnStyle.RelayConfig, ColumnStyle.TurretConfig, ColumnStyle.ShieldConfig, ColumnStyle.APSConfig, ColumnStyle.SweepConfig } },
+        { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks, ColumnStyle.WeaponLinks, ColumnStyle.PawnWeaponLinks, ColumnStyle.Config } },
     };
 
     private Func<TweakData, object?>? _getter;
@@ -111,7 +123,9 @@ public class StatColumnConfig
         Type? enumType,
         FieldInfo? optionsListField,
         bool isMirror = false,
-        IsAvailable? isHidden = null
+        IsAvailable? isHidden = null,
+        Type? configEditor = null,
+        Func<TweakData, string>? configButtonText = null
         )
     {
         this.field = field;
@@ -126,6 +140,10 @@ public class StatColumnConfig
         this.getAbstract = getAbstract;
         this.EnumType = enumType;
         this.OptionsListField = optionsListField;
+        this.configEditorType = configEditor;
+        this.configButtonText = configButtonText;
+        if (configEditor != null)
+            configEditorCtor = configEditor.GetConstructor(new[] { typeof(TweakData) });
         label = ("MST." + field.Name).Translate().RawText;
         columnDataTypeLabel = ("MST." + columnDataType.ToString()).Translate().RawText;
         columnTypeLabel = ("MST." + columnType.ToString()).Translate().RawText;
@@ -196,7 +214,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks, PawnGroupMakerList, UnlockList, PawnWeaponLinks, MutatorChanceList, ExtraDamageList, MechWeaponFilter, RelayConfig, TurretConfig, TurretSlotList, ShieldConfig, APSConfig, SweepConfig }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks, PawnGroupMakerList, UnlockList, PawnWeaponLinks, MutatorChanceList, ExtraDamageList, TurretSlotList, Config }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -231,12 +249,15 @@ public class StatColumnConfig
     /// 前者会白算一遍整页战斗力，后者会得到一个"永远是 0 / 永远空"的假条件。
     /// 两处共用这一个判据，免得将来加了一种 Links 只改了一边。
     /// </para>
+    /// <para>
+    /// <see cref="ColumnStyle.Config"/> 是"打开一个配置窗口"的统一入口：新增一种配置<b>不再</b>
+    /// 往这里加成员，只写窗口类 + 在字段上挂 <c>[TweakField(Style = ColumnStyle.Config, Editor = …)]</c>。
+    /// </para>
     /// </summary>
     public static bool IsTriggerStyle(ColumnStyle style)
         => style is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks
             or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList
-            or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig or ColumnStyle.TurretConfig
-            or ColumnStyle.ShieldConfig or ColumnStyle.APSConfig or ColumnStyle.SweepConfig;
+            or ColumnStyle.Config;
 
     /// <summary>按字段类型决定这一列能用哪种列过滤。判据只在构造时算一次。</summary>
     private ColumnFilterKind ResolveFilterKind(ColumnStyle style)
@@ -991,6 +1012,28 @@ public class StatColumnConfig
         data.EnsureDisplayValues();
     }
 
+    /// <summary>
+    /// 造一个 <see cref="ColumnStyle.Config"/> 列的配置窗口；<c>null</c> = 该列没配 Editor
+    /// （启动期已由 <c>StatFieldMeta.ValidateConfigEditor</c> 报过一条，这里不再重复刷屏）。
+    /// <para>
+    /// 用构造时缓存的 <see cref="ConstructorInfo"/>，不用 <c>Activator.CreateInstance(type, …)</c> ——
+    /// 后者每次点击都要重跑一遍参数匹配。
+    /// </para>
+    /// </summary>
+    public Window? CreateConfigWindow(TweakData data)
+    {
+        if (configEditorCtor == null) return null;
+        try
+        {
+            return configEditorCtor.Invoke(new object[] { data }) as Window;
+        }
+        catch (Exception e)
+        {
+            Log.Error($"[BalanceTweak] {fieldName}：打开配置窗口 {configEditorType?.Name} 失败：{e}");
+            return null;
+        }
+    }
+
     // 用于数据的显示
     public string GetString(TweakData data)
     {
@@ -1026,37 +1069,13 @@ public class StatColumnConfig
             // "这一行有没有可列的武器"由字段上的 Hidden 谓词负责（每行只读自己的 def）。
             return "MST.weaponLinks".Translate().RawText;
         }
-        if (columnType == ColumnStyle.MechWeaponFilter)
+        if (columnType == ColumnStyle.Config)
         {
             // 只读触发列：一组字段由一个窗口统一编辑，表格里不展示值。
-            return "MST.mechWeaponFilterEdit".Translate().RawText;
-        }
-        if (columnType == ColumnStyle.RelayConfig)
-        {
-            // 没有任何中继 Comp 时按钮显示"添加"（窗口里可以勾选新增），否则显示"编辑"。
-            return FortifiedRelay.HasAny(data.def)
-                ? "MST.relayConfigEdit".Translate().RawText
-                : "MST.relayConfigAdd".Translate().RawText;
-        }
-        if (columnType == ColumnStyle.TurretConfig)
-        {
-            // 只读触发列：主炮 + 各副炮槽统一在 TurretConfigWindow 里编辑。
-            return "MST.turretConfigEdit".Translate().RawText;
-        }
-        if (columnType == ColumnStyle.ShieldConfig)
-        {
-            // 只读触发列：护盾的数值与拦截开关统一在 ShieldConfigWindow 里编辑。
-            return "MST.shieldConfigEdit".Translate().RawText;
-        }
-        if (columnType == ColumnStyle.APSConfig)
-        {
-            // 只读触发列：APS 的 4 个平衡字段统一在 APSConfigWindow 里编辑。
-            return "MST.apsConfigEdit".Translate().RawText;
-        }
-        if (columnType == ColumnStyle.SweepConfig)
-        {
-            // 只读触发列：扫射宽度 / 弧度 / 厚度 / 额外弹着点统一在 SweepConfigWindow 里编辑。
-            return "MST.sweepConfigEdit".Translate().RawText;
+            // 文字默认取 MST.{字段名}Edit（约定，CheckLoc 会把它算作"代码引用"）；
+            // 少数列需要按行换词（中继：没有任何 Comp 时说"添加"而不是"编辑"）时走 ButtonText。
+            if (configButtonText != null) return configButtonText(data);
+            return ("MST." + fieldName + "Edit").Translate().RawText;
         }
         if (cachedFieldType == FieldType.FloatRange)
         {

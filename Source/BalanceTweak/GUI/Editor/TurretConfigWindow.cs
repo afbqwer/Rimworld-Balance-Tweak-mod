@@ -13,7 +13,7 @@ namespace BalanceTweak;
 /// （<c>CompPropertiesMultipleTurretGun.subTurrets</c>）分节编辑。
 ///
 /// <para>
-/// 表格里只留一个只读触发列（<see cref="ColumnStyle.TurretConfig"/>）；槽位数据以
+/// 表格里只留一个只读触发列（<see cref="ColumnStyle.Config"/>）；槽位数据以
 /// <see cref="TurretSlotRecord"/> 列表落盘（NotAColumn），写回时按槽位 ID 原地合并，
 /// 保留 Def 上的渲染配置与已存在的 <c>SubTurret</c> 引用。
 /// </para>

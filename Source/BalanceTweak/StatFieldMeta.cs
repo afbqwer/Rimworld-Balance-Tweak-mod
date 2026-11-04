@@ -69,6 +69,9 @@ public class StatFieldMeta
     public delegate object? DefaultValueGetter(TweakData data);
     public DefaultValueGetter? DefaultGetter { get; }
 
+    /// <summary>触发列按钮文字（<see cref="TweakFieldAttribute.ButtonText"/>）；null = 用默认键。</summary>
+    public Func<TweakData, string>? ButtonTextGetter { get; }
+
     public StatFieldMeta(Type type, FieldInfo field, TweakFieldAttribute attr)
     {
         Field = field;
@@ -124,6 +127,15 @@ public class StatFieldMeta
             else
                 Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：找不到 GetAbstract 方法 {attr.GetAbstract}(TweakData)（抽象值列会为空）");
         }
+        if (!string.IsNullOrEmpty(attr.ButtonText))
+        {
+            var method = type.GetMethod(attr.ButtonText, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (method != null && method.ReturnType == typeof(string))
+                ButtonTextGetter = (Func<TweakData, string>)Delegate.CreateDelegate(typeof(Func<TweakData, string>), method);
+            else
+                Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：找不到 ButtonText 方法 {attr.ButtonText}(TweakData) : string（按钮会退回默认文字）");
+        }
+        ValidateConfigEditor(type, field, attr);
         if (!string.IsNullOrEmpty(attr.StatDef))
         {
             if (DefaultGetter != null) Log.Error($"[BalanceTweak]DefaultValueGetter{DefaultGetter}与{attr.StatDef}不可同时存在");
@@ -159,8 +171,31 @@ public class StatFieldMeta
             };
         }
     }
-}
 
+    /// <summary>
+    /// 启动期校验 <see cref="TweakFieldAttribute.Editor"/>：宁可在这里报一条，
+    /// 也不要在玩家点按钮时才抛 <c>MissingMethodException</c>。
+    /// </summary>
+    private static void ValidateConfigEditor(Type type, FieldInfo field, TweakFieldAttribute attr)
+    {
+        bool wantsConfig = attr.Style == ColumnStyle.Config;
+        if (attr.Editor == null)
+        {
+            if (wantsConfig)
+                Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：ColumnStyle.Config 必须给 Editor（否则按钮点了没有反应）");
+            return;
+        }
+        if (!wantsConfig)
+        {
+            Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：写了 Editor 但 Style 不是 ColumnStyle.Config（Editor 会被忽略）");
+            return;
+        }
+        if (!typeof(Window).IsAssignableFrom(attr.Editor))
+            Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：Editor 类型 {attr.Editor.Name} 不是 Window 子类");
+        else if (attr.Editor.GetConstructor(new[] { typeof(TweakData) }) == null)
+            Log.Error($"[BalanceTweak] {type.Name}.{field.Name}：Editor 类型 {attr.Editor.Name} 缺少 (TweakData) 构造");
+    }
+}
 [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
 public class TweakFieldAttribute : Attribute
 {
@@ -223,5 +258,26 @@ public class TweakFieldAttribute : Attribute
     public Type? EnumType { get; set; }
     /// <summary>选项列表字段名称，用于自定义下拉菜单选项</summary>
     public string? OptionsList { get; set; }
+
+    /// <summary>
+    /// <c>ColumnStyle.Config</c> 触发列点击后打开的窗口类型。必须是本程序集的 <see cref="Window"/> 子类，
+    /// 且只有一个 <c>(TweakData)</c> 构造 —— 用 <c>Activator</c> 现造，不走反射缓存。
+    ///
+    /// <para>
+    /// <b>不许指向可选 Mod 的类型</b>：<c>typeof</c> 会编出 typeref，未装该 Mod 的玩家启动期就
+    /// <c>TypeLoadException</c>（<c>AssemblyReferenceTests</c> 会拦）。窗口类自己当然可以按全名反射
+    /// 对方的数据，但那与 attribute 无关。
+    /// </para>
+    /// </summary>
+    public Type? Editor { get; set; }
+
+    /// <summary>
+    /// 触发列按钮文字的动态来源（方法名，签名 <c>static string Xxx(TweakData)</c>）。
+    /// <para>
+    /// 不写就用默认键 <c>MST.{字段名}Edit</c>。只有"同一列在不同行要说不同的话"才需要它
+    /// —— 目前唯一的例子是中继配置：没有任何中继 Comp 时显示"添加"而不是"编辑"。
+    /// </para>
+    /// </summary>
+    public string? ButtonText { get; set; }
 }
 

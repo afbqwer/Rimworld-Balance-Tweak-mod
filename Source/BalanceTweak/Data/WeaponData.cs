@@ -67,7 +67,8 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     // 四个字段都是原版 VerbProperties 字段，1.6 / 1.7 都有，不需要可选 Mod 反射。
 
     /// <summary>只读触发列：打开武器扫射配置窗口。没有扫射 Verb 的武器整格留白。</summary>
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.SweepConfig,
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(SweepConfigWindow),
         Available = nameof(AvailableIfRanged), Hidden = nameof(HiddenIfNoSweep))]
     public TweakID? sweepConfig = null;
 

@@ -56,7 +56,8 @@ class AbilityData : TweakData<AbilityData>
     // 表格里只留一个只读触发列，字段本身 NotAColumn，由窗口统一编辑。
 
     /// <summary>只读触发列：打开主动防御配置窗口。没有 APS Comp 的行整格留白。</summary>
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.APSConfig,
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(APSConfigWindow),
         MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoActiveProtectionSystem))]
     public TweakID? apsConfig = null;
 

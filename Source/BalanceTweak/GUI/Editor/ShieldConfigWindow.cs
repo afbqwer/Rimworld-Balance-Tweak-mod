@@ -7,58 +7,38 @@ namespace BalanceTweak;
 /// 原版投射物护盾（<c>CompProperties_ProjectileInterceptor</c>）的配置窗口。
 ///
 /// <para>
-/// 只负责声明字段顺序、取值范围与组合校验；输入缓冲、三态写入、关窗提交都在
-/// <see cref="CompConfigWindow"/>。没有该 Comp 的种族不会显示触发列，这里也不做增删。
+/// 只负责声明分节与组合校验；输入缓冲、三态写入、关窗提交都在 <see cref="ConfigWindow"/>。
+/// 没有该 Comp 的种族不会显示触发列，这里也不做增删。
 /// </para>
 /// </summary>
-public class ShieldConfigWindow : CompConfigWindow
+public class ShieldConfigWindow : ConfigWindow
 {
-    private static readonly CompConfigRow[] Rows =
+    private static readonly ConfigSection[] Sections =
     {
-        CompConfigRow.Section("MST.shieldCoreSection"),
+        ConfigSection.Of("MST.shieldCoreSection", null,
+            ConfigRow.Float(nameof(RaceData.projectileInterceptorRadius)),
+            ConfigRow.Int(nameof(RaceData.projectileInterceptorHitPoints), -1),
+            ConfigRow.Bool(nameof(RaceData.startWithMaxHitPoints)),
+            ConfigRow.Int(nameof(RaceData.projectileInterceptorChargeDurationTicks)),
+            ConfigRow.Int(nameof(RaceData.projectileInterceptorRechargeHitPointsIntervalTicks), 1),
+            ConfigRow.Bool(nameof(RaceData.hitPointsRestoreInstantlyAfterCharge)),
+            ConfigRow.Int(nameof(RaceData.cooldownTicks)),
+            ConfigRow.Int(nameof(RaceData.chargeIntervalTicks)),
+            ConfigRow.Int(nameof(RaceData.projectileInterceptorDisarmedByEmpForTicks))),
 
-        CompConfigRow.Float(nameof(RaceData.projectileInterceptorRadius),
-            "MST.projectileInterceptorRadius", "MST.projectileInterceptorRadiusComment"),
-        CompConfigRow.Int(nameof(RaceData.projectileInterceptorHitPoints),
-            "MST.projectileInterceptorHitPoints", "MST.projectileInterceptorHitPointsComment", -1),
-        CompConfigRow.Bool(nameof(RaceData.startWithMaxHitPoints),
-            "MST.startWithMaxHitPoints", "MST.startWithMaxHitPointsComment"),
-        CompConfigRow.Int(nameof(RaceData.projectileInterceptorChargeDurationTicks),
-            "MST.projectileInterceptorChargeDurationTicks", "MST.projectileInterceptorChargeDurationTicksComment"),
-        CompConfigRow.Int(nameof(RaceData.projectileInterceptorRechargeHitPointsIntervalTicks),
-            "MST.projectileInterceptorRechargeHitPointsIntervalTicks",
-            "MST.projectileInterceptorRechargeHitPointsIntervalTicksComment", 1),
-        CompConfigRow.Bool(nameof(RaceData.hitPointsRestoreInstantlyAfterCharge),
-            "MST.hitPointsRestoreInstantlyAfterCharge", "MST.hitPointsRestoreInstantlyAfterChargeComment"),
-        CompConfigRow.Int(nameof(RaceData.cooldownTicks),
-            "MST.cooldownTicks", "MST.cooldownTicksComment"),
-        CompConfigRow.Int(nameof(RaceData.chargeIntervalTicks),
-            "MST.chargeIntervalTicks", "MST.chargeIntervalTicksComment"),
-        CompConfigRow.Int(nameof(RaceData.projectileInterceptorDisarmedByEmpForTicks),
-            "MST.projectileInterceptorDisarmedByEmpForTicks",
-            "MST.projectileInterceptorDisarmedByEmpForTicksComment"),
+        ConfigSection.Of("MST.shieldInterceptSection", null,
+            ConfigRow.Bool(nameof(RaceData.interceptGroundProjectiles)),
+            ConfigRow.Bool(nameof(RaceData.interceptAirProjectiles)),
+            ConfigRow.Bool(nameof(RaceData.interceptNonHostileProjectiles)),
+            ConfigRow.Bool(nameof(RaceData.interceptOutgoingProjectiles))),
 
-        CompConfigRow.Section("MST.shieldInterceptSection"),
-
-        CompConfigRow.Bool(nameof(RaceData.interceptGroundProjectiles),
-            "MST.interceptGroundProjectiles", "MST.interceptGroundProjectilesComment"),
-        CompConfigRow.Bool(nameof(RaceData.interceptAirProjectiles),
-            "MST.interceptAirProjectiles", "MST.interceptAirProjectilesComment"),
-        CompConfigRow.Bool(nameof(RaceData.interceptNonHostileProjectiles),
-            "MST.interceptNonHostileProjectiles", "MST.interceptNonHostileProjectilesComment"),
-        CompConfigRow.Bool(nameof(RaceData.interceptOutgoingProjectiles),
-            "MST.interceptOutgoingProjectiles", "MST.interceptOutgoingProjectilesComment"),
-
-        CompConfigRow.Section("MST.shieldActiveSection"),
-
-        CompConfigRow.Bool(nameof(RaceData.activated),
-            "MST.activated", "MST.activatedComment"),
-        CompConfigRow.Int(nameof(RaceData.activeDuration),
-            "MST.activeDuration", "MST.activeDurationComment"),
+        ConfigSection.Of("MST.shieldActiveSection", null,
+            ConfigRow.Bool(nameof(RaceData.activated)),
+            ConfigRow.Int(nameof(RaceData.activeDuration))),
     };
 
     public ShieldConfigWindow(TweakData data)
-        : base(data, "MST.shieldConfig", "MST.shieldConfigIntro", "MST.shieldConfigNote", Rows, 720f, Validate)
+        : base(data, "MST.shieldConfig", "MST.shieldConfigIntro", Sections, 720f, "MST.shieldConfigNote", Validate)
     {
     }
 
@@ -66,9 +46,9 @@ public class ShieldConfigWindow : CompConfigWindow
     /// 组合校验。第一组对齐原版 <c>ConfigErrors</c>（HP 池与充能周期互斥），
     /// 其余是原版不会检查、但会让护盾永远无法生效 / 每 tick 除以零的组合。
     /// </summary>
-    private static IReadOnlyList<CompConfigIssue> Validate(TweakData data)
+    private static IReadOnlyList<ConfigIssue> Validate(TweakData data)
     {
-        var issues = new List<CompConfigIssue>();
+        var issues = new List<ConfigIssue>();
 
         int hp = Int(data, nameof(RaceData.projectileInterceptorHitPoints)) ?? -1;
         int recharge = Int(data, nameof(RaceData.projectileInterceptorRechargeHitPointsIntervalTicks)) ?? 240;
@@ -81,27 +61,27 @@ public class ShieldConfigWindow : CompConfigWindow
         bool air = Bool(data, nameof(RaceData.interceptAirProjectiles));
 
         if (hp > 0 && chargeInterval > 0)
-            issues.Add(CompConfigIssue.Error("MST.shieldErrHpAndChargeInterval".Translate().RawText));
+            issues.Add(ConfigIssue.Error("MST.shieldErrHpAndChargeInterval".Translate().RawText));
         if (hp > 0 && recharge <= 0)
-            issues.Add(CompConfigIssue.Error("MST.shieldErrRechargeInterval".Translate().RawText));
+            issues.Add(ConfigIssue.Error("MST.shieldErrRechargeInterval".Translate().RawText));
         if (hp < -1)
-            issues.Add(CompConfigIssue.Error("MST.shieldErrHitPointsTooLow".Translate().RawText));
+            issues.Add(ConfigIssue.Error("MST.shieldErrHitPointsTooLow".Translate().RawText));
 
         if (chargeInterval > 0 && chargeDuration <= 0)
-            issues.Add(CompConfigIssue.Error("MST.shieldErrChargeDurationZero".Translate().RawText));
+            issues.Add(ConfigIssue.Error("MST.shieldErrChargeDurationZero".Translate().RawText));
         else if (chargeInterval > 0 && chargeInterval < chargeDuration)
-            issues.Add(CompConfigIssue.Error("MST.shieldErrChargeIntervalShorter".Translate().RawText));
+            issues.Add(ConfigIssue.Error("MST.shieldErrChargeIntervalShorter".Translate().RawText));
 
         if (activated && activeDuration <= 0)
-            issues.Add(CompConfigIssue.Error("MST.shieldErrActiveDurationZero".Translate().RawText));
+            issues.Add(ConfigIssue.Error("MST.shieldErrActiveDurationZero".Translate().RawText));
         else if (activated)
-            issues.Add(CompConfigIssue.Warning("MST.shieldWarnActivatedNeedsExternal".Translate().RawText));
+            issues.Add(ConfigIssue.Warning("MST.shieldWarnActivatedNeedsExternal".Translate().RawText));
         if (!activated && activeDuration > 0)
-            issues.Add(CompConfigIssue.Warning("MST.shieldWarnActiveDurationIgnored".Translate().RawText));
+            issues.Add(ConfigIssue.Warning("MST.shieldWarnActiveDurationIgnored".Translate().RawText));
         if (hp <= 0 && instantRefill)
-            issues.Add(CompConfigIssue.Warning("MST.shieldWarnInstantRefillNoHp".Translate().RawText));
+            issues.Add(ConfigIssue.Warning("MST.shieldWarnInstantRefillNoHp".Translate().RawText));
         if (!ground && !air)
-            issues.Add(CompConfigIssue.Warning("MST.shieldWarnNoInterceptType".Translate().RawText));
+            issues.Add(ConfigIssue.Warning("MST.shieldWarnNoInterceptType".Translate().RawText));
 
         return issues;
     }

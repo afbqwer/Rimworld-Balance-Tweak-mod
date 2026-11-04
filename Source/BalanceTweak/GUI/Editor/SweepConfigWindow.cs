@@ -12,23 +12,19 @@ namespace BalanceTweak;
 /// 只有带扫射 Verb 的武器才显示触发列，其他武器整格留白。
 /// </para>
 /// </summary>
-public class SweepConfigWindow : CompConfigWindow
+public class SweepConfigWindow : ConfigWindow
 {
-    private static readonly CompConfigRow[] Rows =
+    private static readonly ConfigSection[] Sections =
     {
-        CompConfigRow.Section("MST.sweepSection"),
-        CompConfigRow.Float(nameof(WeaponData.sprayWidth),
-            "MST.sprayWidth", "MST.sprayWidthComment"),
-        CompConfigRow.Float(nameof(WeaponData.sprayArching),
-            "MST.sprayArching", "MST.sprayArchingComment"),
-        CompConfigRow.Int(nameof(WeaponData.sprayThicknessCells),
-            "MST.sprayThicknessCells", "MST.sprayThicknessCellsComment", 1),
-        CompConfigRow.Int(nameof(WeaponData.sprayNumExtraCells),
-            "MST.sprayNumExtraCells", "MST.sprayNumExtraCellsComment"),
+        ConfigSection.Of("MST.sweepSection", null,
+            ConfigRow.Float(nameof(WeaponData.sprayWidth)),
+            ConfigRow.Float(nameof(WeaponData.sprayArching)),
+            ConfigRow.Int(nameof(WeaponData.sprayThicknessCells), 1),
+            ConfigRow.Int(nameof(WeaponData.sprayNumExtraCells))),
     };
 
     public SweepConfigWindow(TweakData data)
-        : base(data, "MST.sweepConfig", "MST.sweepConfigIntro", "MST.sweepConfigNote", Rows, 420f, Validate)
+        : base(data, "MST.sweepConfig", "MST.sweepConfigIntro", Sections, 420f, "MST.sweepConfigNote", Validate)
     {
     }
 
@@ -36,18 +32,18 @@ public class SweepConfigWindow : CompConfigWindow
     /// 扫射路径先追加 <c>sprayNumExtraCells</c> 个弹着点，再追加目标格；每次射击按
     /// <c>burstShotsLeft</c> 索引这条路径。因此额外格不足时可能越界。
     /// </summary>
-    private static IReadOnlyList<CompConfigIssue> Validate(TweakData data)
+    private static IReadOnlyList<ConfigIssue> Validate(TweakData data)
     {
-        var issues = new List<CompConfigIssue>();
+        var issues = new List<ConfigIssue>();
         int extra = Int(data, nameof(WeaponData.sprayNumExtraCells)) ?? 0;
         int burst = Int(data, nameof(WeaponData.burstShotCount)) ?? 1;
 
         if (burst > 1)
         {
             if (extra + 1 < burst)
-                issues.Add(CompConfigIssue.Error("MST.sweepErrPathTooShort".Translate().RawText));
+                issues.Add(ConfigIssue.Error("MST.sweepErrPathTooShort".Translate().RawText));
             else if (extra < burst)
-                issues.Add(CompConfigIssue.Warning("MST.sweepWarnExtraCellsLessThanBurst".Translate().RawText));
+                issues.Add(ConfigIssue.Warning("MST.sweepWarnExtraCellsLessThanBurst".Translate().RawText));
         }
 
         return issues;

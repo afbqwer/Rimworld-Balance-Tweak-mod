@@ -167,7 +167,8 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     // 字段多、实际挂载的种族少：表格里只留一个只读触发列，其余字段 NotAColumn，由窗口统一编辑。
 
     /// <summary>只读触发列：打开护盾配置窗口。没有该 Comp 的行整格留白（护盾是机体硬件，不提供“添加”）。</summary>
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.ShieldConfig,
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(ShieldConfigWindow),
         Available = nameof(AvailableIfMech), Hidden = nameof(HiddenIfNoProjectileInterceptor))]
     public TweakID? shieldConfig = null;
 
@@ -232,7 +233,8 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     // 其余字段只落盘、不出现在列里（NotAColumn），由窗口统一编辑。
 
     /// <summary>只读触发列：打开机械武器过滤窗口。没有 <c>MechWeaponExtension</c> 的行整格留白。</summary>
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.MechWeaponFilter,
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(MechWeaponFilterWindow),
         MayRequire = TweakDatabase.FFF, Available = nameof(AvailableIfMech),
         Hidden = nameof(HiddenIfNoMechWeaponExtension))]
     public TweakID? mechWeaponFilter = null;
@@ -270,9 +272,16 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     /// 只读触发列：打开中继配置窗口。种族页只在机械分组出现（AvailableIfMech）；
     /// 没有中继 Comp 的机械也要能打开窗口来新增 Comp，所以不做行级留白。
     /// </summary>
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.RelayConfig,
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(RelayConfigWindow), ButtonText = nameof(RelayConfigButtonText),
         MayRequire = TweakDatabase.FFF, Available = nameof(AvailableIfMech))]
     public TweakID? relayConfig = null;
+
+    /// <summary>没有任何中继 Comp 时按钮说"添加"（窗口里可以勾选新增），否则说"编辑"。</summary>
+    public static string RelayConfigButtonText(TweakData data)
+        => FortifiedRelay.HasAny(data.def)
+            ? "MST.relayConfigEdit".Translate().RawText
+            : "MST.relayConfigAdd".Translate().RawText;
 
     // 宿主 stat：带宽 / 控制组 / 指挥范围写在 def.statBases 上，仍由 ApplyDefStats 唯一写入；
     // NotAColumn = 不进表格，改到 RelayConfigWindow 里编辑（一个组件不值得占三列）。
@@ -317,7 +326,8 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     // 槽位数据以 TurretSlotRecord 列表落盘（字段表驱动），渲染配置始终留在 Def 上。
 
     /// <summary>只读触发列：打开炮塔配置窗口。既没有副炮槽也没有主炮的行整格留白。</summary>
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.TurretConfig,
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(TurretConfigWindow),
         MayRequire = TweakDatabase.FFF, Available = nameof(AvailableIfMech),
         Hidden = nameof(HiddenIfNoTurretComp))]
     public TweakID? turretConfig = null;

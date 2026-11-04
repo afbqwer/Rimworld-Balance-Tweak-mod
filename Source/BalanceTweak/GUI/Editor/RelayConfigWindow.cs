@@ -14,7 +14,7 @@ namespace BalanceTweak;
 /// <para>
 /// 一个 Def 可能同时挂 <c>CommandRelay</c> / <c>SubRelay</c> / <c>Overseer</c> /
 /// <c>OverseerFacility</c> 中的一到四种，字段之间没有批量编辑价值，所以表格里只留一个
-/// <see cref="StatColumnConfig.ColumnStyle.RelayConfig"/> 触发列；字段本身标
+/// <see cref="ColumnStyle.Config"/> 触发列；字段本身标
 /// <c>[TweakField(NotAColumn = true)]</c>：照常落盘 / 参与三态 / 重置，但不进入表格。
 /// 窗口按 Def 实际拥有的 Comp 分节，没有的节不显示。
 /// </para>

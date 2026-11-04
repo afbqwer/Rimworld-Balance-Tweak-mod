@@ -310,7 +310,9 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
             enumType: f.EnumType,
             optionsListField: f.OptionsListField,
             isMirror: f.Attr.IsMirror,
-            isHidden: f.HiddenChecker);
+            isHidden: f.HiddenChecker,
+            configEditor: f.Attr.Editor,
+            configButtonText: f.ButtonTextGetter);
 
     private static List<StatFieldMeta> InitStaticFields()
     {

@@ -8,22 +8,19 @@ namespace BalanceTweak;
 /// 音效 / 目标名单，不在默认编辑范围内。没有该 Comp 的能力不会显示触发列。
 /// </para>
 /// </summary>
-public class APSConfigWindow : CompConfigWindow
+public class APSConfigWindow : ConfigWindow
 {
-    private static readonly CompConfigRow[] Rows =
+    private static readonly ConfigSection[] Sections =
     {
-        CompConfigRow.Int(nameof(AbilityData.apsRadius),
-            "MST.apsRadius", "MST.apsRadiusComment"),
-        CompConfigRow.Percent(nameof(AbilityData.apsChanceToFail),
-            "MST.apsChanceToFail", "MST.apsChanceToFailComment"),
-        CompConfigRow.Int(nameof(AbilityData.apsActiveTicks),
-            "MST.apsActiveTicks", "MST.apsActiveTicksComment"),
-        CompConfigRow.Int(nameof(AbilityData.apsInterceptCountMax),
-            "MST.apsInterceptCountMax", "MST.apsInterceptCountMaxComment"),
+        ConfigSection.Of(null, null,
+            ConfigRow.Int(nameof(AbilityData.apsRadius)),
+            ConfigRow.Percent(nameof(AbilityData.apsChanceToFail)),
+            ConfigRow.Int(nameof(AbilityData.apsActiveTicks)),
+            ConfigRow.Int(nameof(AbilityData.apsInterceptCountMax))),
     };
 
     public APSConfigWindow(TweakData data)
-        : base(data, "MST.apsConfig", "MST.apsConfigIntro", "MST.apsConfigNote", Rows, 420f)
+        : base(data, "MST.apsConfig", "MST.apsConfigIntro", Sections, 420f, "MST.apsConfigNote")
     {
     }
 }

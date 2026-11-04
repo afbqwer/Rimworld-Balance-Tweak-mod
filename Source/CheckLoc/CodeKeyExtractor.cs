@@ -124,6 +124,16 @@ public static partial class CodeKeyExtractor
                 var commentKey = "MST." + fieldName + "Comment";
                 keys.TryAdd(commentKey, new CodeKeyRef(commentKey, "TweakField 字段 Comment", relativePath));
             }
+
+            // 触发列的按钮文字：默认键是 MST.{字段名}Edit。
+            // 它在 StatColumnConfig.GetString 里是**拼**出来的（"MST." + fieldName + "Edit"），
+            // 静态正则看不见 —— 不在这里登记就会被孤儿键检查删掉，玩家看到的是裸 key。
+            // 显式写了 ButtonText 方法的列用不到这条，多登记一条只是"允许存在"。
+            if (attrParams.Contains("ColumnStyle.Config"))
+            {
+                var buttonKey = "MST." + fieldName + "Edit";
+                keys.TryAdd(buttonKey, new CodeKeyRef(buttonKey, "TweakField 触发列按钮", relativePath));
+            }
         }
     }
 

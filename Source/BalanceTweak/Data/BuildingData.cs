@@ -99,8 +99,8 @@ class BuildingData : TweakData<BuildingData>
     /// 只读触发列：打开中继配置窗口。即使没有任何中继 Comp 也要能打开窗口来新增 Comp，
     /// 所以不做行级留白。
     /// </summary>
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.RelayConfig,
-        MayRequire = TweakDatabase.FFF)]
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(RelayConfigWindow), MayRequire = TweakDatabase.FFF)]
     public TweakID? relayConfig = null;
 
     // 中继 Comp 的新增 / 移除开关（与 ApparelData.isCompQuality 同一模式）。

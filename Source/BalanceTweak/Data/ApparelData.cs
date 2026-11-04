@@ -153,8 +153,8 @@ public class ApparelData : TweakData<ApparelData>
 
     // ── Fortified 中继指挥（可选 Mod，见 RelayConfigWindow）──
     // 服装只支持 CompProperties_SubRelay（Fortified 把穿在身上的服装也当作副中继）。
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.RelayConfig,
-        MayRequire = TweakDatabase.FFF)]
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(RelayConfigWindow), MayRequire = TweakDatabase.FFF)]
     public TweakID? relayConfig = null;
 
     [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
@@ -169,7 +169,8 @@ public class ApparelData : TweakData<ApparelData>
 
     // ── Fortified 多炮塔（可选 Mod，见 TurretConfigWindow）──
     // 服装只支持副炮槽（CompMultipleTurretGun 挂在护甲上时由 CompDrawWornExtras 绘制）。
-    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.TurretConfig,
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(TurretConfigWindow),
         MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoTurretComp))]
     public TweakID? turretConfig = null;
 

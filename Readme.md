@@ -189,6 +189,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 | `[TweakField]` 字段列标题 | `MST.{字段名}` |
 | 私有 enum 分类名 | `MST.{枚举值}` |
 | 字段 tooltip（含义不直观或带风险时加） | `MST.{字段名}Comment` |
+| `ColumnStyle.Config` 触发列按钮 | `MST.{字段名}Edit`（`CheckLoc` 已认这条约定）；用 `ButtonText` 时是方法里显式写的那几个 key |
 
 **文件映射**：多数 SettingType 一个对应一个 XML 文件（对照表见 §5.3）；子项页签与父页签共用文件（`ThoughtStage` / `HediffStage` / `TraitDegree`），`Misc` 归 `Core.xml`。新增枚举值时需创建对应新文件。
 
@@ -378,7 +379,7 @@ public override void Apply()
 
 **新增一个 Links 样式要动 6 处**：`ColumnStyle` 枚举（末尾追加）→ `ValidStyleMap` 的 `FieldType.TweakID` 行 → `StatColumnConfig.IsTriggerStyle`（派生值推导与列过滤都靠这一处跳过触发列，漏了会白算整页战斗力、并得到一个永远为空的过滤条件）→ `GetString` 的按钮文字分支 → `BalanceTweakGUI.DrawDisplayCell` 的点击分发 → `IsPaintableColumn` 的排除列表（只对非 `Display` 的触发列必要，其余已被 `columnDataType` 挡掉）；再补 `MST.XxxLinks` 与字段级 `MST.{字段名}Comment`。
 
-Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `TurretConfig`）走同一套：字段只是 `TweakID?` 占位，真数据在若干 `NotAColumn` 字段里，由各自窗口统一编辑。
+Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `TurretConfig`）走的是另一套 —— **一个只读触发列 + 一个配置窗口**，见 §4.8。它们的字段同样是 `TweakID?` 占位，真数据在若干 `NotAColumn` 字段里。
 
 > 兵种这条反查的是**规则**：`PawnKindDef` 没有"武器"数据，武器按 `weaponTags` + `weaponMoney` 现抽，只能扫全库套同一套判定（标签交集 / 预算上界 / `generateAllowChance > 0` / `weaponStuffOverride` 的材料可兼容）。预算取上界，攻击列取期望（5 档采样）；功能武器（烟雾 / EMP）会列出，但攻击列按 `harmsHealth` 排除。
 > 种族页与兵种页共用 `PawnKindData.CollectWeaponLinks`（逐兵种各扫一遍在 `Human` 上会变成十几万次重复遍历）。
@@ -388,8 +389,92 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 `TooltipHandler.TipRegion` 只是**登记**字符串，真正的绘制发生在整个 OnGUI 末尾（`ActiveTip.DrawTooltip`）。那里只设 `Text.Font`，**换行与对齐沿用绘制这一刻的全局值**。所以窗口在绘制过程中改过的 `Text.WordWrap` / `Text.Anchor` 会漏到 tooltip 上，症状是"左侧名称列的 tooltip 有时不换行 / 居中"，取决于最后一格画的是什么。
 
 - `BalanceTweakGUI.DrawData` 在入口记下 `Text.WordWrap` / `Text.Anchor`，出口原样还原；中间的数据格（`Text.WordWrap = false`）与单元格对齐（`MiddleCenter`）不再外溢。
-- 局部改动一律 **保存 → 改 → 还原**（`DrawNameRow` 的标签、`CompConfigWindow` / `MechWeaponFilterWindow` / `RelayConfigWindow` / `TurretConfigWindow` 的正文都是这么写的），不要硬写成 `= true`：那在调用方本来是 `false` 时会把状态改脏。
+- 局部改动一律 **保存 → 改 → 还原**（`DrawNameRow` 的标签、`ConfigWindow` / `MechWeaponFilterWindow` / `RelayConfigWindow` / `TurretConfigWindow` 的正文都是这么写的），不要硬写成 `= true`：那在调用方本来是 `false` 时会把状态改脏。
 - 同理适用于 `Text.Font` / `GUI.color`：`DrawInitProgress` 已经这么处理。
+
+### 4.8 触发列 + 配置窗口（`ColumnStyle.Config`）
+
+一个 Def 上有十几到几十个相关字段时（AO 的建筑：9 个 Comp + 1 个扩展、56 个数值），逐列展示会把表格挤爆，而每行只命中其中两三个。做法是**表格里只留一个只读触发列，字段全部 `NotAColumn`，点开一个窗口统一编辑**。
+
+**新增一种配置 = 1 个窗口类 + 1 个字段声明，不动任何 switch。** 列样式只有一个 `ColumnStyle.Config`，窗口类型由字段自己指定。
+
+> 早期做法是"每种配置加一个 `ColumnStyle` + 一个窗口"，连加 6 种之后，`ColumnStyle` 枚举、`ValidStyleMap`、`IsTriggerStyle`、`GetString`、`DrawDisplayCell`、`IsPaintableColumn` 六处各有一份六个分支的清单。新增第 7 种时漏一处就静默出错：漏 `IsTriggerStyle` = 整页战斗力白算一遍 + 多一个永远为空的过滤条件；漏 `DrawDisplayCell` = 按钮画出来但点了没反应。收敛成一个 `Config` + `Editor` 属性后，"接线"这件事从六处变成零处。
+
+#### 字段声明
+
+```csharp
+/// <summary>只读触发列：打开大气建筑配置窗口。</summary>
+[TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+    Editor = typeof(AtmosphereBuildingConfigWindow),
+    MayRequire = TweakDatabase.AO,
+    Hidden = nameof(HiddenIfNoAtmosphereComp))]   // 一个相关 Comp/扩展都没有的行整格留白
+public TweakID? atmosphereConfig = null;
+
+[TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+public float? fanMaxPowerWatts = null;
+```
+
+- 字段类型必须是 `TweakID?`（占位，永远不存值）。
+- `Editor` 必须是本程序集的 `Window` 子类、且只有一个 `(TweakData)` 构造。启动期校验一次，写错是一条日志，不会等玩家点下去才抛。**不许指向可选 Mod 的类型** —— 那会编出 typeref（`AssemblyReferenceTests` 会拦）。
+- 按钮文字默认 `MST.{字段名}Edit`（例：`atmosphereConfig` → `MST.atmosphereConfigEdit`），`CheckLoc` 把它认作代码引用，不会成孤儿键。要按行换词时加 `ButtonText = nameof(静态方法)`（唯一用例：中继配置没有任何 Comp 时说"添加"）。
+
+#### 窗口：声明分节
+
+```csharp
+public class AtmosphereBuildingConfigWindow : ConfigWindow
+{
+    private static readonly ConfigSection[] Sections =
+    {
+        // 参数：节标题（null = 不画标题）、出现条件（null = 总显示）、行
+        ConfigSection.Of("MST.aoFanSection", HasFan,
+                ConfigRow.Float(nameof(BuildingData.fanMaxPowerWatts), 0f, 100000f),
+                ConfigRow.Float(nameof(BuildingData.fanRatedFreeAirFlow)),
+                ConfigRow.Bool(nameof(BuildingData.fanAllowOutputAdjustment)))
+            .Note("MST.aoFanNote"),   // 节尾灰色说明
+
+        ConfigSection.Of("MST.aoJetSection", HasJet,
+            ConfigRow.Int(nameof(BuildingData.jetColumnHeight), 1),
+            ConfigRow.Enum(nameof(BuildingData.jetPowerSource)),       // 下拉（OptionsList / EnumType）
+            ConfigRow.Def(nameof(BuildingData.jetProductDef)),         // Def 选择器
+            ConfigRow.Percent(nameof(BuildingData.jetOxygenPercent))), // 界面 0~100，字段存 0~1
+    };
+
+    public AtmosphereBuildingConfigWindow(TweakData data)
+        : base(data, "MST.atmosphereConfig", "MST.atmosphereConfigIntro", Sections,
+               preferredHeight: 780f, noteKey: "MST.atmosphereConfigNote", validate: Validate)
+    {
+    }
+
+    // 出现条件必须是**方法组**；不要在 lambda 里碰可选 Mod 的类型（会编出 typeref）。
+    private static bool HasFan(TweakData d) => AoHelper.FindComp(d.def, AoHelper.FanProps) != null;
+
+    private static IReadOnlyList<ConfigIssue> Validate(TweakData d) { /* … */ }
+}
+```
+
+行的 `labelKey` 默认 `MST.{字段名}`、`commentKey` 默认 `MST.{字段名}Comment` —— 与表格列标题同一套约定，`CheckLoc` 会自动要求它们存在。
+
+#### 窗口能做的事
+
+| 行 | 控件 | 写回 |
+|---|---|---|
+| `ConfigRow.Int` / `Float` | 内联文本框（回车 / 失焦 / 关窗才提交） | `ApplyValue` |
+| `ConfigRow.Percent` | 同上，界面 0~100、字段 0~1 | `ApplyValue` |
+| `ConfigRow.Bool` | 复选框 | `ApplyValue` |
+| `ConfigRow.Enum` | FloatMenu 下拉（选项来自 `OptionsList`，没有则用 `EnumType` 成员名） | `CheckAndApply` |
+| `ConfigRow.Def` | 按钮 → `DefSelectionWindow` | 由选择器 |
+| `ConfigRow.String` | 内联文本框 | `CheckAndApply` |
+| `ConfigRow.List` | 按钮 → 该列样式对应的列表窗口（复用表格那张 `EditorWindowFactory`） | 由列表窗口 |
+| `validate` | 窗口底部「配置检查」：错误红 / 提示黄 / 无问题绿 | — |
+
+四条不变式：
+
+- **写入只有一条路径**：全部走 `StatColumnConfig.ApplyValue` / `CheckAndApply`，与表格编辑同一条三态 / 重置 / `ResearchUnlocks` 失效 / `CombatPower.Invalidate` 路径。**不要**在窗口里直接写 Def 字段 —— 那样改了不进存档、重置也清不掉。
+- **节的 `Visible` 就是"这个 Def 有没有对应 Comp/扩展"**，绘制时逐行求值（几十次反射，可接受）。要"整个触发列在不适用行留白"另配 `Hidden`。
+- **窗口高度不用传死值**：内容高度在绘制前算好再开滚动区（旧实现传死 `viewHeight`，字段一多就滚不到底）。`preferredHeight` 只影响窗口初始高度。
+- **IMGUI 全局状态**：改 `Text.Font` / `Text.Anchor` / `Text.WordWrap` 一律"保存 → 改 → 还原"（见 §4.7）。覆写 `DrawBody` 时自己也要守这条。
+
+> 现有 6 个触发列（`mechWeaponFilter` / `relayConfig` / `turretConfig` / `shieldConfig` / `apsConfig` / `sweepConfig`）已全部迁到 `ColumnStyle.Config`。前三个是手写窗口（`EditorWindowBase` 直出，因为要按 Comp 分节、增删 Comp、编辑槽位列表）；后三个是 `ConfigWindow` 子类，加起来不到 60 行。
 
 ## 5. 参照表
 
@@ -409,6 +494,8 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 | `GetAbstract` | 获取抽象值方法名 | — |
 | `OptionsList` | 静态列表字段名（动态选项） | `"ResearchTabDefs"` |
 | `NotAColumn` | 只落盘、不出现在表格里（配合自定义窗口，`AllColumn` 排除） | `true` |
+| `Editor` | `ColumnStyle.Config` 触发列点开的窗口类型（本程序集的 `Window`，需 `(TweakData)` 构造） | `typeof(MyConfigWindow)` |
+| `ButtonText` | 触发列按钮文字的方法名（`static string Xxx(TweakData)`），不写就用 `MST.{字段名}Edit` | `nameof(RelayConfigButtonText)` |
 
 > `OnChange` / `Default` 已标记 `[Obsolete]`，新代码不要用：逻辑放 `Apply` / 默认值放 `SetDef`。
 
@@ -428,6 +515,7 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 | `Link` | `TweakID?` | 内联跳转链接（`Display`） |
 | `RaceLinks` / `BodyLinks` / `WeaponLinks` / `PawnWeaponLinks` | `TweakID?` | 弹窗 `TweakLinksWindow`，只读触发列（`Display`，见 §4.6） |
 | `MechWeaponFilter` / `RelayConfig` / `TurretConfig` | `TweakID?` | 弹窗 `MechWeaponFilterWindow` / `RelayConfigWindow` / `TurretConfigWindow`，只读触发列（`Display`，Fortified） |
+| `Config` | `TweakID?` | 弹窗由 `[TweakField(Editor = typeof(...))]` 指定；`ConfigWindow` 子类（声明式分节）或手写窗口。只读触发列（`Display`），见 §4.8 |
 | `TurretSlotList` | `List<TurretSlotRecord>?` | 不出列（`NotAColumn`），由 `TurretConfigWindow` 按槽分节编辑 |
 | `DefSelector` | `T? where T : Def` | 弹窗 `DefSelectionWindow` |
 | `StatModList` | `List<StatModifier>?` | 弹窗 `StatModListEditorWindow` |
