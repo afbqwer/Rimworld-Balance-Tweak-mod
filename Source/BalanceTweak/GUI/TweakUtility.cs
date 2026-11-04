@@ -214,7 +214,14 @@ public partial class BalanceTweakSettings
 
             long stamp = PerfProbe.Stamp();
             while (deriveCursor < deriveQueue.Count && PerfProbe.ElapsedMs(stamp) < DeriveBudgetMs)
-                deriveQueue[deriveCursor++].EnsureDisplayValues();
+            {
+                var row = deriveQueue[deriveCursor++];
+                // 展示属性（标题 / 搜索串 / 分类 / 图标 / 图标色）一并预热。
+                // 它们同样是懒加载的，但滚动路径上没有分帧预算：先滚进视野的行如果当场解析，
+                // 卡顿就落在滚动上。这里算完，绘制与筛选就只剩字段读。
+                row.WarmDisplayProps();
+                row.EnsureDisplayValues();
+            }
 
             deriveElapsedMs += PerfProbe.ElapsedMs(stamp);
             deriveFrames++;

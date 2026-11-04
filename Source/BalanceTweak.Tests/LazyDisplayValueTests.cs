@@ -23,6 +23,8 @@ public class LazyDisplayValueTests
     /// <summary>记账用的假数据：每个 <c>Resolve*</c> 被调用就 +1，用来验证"什么时候算"。</summary>
     private sealed class CountingData : TweakData<CountingData>
     {
+        public int LabelReads;
+        public int SearchReads;
         public int PropTypeReads;
         public int DescReads;
         public int IconReads;
@@ -34,6 +36,8 @@ public class LazyDisplayValueTests
         public override void Apply() { }
         public override bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false) => true;
 
+        protected override string ResolveLabel() { LabelReads++; return "label"; }
+        protected override string ResolveSearchString() { SearchReads++; return "search"; }
         protected override string ResolveDesc() { DescReads++; return "desc"; }
         protected override Texture2D? ResolveUiIcon() { IconReads++; return null; }
         protected override Color ResolveUiIconColor() { ColorReads++; return Color.white; }
@@ -86,6 +90,26 @@ public class LazyDisplayValueTests
 
         Assert.Equal(2, data.PropTypeReads);
         Assert.Equal(2, data.DescReads);
+    }
+
+    /// <summary>
+    /// 分帧预热的语义（<c>TweakUtility.AdvanceDerive</c> → <see cref="TweakData.WarmDisplayProps"/>）：
+    /// 五个展示值一次算完，滚动时绘制只读缓存；<b>desc 不算</b>，它留给鼠标悬停。
+    /// </summary>
+    [Fact]
+    public void 预热算完五个展示值但不算desc()
+    {
+        var data = new CountingData();
+        data.SetDef(new WeatherDef { defName = "Warm" }, BalanceTweakSettings.SettingType.Weather);
+
+        data.WarmDisplayProps();
+
+        Assert.Equal(1, data.LabelReads);
+        Assert.Equal(1, data.SearchReads);
+        Assert.Equal(1, data.PropTypeReads);
+        Assert.Equal(1, data.IconReads);
+        Assert.Equal(1, data.ColorReads);
+        Assert.Equal(0, data.DescReads);
     }
 
     /// <summary>克隆体不能用源行的缓存：源行解析之后 def 可能被改写（ApplyDefLabel / 换绑）。</summary>

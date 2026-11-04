@@ -1303,14 +1303,19 @@ public partial class BalanceTweakSettings : ModSettings
             Widgets.Label(labelRect, data.label);
         }
         Text.WordWrap = true;
-        if (data.modPackName != "Unknown") { TooltipHandler.TipRegion(rowRect, "MST.FromMod".Translate().RawText + data.modPackName); }
         // 悬浮提示（排除重置按钮）
         Rect nameClickRect = new(0, y, NameColWidth - ResetButtonWidth, LineHeight);
-        if (data.parentTweakId != null)
+        // 只在鼠标真的落在这一行时才登记 tooltip。TipRegion 每帧调用都要求先把字符串拿出来，
+        // 而 desc 是懒加载的（悬停时才生成）—— 不包这层判断，滚动时每一行都要现拼一次。
+        // 不悬停本来也没有 tip 要显示，所以与原版"每帧登记、由 TipRegion 自己判是否显示"等价。
+        if (Mouse.IsOver(rowRect))
         {
-            TooltipHandler.TipRegion(nameClickRect, "MST.JumpToDesc".Translate().RawText);
+            if (data.modPackName != "Unknown")
+                TooltipHandler.TipRegion(rowRect, "MST.FromMod".Translate().RawText + data.modPackName);
+            if (data.parentTweakId != null)
+                TooltipHandler.TipRegion(nameClickRect, "MST.JumpToDesc".Translate().RawText);
+            TooltipHandler.TipRegion(rowRect, data.desc);
         }
-        TooltipHandler.TipRegion(rowRect, data.desc);
         if (Mouse.IsOver(nameClickRect))
         {
             Widgets.DrawHighlight(nameClickRect);

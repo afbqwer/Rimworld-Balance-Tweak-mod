@@ -291,6 +291,27 @@ public abstract partial class TweakData : IExposable
     }
 
     /// <summary>
+    /// 预热"只用于展示"的派生值：标题、搜索串、分类、图标、图标色。
+    /// <para>
+    /// <b>为什么需要它</b>：这些属性是懒加载的（首读才算），而<b>滚动路径上没有分帧预算</b> ——
+    /// 新滚进视野的行如果当场解析，卡顿就直接落在滚动上。所以由 <c>TweakUtility.AdvanceDerive</c>
+    /// 在分帧阶段（每帧 6ms、带进度条）先把整个页签的行摸一遍，绘制时只剩字段读。
+    /// </para>
+    /// <para>
+    /// <b>desc 故意不在这里</b>：它只给 tooltip 用，而 tooltip 现在只在鼠标悬停时生成
+    /// （见 <c>BalanceTweakGUI.DrawDataRow</c>）。提前算等于给整个页签白付一遍字符串拼接。
+    /// </para>
+    /// </summary>
+    internal void WarmDisplayProps()
+    {
+        _ = label;
+        _ = searchString;
+        _ = propType;
+        _ = uiIcon;
+        _ = uiIconColor;
+    }
+
+    /// <summary>
     /// 多数 Data 的 tooltip 口径：<c>def.description</c>，为空则回落 <c>def.defName</c>
     /// （不带 defName 前缀 —— 这是本工程各页签既有的显示口径，不是笔误）。
     /// 只给 <see cref="ResolveDesc"/> 的覆写用。

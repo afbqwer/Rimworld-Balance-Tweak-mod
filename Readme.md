@@ -326,11 +326,13 @@ public override void Apply()
 - `GenValues()`（镜像 + DPS + 强度全量重算）只给"数据真的变了"的路径用：`Apply` / 弹丸推送 / 招式编辑 / 自检。新增 Display 列 = 字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏。
 - 关联入口列（`Link` / `PawnWeaponLinks` 等）不进 `EnsureForDisplay`：字段永远为 null，点了才查。
 
-**行标题、搜索串与展示属性**（`TweakData.label` / `searchString` / `propType` / `uiIcon` / `uiIconColor` / `desc`）同样是不落盘、不参与 `Apply` 的派生值，一律按需算：
+**行标题、搜索串与展示属性**（`TweakData.label` / `searchString` / `propType` / `uiIcon` / `uiIconColor` / `desc`）同样是不落盘、不参与 `Apply` 的派生值。策略是**首读才算 + 打开页签时分帧预热**，两条缺一不可：只懒不预热，卡顿会从启动挪到滚动上。
 
 | 规则 | 说明 |
 | --- | --- |
 | 首次读取时才算（`ResolveLabel` / `ResolveSearchString` / `GetPropType` / `ResolveUiIcon` / `ResolveUiIconColor` / `ResolveDesc`） | 原先每个 `SetDef` 都给全库四万行算一遍：label 要翻译、`propType` 要跑分类判定、tooltip 要拼字符串 —— 而绝大多数行根本不会被显示 |
+| **滚动路径上不许首读** | 前五个值由 `AdvanceDerive` 分帧预热（`TweakData.WarmDisplayProps`，每帧 6ms、带进度条），筛选与绘制只剩字段读。**不能只靠"用到才算"**：新滚进视野的行会在滚动那一帧当场解析，卡顿正好落在手指上 |
+| `desc` 例外：**悬停才算** | 绘制行的 `if (Mouse.IsOver(rowRect))` 里才登记 tooltip，未悬停不生成字符串。`TipRegion` 本来也是"不悬停就不显示"，结果等价；它不参与预热（整页签白付一遍拼接没意义） |
 | def 未绑定时**不缓存** | 此时只能算出兜底值，缓存下来会让之后补上 def 的行永久停在兜底标题 / 兜底分类 |
 | 清缓存只走 `ResetPropsCache()` | 由 `SetProps` 调用（所有 `SetDef` / `SetParentTweak` 的必经之路，写在基类 `SetDef` 会漏掉重写者）与 `Clone` 调用。六个值一起清：`searchString` 由 `label` 拼出来，图标 / 描述也由 def 派生，单清一个就留下错位 |
 | 要定制就**覆写 `Resolve*`** | `propType` / `uiIcon` / `uiIconColor` / `desc` 是**只读**属性，没有 setter —— 没有"顺手赋值把懒加载变回急加载"这条路。现有覆写：`FactionData`（FactionIcon / 派系色）、`MemeData` / `XenotypeData` / `ThoughtData`（Icon）、`AbilityData`（VEF icon + `GetTooltip`）、`RecipeData`（UIIcon / 产物图标 / ProcessDef）、`PawnKindData`（借种族那一行） |
@@ -345,7 +347,7 @@ public override void Apply()
 | 段 | 入口 | 规模 | 预算 | 进度 |
 | --- | --- | --- | --- | --- |
 | ① 建行缓存（克隆） | `AdvanceInit` | 全库 4 万级，一次性 | 每帧 2000 行 | 0~90% |
-| ② 页签派生值 | `AdvanceDerive` | 当前页签几百~几千行，每次切页签 | 每帧 6ms（按时间不按行数） | 90~100% |
+| ② 页签派生值 + 展示属性预热 | `AdvanceDerive` | 当前页签几百~几千行，每次切页签 | 每帧 6ms（按时间不按行数） | 90~100% |
 
 约束：没建完不许 `UpdateFilters`（`cachedData` 不全，会缺行）；小数据包必须一帧做完（否则进度条闪一下）；`DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor`（提前 return 会把 IMGUI 全局状态漏给下一帧）；第 ② 段按时间给预算（各页签单行成本差两个数量级）。
 
