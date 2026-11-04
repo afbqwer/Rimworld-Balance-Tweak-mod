@@ -222,6 +222,52 @@ public static partial class TweakDatabase
 
     #endregion
 
+    /// <summary>
+    /// 建「defName → 数据行」反查索引。
+    /// <para>
+    /// 这些索引原先是在各自 <c>GetPropType</c> 里顺手写的，靠"初始化期 propType 会被无条件求值一次"
+    /// 这个前提活着。propType 改成懒加载后那个前提没了：谁先被读谁才写，于是
+    /// <list type="bullet">
+    /// <item>武器解析弹丸时 <see cref="projectileDatas"/> 还是空的 → 伤害/穿透镜像全空、强度除零；</item>
+    /// <item>武器判炮塔时 <see cref="turretBuildingDatas"/> 还是空的 → 炮塔枪全被判成内置武器；</item>
+    /// <item>兵种挂种族时 <see cref="raceDatas"/> 还是空的。</item>
+    /// </list>
+    /// 顺带这也是本该如此的分工：索引是"行与行之间的关系"，属于建表阶段，不该藏在展示属性的 getter 里
+    /// （那等于让读一个只用于绘制的值产生跨行副作用）。
+    /// </para>
+    /// <para>只依赖 Def 本身，与 SetDef / Apply 的先后无关，所以放在分类之后、建快照之前。</para>
+    /// </summary>
+    internal static void BuildLookupIndices(List<(Def def, TweakData data, SettingType type)> items)
+    {
+        projectileDatas.Clear();
+        turretBuildingDatas.Clear();
+        raceDatas.Clear();
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var (def, data, _) = items[i];
+            if (def == null || data == null) continue;
+
+            switch (data)
+            {
+                case ProjectileData:
+                    projectileDatas.SetOrAdd(def.defName, data.id);
+                    break;
+                case RaceData:
+                    raceDatas.SetOrAdd(def.defName, data.id);
+                    break;
+                case BuildingData when def is ThingDef td && td.building?.turretGunDef is ThingDef gun
+                                      && !td.IsFrame && td.thingClass?.Namespace != "VFEProps":
+                    // 多座建筑挂同一把枪时保留第一个（与原来的 TryAdd 一致）：
+                    // 武器只需要一个能拿到 turretBurstCooldownTime / turretBurstWarmupTime 的把手。
+                    // 排除 Frame / VFE 道具：它们也是 BuildingData 行，但建筑属性是复制来的空壳，
+                    // 拿它们当把手会把射速算成默认值（原先写在各行 GetPropType 里，天然被那两处分支挡掉）。
+                    turretBuildingDatas.TryAdd(gun.defName, data.id);
+                    break;
+            }
+        }
+    }
+
     private static void Init()
     {
         var sw = Stopwatch.StartNew();
@@ -261,6 +307,10 @@ public static partial class TweakDatabase
         if (classify.MultiMatched.Count > 0)
             TweakLog.Message($"[BalanceTweak] 并列挂载：{classify.MultiMatched.Count} 条（{string.Join(", ", classify.MultiMatched.Take(20))}）");
         Mark($"规则分类（ThingDef {thingProcessed} 个，兜底 {classify.Fallback} 个）");
+        // 反查索引必须在这里建：后面每个 SetDef 都可能读它（武器解析弹丸、判炮塔、兵种挂种族），
+        // 而索引来源是"有哪些行"，与 SetDef 的顺序、与展示属性有没有被读过都无关。
+        BuildLookupIndices(pendingItems);
+        Mark($"建反查索引（弹丸 {projectileDatas.Count} / 炮塔 {turretBuildingDatas.Count} / 种族 {raceDatas.Count}）");
         //Log.Message($"[BalanceTweak] ThingDef 覆盖：总数 {thingProcessed}，规则分类 {thingProcessed - classify.Fallback - classify.Uncovered}，兜底 Misc {classify.Fallback}，放弃 {classify.Uncovered}（无编辑价值，不建实例）");
         //Log.Message($"[BalanceTweak] 兜底 Misc 按 ThingCategory：{string.Join(", ", classify.FallbackByCategory.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value}"))}");
         //if (classify.FallbackSamples.Count > 0)

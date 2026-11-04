@@ -338,7 +338,8 @@ public override void Apply()
 | 要定制就**覆写 `Resolve*`** | `propType` / `uiIcon` / `uiIconColor` / `desc` 是**只读**属性，没有 setter —— 没有"顺手赋值把懒加载变回急加载"这条路。现有覆写：`FactionData`（FactionIcon / 派系色）、`MemeData` / `XenotypeData` / `ThoughtData`（Icon）、`AbilityData`（VEF icon + `GetTooltip`）、`RecipeData`（UIIcon / 产物图标 / ProcessDef）、`PawnKindData`（借种族那一行） |
 | `propType` 只有一个来源 | `GetPropType`。原先"基类先算一次、`HeavyEquippableDefData` 再修正一次"的两步写法已删除 —— 首次读取时字段早已回填，机载档位自然判对 |
 | 子项分类继承父级 | `HediffStageData` / `TraitDegreeNodeData` / `ThoughtStageData` 的 `GetPropType` 自己查 `parentTweakId`（父级也是懒的，链式按需），不再在 `SetParentTweak` 里抄一份 |
-| 例外：兵种 → 种族的链接仍在 `SetDef` 里建 | `PawnKindData.LinkRace` 建的是索引（`Race` 列 + `RaceData.PawnKind` 反查），不是展示值；原先靠 `GetPropType` 顺带建，改懒之后会变成"没打开过兵种页就没有反查链接" |
+| 例外：**跨行索引一律在建表阶段建** | `GetPropType` 只读不写。原先 `raceDatas` / `projectileDatas` / `turretBuildingDatas` 是在各自 `GetPropType` 里顺带写的 —— 靠"初始化期每行都会被求值一次"活着，改懒之后谁先被读谁才写：武器解析弹丸时表是空的（镜像全空、强度除零）、判炮塔时表也是空的（炮塔枪回落成内置武器）。现在统一由 `TweakDatabase.BuildLookupIndices` 在分类之后、建快照之前填好 |
+| 枪 ↔ 炮塔的链接在 `WeaponData.SetDef`（`LinkTurret`） | 与 `PawnKindData.LinkRace` 同一个理由：它是"枪挂在哪座建筑上"的跨行关系，不是展示值，也不该由"读分类"顺手产生 |
 | `Def.LabelCap` 可能返回 `null` | 原版在 `label` 为空时**不回落** defName，基类 `ResolveLabel` 自己回落 |
 | 任务名由 `QuestNameResolver` 现拼 | 只认 `questNameRules` 里的纯文本规则（`Rule_String`），不掷骰子、不碰 slate；任何 token 拿不到选项就整条放弃，退回 defName |
 
@@ -351,8 +352,7 @@ public override void Apply()
 
 约束：没建完不许 `UpdateFilters`（`cachedData` 不全，会缺行）；小数据包必须一帧做完（否则进度条闪一下）；`DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor`（提前 return 会把 IMGUI 全局状态漏给下一帧）；第 ② 段按时间给预算（各页签单行成本差两个数量级）。
 
-> 派生值置脏时只有**当前页签**重推（`CombatPower.InvalidateRows` 判 `type == TweakUtility.CurrentType`）。列定义（反射 + `Translate`，约 20~30ms/类型）也在第 ② 段首帧预热。
-> `ApplyFullReset`（"完全重置"）仍是同步重建。
+> 派生值置脏时只有**当前页签**重推（`CombatPower.InvalidateRows` 判 `type == TweakUtility.CurrentType`）。列定义（反射 + `Translate`，约 20~30ms/类型）也在第 ② 段首帧预热。> `ApplyFullReset`（"完全重置"）仍是同步重建。
 > 克隆成本在 `TweakData<T>.DeepCopyFields`：只有 `List<T>` 需深拷贝，故那里有 `if (!meta.IsList) continue;`。
 > `[BalanceTweak][perf]` 日志走 `TweakLog.Message`，受「总体设置 → 诊断 → 冗杂日志」控制（默认关）；`Log.Error` / `Log.Warning` 不走这里，永远输出。
 
@@ -381,6 +381,14 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 
 > 兵种这条反查的是**规则**：`PawnKindDef` 没有"武器"数据，武器按 `weaponTags` + `weaponMoney` 现抽，只能扫全库套同一套判定（标签交集 / 预算上界 / `generateAllowChance > 0` / `weaponStuffOverride` 的材料可兼容）。预算取上界，攻击列取期望（5 档采样）；功能武器（烟雾 / EMP）会列出，但攻击列按 `harmsHealth` 排除。
 > 种族页与兵种页共用 `PawnKindData.CollectWeaponLinks`（逐兵种各扫一遍在 `Human` 上会变成十几万次重复遍历）。
+
+### 4.7 绘制收尾：IMGUI 全局状态会漏进 tooltip
+
+`TooltipHandler.TipRegion` 只是**登记**字符串，真正的绘制发生在整个 OnGUI 末尾（`ActiveTip.DrawTooltip`）。那里只设 `Text.Font`，**换行与对齐沿用绘制这一刻的全局值**。所以窗口在绘制过程中改过的 `Text.WordWrap` / `Text.Anchor` 会漏到 tooltip 上，症状是"左侧名称列的 tooltip 有时不换行 / 居中"，取决于最后一格画的是什么。
+
+- `BalanceTweakGUI.DrawData` 在入口记下 `Text.WordWrap` / `Text.Anchor`，出口原样还原；中间的数据格（`Text.WordWrap = false`）与单元格对齐（`MiddleCenter`）不再外溢。
+- 局部改动一律 **保存 → 改 → 还原**（`DrawNameRow` 的标签、`CompConfigWindow` / `MechWeaponFilterWindow` / `RelayConfigWindow` / `TurretConfigWindow` 的正文都是这么写的），不要硬写成 `= true`：那在调用方本来是 `false` 时会把状态改脏。
+- 同理适用于 `Text.Font` / `GUI.color`：`DrawInitProgress` 已经这么处理。
 
 ## 5. 参照表
 
@@ -507,6 +515,8 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 - `turretBurstWarmupTime` 清空走 `ApplyV` 的 `Revert`（def 上不可空，没有"写成 null"这个状态）。
 
 > `ShootingAccuracyTurret` 与手持武器的 `ShootingAccuracyPawn` 均未乘入 —— "射手因子统一视为 1"是这张表的既有口径，要改就两边一起改，否则炮塔与手持武器不可比。
+>
+> **强度（`equipPower`）对退化输入必须收口**：它拿 DPS 开方、再除以电荷步枪基准，任何 NaN / ∞ 都会一路传下去，最后在界面上显示成 `NaN` / `∞`，而 DPS 列看上去还是正常的。已经堵死的口子：① 分母 `aim × warmupMult + cd + 连发间隔` 必须 `> 0`（`burstShotCount` 为 0 也算退化）；② 基准（电荷步枪）算不出正数时退回常量 `FallbackChargePower`；③ 近战刻度的分母是"参考武器 − 空手"两个独立统计值之差，≤ 0 时近战贡献记 0；④ 每个 DPS 字段与最终强度都用 `FiniteOrZero` 收口。新增乘除项时照这个套路走。
 
 ### 6.2 研究解锁（派生列，不是字段）
 

@@ -976,9 +976,8 @@ class BuildingData : TweakData<BuildingData>
             {
                 return (int)BuildingType.Mineable;
             }
-            if (def.building.turretGunDef is ThingDef g)
+            if (def.building.turretGunDef != null)
             {
-                TweakDatabase.turretBuildingDatas.TryAdd(g.defName, id);
                 return (int)BuildingType.Turret;
             }
             if (def.IsDoor)

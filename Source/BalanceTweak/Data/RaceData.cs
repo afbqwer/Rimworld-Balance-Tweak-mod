@@ -853,7 +853,6 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     {
         if (this.def is ThingDef def)
         {
-            TweakDatabase.raceDatas.SetOrAdd(def.defName, id);
             if (def.race.IsAnomalyEntity) return (int)RaceType.Entity;
             if (def.race.Humanlike) return (int)RaceType.Humanlike;
             if (def.race.Insect) return (int)RaceType.Insect;

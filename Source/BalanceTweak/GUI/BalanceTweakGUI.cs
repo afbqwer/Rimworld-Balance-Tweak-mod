@@ -1144,6 +1144,15 @@ public partial class BalanceTweakSettings : ModSettings
 
     public static void DrawData(Rect inRect)
     {
+        // 全局文本状态要在本方法结束时还原。
+        // tooltip 不是在登记它的那一刻画的 —— TooltipHandler 只记下字符串，真正的绘制发生在整个
+        // OnGUI 末尾（ActiveTip.DrawTooltip 只设 Text.Font，换行与对齐一律沿用当时的全局值）。
+        // 本方法内部为了表格排版把 Text.WordWrap 设成 false（数据格）、把 Text.Anchor 设成
+        // MiddleCenter，不还原就会漏到名称列的 tooltip 上：表现为"tooltip 有时不换行 / 居中"，
+        // 取决于最后一格画的是什么。RimWorld 自己不做保护，只能各自收尾。
+        bool prevWordWrap = Text.WordWrap;
+        TextAnchor prevAnchor = Text.Anchor;
+
         float totalColWidth = DataColWidth * visibleColumns.Count + 24f;
         float totalHeight = filteredData.Count * LineHeight + 24f;
         // 滚轮滚动面板
@@ -1248,6 +1257,10 @@ public partial class BalanceTweakSettings : ModSettings
             if (jumpHighlightFrame == 0)
                 jumpHighlightData = null;
         }
+
+        // 见方法开头的说明：把 tooltip 会读到的全局文本状态还回去。
+        Text.WordWrap = prevWordWrap;
+        Text.Anchor = prevAnchor;
     }
 
     private static void DrawNameRow(int index, TweakData data)
@@ -1291,6 +1304,9 @@ public partial class BalanceTweakSettings : ModSettings
 
         // 标签名
         Rect labelRect = new(IconSizePadded, y, NameColWidth - IconSizePadded - ResetButtonWidth, LineHeight);
+        // 只在这一段把换行关掉，画完立刻还原（不是硬编码成 true）：tooltip 用的是全局状态，
+        // 这里"顺手设成 true"会在调用方本来是 false 时把状态改脏，见 DrawData 开头的说明。
+        bool prevWrap = Text.WordWrap;
         Text.WordWrap = false;
         if (IsPinned(data.id))
         {
@@ -1302,7 +1318,7 @@ public partial class BalanceTweakSettings : ModSettings
         {
             Widgets.Label(labelRect, data.label);
         }
-        Text.WordWrap = true;
+        Text.WordWrap = prevWrap;
         // 悬浮提示（排除重置按钮）
         Rect nameClickRect = new(0, y, NameColWidth - ResetButtonWidth, LineHeight);
         // 只在鼠标真的落在这一行时才登记 tooltip。TipRegion 每帧调用都要求先把字符串拿出来，

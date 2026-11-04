@@ -598,6 +598,45 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         return buildingDef?.building;
     }
 
+    /// <summary>
+    /// 本枪是否被某个炮塔建筑挂载（<paramref name="building"/> 给出那座建筑的 TweakID）。
+    /// <para>
+    /// 判据就是原口径：<see cref="TweakDatabase.turretBuildingDatas"/> 里有这把枪，且它自身不是
+    /// 可制造品（有 <c>WorkToMake</c>）。后半句是给"炮塔枪同时也是手持武器"的 mod 留的活口 ——
+    /// 那种行按普通武器编辑，锁成炮塔就拿不到射速 / 冷却列了。
+    /// </para>
+    /// </summary>
+    private static bool IsTurretGun(ThingDef def, out TweakID building)
+    {
+        building = default;
+        if (def == null) return false;
+        if (!TweakDatabase.turretBuildingDatas.TryGetValue(def.defName, out building)) return false;
+        return (def.statBases?.Find(s => s.stat == StatDefOf.WorkToMake)?.value ?? -1f) <= 0f;
+    }
+
+    /// <summary>
+    /// 登记"这把枪挂在哪座炮塔上"（枪侧 <see cref="GunTurret"/>、建筑侧 <see cref="BuildingData.TurretGun"/>）。
+    /// <para>
+    /// 这段原来写在 <c>GetPropType</c> 里，靠"初始化期每行都会被求值一次分类"来保证登记。
+    /// 分类改成懒加载后它可能一次都不跑，于是炮塔行没有枪、枪行拿不到 <c>turretBurst*</c>
+    /// （DPS 退回枪自己的冷却，数值错），而且炮塔枪还会被判成内置武器。
+    /// 跨行关系属于建表阶段，放 SetDef —— 与 <c>PawnKindData.LinkRace</c> 同一个理由。
+    /// </para>
+    /// </summary>
+    private void LinkTurret()
+    {
+        // 先清再建：同一个实例可能被换绑 def（探针 / 重置后重建），留着上一把枪的炮塔会让
+        // TurretBuildingProps 拿到别人的节奏。
+        GunTurret = null;
+        if (def is not ThingDef d) return;
+        if (!IsTurretGun(d, out var buildingId)) return;
+        GunTurret = buildingId;
+        // 三层实例都写（原始快照 / 存档修改实例 / UI 克隆）：与 GetAllData 的语义一致。
+        var all = GetAllData(buildingId);
+        for (int i = 0; i < all.Count; i++)
+            if (all[i] is BuildingData bd) bd.TurretGun = id;
+    }
+
     private void GenRangeDPS(ThingDef d, VerbProperties verb)
     {
         var dmg = damageAmountBase;
@@ -642,23 +681,31 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             aim = bp.turretBurstWarmupTime.Average;
         }
         if (!dmg.HasValue) { dmg = 0; } else { dmg = Math.Max(dmg.Value, 0); }
-        if (cd.HasValue && aim.HasValue && burstShotCount.HasValue && cd > 0f)
+        if (cd.HasValue && aim.HasValue && burstShotCount.HasValue && cd > 0f && burstShotCount > 0)
         {
-            MaxRangedDPS = (dmg * burstShotCount * (rangeDamageMultiplier ?? 1f))
-                / (aim * (warmupMultiplier ?? 1f) + cd + (burstShotCount - 1) * (ticksBetweenBurstShots ?? 0) / 60f);
+            // 分母单独求一次并判 > 0（而不是只判 cd > 0）：
+            //   · warmupMultiplier 被 mod 写成负数、或 aim 为负时，分母可能 ≤ 0 → DPS 变负 → 强度开方出 NaN；
+            //   · 分母恰为 0 → DPS 变 ∞，强度跟着 ∞。
+            // 两者在 DPS 列上不一定看得出来（MaxRangedDPS 显示的是原值），到"强度"那里做开方 / 除法才炸。
+            float denom = aim.Value * (warmupMultiplier ?? 1f) + cd.Value
+                + (burstShotCount.Value - 1) * (ticksBetweenBurstShots ?? 0) / 60f;
+            if (!(denom > 0f)) return;
+            MaxRangedDPS = (dmg.Value * burstShotCount.Value * (rangeDamageMultiplier ?? 1f)) / denom;
         }
         else
         {
             return;
         }
-        if (verb.verbClass == typeof(Verb_ArcSprayIncinerator))
+        if (verb.verbClass == typeof(Verb_ArcSprayIncinerator) && burstShotCount > 0)
         {
             MaxRangedDPS /= burstShotCount;
         }
         if (!minRange.HasValue || !maxRange.HasValue)
         {
             AverageRangedDPS = MaxRangedDPS;
-            LRangedDPS = AverageRangedDPS * DamageLMultiplier ?? 1f;
+            // 注意括号：写成 `a * b ?? 1f` 会先算 `a * b`，b 为 null 时结果被兜成 1 —— 一个凭空出现的 1 点 DPS。
+            LRangedDPS = AverageRangedDPS * (DamageLMultiplier ?? 1f);
+            LMAXRangedDPS = MaxRangedDPS;
         }
         else
         {
@@ -667,16 +714,31 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             AverageRangedDPS = MaxRangedDPS * hit;
             if (isCompQuality.GetValueOrDefault())
             {
-                var dmgl = (int?)(dmg.Value * DamageLMultiplier ?? 1f);
-                var hitl = Mathf.Clamp01(hit * AccuracyMediumLMult ?? 1f);
-                var maxdps = (dmgl * burstShotCount * (rangeDamageMultiplier ?? 1f))
-                    / (aim * (warmupMultiplier ?? 1f) + cd + (burstShotCount - 1) * ticksBetweenBurstShots / 60f);
+                var dmgl = (int?)(dmg.Value * (DamageLMultiplier ?? 1f));
+                var hitl = Mathf.Clamp01(hit * (AccuracyMediumLMult ?? 1f));
+                // 与上面同一个分母；ticksBetweenBurstShots 缺席时按 0 算（原写法会让整条算式变成 null）。
+                float ldenom = aim.Value * (warmupMultiplier ?? 1f) + cd.Value
+                    + (burstShotCount.Value - 1) * (ticksBetweenBurstShots ?? 0) / 60f;
+                var maxdps = ldenom > 0f
+                    ? (dmgl * burstShotCount * (rangeDamageMultiplier ?? 1f)) / ldenom
+                    : null;
                 LRangedDPS = maxdps * hitl;
                 LMAXRangedDPS = maxdps;
             }
             else { LRangedDPS = AverageRangedDPS; LMAXRangedDPS = MaxRangedDPS; }
         }
+
+        // 收口：任何一个 NaN / ∞ 都会顺着强度公式（开方 → 平方 → 除法）一路传下去，
+        // 最后在界面上显示成 "NaN" / "∞"，而 DPS 列看上去还"正常"。宁可显示 0。
+        MaxRangedDPS = FiniteOrZero(MaxRangedDPS);
+        AverageRangedDPS = FiniteOrZero(AverageRangedDPS);
+        LRangedDPS = FiniteOrZero(LRangedDPS);
+        LMAXRangedDPS = FiniteOrZero(LMAXRangedDPS);
     }
+
+    /// <summary>把 NaN / ±∞ 收敛成 0，<c>null</c> 原样保留（null 表示"这一行没有这份数据"）。</summary>
+    private static float? FiniteOrZero(float? v)
+        => v.HasValue ? (float.IsNaN(v.Value) || float.IsInfinity(v.Value) ? 0f : v.Value) : v;
 
     public override void SetDef(Def def, SettingType type, bool tweaked = false)
     {
@@ -719,6 +781,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         // 这里只填镜像：DPS / 强度 / 参考价值都是显示列，推迟到 UI 第一次要它们时再算
         // （见 EnsureDisplayValues）。启动期为几千个 def 跑射程扫描与近战 DPS 没有任何收益。
         GenMirrors();
+        // 炮塔挂载关系必须在派生值之前落地：GenRangeDPS 要读建筑的 turretBurstCooldownTime /
+        // turretBurstWarmupTime，而那是靠 GunTurret 找过去的。
+        LinkTurret();
     }
 
     /// <summary>
@@ -858,6 +923,8 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             ? mirror
             : GetArmorPenetrationAbstract(wd);
         if (ap == -1f) ap = 0f;
+        // AP 本身是 NaN / ∞ 时后面那个 (1+ap)² 会把它放大成 NaN / ∞，而 DPS 列完全看不出来 —— 就地收敛。
+        if (float.IsNaN(ap) || float.IsInfinity(ap)) ap = 0f;
         if (legendary) ap *= APLMultiplier ?? 1f;
         if (TweakDatabase.VCTAPDown && ap > 0.5f) ap = 0.5f + Mathf.Log(ap + 0.5f, 5f);
 
@@ -870,7 +937,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         float power = Mathf.Sqrt(wd.LRangedDPS.Value * wd.LMAXRangedDPS.GetValueOrDefault(wd.LRangedDPS.Value))
             * Mathf.Pow(1f + ap, 2f) * explosionFactor;
         if (wd.maxRange > 0f) power *= Mathf.Log10(wd.maxRange.Value);
-        return power;
+        // 这个值要当除法的分子（强度 = 本武器 / 基准 × 100），NaN 会污染整行，
+        // 而它的"可疑输入"（DPS 为负、射程退化、AP 异常）在单列上都不显眼。非有限一律当"算不出"。
+        return float.IsNaN(power) || float.IsInfinity(power) ? null : power;
     }
 
     /// <summary>取武器关联的弹丸实例；<paramref name="originalLayer"/> 时锁原始层（基准用）。</summary>
@@ -889,23 +958,30 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         {
             if (!RDPS.HasValue || !HumanDPS.HasValue)
             {
-                var reference = DefDatabase<ThingDef>.GetNamed("MeleeWeapon_LongSword");
+                // 参考武器缺席（被 mod 删掉）时 GetNamed 会报错并返回 null —— 下面要读 .tools，
+                // 不能让它把一次"参考值算不出"升级成整行初始化失败。
+                var reference = DefDatabase<ThingDef>.GetNamed("MeleeWeapon_LongSword", false);
                 if (MayRequire("ludeon.rimworld.royalty"))
-                {
-                    reference = DefDatabase<ThingDef>.GetNamed("MeleeWeapon_MonoSword");
-                }
-                var rtool = reference.tools;
-                RDPS = CalculateExpectedDPS(humantool, rtool, meleeLQualityMult ?? 1.65f, 1f, true);
+                    reference = DefDatabase<ThingDef>.GetNamed("MeleeWeapon_MonoSword", false) ?? reference;
+                RDPS = reference != null
+                    ? CalculateExpectedDPS(humantool, reference.tools, meleeLQualityMult ?? 1.65f, 1f, true)
+                    : 0f;
                 HumanDPS = CalculateExpectedDPS(humantool, null, 1f, 1f, true);
             }
             var mdps = CalculateExpectedDPS(def.tools, humantool, isQ.Value ? ((wd.meleeDamageMultiplier ?? 1f) * meleeLQualityMult ?? 1.65f) : (wd.meleeDamageMultiplier ?? 1f), 1f, true, stuff);
 
-            var meleePower = Mathf.Max(0f, (mdps - HumanDPS.Value)
-                / (RDPS.Value - HumanDPS.Value)
-                * 100f);
+            // 近战刻度的分母 = "长剑（或单分子剑）比空手多出来的那部分"。
+            // 它理论上恒为正，但它是**两个独立统计出来的数**之差：
+            // 参考武器缺席 / 被 mod 改没了 tools / 空手招式被整体移除时，两者会相等，
+            // 除法就变成 0/0 = NaN 或 x/0 = ∞ —— 而这一步对每一把远程武器都会算，
+            // 于是"大量远程武器的强度是 NaN / 无限"，DPS 却完全正常。分母不健康就当作近战贡献为 0。
+            float meleeSpan = RDPS.Value - HumanDPS.Value;
+            float meleePower = meleeSpan > 0.0001f && !float.IsInfinity(meleeSpan)
+                ? Mathf.Max(0f, (mdps - HumanDPS.Value) / meleeSpan * 100f)
+                : 0f;
             if (wd.propType == (int)WeaponType.MeleeWeapon) //近战则不计算远程
             {
-                return meleePower;
+                return float.IsNaN(meleePower) || float.IsInfinity(meleePower) ? 0f : meleePower;
             }
 
             var rangePower = 0f;
@@ -921,12 +997,35 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
                 float baseline = TweakDatabase.GetOriginal(ChargeRifleId) is WeaponData refWd
                     ? RangedPower(refWd, true, originalLayer: true) ?? FallbackChargePower
                     : FallbackChargePower;
+                // 基准必须是一个正数：电荷步枪那一行算不出 DPS（它自己也不认识弹丸 / 被别的 mod 改成 0 伤害）
+                // 时 baseline 会是 0，除下去就是 ∞（分子 > 0）或 NaN（分子也为 0）。
+                // 那种情况下刻度退化成固定常量，整表至少还是可比的。
+                if (!(baseline > 0f) || float.IsInfinity(baseline)) baseline = FallbackChargePower;
                 rangePower = Mathf.Max(0f, selfPower / baseline * 100f);
             }
-            return Mathf.Max(meleePower, rangePower);
+            float result = Mathf.Max(meleePower, rangePower);
+            if (float.IsNaN(result) || float.IsInfinity(result))
+            {
+                // 走到这里说明上面每一道口子都补过还是漏了（新的退化输入）。留一行日志，
+                // 至少能指名道姓地告诉用户/mod 作者是哪把枪、分子分母各是多少。
+                WarnNonFinitePower(def, result, mdps, meleeSpan, rangePower);
+                return 0f;
+            }
+            return result;
 
         }
         return 0f;
+    }
+
+    /// <summary>强度算出 NaN / ∞ 的 defName（每局一次，避免拖拽涂抹时刷屏）。</summary>
+    private static readonly HashSet<string> _warnedNonFinitePower = new();
+
+    private static void WarnNonFinitePower(ThingDef def, float result, float mdps, float meleeSpan, float rangePower)
+    {
+        if (!_warnedNonFinitePower.Add(def.defName)) return;
+        Log.Warning($"[BalanceTweak] {def.defName} 的装备强度算出了 {result}，已按 0 显示。"
+            + $"诊断：近战期望 DPS={mdps}，近战刻度分母（参考武器−空手）={meleeSpan}，远程强度={rangePower}。"
+            + "通常意味着参考武器 / 空手招式被 mod 改掉了，或某件弹丸的伤害、穿透退化。");
     }
 
     private static float GetdamageAmountBaseAbstract(TweakData data)
@@ -998,15 +1097,8 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
             {
                 return (int)WeaponType.MeleeWeapon;
             }
-            if (TweakDatabase.turretBuildingDatas.TryGetValue(def.defName, out var d) &&
-                (def.statBases?.Find(s => s.stat == StatDefOf.WorkToMake)?.value ?? -1) <= 0)
+            if (IsTurretGun(def, out _))
             {
-                var l = GetAllData(d);
-                if (l.Count > 0) GunTurret = d;
-                foreach (var item in l)
-                {
-                    ((BuildingData)item).TurretGun = id;
-                }
                 return (int)WeaponType.TurretWeapon;
             }
             if (def.destroyOnDrop == true)

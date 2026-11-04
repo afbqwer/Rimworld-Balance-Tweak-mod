@@ -268,7 +268,6 @@ class ProjectileData : TweakData<ProjectileData>
     {
         if (this.def is ThingDef def)
         {
-            TweakDatabase.projectileDatas.SetOrAdd(def.defName, id);
             if (def.thingClass == typeof(Beam))
             {
                 return (int)ProjectileType.BeamProjectile;
