@@ -581,7 +581,12 @@ public partial class BalanceTweakSettings
         public static void JumpToData(TweakID? id)
         {
             if (id == null) return;
-            var data = cachedData[id.Value.settingType][id.Value];
+            var key = id.Value;
+            // 空 defName 是"这一格没有目标"（默认值 / 旧存档 / 建表出错时的形态），不是"跳到一个空行"。
+            // 死链就当没点过：点一下链接炸掉整个窗口太贵了，而且这条路径的用户看不到任何有用信息。
+            if (string.IsNullOrEmpty(key.defName)) return;
+            if (!cachedData.TryGetValue(key.settingType, out var dict)) return;
+            if (!dict.TryGetValue(key, out var data) || data == null) return;
             JumpToData(data);
         }
 

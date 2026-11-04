@@ -339,6 +339,7 @@ public override void Apply()
 | `propType` 只有一个来源 | `GetPropType`。原先"基类先算一次、`HeavyEquippableDefData` 再修正一次"的两步写法已删除 —— 首次读取时字段早已回填，机载档位自然判对 |
 | 子项分类继承父级 | `HediffStageData` / `TraitDegreeNodeData` / `ThoughtStageData` 的 `GetPropType` 自己查 `parentTweakId`（父级也是懒的，链式按需），不再在 `SetParentTweak` 里抄一份 |
 | 例外：**跨行索引一律在建表阶段建** | `GetPropType` 只读不写。原先 `raceDatas` / `projectileDatas` / `turretBuildingDatas` 是在各自 `GetPropType` 里顺带写的 —— 靠"初始化期每行都会被求值一次"活着，改懒之后谁先被读谁才写：武器解析弹丸时表是空的（镜像全空、强度除零）、判炮塔时表也是空的（炮塔枪回落成内置武器）。现在统一由 `TweakDatabase.BuildLookupIndices` 在分类之后、建快照之前填好 |
+| 索引里的 `TweakID` 必须**现拼**（`new TweakID(def.defName, type)`） | `data.id` 是在随后的 `SetDef` 里才赋值的，`BuildLookupIndices` 跑在那之前，此刻它还是 `default`（defName 为空、settingType 为 `None`）。用它建表会把所有条目塌缩到同一个 `":None"` 键：武器解析不到弹丸（**DPS 全 0**）、炮塔枪拿到空链接（点一下 `KeyNotFoundException`）。`JumpToData` 现在也把空 defName / 无对应行当死链处理，不再抛 |
 | 枪 ↔ 炮塔的链接在 `WeaponData.SetDef`（`LinkTurret`） | 与 `PawnKindData.LinkRace` 同一个理由：它是"枪挂在哪座建筑上"的跨行关系，不是展示值，也不该由"读分类"顺手产生 |
 | `Def.LabelCap` 可能返回 `null` | 原版在 `label` 为空时**不回落** defName，基类 `ResolveLabel` 自己回落 |
 | 任务名由 `QuestNameResolver` 现拼 | 只认 `questNameRules` 里的纯文本规则（`Rule_String`），不掷骰子、不碰 slate；任何 token 拿不到选项就整条放弃，退回 defName |

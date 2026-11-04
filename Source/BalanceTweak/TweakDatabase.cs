@@ -245,16 +245,23 @@ public static partial class TweakDatabase
 
         for (int i = 0; i < items.Count; i++)
         {
-            var (def, data, _) = items[i];
+            var (def, data, type) = items[i];
             if (def == null || data == null) continue;
+
+            // 键必须在这里现拼，不能用 data.id：id 是在随后的 SetDef 里才赋值的
+            // （`TweakData<T>.SetDef` → `id = new(def.defName, type)`），本方法跑在建快照之前，
+            // 那一刻 data.id 还是 `default`（defName 为空、settingType 为 None）。
+            // 用它建表会把所有条目塌缩到同一个 ":None" 键上 —— 武器于是解析不到弹丸（DPS = 0），
+            // 炮塔枪拿到一个空 TweakID（点链接还会 KeyNotFound）。
+            var id = new TweakID(def.defName, type);
 
             switch (data)
             {
                 case ProjectileData:
-                    projectileDatas.SetOrAdd(def.defName, data.id);
+                    projectileDatas.SetOrAdd(def.defName, id);
                     break;
                 case RaceData:
-                    raceDatas.SetOrAdd(def.defName, data.id);
+                    raceDatas.SetOrAdd(def.defName, id);
                     break;
                 case BuildingData when def is ThingDef td && td.building?.turretGunDef is ThingDef gun
                                       && !td.IsFrame && td.thingClass?.Namespace != "VFEProps":
@@ -262,7 +269,7 @@ public static partial class TweakDatabase
                     // 武器只需要一个能拿到 turretBurstCooldownTime / turretBurstWarmupTime 的把手。
                     // 排除 Frame / VFE 道具：它们也是 BuildingData 行，但建筑属性是复制来的空壳，
                     // 拿它们当把手会把射速算成默认值（原先写在各行 GetPropType 里，天然被那两处分支挡掉）。
-                    turretBuildingDatas.TryAdd(gun.defName, data.id);
+                    turretBuildingDatas.TryAdd(gun.defName, id);
                     break;
             }
         }

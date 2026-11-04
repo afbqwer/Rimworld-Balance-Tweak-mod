@@ -19,24 +19,27 @@ namespace BalanceTweak.Tests;
 /// 判炮塔时表也是空的（炮塔枪回落成"内置武器"）。
 /// </para>
 /// <para>
-/// 这里直接喂 <c>BuildLookupIndices</c>：它只应该看 Def 与数据行的类型，
-/// <b>不需要任何人读过 propType</b>。
+/// <b>第二条回归</b>：索引里的 <c>TweakID</c> 必须在这里现拼。`data.id` 是在随后的
+/// <c>SetDef</c> 里才赋值的，此刻还是 `default`（defName 为空、settingType 为 `None`）——
+/// 用它建表会把所有条目塌缩到同一个 `":None"` 键上：武器解析不到弹丸（DPS 全 0），
+/// 炮塔枪拿到空链接（点一下就 `KeyNotFoundException`）。
 /// </para>
 /// </summary>
 public class LookupIndexTests
 {
     [Fact]
-    public void 反查索引不依赖分类被读取()
+    public void 反查索引不依赖分类被读取且用def现拼id()
     {
         var gun = new ThingDef { defName = "BT_TestTurretGun" };
         var turret = new ThingDef { defName = "BT_TestTurret", building = new BuildingProperties { turretGunDef = gun } };
         var race = new ThingDef { defName = "BT_TestRace" };
         var bullet = new ThingDef { defName = "BT_TestBullet" };
 
-        // 只给 id，不调 SetDef / 不读 propType —— 索引的来源是"有哪些行"，不该牵扯分类的求值时机。
-        var bd = new BuildingData { id = new TweakData.TweakID(turret.defName, SettingType.Building) };
-        var rd = new RaceData { id = new TweakData.TweakID(race.defName, SettingType.Race) };
-        var pd = new ProjectileData { id = new TweakData.TweakID(bullet.defName, SettingType.Projectile) };
+        // 刻意不调 SetDef、不给 id：这与 Init 里的真实时序一致（索引先于建快照）。
+        var bd = new BuildingData();
+        var rd = new RaceData();
+        var pd = new ProjectileData();
+        Assert.Equal(default, bd.id);   // 前提断言：此刻 id 确实是空的
 
         var items = new List<(Def, TweakData, SettingType)>
         {
@@ -49,9 +52,12 @@ public class LookupIndexTests
         {
             TweakDatabase.BuildLookupIndices(items);
 
-            Assert.Equal(bd.id, TweakDatabase.turretBuildingDatas[gun.defName]);
-            Assert.Equal(rd.id, TweakDatabase.raceDatas[race.defName]);
-            Assert.Equal(pd.id, TweakDatabase.projectileDatas[bullet.defName]);
+            Assert.Equal(new TweakData.TweakID(turret.defName, SettingType.Building),
+                TweakDatabase.turretBuildingDatas[gun.defName]);
+            Assert.Equal(new TweakData.TweakID(race.defName, SettingType.Race),
+                TweakDatabase.raceDatas[race.defName]);
+            Assert.Equal(new TweakData.TweakID(bullet.defName, SettingType.Projectile),
+                TweakDatabase.projectileDatas[bullet.defName]);
         }
         finally
         {
