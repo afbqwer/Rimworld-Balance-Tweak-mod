@@ -460,6 +460,7 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 | `Gene` | `Gene.xml` | `Backstory` | `Backstory.xml` |
 | `Meme` | `Meme.xml` | `Landmark` | `Landmark.xml` |
 | `Incident` | `Incident.xml` | `WeaponTrait` | `WeaponTrait.xml` |
+| `Quest` | `Quest.xml` | | |
 | `Research` | `Research.xml` | | |
 | `Weather` | `Weather.xml` | | |
 | `Faction` | `Faction.xml` | | |

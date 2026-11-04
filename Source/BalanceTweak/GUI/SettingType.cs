@@ -50,6 +50,7 @@ public partial class BalanceTweakSettings
         Landmark = 35,
         WeaponTrait = 36,
         HeavyEquipment = 37,
+        Quest = 38,
     }
 
     /// <summary>
@@ -80,6 +81,7 @@ public partial class BalanceTweakSettings
         SettingType.Gene,
         SettingType.Meme,
         SettingType.Incident,
+        SettingType.Quest,
         SettingType.Research,
         SettingType.Weather,
         SettingType.Faction,

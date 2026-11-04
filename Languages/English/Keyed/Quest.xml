@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.Quest>Random Quests</MST.Quest>
+    <MST.Random>Random</MST.Random>
+    <MST.Decree>Decree</MST.Decree>
+    <MST.rootSelectionWeight>Weight</MST.rootSelectionWeight>
+    <MST.rootSelectionWeightComment>Base weight for random selection (weighted random, not a chance). The sum of all weights in the same pool is the denominator; 0 removes the quest from the random pool.</MST.rootSelectionWeightComment>
+    <MST.rootSelectionWeightFactorFromPointsCurve>PtsCurve</MST.rootSelectionWeightFactorFromPointsCurve>
+    <MST.rootSelectionWeightFactorFromPointsCurveComment>Scales the weight above by colony points: X is points, Y is a multiplier. An empty curve adds nothing; values beyond the ends use the end value.</MST.rootSelectionWeightFactorFromPointsCurveComment>
+    <MST.rootMinPoints>MinPoints</MST.rootMinPoints>
+    <MST.rootMinPointsComment>Below this colony points value the quest's weight becomes 0, so it never appears.</MST.rootMinPointsComment>
+    <MST.rootMinProgressScore>MinProg</MST.rootMinProgressScore>
+    <MST.rootMinProgressScoreComment>Below this progress score the weight becomes 0. Progress score is derived by the storyteller from days, population and wealth — it is not threat points.</MST.rootMinProgressScoreComment>
+    <MST.rootEarliestDay>Earliest</MST.rootEarliestDay>
+    <MST.rootEarliestDayComment>Earliest day after landing on which this quest can be picked.</MST.rootEarliestDayComment>
+    <MST.minRefireDays>RefireDays</MST.minRefireDays>
+    <MST.minRefireDaysComment>Minimum days before the same quest can appear again. Its weight is 0 during that window; 0 means no limit.</MST.minRefireDaysComment>
+    <MST.expireDaysRange>ExpireDays</MST.expireDaysRange>
+    <MST.expireDaysRangeComment>How long (in days, randomly picked in the range) the offer can be accepted. -1~-1 means it never expires.</MST.expireDaysRangeComment>
+    <MST.autoAccept>AutoAccept</MST.autoAccept>
+    <MST.autoAcceptComment>The quest is accepted automatically when it appears — the player never clicks accept and cannot decline. Mutually exclusive with ExpireDays: having both makes vanilla log a config error for the def (logged only, harmless); this page does not block it.</MST.autoAcceptComment>
+    <MST.decreeSelectionWeight>DecreeWgt</MST.decreeSelectionWeight>
+    <MST.decreeSelectionWeightComment>Selection weight for Royalty decrees. Independent of the random pool. 0 means it never appears as a decree.</MST.decreeSelectionWeightComment>
+    <MST.defaultChallengeRating>Challenge</MST.defaultChallengeRating>
+    <MST.defaultChallengeRatingComment>Challenge rating of the quest, which picks the pawn count and the tier of negative events (1 lightest, 3 heaviest). -1 means unset — the generation defaults apply.</MST.defaultChallengeRatingComment>
+    <MST.randomlySelectable>RandomPick</MST.randomlySelectable>
+    <MST.randomlySelectableComment>Whether the quest may be picked at random. When off it never appears as a random quest even if its weight is non-zero (the weight is kept so you can re-enable it later).</MST.randomlySelectableComment>
+    <MST.rootIncreasesPopulation>IncPop</MST.rootIncreasesPopulation>
+    <MST.rootIncreasesPopulationComment>Whether this counts as a population-increasing quest. The game splits chance between the two pools by population intent, then rolls within each pool — the pools do not compete.</MST.rootIncreasesPopulationComment>
+    <MST.canGiveRoyalFavor>RoyalFavor</MST.canGiveRoyalFavor>
+    <MST.canGiveRoyalFavorComment>Whether the quest can grant royal favor. While the player has a faction that grants favor, non-favor quests are down-weighted by a days-since curve; flagging it avoids that penalty.</MST.canGiveRoyalFavorComment>
+</LanguageData>
