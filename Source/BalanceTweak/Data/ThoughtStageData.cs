@@ -42,15 +42,12 @@ class ThoughtStageData : TweakData<ThoughtStageData>
 
             stage = def.stages[index.Value];
             if (stage == null) { return false; }
-            var l = stage.LabelAbstractCap;// ?? stage.label ?? (def.defName + $"_{index}");
-            if (l.NullOrEmpty()) { l = def.defName; }
             if (!stageLabel.NullOrEmpty() && stage.untranslatedLabel != stageLabel)
             {
                 Log.Warning($"[BalanceTweak]{def} tool的名称错误：{stageLabel}");
                 return false;
             }
             stageLabel = stage.untranslatedLabel;
-            label = l;
             subdefLabel ??= stage.label;
             id = new($"{def.defName}_{index}", type);
             var li = GetAllData(data.id);
@@ -58,7 +55,6 @@ class ThoughtStageData : TweakData<ThoughtStageData>
             {
                 ((ThoughtData)item).FirstStage ??= this.id;
             }
-            searchString = $"{def.defName}{index}{l}";
             desc = stage.description ?? data.desc;
             uiIcon = data.uiIcon;
             Thought = data.id;
@@ -68,6 +64,17 @@ class ThoughtStageData : TweakData<ThoughtStageData>
         }
         return true;
     }
+
+    /// <summary>阶段的抽象标签（<c>LabelAbstractCap</c>）就是原版 UI 显示的那行字，空则回落 defName。</summary>
+    protected override string ResolveLabel()
+    {
+        if (stage == null) return base.ResolveLabel();
+        var l = stage.LabelAbstractCap;
+        return l.NullOrEmpty() ? (def?.defName ?? string.Empty) : l;
+    }
+
+    protected override string ResolveSearchString()
+        => $"{def?.defName}{index}{label}";
 
     public override void Apply()
     {

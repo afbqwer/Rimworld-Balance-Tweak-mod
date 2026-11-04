@@ -96,10 +96,6 @@ class BackstoryData : TweakData<BackstoryData>
         base.SetDef(def, type, tweaked);
         if (this.def is BackstoryDef d)
         {
-            // Def.label 默认是 defName，列表里可读性太差 —— 用背景标题（与原版 UI 同源）。
-            label = d.title.NullOrEmpty() ? d.defName : d.TitleCapFor(Gender.None);
-            searchString = label + d.defName + d.titleShort;
-
             title ??= d.title;
             titleFemale ??= d.titleFemale;
             titleShort ??= d.titleShort;
@@ -152,6 +148,21 @@ class BackstoryData : TweakData<BackstoryData>
         // 缓存失效：DisabledWorkTypes 只在首次访问时按 workDisables 算一次，之后永不重算。
         if (StateOf(nameof(workDisables)) != FieldState.Unset || IsForceWriteField(nameof(workDisables)))
             cachedDisabledWorkTypesField?.SetValue(def, null);
+    }
+
+    /// <summary><c>BackstoryDef.label</c> 默认就是 defName，列表里可读性太差 —— 用背景标题（与原版 UI 同源）。</summary>
+    protected override string ResolveLabel()
+    {
+        if (def is not BackstoryDef d) return base.ResolveLabel();
+        return d.title.NullOrEmpty() ? base.ResolveLabel() : d.TitleCapFor(Gender.None);
+    }
+
+    /// <summary>搜索时补上简短标题（玩家更容易记住"农场男孩"而不是类名）。</summary>
+    protected override string ResolveSearchString()
+    {
+        var name = def?.defName ?? string.Empty;
+        var shortTitle = def is BackstoryDef d ? d.titleShort : null;
+        return label + name + shortTitle;
     }
 
     public override List<string> TypeStrings => typeStrings;

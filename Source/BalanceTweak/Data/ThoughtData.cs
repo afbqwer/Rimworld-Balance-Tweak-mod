@@ -132,14 +132,12 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
         if (def is ThoughtDef d)
         {
             var fs = d.stages?.FirstOrDefault();
-            label = d.label ?? fs?.LabelAbstractCap ?? d.defName;
             defLabel ??= def?.label;
             desc = d.description ?? $"{d.defName}{fs?.description}" ?? "";
             if (d.Icon != null && d.Icon != BaseContent.BadTex)
             {
                 uiIcon = d.Icon;
             }
-            searchString = label + d.defName;
             StageNum ??= d.stages?.Count ?? 0;
             stackLimit ??= d.stackLimit;
             stackedEffectMultiplier ??= d.stackedEffectMultiplier;
@@ -183,6 +181,17 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
             if (!IsFieldModified(nameof(nullifyingPrecepts))) nullifyingPrecepts ??= d.nullifyingPrecepts;
             if (!IsFieldModified(nameof(nullifyingOwnTales))) nullifyingOwnTales ??= d.nullifyingOwnTales;
         }
+    }
+
+    /// <summary>
+    /// 心情想法多数只有 <c>stages[0].label</c>，<c>def.label</c> 是空的（原版靠阶段的抽象标签显示），
+    /// 所以标题优先取阶段标签，最后才回落 defName。
+    /// </summary>
+    protected override string ResolveLabel()
+    {
+        if (def is not ThoughtDef d) return base.ResolveLabel();
+        var first = d.stages?.FirstOrDefault();
+        return d.label ?? first?.LabelAbstractCap ?? d.defName;
     }
 
     public override void Apply()

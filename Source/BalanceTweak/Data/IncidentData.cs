@@ -117,11 +117,9 @@ class IncidentData : TweakData<IncidentData>
         SetProps(def, type);
         if (def is IncidentDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= def?.label;
             desc = d.letterText;
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             baseChance ??= d.baseChance;
             if(d.category != null){
                 Category ??= d.category.label.NullOrEmpty() ? d.category.defName : d.category.label;

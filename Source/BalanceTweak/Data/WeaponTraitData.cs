@@ -115,11 +115,9 @@ class WeaponTraitData : TweakData<WeaponTraitData>
         SetProps(def, type);
         if (def is not WeaponTraitDef d) return;
 
-        label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
         defLabel ??= d.label;
         // 特性描述就是玩家在枪械信息里看到的那段说明 —— 它比 "defName + description" 更有用。
         desc = d.description.NullOrEmpty() ? d.defName : d.description;
-        searchString = label + d.defName;
 
         weaponCategory ??= d.weaponCategory;
         commonality ??= d.commonality;

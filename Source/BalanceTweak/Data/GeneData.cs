@@ -89,13 +89,11 @@ class GeneData : TweakData<GeneData>
         SetProps(def, type);
         if (def is GeneDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= def?.label;
             desc = d.description ?? "";
             displayCategory = d.displayCategory?.LabelCap ?? "";
             iconPath = d.iconPath;
             uiIconColor = d.IconColor;
-            searchString = displayCategory + label + d.defName;
             biostatMet ??= d.biostatMet;
             biostatArc ??= d.biostatArc;
             biostatCpx ??= d.biostatCpx;
@@ -129,6 +127,10 @@ class GeneData : TweakData<GeneData>
             }
         }
     }
+
+    /// <summary>搜索时额外带上基因分类（玩家常按"代谢 / 外观"这类分类词找基因）。</summary>
+    protected override string ResolveSearchString()
+        => displayCategory + label + (def?.defName ?? string.Empty);
 
     public override void Apply()
     {

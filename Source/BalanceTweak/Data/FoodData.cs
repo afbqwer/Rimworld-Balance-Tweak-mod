@@ -114,11 +114,9 @@ class FoodData : TweakData<FoodData>
         SetProps(def, type);
         if (def is ThingDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= def?.label;
             desc = d.description;
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             if (d.ingestible!= null)
             {
             baseIngestTicks ??= d.ingestible.baseIngestTicks;

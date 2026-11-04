@@ -85,11 +85,9 @@ class BodyPartData : TweakData<BodyPartData>
         SetProps(def, type);
         if (def is BodyPartDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= d.label;
             desc = d.description;
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             hitPoints ??= d.hitPoints;
             if (!IsFieldModified(nameof(tags))) tags ??= d.tags;
             permanentInjuryChanceFactor ??= d.permanentInjuryChanceFactor;

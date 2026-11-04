@@ -201,9 +201,7 @@ class HediffData : TweakData<HediffData>, ISubItemHost
         SetProps(def, type);
         if (def is HediffDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= def?.label;
-            searchString = label + d.defName;
             initialSeverity ??= d.initialSeverity;
             lethalSeverity ??= d.lethalSeverity;
             minSeverity ??= d.minSeverity;

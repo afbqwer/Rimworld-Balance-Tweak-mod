@@ -28,11 +28,9 @@ class WeatherData : TweakData<WeatherData>
         SetProps(def, type);
         if (def is WeatherDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= def?.label;
             desc = d.description;
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             accuracyMultiplier ??= d.accuracyMultiplier;
             moveSpeedMultiplier ??= d.moveSpeedMultiplier;
             windSpeedFactor ??= d.windSpeedFactor;

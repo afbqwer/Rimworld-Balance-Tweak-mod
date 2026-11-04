@@ -49,13 +49,11 @@ class FactionData : TweakData<FactionData>
         SetProps(def, type);
         if (def is FactionDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= def?.label;
             desc = d.description;
             // FactionIcon 首次访问会 ContentFinder 加载纹理，延迟到真正显示时再取。
             uiIconColor = d.DefaultColor;
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             raidCommonalityFromPointsCurve ??= d.raidCommonalityFromPointsCurve;
             maxPawnCostPerTotalPointsCurve ??= d.maxPawnCostPerTotalPointsCurve;
             techLevel ??= d.techLevel;

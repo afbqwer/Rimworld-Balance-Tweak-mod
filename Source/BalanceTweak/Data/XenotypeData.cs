@@ -59,10 +59,8 @@ class XenotypeData : TweakData<XenotypeData>
         SetProps(def, type);
         if (def is XenotypeDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= d.label;
             desc = d.description ?? "";
-            searchString = label + d.defName;
             uiIcon = d.Icon;
 
             inheritable ??= d.inheritable;

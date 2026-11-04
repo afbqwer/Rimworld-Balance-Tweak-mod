@@ -38,8 +38,102 @@ public abstract partial class TweakData : IExposable
     public TweakID id;
     public int propType = 0;
     public string modPackName = "";
-    public string label = "";
-    public string searchString = "";
+
+    private string? _label;
+    private bool _labelResolved;
+
+    /// <summary>
+    /// 行标题：列表里显示的名字、编辑器窗口标题、跳转提示都用它。
+    /// <para>
+    /// <b>只用于展示</b> —— 不落盘、不参与 Apply、不影响任何判定，所以改成<b>首次读取时</b>才算
+    /// （见 <see cref="ResolveLabel"/>）。原先是 <c>SetDef</c> 里给每个 Def 都算一遍，
+    /// 等于启动期把几千个 Def（含大量永远不会被显示的行）的 label 全部翻译好。
+    /// </para>
+    /// <para>
+    /// <b>def 未绑定时不缓存</b>：这时 <see cref="ResolveLabel"/> 只能返回空串，缓存下来会让之后
+    /// <c>SetDef</c> 补上 def 的行永远显示空标题。读取仍照常返回，只是不写缓存。
+    /// </para>
+    /// </summary>
+    public string label
+    {
+        get
+        {
+            if (!_labelResolved && def != null)
+            {
+                _label = ResolveLabel();
+                _labelResolved = true;
+            }
+            return (_labelResolved ? _label : ResolveLabel()) ?? string.Empty;
+        }
+        set
+        {
+            _label = value;
+            _labelResolved = true;
+            // 搜索串默认由标题拼出来，标题一改它就得重算（否则搜索还在匹配旧名字）。
+            _searchString = null;
+            _searchStringResolved = false;
+        }
+    }
+
+    /// <summary>
+    /// 子类可重写：默认取 <see cref="Def.LabelCap"/>。
+    /// <para>
+    /// <b>注意原版语义</b>：<c>Def.LabelCap</c> 在 <c>label</c> 为空时返回 <c>null</c>，<b>不会</b>回落到
+    /// defName —— 所以这里必须自己回落，否则列表会整片空标题（大多数 Def 根本没写 label）。
+    /// </para>
+    /// </summary>
+    protected virtual string ResolveLabel()
+    {
+        if (def == null) return string.Empty;
+        var cap = def.LabelCap;
+        return cap.NullOrEmpty() ? def.defName : cap.ToString();
+    }
+
+    /// <summary>
+    /// 丢弃已解析的标题与搜索串。
+    /// <para>
+    /// 两者一起清：<see cref="searchString"/> 默认就由 <see cref="label"/> 拼出来，
+    /// 只清一个会留下"标题变了、搜索还是旧词"的错位。换 def（<c>SetDef</c> / <c>SetParentTweak</c>）、
+    /// <see cref="TweakData{T}.ApplyDefLabel"/> 写回 def 标签、以及 <see cref="Clone"/> 出新实例时都要调它。
+    /// </para>
+    /// </summary>
+    protected void ResetLabelCache()
+    {
+        _label = null;
+        _labelResolved = false;
+        _searchString = null;
+        _searchStringResolved = false;
+    }
+
+    private string? _searchString;
+    private bool _searchStringResolved;
+
+    /// <summary>
+    /// 搜索框匹配用的串（<c>TweakUtility</c> 的过滤与排序）。
+    /// <para>
+    /// 与 <see cref="label"/> 一样是<b>派生值</b>：默认是"标题 + defName"，子类可按需拼更多关键词
+    /// （见 <see cref="ResolveSearchString"/>）。它依赖 label，所以必须同样懒加载 ——
+    /// 否则 <c>SetDef</c> 里拼一次就等于强迫 label 当场算出来，懒加载白做。
+    /// </para>
+    /// </summary>
+    public string searchString
+    {
+        get
+        {
+            if (!_searchStringResolved && def != null)
+            {
+                _searchString = ResolveSearchString();
+                _searchStringResolved = true;
+            }
+            return (_searchStringResolved ? _searchString : ResolveSearchString()) ?? string.Empty;
+        }
+        set { _searchString = value; _searchStringResolved = true; }
+    }
+
+    /// <summary>子类可重写：默认"标题 + defName"。</summary>
+    protected virtual string ResolveSearchString()
+        => label + (def?.defName ?? string.Empty);
+
     private Texture2D? _uiIcon;
     private bool _uiIconResolved;
     public Texture2D? uiIcon
@@ -386,6 +480,14 @@ public abstract partial class TweakData : IExposable
         // 克隆出来的是新实例，缓存标记不能跟着抄：否则 UI 从原始快照克隆的行会直接跳过按需计算，
         // 屏幕上留下原始快照那一刻的值。
         clone.displayValuesEnsured = false;
+        // label / searchString 的缓存标记同理：克隆体必须回到"未解析"状态，下次读取时对当前
+        // def 重新求值。虽然克隆体与原件共享同一 def 引用、缓存值眼下多半一致，但一旦之后
+        // def.label 被改写（ApplyDefLabel 路径）或克隆体被 SetDef 换绑，抄来的"已解析"标记
+        // 就会让它挂着旧标题。
+        clone._label = null;
+        clone._labelResolved = false;
+        clone._searchString = null;
+        clone._searchStringResolved = false;
         clone._modifiedFieldNames = new HashSet<string>(_modifiedFieldNames);
         clone._clearedFieldNames = new HashSet<string>(_clearedFieldNames);
         clone._corruptedFieldNames = new HashSet<string>(_corruptedFieldNames);

@@ -16,12 +16,9 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     {
         this.def = def;
         id = new(def.defName, type);
-        label = def.LabelCap;
-        if (label.NullOrEmpty()) label = def.defName;
         modPackName = def.modContentPack?.Name ?? "Unknown";
         this.tweaked = tweaked;
         SetProps(def, type);
-        searchString = label + def.defName;
     }
 
     public override bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false)
@@ -36,6 +33,10 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
 
     protected void SetProps(Def def, SettingType type)
     {
+        // label / searchString 是派生展示值，首次读取时才算（见 TweakData.label）。
+        // 这里统一丢缓存：它是所有 SetDef / SetParentTweak 的必经之路（子类常自己重写 SetDef），
+        // 放在基类 SetDef 里会漏掉那些重写 —— 同一个实例换 def 时会挂着上一个 def 算出来的标题。
+        ResetLabelCache();
         propType = GetPropType();
         try
         {
@@ -543,6 +544,13 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         {
             def.label = v;
             def.ClearCachedData();
+            // 本行的懒加载缓存也要丢：行标题（label/searchString）可能已经按旧 def.label
+            // 解析过并缓存（首次绘制 / 搜索就会触发），不清的话应用改动后这一行仍显示旧名，
+            // 直到下次 SetDef。ResetLabelCache 与 ClearCachedData 的先后无所谓 —— 前者只是
+            // 置脏标记，真正取值发生在下一次读取，那时 LabelCap 缓存已清、会拿到新文本。
+            // 范围仅限本行：同 Def 的其他行（旧版同样不刷新）保持原状，跨行失效需要
+            // def→rows 索引，现阶段没有这个设施。
+            ResetLabelCache();
         });
     }
 

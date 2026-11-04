@@ -68,11 +68,9 @@ class TraderData : TweakData<TraderData>
         SetProps(def, type);
         if (def is TraderKindDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= d.label;
             desc = d.description;
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             commonality ??= d.commonality;
             orbital ??= d.orbital;
             requestable ??= d.requestable;

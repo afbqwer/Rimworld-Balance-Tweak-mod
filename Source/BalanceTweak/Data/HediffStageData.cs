@@ -178,6 +178,16 @@ class HediffStageData : TweakData<HediffStageData>
     public override int LoadingOrd => 300;
     private HediffStage? stage = null;
 
+    /// <summary>阶段自带 label / overrideLabel，都没有时与原版一致地拼成「父 hediff 名_序号」。</summary>
+    protected override string ResolveLabel()
+    {
+        if (stage == null) return base.ResolveLabel();
+        return stage.label ?? stage.overrideLabel ?? $"{def?.label}_{index}";
+    }
+
+    protected override string ResolveSearchString()
+        => $"{def?.defName}{index}{label}";
+
     public override bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false)
     {
         base.SetParentTweak(data, type, tweaked);
@@ -186,18 +196,15 @@ class HediffStageData : TweakData<HediffStageData>
         {
             stage = def.stages[index.Value];
             if (stage == null) { return false; }
-            var l = stage.label ?? stage.overrideLabel ?? $"{def.label}_{index}";
             if (!stageLabel.NullOrEmpty() && stage.untranslatedLabel != stageLabel)
             {
                 Log.Warning($"[BalanceTweak]{def} stage的名称错误：{stageLabel}");
                 return false;
             }
             stageLabel = stage.untranslatedLabel;
-            label = l;
             subdefLabel ??= stage.label;
             subdefOverrideLabel ??= stage.overrideLabel;
             id = new($"{def.defName}_{index}", type);
-            searchString = $"{def.defName}{index}{l}";
             var li = GetAllData(data.id);
             foreach (var item in li)
             {

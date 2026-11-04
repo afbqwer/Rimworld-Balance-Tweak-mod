@@ -61,10 +61,8 @@ public class RecipeProcessHelper
             var t = G(FirstItem(G(pd, "results")), "thing") as ThingDef;
             data.uiIcon = t?.uiIcon;
         }
-        data.label = def.LabelCap;
         data.desc = $"{def.defName}\n{def.description}";
         if (data.desc.NullOrEmpty()) { data.desc = def.defName; }
-        data.searchString = data.label + def.defName;
         data.ticks ??= DataUtility.AsInt(G(pd, "ticks"));
         data.ticksQuality ??= DataUtility.AsIntList(G(pd, "ticksQuality"));
         data.isLightDependingProcess ??= DataUtility.AsBool(G(pd, "isLightDependingProcess"));

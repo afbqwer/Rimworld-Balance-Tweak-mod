@@ -36,10 +36,8 @@ class BodyData : TweakData<BodyData>
         SetProps(def, type);
         if (def is BodyDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             desc = d.description;
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             if (!IsFieldModified(nameof(parts))) parts ??= BodyPartTreeCodec.Encode(d.corePart);
         }
     }

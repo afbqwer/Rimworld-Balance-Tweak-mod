@@ -103,6 +103,16 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
     public override int LoadingOrd => 300;
     private TraitDegreeData? degreeData = null;
 
+    /// <summary>标题取这一档特性自己的名字（原版每档各有 label / labelFemale）。</summary>
+    protected override string ResolveLabel()
+    {
+        if (degreeData == null) return base.ResolveLabel();
+        return degreeData.LabelCap ?? degreeData.label ?? def?.label ?? base.ResolveLabel();
+    }
+
+    protected override string ResolveSearchString()
+        => $"{def?.defName}{index}{label}";
+
     public override bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false)
     {
         base.SetParentTweak(data, type, tweaked);
@@ -115,17 +125,14 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
             }
             degreeData = def.degreeDatas[index.Value];
             if (degreeData == null) { return false; }
-            var l = degreeData.LabelCap ?? degreeData.label ?? def.label;
             if (!degreeLabel.NullOrEmpty() && degreeData.untranslatedLabel != degreeLabel)
             {
                 Log.Warning($"[BalanceTweak]{def} degree的名称错误：{degreeLabel}");
                 return false;
             }
             degreeLabel = degreeData.untranslatedLabel;
-            label = l;
             subdefLabel ??= degreeData.label;
             id = new($"{def.defName}_{degreeData.degree}", type);
-            searchString = $"{def.defName}{index}{l}";
             var li = GetAllData(data.id);
             foreach (var item in li)
             {

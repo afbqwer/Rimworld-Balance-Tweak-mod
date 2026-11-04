@@ -74,10 +74,8 @@ class TraitData : TweakData<TraitData>, ISubItemHost
         SetProps(def, type);
         if (def is TraitDef d)
         {
-            label = d.degreeDatas.FirstOrDefault()?.LabelCap ?? "";
             defLabel ??= def?.label;
             desc = d.defName + '\n' + (d.degreeDatas.FirstOrDefault()?.description ?? "");
-            searchString = label + d.defName;
             commonality ??= (float?)CommonalityField.GetValue(d);
             commonalityFemale ??= (float?)CommonalityFemaleField.GetValue(d);
             canBeSuppressed ??= d.canBeSuppressed;
@@ -119,6 +117,13 @@ class TraitData : TweakData<TraitData>, ISubItemHost
         ApplyV<WorkTags>(nameof(disabledWorkTags), v => def.disabledWorkTags = v);
     }
 
+
+    /// <summary>特性本身没有可读的 label（原版 <c>TraitDef.label</c> 就是 defName），标题取第一档特性的名字。</summary>
+    protected override string ResolveLabel()
+    {
+        if (def is not TraitDef d) return base.ResolveLabel();
+        return d.degreeDatas.FirstOrDefault()?.LabelCap ?? base.ResolveLabel();
+    }
 
     public override List<string> TypeStrings => typeStrings;
     private static readonly List<string> typeStrings = typeof(TraitCategory).GetEnumNames().Select(s => "MST." + s).ToList();

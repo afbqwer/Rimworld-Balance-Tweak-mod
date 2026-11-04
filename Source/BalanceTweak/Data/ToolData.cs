@@ -57,6 +57,14 @@ class ToolData : TweakData<ToolData>
     public DamageDef? damage = null;
     private Tool? tool = null;
 
+    /// <summary>标题是"招式名(武器名)"：单看招式名（Cut / Stab）分不清是哪把武器的哪一招。</summary>
+    protected override string ResolveLabel()
+        => tool == null ? base.ResolveLabel() : $"{tool.LabelCap}({def?.LabelCap})";
+
+    /// <summary>招式名与武器名都要能搜到（玩家常直接搜武器）。</summary>
+    protected override string ResolveSearchString()
+        => $"{def?.label}{def?.defName}{tool?.LabelCap}";
+
     private static float GetArmorPenetrationAbstract(TweakData? data)
     {
         if (data is ToolData td)
@@ -81,10 +89,7 @@ class ToolData : TweakData<ToolData>
                 return false;
             }
             toolLabel = tool.untranslatedLabel;
-            var lab = tool.LabelCap;
             id = new(def.defName + $"_{index}", type);
-            label = $"{lab}({def.LabelCap})";
-            searchString = $"{def.label}{def.defName}{lab}";
             damageAmountBase ??= tool.power;
             armorPenetrationBase ??= tool.armorPenetration;
             cooldownTime ??= tool.cooldownTime;
@@ -130,10 +135,7 @@ class ToolData : TweakData<ToolData>
                 return false;
             }
             toolLabel = tool.untranslatedLabel;
-            var lab = tool.LabelCap;
             id = new($"{hd.defName}_{index}", type);
-            label = $"{lab}({hd.LabelCap})";
-            searchString = $"{hd.label}{hd.defName}{lab}";
             damageAmountBase ??= tool.power;
             armorPenetrationBase ??= tool.armorPenetration;
             cooldownTime ??= tool.cooldownTime;

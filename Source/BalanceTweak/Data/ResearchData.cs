@@ -92,11 +92,9 @@ class ResearchData : TweakData<ResearchData>
         SetProps(def, type);
         if (def is ResearchProjectDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= def?.label;
             desc = d.description;
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             baseCost ??= d.baseCost;
             researchViewX ??= d.researchViewX;
             researchViewY ??= d.researchViewY;

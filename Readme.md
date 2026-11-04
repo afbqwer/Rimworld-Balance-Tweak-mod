@@ -326,6 +326,16 @@ public override void Apply()
 - `GenValues()`（镜像 + DPS + 强度全量重算）只给"数据真的变了"的路径用：`Apply` / 弹丸推送 / 招式编辑 / 自检。新增 Display 列 = 字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏。
 - 关联入口列（`Link` / `PawnWeaponLinks` 等）不进 `EnsureForDisplay`：字段永远为 null，点了才查。
 
+**行标题与搜索串**（`TweakData.label` / `searchString`）同样是不落盘的派生值，一律按需算：
+
+| 规则 | 说明 |
+| --- | --- |
+| 首次读取时才算（`ResolveLabel` / `ResolveSearchString`） | 原先每个 `SetDef` 都给全库四万行算一遍 label，而绝大多数行根本不会被显示 |
+| def 未绑定时**不缓存** | 此时只能算出空串，缓存下来会让之后补上 def 的行永久空标题 |
+| 清缓存只在 `SetProps` 里做 | 它是所有 `SetDef` / `SetParentTweak` 的必经之路；写在基类 `SetDef` 会漏掉那些自己重写 SetDef 的子类 |
+| `Def.LabelCap` 可能返回 `null` | 原版在 `label` 为空时**不回落** defName，基类 `ResolveLabel` 自己回落 |
+| 任务名由 `QuestNameResolver` 现拼 | 只认 `questNameRules` 里的纯文本规则（`Rule_String`），不掷骰子、不碰 slate；任何 token 拿不到选项就整条放弃，退回 defName |
+
 **打开窗口分两段准备**（期间 `InitInProgress` 为 true，`DoEditorContents` 画进度条后 return）：
 
 | 段 | 入口 | 规模 | 预算 | 进度 |

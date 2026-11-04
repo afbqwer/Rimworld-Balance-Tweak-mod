@@ -116,7 +116,6 @@ public class RecipeData : TweakData<RecipeData>
         if (def is RecipeDef d)
         {
             generated = d.generated;
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= def?.label;
             desc = $"{d.defName}\n{d.description}";
             uiIcon = d.UIIcon ?? d.UIIconThing?.uiIcon;
@@ -125,7 +124,6 @@ public class RecipeData : TweakData<RecipeData>
                 uiIconColor = c.Value;
             }
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             workAmount ??= d.workAmount;
             workSpeedStat ??= d.workSpeedStat;
             targetCountAdjustment ??= d.targetCountAdjustment;

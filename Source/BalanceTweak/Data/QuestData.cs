@@ -141,6 +141,20 @@ class QuestData : TweakData<QuestData>
         canGiveRoyalFavor ??= d.canGiveRoyalFavor;
     }
 
+    /// <summary>
+    /// 行标题取 <c>questNameRules</c> 拼出的任务名（见 <see cref="QuestNameResolver"/>）：
+    /// 原版的任务脚本几乎都没有 <c>&lt;label&gt;</c>，直接显示就是 <c>OpportunitySite_BanditCamp</c>
+    /// 这种类名，一屏几十行根本认不出是哪个任务。
+    /// <para>拼不出来（规则里带 <c>[asker_nameDef]</c> 这类运行时变量）时回落 Def.label，不硬凑。</para>
+    /// </summary>
+    protected override string ResolveLabel()
+    {
+        if (def is not QuestScriptDef q) return base.ResolveLabel();
+        // 作者显式写了 label（≠ defName）就尊重作者，不去猜。
+        if (!q.label.NullOrEmpty() && q.label != q.defName) return base.ResolveLabel();
+        return QuestNameResolver.TryResolve(q) ?? base.ResolveLabel();
+    }
+
     public override void Apply()
     {
         if (this.def is not QuestScriptDef def)

@@ -31,11 +31,9 @@ class MemeData : TweakData<MemeData>
         SetProps(def, type);
         if (def is MemeDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             defLabel ??= def?.label;
             desc = d.description ?? "";
             uiIcon = d.Icon;
-            searchString = label + d.defName;
             selectionWeightFactor ??= d.randomizationSelectionWeightFactor;
             impact ??= d.impact;
         }

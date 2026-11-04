@@ -120,10 +120,8 @@ class DamageData : TweakData<DamageData>
         SetProps(def, type);
         if (def is DamageDef d)
         {
-            label = d.LabelCap.NullOrEmpty() ? d.defName : d.LabelCap;
             desc = d.description;
             if (desc.NullOrEmpty()) { desc = d.defName; }
-            searchString = label + d.defName;
             defaultDamage ??= d.defaultDamage;
             defaultArmorPenetration ??= d.defaultArmorPenetration;
             defaultStoppingPower ??= d.defaultStoppingPower;
