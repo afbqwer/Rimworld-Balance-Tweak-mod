@@ -31,13 +31,15 @@ public class CompConfigWindow : EditorWindowBase
     private readonly string? noteKey;
     private readonly IReadOnlyList<CompConfigRow> rows;
     private readonly float viewHeight;
+    private readonly Func<TweakData, IReadOnlyList<CompConfigIssue>>? validate;
 
     private readonly Dictionary<string, string> buffers = new();
     private string? focusedField;
     private Vector2 scroll;
 
     protected CompConfigWindow(TweakData data, string titleKey, string introKey, string? noteKey,
-        IReadOnlyList<CompConfigRow> rows, float viewHeight)
+        IReadOnlyList<CompConfigRow> rows, float viewHeight,
+        Func<TweakData, IReadOnlyList<CompConfigIssue>>? validate = null)
     {
         this.data = data;
         pickerTitle = $"{data.label} - {titleKey.Translate().RawText}";
@@ -45,6 +47,7 @@ public class CompConfigWindow : EditorWindowBase
         this.noteKey = noteKey;
         this.rows = rows;
         this.viewHeight = viewHeight;
+        this.validate = validate;
         doCloseX = true;
     }
 
@@ -109,6 +112,12 @@ public class CompConfigWindow : EditorWindowBase
             }
         }
 
+        if (validate != null && data != null)
+        {
+            y += SectionGap;
+            DrawValidation(ref y, x, width);
+        }
+
         if (!noteKey.NullOrEmpty())
         {
             y += SectionGap;
@@ -116,6 +125,22 @@ public class CompConfigWindow : EditorWindowBase
         }
 
         Widgets.EndScrollView();
+    }
+
+    /// <summary>配置检查：错误红色、提示黄色；没有问题时显示一行绿色状态。</summary>
+    private void DrawValidation(ref float y, float x, float width)
+    {
+        DrawSectionTitle(ref y, x, width, "MST.configValidationSection");
+        var issues = validate!(data!);
+        if (issues.Count == 0)
+        {
+            DrawWrappedText(ref y, x, width, "MST.configValidationOk", GameFont.Small, Color.green);
+            return;
+        }
+
+        foreach (var issue in issues)
+            DrawWrappedText(ref y, x, width, issue.text, GameFont.Small,
+                issue.isError ? Color.red : Color.yellow);
     }
 
     private void DrawNumberRow(float x, ref float y, float width, CompConfigRow row)
@@ -335,4 +360,20 @@ public sealed class CompConfigRow
 
     public static CompConfigRow Section(string labelKey)
         => new(Kind.Section, null, labelKey, null, 0, int.MaxValue, 0f, 0f);
+}
+
+/// <summary>一条配置检查结果。<see cref="isError"/> = 错误（红），否则是提示（黄）。</summary>
+public sealed class CompConfigIssue
+{
+    public readonly bool isError;
+    public readonly string text;
+
+    private CompConfigIssue(bool isError, string text)
+    {
+        this.isError = isError;
+        this.text = text;
+    }
+
+    public static CompConfigIssue Error(string text) => new(true, text);
+    public static CompConfigIssue Warning(string text) => new(false, text);
 }

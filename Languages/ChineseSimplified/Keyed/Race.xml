@@ -50,12 +50,34 @@
     <MST.shieldInterceptSection>拦截规则</MST.shieldInterceptSection>
     <MST.projectileInterceptorRadius>护盾半径</MST.projectileInterceptorRadius>
     <MST.projectileInterceptorRadiusComment>护盾的拦截半径（格）。</MST.projectileInterceptorRadiusComment>
+    <MST.shieldCoreSection>护盾参数</MST.shieldCoreSection>
+    <MST.shieldActiveSection>激活时长</MST.shieldActiveSection>
     <MST.projectileInterceptorHitPoints>护盾HP</MST.projectileInterceptorHitPoints>
-    <MST.projectileInterceptorHitPointsComment>护盾的最大生命值。</MST.projectileInterceptorHitPointsComment>
+    <MST.projectileInterceptorHitPointsComment>护盾的最大生命值；-1 = 无 HP 池。</MST.projectileInterceptorHitPointsComment>
+    <MST.startWithMaxHitPoints>初始满 HP</MST.startWithMaxHitPoints>
+    <MST.startWithMaxHitPointsComment>有 HP 池时，新生成的护盾是否从满 HP 开始。</MST.startWithMaxHitPointsComment>
     <MST.projectileInterceptorChargeDurationTicks>充能时长</MST.projectileInterceptorChargeDurationTicks>
     <MST.projectileInterceptorChargeDurationTicksComment>护盾耗尽后重新充能所需的 tick 数。</MST.projectileInterceptorChargeDurationTicksComment>
     <MST.projectileInterceptorRechargeHitPointsIntervalTicks>回复间隔</MST.projectileInterceptorRechargeHitPointsIntervalTicks>
-    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>每次 HP 回复之间的间隔（ tick ）；仅在未开启“充能后立即回满”时生效。</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
+    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>每次 HP 回复之间的间隔（ tick ），有 HP 池时必须 ≥1；仅在未开启“充能后立即回满”时影响回复速度。</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
+    <MST.cooldownTicks>拦截冷却</MST.cooldownTicks>
+    <MST.cooldownTicksComment>每次拦截后护盾进入冷却的 tick 数；0 = 无冷却。</MST.cooldownTicksComment>
+    <MST.chargeIntervalTicks>充能周期</MST.chargeIntervalTicks>
+    <MST.chargeIntervalTicksComment>两次充能循环的间隔 tick；大于 0 时按周期充能，且不能与 HP 池同时设置。</MST.chargeIntervalTicksComment>
+    <MST.activated>启用激活时长</MST.activated>
+    <MST.activatedComment>开启后护盾只在激活后持续 activeDuration 刻；否则一直可用。</MST.activatedComment>
+    <MST.activeDuration>激活持续时间</MST.activeDuration>
+    <MST.activeDurationComment>激活后持续的 tick 数（60 刻 = 1 秒）；仅在启用激活时长时生效。</MST.activeDurationComment>
+    <MST.shieldErrHpAndChargeInterval>护盾 HP 与充能周期不能同时设置（原版 ConfigErrors）。</MST.shieldErrHpAndChargeInterval>
+    <MST.shieldErrRechargeInterval>有 HP 池时，HP 回复间隔必须大于 0，否则每 tick 取模会除以零。</MST.shieldErrRechargeInterval>
+    <MST.shieldErrHitPointsTooLow>护盾 HP 不能低于 -1（-1 = 无 HP 池）。</MST.shieldErrHitPointsTooLow>
+    <MST.shieldErrChargeDurationZero>设置了充能周期，但充能时长为 0；护盾会立即结束充能。</MST.shieldErrChargeDurationZero>
+    <MST.shieldErrChargeIntervalShorter>充能周期不能短于充能时长，否则护盾会一直处于充能状态。</MST.shieldErrChargeIntervalShorter>
+    <MST.shieldErrActiveDurationZero>启用激活时长时，持续时间必须大于 0。</MST.shieldErrActiveDurationZero>
+    <MST.shieldWarnActivatedNeedsExternal>启用激活时长后，护盾需要外部逻辑调用 Activate() 才会激活；普通护盾请保持关闭。</MST.shieldWarnActivatedNeedsExternal>
+    <MST.shieldWarnActiveDurationIgnored>未启用“激活时长”，持续时间不会生效。</MST.shieldWarnActiveDurationIgnored>
+    <MST.shieldWarnInstantRefillNoHp>没有 HP 池，充能后立即回满不会生效。</MST.shieldWarnInstantRefillNoHp>
+    <MST.shieldWarnNoInterceptType>地面与空中投射物都未勾选，护盾不会拦截任何东西。</MST.shieldWarnNoInterceptType>
     <MST.projectileInterceptorDisarmedByEmpForTicks>EMP瘫痪</MST.projectileInterceptorDisarmedByEmpForTicks>
     <MST.projectileInterceptorDisarmedByEmpForTicksComment>EMP 瘫痪护盾的时长（ tick ）。</MST.projectileInterceptorDisarmedByEmpForTicksComment>
     <MST.interceptGroundProjectiles>地面投射物</MST.interceptGroundProjectiles>

@@ -58,6 +58,8 @@
     <MST.TurretSlotList>TurretSlots</MST.TurretSlotList>
     <MST.ShieldConfig>Shield</MST.ShieldConfig>
     <MST.APSConfig>APS</MST.APSConfig>
+    <MST.configValidationSection>Validation</MST.configValidationSection>
+    <MST.configValidationOk>No invalid combinations found.</MST.configValidationOk>
     <MST.Range>Range</MST.Range>
     <MST.SkillReqList>SkillReqList</MST.SkillReqList>
     <MST.TraitReqList>TraitReqList</MST.TraitReqList>

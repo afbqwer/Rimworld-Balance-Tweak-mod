@@ -57,6 +57,8 @@
     <MST.TurretSlotList>副炮槽列表</MST.TurretSlotList>
     <MST.ShieldConfig>护盾配置</MST.ShieldConfig>
     <MST.APSConfig>主动防御</MST.APSConfig>
+    <MST.configValidationSection>配置检查</MST.configValidationSection>
+    <MST.configValidationOk>未发现无效组合。</MST.configValidationOk>
     <MST.Range>范围</MST.Range>
     <MST.SkillReqList>技能需求列表</MST.SkillReqList>
     <MST.TraitReqList>特征需求列表</MST.TraitReqList>

@@ -185,6 +185,18 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     [TweakField(NotAColumn = true, Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
     public int? projectileInterceptorDisarmedByEmpForTicks = null;
 
+    // 冷却 / 充能周期 / 激活时长 / 初始 HP：同样只落盘，由 ShieldConfigWindow 校验组合。
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
+    public int? cooldownTicks = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
+    public int? chargeIntervalTicks = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, Available = nameof(AvailableIfMech))]
+    public bool? activated = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
+    public int? activeDuration = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, Available = nameof(AvailableIfMech))]
+    public bool? startWithMaxHitPoints = null;
+
     // 决定“拦什么”的开关；DMS 只开了 ground，默认不拦迫击炮。
     [TweakField(NotAColumn = true, Style = ColumnStyle.Bool)]
     public bool? interceptGroundProjectiles = null;
@@ -418,6 +430,11 @@ class RaceData : TweakData<RaceData>, ISubItemHost
                     projectileInterceptorChargeDurationTicks ??= interceptor.chargeDurationTicks;
                     projectileInterceptorRechargeHitPointsIntervalTicks ??= interceptor.rechargeHitPointsIntervalTicks;
                     projectileInterceptorDisarmedByEmpForTicks ??= interceptor.disarmedByEmpForTicks;
+                    cooldownTicks ??= interceptor.cooldownTicks;
+                    chargeIntervalTicks ??= interceptor.chargeIntervalTicks;
+                    activated ??= interceptor.activated;
+                    activeDuration ??= interceptor.activeDuration;
+                    startWithMaxHitPoints ??= interceptor.startWithMaxHitPoints;
                     interceptGroundProjectiles ??= interceptor.interceptGroundProjectiles;
                     interceptAirProjectiles ??= interceptor.interceptAirProjectiles;
                     interceptNonHostileProjectiles ??= interceptor.interceptNonHostileProjectiles;
@@ -730,6 +747,11 @@ class RaceData : TweakData<RaceData>, ISubItemHost
                 ApplyV<int>(nameof(projectileInterceptorChargeDurationTicks), v => interceptor.chargeDurationTicks = v);
                 ApplyV<int>(nameof(projectileInterceptorRechargeHitPointsIntervalTicks), v => interceptor.rechargeHitPointsIntervalTicks = v);
                 ApplyV<int>(nameof(projectileInterceptorDisarmedByEmpForTicks), v => interceptor.disarmedByEmpForTicks = v);
+                ApplyV<int>(nameof(cooldownTicks), v => interceptor.cooldownTicks = v);
+                ApplyV<int>(nameof(chargeIntervalTicks), v => interceptor.chargeIntervalTicks = v);
+                ApplyV<bool>(nameof(activated), v => interceptor.activated = v);
+                ApplyV<int>(nameof(activeDuration), v => interceptor.activeDuration = v);
+                ApplyV<bool>(nameof(startWithMaxHitPoints), v => interceptor.startWithMaxHitPoints = v);
                 ApplyV<bool>(nameof(interceptGroundProjectiles), v => interceptor.interceptGroundProjectiles = v);
                 ApplyV<bool>(nameof(interceptAirProjectiles), v => interceptor.interceptAirProjectiles = v);
                 ApplyV<bool>(nameof(interceptNonHostileProjectiles), v => interceptor.interceptNonHostileProjectiles = v);

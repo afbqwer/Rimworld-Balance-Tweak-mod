@@ -50,12 +50,34 @@
     <MST.shieldInterceptSection>Interception</MST.shieldInterceptSection>
     <MST.projectileInterceptorRadius>Radius</MST.projectileInterceptorRadius>
     <MST.projectileInterceptorRadiusComment>The shield's interception radius in tiles.</MST.projectileInterceptorRadiusComment>
+    <MST.shieldCoreSection>Shield</MST.shieldCoreSection>
+    <MST.shieldActiveSection>Activation</MST.shieldActiveSection>
     <MST.projectileInterceptorHitPoints>Hit points</MST.projectileInterceptorHitPoints>
-    <MST.projectileInterceptorHitPointsComment>The shield's maximum hit points.</MST.projectileInterceptorHitPointsComment>
+    <MST.projectileInterceptorHitPointsComment>The shield's maximum hit points; -1 means no HP pool.</MST.projectileInterceptorHitPointsComment>
+    <MST.startWithMaxHitPoints>Start full</MST.startWithMaxHitPoints>
+    <MST.startWithMaxHitPointsComment>Whether a newly spawned shield starts with full HP when it has an HP pool.</MST.startWithMaxHitPointsComment>
     <MST.projectileInterceptorChargeDurationTicks>Charge time</MST.projectileInterceptorChargeDurationTicks>
     <MST.projectileInterceptorChargeDurationTicksComment>Ticks the shield spends recharging after its HP is depleted.</MST.projectileInterceptorChargeDurationTicksComment>
     <MST.projectileInterceptorRechargeHitPointsIntervalTicks>Recharge interval</MST.projectileInterceptorRechargeHitPointsIntervalTicks>
-    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>Ticks between each HP restore tick; only used when instant refill after charge is disabled.</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
+    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>Ticks between each HP restore tick; must be at least 1 when an HP pool is used. Only affects gradual recharge when instant refill is disabled.</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
+    <MST.cooldownTicks>Cooldown</MST.cooldownTicks>
+    <MST.cooldownTicksComment>Ticks the shield stays on cooldown after an interception; 0 = no cooldown.</MST.cooldownTicksComment>
+    <MST.chargeIntervalTicks>Charge interval</MST.chargeIntervalTicks>
+    <MST.chargeIntervalTicksComment>Ticks between charge cycles; when above 0 the shield uses charge cycles and cannot also have an HP pool.</MST.chargeIntervalTicksComment>
+    <MST.activated>Use active duration</MST.activated>
+    <MST.activatedComment>When enabled, the shield only stays active for activeDuration ticks after activation; otherwise it stays available.</MST.activatedComment>
+    <MST.activeDuration>Active duration</MST.activeDuration>
+    <MST.activeDurationComment>Ticks the shield stays active after activation (60 ticks = 1 second); only used when Use active duration is enabled.</MST.activeDurationComment>
+    <MST.shieldErrHpAndChargeInterval>Shield HP and charge interval cannot both be set (vanilla ConfigErrors).</MST.shieldErrHpAndChargeInterval>
+    <MST.shieldErrRechargeInterval>With an HP pool, the HP recharge interval must be greater than 0; otherwise the per-tick modulo divides by zero.</MST.shieldErrRechargeInterval>
+    <MST.shieldErrHitPointsTooLow>Shield HP cannot be below -1 (-1 = no HP pool).</MST.shieldErrHitPointsTooLow>
+    <MST.shieldErrChargeDurationZero>Charge interval is set but charge duration is 0; the shield finishes charging immediately.</MST.shieldErrChargeDurationZero>
+    <MST.shieldErrChargeIntervalShorter>Charge interval must not be shorter than charge duration, or the shield stays charging forever.</MST.shieldErrChargeIntervalShorter>
+    <MST.shieldErrActiveDurationZero>When Use active duration is enabled, active duration must be greater than 0.</MST.shieldErrActiveDurationZero>
+    <MST.shieldWarnActivatedNeedsExternal>With active duration enabled, the shield only activates when external code calls Activate(); leave this off for ordinary shields.</MST.shieldWarnActivatedNeedsExternal>
+    <MST.shieldWarnActiveDurationIgnored>Use active duration is disabled, so active duration has no effect.</MST.shieldWarnActiveDurationIgnored>
+    <MST.shieldWarnInstantRefillNoHp>There is no HP pool, so instant refill has no effect.</MST.shieldWarnInstantRefillNoHp>
+    <MST.shieldWarnNoInterceptType>Neither ground nor air projectiles are checked; the shield will not intercept anything.</MST.shieldWarnNoInterceptType>
     <MST.projectileInterceptorDisarmedByEmpForTicks>EMP disarm</MST.projectileInterceptorDisarmedByEmpForTicks>
     <MST.projectileInterceptorDisarmedByEmpForTicksComment>How long EMP disables the shield, in ticks.</MST.projectileInterceptorDisarmedByEmpForTicksComment>
     <MST.interceptGroundProjectiles>Ground projectiles</MST.interceptGroundProjectiles>
