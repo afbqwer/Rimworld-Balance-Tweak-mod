@@ -24,6 +24,22 @@
     <MST.cooldown>CD Time</MST.cooldown>
     <MST.ticksBetweenBurstShots>ShotInt</MST.ticksBetweenBurstShots>
     <MST.burstShotCount>BurCnt</MST.burstShotCount>
+    <MST.sweepConfig>Sweep</MST.sweepConfig>
+    <MST.sweepConfigComment>Open the weapon sweep configuration window (only weapons with a spray verb).</MST.sweepConfigComment>
+    <MST.sweepConfigEdit>Edit</MST.sweepConfigEdit>
+    <MST.sweepConfigIntro>These values are written back to the spray fields on the weapon's VerbProperties; only weapons with a spray verb show this column.</MST.sweepConfigIntro>
+    <MST.sweepConfigNote>DMS GAU weapons usually require extra cells &gt;= burst count; the path needs at least burstShotCount - 1 extra cells to avoid an out-of-range index.</MST.sweepConfigNote>
+    <MST.sweepSection>Spray</MST.sweepSection>
+    <MST.sprayWidth>Spray width</MST.sprayWidth>
+    <MST.sprayWidthComment>Half-width of the spray pattern across the aim line, in tiles.</MST.sprayWidthComment>
+    <MST.sprayArching>Spray arching</MST.sprayArching>
+    <MST.sprayArchingComment>Additional forward/backward spread along the firing direction, in tiles.</MST.sprayArchingComment>
+    <MST.sprayThicknessCells>Spray thickness</MST.sprayThicknessCells>
+    <MST.sprayThicknessCellsComment>Base thickness of the spray pattern in tiles; minimum 1.</MST.sprayThicknessCellsComment>
+    <MST.sprayNumExtraCells>Extra cells</MST.sprayNumExtraCells>
+    <MST.sprayNumExtraCellsComment>Number of extra impact cells appended beyond the target cell. DMS GAU weapons usually require at least burstShotCount.</MST.sprayNumExtraCellsComment>
+    <MST.sweepErrPathTooShort>Extra cells + 1 is less than the burst shot count, so the spray path indexes out of range (at least burstShotCount - 1 extra cells are required).</MST.sweepErrPathTooShort>
+    <MST.sweepWarnExtraCellsLessThanBurst>DMS GAU weapons usually require extra cells &gt;= burst shot count; the current value is lower.</MST.sweepWarnExtraCellsLessThanBurst>
     <MST.OptimalRange>OptRng</MST.OptimalRange>
     <MST.allowInMechClusters>AlwMCl</MST.allowInMechClusters>
     <MST.collidesWithPawns>ColWPa</MST.collidesWithPawns>

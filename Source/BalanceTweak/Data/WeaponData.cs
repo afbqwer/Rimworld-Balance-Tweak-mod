@@ -62,6 +62,27 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     [TweakField(Style = ColumnStyle.Int, Available = nameof(AvailableIfRanged))]
     public int? burstShotCount = null;
 
+    // ── 武器扫射（Verb_Spray / Verb_ArcSpray，DMS 的 GAU 系列）──
+    // 仅在武器带扫射 Verb 时显示触发列；4 个 spray 字段 NotAColumn，由 SweepConfigWindow 编辑。
+    // 四个字段都是原版 VerbProperties 字段，1.6 / 1.7 都有，不需要可选 Mod 反射。
+
+    /// <summary>只读触发列：打开武器扫射配置窗口。没有扫射 Verb 的武器整格留白。</summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.SweepConfig,
+        Available = nameof(AvailableIfRanged), Hidden = nameof(HiddenIfNoSweep))]
+    public TweakID? sweepConfig = null;
+
+    public static bool HiddenIfNoSweep(TweakData data)
+        => data.def is not ThingDef d || FindSprayVerb(d) == null;
+
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Float)]
+    public float? sprayWidth = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Float)]
+    public float? sprayArching = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int)]
+    public int? sprayThicknessCells = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int)]
+    public int? sprayNumExtraCells = null;
+
     [TweakField(DataType = ColumnDataType.Display, Available = nameof(AvailableIfRanged))]
     public float? OptimalRange = null;
     [TweakField(DataType = ColumnDataType.Display, Available = nameof(AvailableIfRanged))]
@@ -183,6 +204,7 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
 
     private float? LMAXRangedDPS = null;
     private VerbProperties? verb = null;
+    private VerbProperties? sprayVerb = null;
     /// <summary>重型扩展的引用（SetDef 时解析一次）。读档后由 SetDef 重新绑定，Clone 共享同一实例。</summary>
     private object? heavyExtension = null;
     static FieldInfo ForcedMissRadius = Reflect.Field(typeof(VerbProperties), "forcedMissRadius");
@@ -369,6 +391,15 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
                 }
             }
         }
+
+        sprayVerb ??= FindSprayVerb(def);
+        if (sprayVerb != null)
+        {
+            ApplyV<float>(nameof(sprayWidth), v => sprayVerb.sprayWidth = v);
+            ApplyV<float>(nameof(sprayArching), v => sprayVerb.sprayArching = v);
+            ApplyV<int>(nameof(sprayThicknessCells), v => sprayVerb.sprayThicknessCells = v);
+            ApplyV<int>(nameof(sprayNumExtraCells), v => sprayVerb.sprayNumExtraCells = v);
+        }
     }
 
     /// <summary>
@@ -479,7 +510,15 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         if (def is not ThingDef d) return;
 
         techLevel ??= d.techLevel;
+        sprayVerb ??= FindSprayVerb(d);
         verb ??= d.Verbs.FirstOrDefault(v => !v.IsMeleeAttack);
+        if (sprayVerb != null)
+        {
+            sprayWidth ??= sprayVerb.sprayWidth;
+            sprayArching ??= sprayVerb.sprayArching;
+            sprayThicknessCells ??= sprayVerb.sprayThicknessCells;
+            sprayNumExtraCells ??= sprayVerb.sprayNumExtraCells;
+        }
         if (verb == null) return;
         var projectile = ResolveProjectile(verb);
         if (projectile != null)
@@ -499,6 +538,10 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         burstShotCount ??= verb.burstShotCount;
         forcedMissRadius ??= (float?)ForcedMissRadius.GetValue(verb);
     }
+
+    /// <summary>找武器上的扫射 Verb（原版 <see cref="Verb_Spray"/> 及其子类，含 Fortified 的 GAU 变体）。</summary>
+    private static VerbProperties? FindSprayVerb(ThingDef? def)
+        => def?.Verbs?.FirstOrDefault(v => v?.verbClass != null && typeof(Verb_Spray).IsAssignableFrom(v.verbClass));
 
     /// <summary>
     /// 派生显示列：远程 DPS 期望 + 近战 DPS。

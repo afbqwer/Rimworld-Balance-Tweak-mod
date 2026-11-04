@@ -1714,7 +1714,7 @@ public partial class BalanceTweakSettings : ModSettings
                     Event.current.Use();
                 }
             }
-            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig or ColumnStyle.TurretConfig or ColumnStyle.ShieldConfig or ColumnStyle.APSConfig)
+            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig or ColumnStyle.TurretConfig or ColumnStyle.ShieldConfig or ColumnStyle.APSConfig or ColumnStyle.SweepConfig)
             {
                 // 只读的关联入口：点击打开链接列表窗口（关联列 / 研究解锁列共用同一套绘制）。
                 // 兵种侧对「没有武器标签」的行返回空串 —— 那种行没有可列的候选，画个空按钮只会误导。
@@ -1778,6 +1778,12 @@ public partial class BalanceTweakSettings : ModSettings
                         // Fortified 主动防御系统：AbilityDef 上的 4 个平衡字段。
                         if (data is AbilityData)
                             Find.WindowStack.Add(new APSConfigWindow(data));
+                    }
+                    else if (config.columnType == ColumnStyle.SweepConfig)
+                    {
+                        // 武器扫射：VerbProperties 上的 4 个 spray 字段。
+                        if (data is WeaponData)
+                            Find.WindowStack.Add(new SweepConfigWindow(data));
                     }
                     else if (config.columnType == ColumnStyle.BodyLinks)
                     {

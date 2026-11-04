@@ -24,6 +24,22 @@
     <MST.cooldown>冷却时间</MST.cooldown>
     <MST.ticksBetweenBurstShots>射击间隔</MST.ticksBetweenBurstShots>
     <MST.burstShotCount>射击次数</MST.burstShotCount>
+    <MST.sweepConfig>扫射</MST.sweepConfig>
+    <MST.sweepConfigComment>打开武器扫射配置窗口（仅带扫射 Verb 的武器）。</MST.sweepConfigComment>
+    <MST.sweepConfigEdit>编辑</MST.sweepConfigEdit>
+    <MST.sweepConfigIntro>这些字段写回武器 VerbProperties 上的 spray 参数；只对带扫射 Verb 的武器显示。</MST.sweepConfigIntro>
+    <MST.sweepConfigNote>DMS 的 GAU 武器通常要求额外弹着点不少于射击次数；路径至少需要 burstShotCount - 1 个额外格，否则会越界。</MST.sweepConfigNote>
+    <MST.sweepSection>扫射参数</MST.sweepSection>
+    <MST.sprayWidth>扫射宽度</MST.sprayWidth>
+    <MST.sprayWidthComment>扫射落点相对瞄准线的横向半宽（格）。</MST.sprayWidthComment>
+    <MST.sprayArching>扫射弧度</MST.sprayArching>
+    <MST.sprayArchingComment>沿射击方向额外展开的前后散布（格）。</MST.sprayArchingComment>
+    <MST.sprayThicknessCells>扫射厚度</MST.sprayThicknessCells>
+    <MST.sprayThicknessCellsComment>扫射落点的基础厚度（格），最小为 1。</MST.sprayThicknessCellsComment>
+    <MST.sprayNumExtraCells>额外弹着点</MST.sprayNumExtraCells>
+    <MST.sprayNumExtraCellsComment>扫射路径在目标格之外追加的弹着点数量；DMS GAU 通常要求不少于 burstShotCount。</MST.sprayNumExtraCellsComment>
+    <MST.sweepErrPathTooShort>额外弹着点 + 1 少于射击次数，扫射路径会越界（至少需要 burstShotCount - 1）。</MST.sweepErrPathTooShort>
+    <MST.sweepWarnExtraCellsLessThanBurst>DMS 的 GAU 武器通常要求额外弹着点不少于射击次数；当前低于 burstShotCount。</MST.sweepWarnExtraCellsLessThanBurst>
     <MST.OptimalRange>最适距离</MST.OptimalRange>
     <MST.allowInMechClusters>机械集群</MST.allowInMechClusters>
     <MST.collidesWithPawns>单位碰撞</MST.collidesWithPawns>
