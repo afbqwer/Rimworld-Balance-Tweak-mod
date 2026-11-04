@@ -398,6 +398,8 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 
 **新增一种配置 = 1 个窗口类 + 1 个字段声明，不动任何 switch。** 列样式只有一个 `ColumnStyle.Config`，窗口类型由字段自己指定。
 
+> 代码位置：基类 `GUI/Editor/ConfigWindow/ConfigWindow.cs`（同文件含 `ConfigRow` / `ConfigSection` / `ConfigIssue`），现有子类都在同一个目录。`namespace` 仍是 `BalanceTweak`（全工程扁平），目录只用于分类，移动文件不影响编译。
+
 > 早期做法是"每种配置加一个 `ColumnStyle` + 一个窗口"，连加 6 种之后，`ColumnStyle` 枚举、`ValidStyleMap`、`IsTriggerStyle`、`GetString`、`DrawDisplayCell`、`IsPaintableColumn` 六处各有一份六个分支的清单。新增第 7 种时漏一处就静默出错：漏 `IsTriggerStyle` = 整页战斗力白算一遍 + 多一个永远为空的过滤条件；漏 `DrawDisplayCell` = 按钮画出来但点了没反应。收敛成一个 `Config` + `Editor` 属性后，"接线"这件事从六处变成零处。
 
 #### 字段声明
@@ -475,7 +477,7 @@ public class AtmosphereBuildingConfigWindow : ConfigWindow
 - **窗口高度不用传死值**：内容高度在绘制前算好再开滚动区（旧实现传死 `viewHeight`，字段一多就滚不到底）。`preferredHeight` 只影响窗口初始高度。
 - **IMGUI 全局状态**：改 `Text.Font` / `Text.Anchor` / `Text.WordWrap` 一律"保存 → 改 → 还原"（见 §4.7）。覆写 `DrawBody` 时自己也要守这条。
 
-> 现有 6 个触发列已全部迁到 `ColumnStyle.Config`。四个是 `ConfigWindow` 子类，只剩声明：`APSConfigWindow` 19 行 / `ShieldConfigWindow` 71 行 / `SweepConfigWindow` 58 行 / `RelayConfigWindow` 108 行（六节，服务种族 / 建筑 / 服装三个宿主）。
+> 现有 6 个触发列已全部迁到 `ColumnStyle.Config`。四个是 `ConfigWindow` 子类，只剩声明：`APSConfigWindow` 26 行 / `SweepConfigWindow` 54 行 / `ShieldConfigWindow` 94 行 / `RelayConfigWindow` 93 行（六节，服务种族 / 建筑 / 服装三个宿主）。
 >
 > **`turretConfig` 与 `mechWeaponFilter` 仍是手写窗口**，不是漏迁。它们的行不是"TweakData 上的一组平铺字段"：炮塔的节数与行数由 `turretSlots` 列表的**当前长度**决定，每行的读写目标是窗口里的工作副本 `slot.warmingTime`，改完整份列表再 `ApplyValue` 一次；武器过滤则要一个"从武器库里挑"的自定义选择器和一块只读的候选预览。给 `ConfigWindow` 补上这两样（动态节 + 行级取值/写回委托）等于把它改成通用表单引擎，P3 那种"九个静态节、五十六个平铺字段"的场景却要为这层抽象买单。收益不抵成本，所以保留手写。
 
