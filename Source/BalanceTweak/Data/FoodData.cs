@@ -115,8 +115,6 @@ class FoodData : TweakData<FoodData>
         if (def is ThingDef d)
         {
             defLabel ??= def?.label;
-            desc = d.description;
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             if (d.ingestible!= null)
             {
             baseIngestTicks ??= d.ingestible.baseIngestTicks;
@@ -281,6 +279,8 @@ class FoodData : TweakData<FoodData>
         Drug,
         Other,
     }
+
+    protected override string ResolveDesc() => DescriptionOrDefName();
 
     public override int GetPropType()
     {

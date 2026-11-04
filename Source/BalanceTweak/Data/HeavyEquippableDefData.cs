@@ -85,8 +85,8 @@ public sealed class HeavyEquippableDefData : TweakData<HeavyEquippableDefData>
             equippableWithGene ??= DataUtility.GetByName(def, WithGeneField) as List<GeneDef>;
 
         isMountedWeapon = (equippableBaseBodySize ?? 0f) < 0f;
-        // 基类 SetProps 在字段回填之前算过一次 propType（那时一律是 BodySize），机载档位要在这里修正。
-        propType = GetPropType();
+        // propType 不用在这里修正：它现在是懒加载的（见 TweakData.propType），首次读取时字段早已回填，
+        // GetPropType 直接就能判出机载档位。原先"基类先算一次、这里再补一次"的两步写法已随之消失。
     }
 
     public override void Apply()

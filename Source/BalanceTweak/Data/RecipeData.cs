@@ -4,6 +4,7 @@ using System.Reflection;
 // PipeSystem types are accessed via RecipeProcessHelper to avoid load failures
 // when PipeSystem is not present.
 using RimWorld;
+using UnityEngine;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
 using static BalanceTweak.StatColumnConfig;
@@ -117,13 +118,6 @@ public class RecipeData : TweakData<RecipeData>
         {
             generated = d.generated;
             defLabel ??= def?.label;
-            desc = $"{d.defName}\n{d.description}";
-            uiIcon = d.UIIcon ?? d.UIIconThing?.uiIcon;
-            var c = d.UIIconThing?.uiIconColor;
-            if(c != null){
-                uiIconColor = c.Value;
-            }
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             workAmount ??= d.workAmount;
             workSpeedStat ??= d.workSpeedStat;
             targetCountAdjustment ??= d.targetCountAdjustment;
@@ -341,6 +335,21 @@ public class RecipeData : TweakData<RecipeData>
             return set;
         }
     }
+
+    /// <summary>配方图标：本体 <c>UIIcon</c> 优先，其次产物图标；ProcessDef（VEF）走反射取自己的 <c>uiIcon</c>。</summary>
+    protected override Texture2D? ResolveUiIcon()
+    {
+        if (def is RecipeDef d) return d.UIIcon ?? d.UIIconThing?.uiIcon ?? base.ResolveUiIcon();
+        if (DataUtility.MayRequire(TweakDatabase.VEF))
+            return RecipeProcessHelper.ResolveProcessIcon(def) ?? base.ResolveUiIcon();
+        return base.ResolveUiIcon();
+    }
+
+    protected override Color ResolveUiIconColor()
+        => def is RecipeDef d && d.UIIconThing != null ? d.UIIconThing.uiIconColor : base.ResolveUiIconColor();
+
+    protected override string ResolveDesc()
+        => def is RecipeDef d ? $"{d.defName}\n{d.description}" : base.ResolveDesc();
 
     public override int GetPropType()
     {

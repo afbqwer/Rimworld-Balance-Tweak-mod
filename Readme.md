@@ -326,13 +326,17 @@ public override void Apply()
 - `GenValues()`（镜像 + DPS + 强度全量重算）只给"数据真的变了"的路径用：`Apply` / 弹丸推送 / 招式编辑 / 自检。新增 Display 列 = 字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏。
 - 关联入口列（`Link` / `PawnWeaponLinks` 等）不进 `EnsureForDisplay`：字段永远为 null，点了才查。
 
-**行标题与搜索串**（`TweakData.label` / `searchString`）同样是不落盘的派生值，一律按需算：
+**行标题、搜索串与展示属性**（`TweakData.label` / `searchString` / `propType` / `uiIcon` / `uiIconColor` / `desc`）同样是不落盘、不参与 `Apply` 的派生值，一律按需算：
 
 | 规则 | 说明 |
 | --- | --- |
-| 首次读取时才算（`ResolveLabel` / `ResolveSearchString`） | 原先每个 `SetDef` 都给全库四万行算一遍 label，而绝大多数行根本不会被显示 |
-| def 未绑定时**不缓存** | 此时只能算出空串，缓存下来会让之后补上 def 的行永久空标题 |
-| 清缓存只在 `SetProps` 里做 | 它是所有 `SetDef` / `SetParentTweak` 的必经之路；写在基类 `SetDef` 会漏掉那些自己重写 SetDef 的子类 |
+| 首次读取时才算（`ResolveLabel` / `ResolveSearchString` / `GetPropType` / `ResolveUiIcon` / `ResolveUiIconColor` / `ResolveDesc`） | 原先每个 `SetDef` 都给全库四万行算一遍：label 要翻译、`propType` 要跑分类判定、tooltip 要拼字符串 —— 而绝大多数行根本不会被显示 |
+| def 未绑定时**不缓存** | 此时只能算出兜底值，缓存下来会让之后补上 def 的行永久停在兜底标题 / 兜底分类 |
+| 清缓存只走 `ResetPropsCache()` | 由 `SetProps` 调用（所有 `SetDef` / `SetParentTweak` 的必经之路，写在基类 `SetDef` 会漏掉重写者）与 `Clone` 调用。六个值一起清：`searchString` 由 `label` 拼出来，图标 / 描述也由 def 派生，单清一个就留下错位 |
+| 要定制就**覆写 `Resolve*`** | `propType` / `uiIcon` / `uiIconColor` / `desc` 是**只读**属性，没有 setter —— 没有"顺手赋值把懒加载变回急加载"这条路。现有覆写：`FactionData`（FactionIcon / 派系色）、`MemeData` / `XenotypeData` / `ThoughtData`（Icon）、`AbilityData`（VEF icon + `GetTooltip`）、`RecipeData`（UIIcon / 产物图标 / ProcessDef）、`PawnKindData`（借种族那一行） |
+| `propType` 只有一个来源 | `GetPropType`。原先"基类先算一次、`HeavyEquippableDefData` 再修正一次"的两步写法已删除 —— 首次读取时字段早已回填，机载档位自然判对 |
+| 子项分类继承父级 | `HediffStageData` / `TraitDegreeNodeData` / `ThoughtStageData` 的 `GetPropType` 自己查 `parentTweakId`（父级也是懒的，链式按需），不再在 `SetParentTweak` 里抄一份 |
+| 例外：兵种 → 种族的链接仍在 `SetDef` 里建 | `PawnKindData.LinkRace` 建的是索引（`Race` 列 + `RaceData.PawnKind` 反查），不是展示值；原先靠 `GetPropType` 顺带建，改懒之后会变成"没打开过兵种页就没有反查链接" |
 | `Def.LabelCap` 可能返回 `null` | 原版在 `label` 为空时**不回落** defName，基类 `ResolveLabel` 自己回落 |
 | 任务名由 `QuestNameResolver` 现拼 | 只认 `questNameRules` 里的纯文本规则（`Rule_String`），不掷骰子、不碰 slate；任何 token 拿不到选项就整条放弃，退回 defName |
 

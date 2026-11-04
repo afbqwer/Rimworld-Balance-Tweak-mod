@@ -86,8 +86,6 @@ class BodyPartData : TweakData<BodyPartData>
         if (def is BodyPartDef d)
         {
             defLabel ??= d.label;
-            desc = d.description;
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             hitPoints ??= d.hitPoints;
             if (!IsFieldModified(nameof(tags))) tags ??= d.tags;
             permanentInjuryChanceFactor ??= d.permanentInjuryChanceFactor;
@@ -164,6 +162,8 @@ class BodyPartData : TweakData<BodyPartData>
         /// <summary>其余部位（腰）。</summary>
         Other,
     }
+
+    protected override string ResolveDesc() => DescriptionOrDefName();
 
     public override int GetPropType()
     {

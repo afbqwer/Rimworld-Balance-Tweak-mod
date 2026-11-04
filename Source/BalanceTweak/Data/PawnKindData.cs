@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
+using UnityEngine;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
 using static BalanceTweak.RaceData;
@@ -270,18 +271,10 @@ class PawnKindData : TweakData<PawnKindData>
         defLabel ??= def?.label;
         if (this.def is PawnKindDef d)
         {
-            if (GetData(Race) is RaceData rd)
-            {
-                uiIcon = rd.uiIcon;
-                uiIconColor = rd.uiIconColor;
-                // 只借图标，不借 desc：RaceData.desc 的第一行是**种族的** defName，
-                // 直接拿来会让兵种行的悬浮提示显示成 race 的 defName。
-                // 兵种自己没有描述时，取种族的描述正文（不含 defName 那一行）。
-                string body = d.description.NullOrEmpty()
-                    ? d.race?.description ?? ""
-                    : d.description;
-                desc = $"{d.defName}\n{body}";
-            }
+            // 种族链接（Race 链接列 + 种族侧反向索引）是索引构建，不是展示值，必须在 SetDef 里定下来：
+            // propType 现在是懒加载的，不能再指望"分类判定顺带把链接建好"（否则没打开过兵种页的玩家
+            // 在种族页会看到空的 PawnKind 链接）。
+            LinkRace(d);
             combatPower ??= d.combatPower;
             allowInMechClusters ??= d.allowInMechClusters;
             collidesWithPawns ??= d.collidesWithPawns;
@@ -685,21 +678,38 @@ class PawnKindData : TweakData<PawnKindData>
 
     public override int GetPropType()
     {
-        if (this.def is PawnKindDef def && def.race?.defName != null)
-        {
-            var id = TweakDatabase.raceDatas.TryGetValue(def.race.defName);
-            var l = GetAllData(id);
-            if (l.Count > 0)
-            {
-                var f = l[0];
-                Race = f.id;
-                foreach (var item in l)
-                {
-                    ((RaceData)item).PawnKind = this.id;
-                }
-                return f.propType;
-            }
-        }
+        // 分类跟随所属种族。链接在 SetDef 里已经建好（LinkRace），这里只读，不再顺带改数据。
+        if (this.def is PawnKindDef && GetData(Race) is { } race) return race.propType;
         return (int)RaceType.Other;
     }
+
+    /// <summary>
+    /// 把本兵种挂到所属种族的数据行上：<see cref="Race"/> 链接 + 各 <c>RaceData.PawnKind</c> 反向引用。
+    /// 幂等，重复调用无副作用。
+    /// </summary>
+    private void LinkRace(PawnKindDef def)
+    {
+        if (def.race?.defName == null) return;
+        var id = TweakDatabase.raceDatas.TryGetValue(def.race.defName);
+        var all = GetAllData(id);
+        if (all.Count == 0) return;
+        Race = all[0].id;
+        foreach (var item in all)
+            ((RaceData)item).PawnKind = this.id;
+    }
+
+    /// <summary>兵种自己没有描述时取种族描述正文（不含种族的 defName 那一行）。</summary>
+    protected override string ResolveDesc()
+    {
+        if (def is not PawnKindDef d) return base.ResolveDesc();
+        string body = d.description.NullOrEmpty() ? d.race?.description ?? "" : d.description;
+        return $"{d.defName}\n{body}";
+    }
+
+    /// <summary>图标借用所属种族的数据行（那行自己也是懒加载，这里是链式按需取）。</summary>
+    protected override Texture2D? ResolveUiIcon()
+        => GetData(Race) is RaceData rd ? rd.uiIcon : base.ResolveUiIcon();
+
+    protected override Color ResolveUiIconColor()
+        => GetData(Race) is RaceData rd ? rd.uiIconColor : base.ResolveUiIconColor();
 }

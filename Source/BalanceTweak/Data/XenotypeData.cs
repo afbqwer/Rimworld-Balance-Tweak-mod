@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
+using UnityEngine;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
 using static BalanceTweak.StatColumnConfig;
@@ -60,9 +61,6 @@ class XenotypeData : TweakData<XenotypeData>
         if (def is XenotypeDef d)
         {
             defLabel ??= d.label;
-            desc = d.description ?? "";
-            uiIcon = d.Icon;
-
             inheritable ??= d.inheritable;
             descriptionShort ??= d.descriptionShort;
             combatPowerFactor ??= d.combatPowerFactor;
@@ -78,6 +76,12 @@ class XenotypeData : TweakData<XenotypeData>
             if (!IsFieldModified(nameof(doubleXenotypeChances))) doubleXenotypeChances ??= d.doubleXenotypeChances;
         }
     }
+
+    protected override Texture2D? ResolveUiIcon()
+        => def is XenotypeDef d ? d.Icon : base.ResolveUiIcon();
+
+    protected override string ResolveDesc()
+        => def is XenotypeDef d ? d.description ?? "" : base.ResolveDesc();
 
     public override void Apply()
     {

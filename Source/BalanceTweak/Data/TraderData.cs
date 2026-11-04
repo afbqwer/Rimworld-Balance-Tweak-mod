@@ -69,8 +69,6 @@ class TraderData : TweakData<TraderData>
         if (def is TraderKindDef d)
         {
             defLabel ??= d.label;
-            desc = d.description;
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             commonality ??= d.commonality;
             orbital ??= d.orbital;
             requestable ??= d.requestable;
@@ -150,6 +148,8 @@ class TraderData : TweakData<TraderData>
 
     public override List<string> TypeStrings => typeStrings;
     private static readonly List<string> typeStrings = typeof(TraderType).GetEnumNames().Select(s => "MST." + s).ToList();
+
+    protected override string ResolveDesc() => DescriptionOrDefName();
 
     public override int GetPropType()
     {

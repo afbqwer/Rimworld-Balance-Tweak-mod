@@ -32,12 +32,16 @@ class MemeData : TweakData<MemeData>
         if (def is MemeDef d)
         {
             defLabel ??= def?.label;
-            desc = d.description ?? "";
-            uiIcon = d.Icon;
             selectionWeightFactor ??= d.randomizationSelectionWeightFactor;
             impact ??= d.impact;
         }
     }
+
+    protected override Texture2D? ResolveUiIcon()
+        => def is MemeDef d ? d.Icon : base.ResolveUiIcon();
+
+    protected override string ResolveDesc()
+        => def is MemeDef d ? d.description ?? "" : base.ResolveDesc();
 
     public override void Apply()
     {

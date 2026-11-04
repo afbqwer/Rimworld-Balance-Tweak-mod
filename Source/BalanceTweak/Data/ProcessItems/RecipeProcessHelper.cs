@@ -55,14 +55,8 @@ public class RecipeProcessHelper
 
         data.generated = DataUtility.AsBool(G(pd, "generated"));
         data.isProcess = true;
-        data.uiIcon = G(pd, "uiIcon") as Texture2D;
-        if (data.uiIcon == null)
-        {
-            var t = G(FirstItem(G(pd, "results")), "thing") as ThingDef;
-            data.uiIcon = t?.uiIcon;
-        }
-        data.desc = $"{def.defName}\n{def.description}";
-        if (data.desc.NullOrEmpty()) { data.desc = def.defName; }
+        // 图标 / 描述不在这里取：它们是纯展示值，由 RecipeData.ResolveUiIcon / ResolveDesc
+        // 在首次绘制、悬停时才反射拿（见 TweakData.uiIcon / desc）。
         data.ticks ??= DataUtility.AsInt(G(pd, "ticks"));
         data.ticksQuality ??= DataUtility.AsIntList(G(pd, "ticksQuality"));
         data.isLightDependingProcess ??= DataUtility.AsBool(G(pd, "isLightDependingProcess"));
@@ -152,6 +146,18 @@ public class RecipeProcessHelper
         ApplyMember<float>(data, pd, "maxSafeTemperature", nameof(data.maxSafeTemperature));
         ApplyMember<float>(data, pd, "maxOutputCount", nameof(data.maxOutputCount));
         return true;
+    }
+
+    /// <summary>
+    /// ProcessDef 的行图标（懒加载入口）：自身 <c>uiIcon</c> 优先，没有就借第一个产物的图标。
+    /// 只在首次绘制该行时调一次；非 ProcessDef 返回 null。
+    /// </summary>
+    public static Texture2D? ResolveProcessIcon(Def? def)
+    {
+        if (!IsProcessDef(def)) return null;
+        object pd = def!;
+        if (G(pd, "uiIcon") is Texture2D icon) return icon;
+        return (G(FirstItem(G(pd, "results")), "thing") as ThingDef)?.uiIcon;
     }
 
     public static int GetProcessDefPropType(Def def)

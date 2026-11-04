@@ -118,8 +118,6 @@ class IncidentData : TweakData<IncidentData>
         if (def is IncidentDef d)
         {
             defLabel ??= def?.label;
-            desc = d.letterText;
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             baseChance ??= d.baseChance;
             if(d.category != null){
                 Category ??= d.category.label.NullOrEmpty() ? d.category.defName : d.category.label;
@@ -168,6 +166,13 @@ class IncidentData : TweakData<IncidentData>
         Special,
         Disease,
         Other,
+    }
+
+    /// <summary>事件的 tooltip 用信件正文（比 description 更贴近玩家实际看到的内容），空则回落 defName。</summary>
+    protected override string ResolveDesc()
+    {
+        if (def is not IncidentDef d) return base.ResolveDesc();
+        return d.letterText.NullOrEmpty() ? d.defName : d.letterText;
     }
 
     public override int GetPropType()

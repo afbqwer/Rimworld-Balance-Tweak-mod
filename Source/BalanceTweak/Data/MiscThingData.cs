@@ -47,8 +47,6 @@ class MiscThingData : TweakData<MiscThingData>
         if (def is ThingDef d)
         {
             defLabel ??= def.label;
-            desc = d.description;
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             stackLimit ??= d.stackLimit;
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases;
             if (!IsFieldModified(nameof(thingSetMakerTags))) thingSetMakerTags ??= d.thingSetMakerTags;
@@ -90,6 +88,8 @@ class MiscThingData : TweakData<MiscThingData>
     /// </summary>
     private static bool MatchEligible(Def def)
         => def is ThingDef t && (t.category == ThingCategory.Item || t.category == ThingCategory.Filth);
+
+    protected override string ResolveDesc() => DescriptionOrDefName();
 
     public override int GetPropType()
     {

@@ -29,8 +29,6 @@ class WeatherData : TweakData<WeatherData>
         if (def is WeatherDef d)
         {
             defLabel ??= def?.label;
-            desc = d.description;
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             accuracyMultiplier ??= d.accuracyMultiplier;
             moveSpeedMultiplier ??= d.moveSpeedMultiplier;
             windSpeedFactor ??= d.windSpeedFactor;
@@ -58,6 +56,8 @@ class WeatherData : TweakData<WeatherData>
         Good,
         Bad,
     }
+
+    protected override string ResolveDesc() => DescriptionOrDefName();
 
     public override int GetPropType()
     {

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
+using UnityEngine;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
 using static BalanceTweak.StatColumnConfig;
@@ -36,7 +37,6 @@ class ThoughtStageData : TweakData<ThoughtStageData>
     public override bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false)
     {
         base.SetParentTweak(data, type, tweaked);
-        propType = data.propType;
         if (data.def is ThoughtDef def && index.HasValue)
         {
 
@@ -55,8 +55,6 @@ class ThoughtStageData : TweakData<ThoughtStageData>
             {
                 ((ThoughtData)item).FirstStage ??= this.id;
             }
-            desc = stage.description ?? data.desc;
-            uiIcon = data.uiIcon;
             Thought = data.id;
             baseMoodEffect ??= stage.baseMoodEffect;
             baseOpinionOffset ??= stage.baseOpinionOffset;
@@ -75,6 +73,17 @@ class ThoughtStageData : TweakData<ThoughtStageData>
 
     protected override string ResolveSearchString()
         => $"{def?.defName}{index}{label}";
+
+    /// <summary>阶段描述优先，没有就借父级（想法本身）的 desc —— 与原先 SetParentTweak 里的赋值等价。</summary>
+    protected override string ResolveDesc()
+        => stage?.description ?? GetData(parentTweakId)?.desc ?? base.ResolveDesc();
+
+    /// <summary>阶段没有自己的图标，直接借父级那一行的。</summary>
+    protected override Texture2D? ResolveUiIcon()
+        => GetData(parentTweakId)?.uiIcon ?? base.ResolveUiIcon();
+
+    protected override Color ResolveUiIconColor()
+        => GetData(parentTweakId)?.uiIconColor ?? base.ResolveUiIconColor();
 
     public override void Apply()
     {
@@ -110,6 +119,8 @@ class ThoughtStageData : TweakData<ThoughtStageData>
 
     public override int GetPropType()
     {
+        // 与原先 `propType = data.propType` 等价：阶段跟随父级（想法本身）的分类。
+        if (parentTweakId.HasValue && GetData(parentTweakId.Value) is { } parent) return parent.propType;
         return (int)ThoughtType.Situational;
     }
 

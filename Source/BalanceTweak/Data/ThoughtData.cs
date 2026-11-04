@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
+using UnityEngine;
 using Verse;
 using static BalanceTweak.BalanceTweakSettings;
 using static BalanceTweak.StatColumnConfig;
@@ -131,13 +132,7 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
         SetProps(def, type);
         if (def is ThoughtDef d)
         {
-            var fs = d.stages?.FirstOrDefault();
             defLabel ??= def?.label;
-            desc = d.description ?? $"{d.defName}{fs?.description}" ?? "";
-            if (d.Icon != null && d.Icon != BaseContent.BadTex)
-            {
-                uiIcon = d.Icon;
-            }
             StageNum ??= d.stages?.Count ?? 0;
             stackLimit ??= d.stackLimit;
             stackedEffectMultiplier ??= d.stackedEffectMultiplier;
@@ -192,6 +187,17 @@ class ThoughtData : TweakData<ThoughtData>, ISubItemHost
         if (def is not ThoughtDef d) return base.ResolveLabel();
         var first = d.stages?.FirstOrDefault();
         return d.label ?? first?.LabelAbstractCap ?? d.defName;
+    }
+
+    protected override Texture2D? ResolveUiIcon()
+        => def is ThoughtDef d && d.Icon != null && d.Icon != BaseContent.BadTex ? d.Icon : base.ResolveUiIcon();
+
+    /// <summary>没有自身描述时拼上第一阶段（stages[0]）的描述。</summary>
+    protected override string ResolveDesc()
+    {
+        if (def is not ThoughtDef d) return base.ResolveDesc();
+        var first = d.stages?.FirstOrDefault();
+        return d.description ?? $"{d.defName}{first?.description}";
     }
 
     public override void Apply()

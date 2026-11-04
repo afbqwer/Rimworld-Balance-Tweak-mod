@@ -94,10 +94,6 @@ class AbilityData : TweakData<AbilityData>
         defLabel ??= def?.label;
         if (this.def is AbilityDef d)
         {
-            if (d.uiIcon != null && d.uiIcon != BaseContent.BadTex)
-            {
-                uiIcon = d.uiIcon;
-            }
             psylevel ??= d.level;
             aiCanUse ??= d.aiCanUse;
             cooldownTicksRange ??= d.cooldownTicksRange;
@@ -120,8 +116,21 @@ class AbilityData : TweakData<AbilityData>
         {
             GetVEP();
         }
-        // desc 只用于行 tooltip；GetTooltip 会构建完整 StatSummary，改为首次悬停时再生成。
-        ResetDescCache();
+        // desc 只用于行 tooltip；GetTooltip 会构建完整 StatSummary。它现在是懒加载的
+        // （见 TweakData.desc），SetProps 已经丢过缓存，这里不需要再补一次。
+    }
+
+    /// <summary>
+    /// 能力图标：本体的 <c>uiIcon</c> 优先；VEF 能力走反射取 <c>icon</c>（与原先 GetVEP 里的赋值同源）。
+    /// </summary>
+    protected override Texture2D? ResolveUiIcon()
+    {
+        // VEF 先判：它的 icon 覆盖本体 uiIcon（与原 GetVEP 的赋值顺序一致）。
+        if (def != null && DataUtility.IsTypeOrSubclassOfName(def.GetType(), VefAbilityDefType)
+            && DataUtility.GetByName(def, "icon") is Texture2D ic && ic != BaseContent.BadTex)
+            return ic;
+        if (def is AbilityDef d && d.uiIcon != null && d.uiIcon != BaseContent.BadTex) return d.uiIcon;
+        return base.ResolveUiIcon();
     }
 
     protected override string ResolveDesc()
@@ -168,7 +177,7 @@ class AbilityData : TweakData<AbilityData>
         var def = this.def;
         if (def == null || !DataUtility.IsTypeOrSubclassOfName(def.GetType(), VefAbilityDefType)) return;
 
-        if (DataUtility.GetByName(def, "icon") is Texture2D ic && ic != BaseContent.BadTex) uiIcon = ic;
+        // 图标不在这里取：VEF 的 icon 由 ResolveUiIcon 在首次绘制时反射读取（见上）。
         cooldownTime = DataUtility.AsInt(DataUtility.GetByName(def, "cooldownTime"));
         distanceToTarget = DataUtility.AsFloat(DataUtility.GetByName(def, "distanceToTarget"));
         castTime = DataUtility.AsInt(DataUtility.GetByName(def, "castTime"));

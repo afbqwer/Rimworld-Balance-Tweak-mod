@@ -50,10 +50,6 @@ class FactionData : TweakData<FactionData>
         if (def is FactionDef d)
         {
             defLabel ??= def?.label;
-            desc = d.description;
-            // FactionIcon 首次访问会 ContentFinder 加载纹理，延迟到真正显示时再取。
-            uiIconColor = d.DefaultColor;
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             raidCommonalityFromPointsCurve ??= d.raidCommonalityFromPointsCurve;
             maxPawnCostPerTotalPointsCurve ??= d.maxPawnCostPerTotalPointsCurve;
             techLevel ??= d.techLevel;
@@ -87,7 +83,17 @@ class FactionData : TweakData<FactionData>
             v => def.pawnGroupMakers = PawnGroupMakerCodec.MergeWithDef(v, def.pawnGroupMakers));
     }
 
+    // FactionIcon 首次访问会 ContentFinder 加载纹理 —— 只用于绘制，推迟到真正显示那一行时再取。
     protected override Texture2D? ResolveUiIcon() => (def as FactionDef)?.FactionIcon;
+
+    protected override Color ResolveUiIconColor()
+        => def is FactionDef d ? d.DefaultColor : base.ResolveUiIconColor();
+
+    protected override string ResolveDesc()
+    {
+        if (def is not FactionDef d) return base.ResolveDesc();
+        return d.description.NullOrEmpty() ? d.defName : d.description;
+    }
 
     public override List<string> TypeStrings => typeStrings;
     private static readonly List<string> typeStrings = typeof(FactionType).GetEnumNames().Select(s => "MST." + s).ToList();

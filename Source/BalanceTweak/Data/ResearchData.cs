@@ -93,8 +93,6 @@ class ResearchData : TweakData<ResearchData>
         if (def is ResearchProjectDef d)
         {
             defLabel ??= def?.label;
-            desc = d.description;
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             baseCost ??= d.baseCost;
             researchViewX ??= d.researchViewX;
             researchViewY ??= d.researchViewY;
@@ -255,6 +253,8 @@ class ResearchData : TweakData<ResearchData>
         Basic,
         Anomaly,
     }
+
+    protected override string ResolveDesc() => DescriptionOrDefName();
 
     public override int GetPropType()
     {

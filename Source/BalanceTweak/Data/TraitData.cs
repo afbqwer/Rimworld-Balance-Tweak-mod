@@ -75,7 +75,6 @@ class TraitData : TweakData<TraitData>, ISubItemHost
         if (def is TraitDef d)
         {
             defLabel ??= def?.label;
-            desc = d.defName + '\n' + (d.degreeDatas.FirstOrDefault()?.description ?? "");
             commonality ??= (float?)CommonalityField.GetValue(d);
             commonalityFemale ??= (float?)CommonalityFemaleField.GetValue(d);
             canBeSuppressed ??= d.canBeSuppressed;
@@ -123,6 +122,13 @@ class TraitData : TweakData<TraitData>, ISubItemHost
     {
         if (def is not TraitDef d) return base.ResolveLabel();
         return d.degreeDatas.FirstOrDefault()?.LabelCap ?? base.ResolveLabel();
+    }
+
+    /// <summary>特性描述：defName + 第一档的档位描述（原版特性本身没有 description）。</summary>
+    protected override string ResolveDesc()
+    {
+        if (def is not TraitDef d) return base.ResolveDesc();
+        return d.defName + '\n' + (d.degreeDatas.FirstOrDefault()?.description ?? "");
     }
 
     public override List<string> TypeStrings => typeStrings;

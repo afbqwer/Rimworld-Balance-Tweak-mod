@@ -120,8 +120,6 @@ class DamageData : TweakData<DamageData>
         SetProps(def, type);
         if (def is DamageDef d)
         {
-            desc = d.description;
-            if (desc.NullOrEmpty()) { desc = d.defName; }
             defaultDamage ??= d.defaultDamage;
             defaultArmorPenetration ??= d.defaultArmorPenetration;
             defaultStoppingPower ??= d.defaultStoppingPower;
@@ -234,6 +232,8 @@ class DamageData : TweakData<DamageData>
         Stun,
         Special,
     }
+
+    protected override string ResolveDesc() => DescriptionOrDefName();
 
     public override int GetPropType()
     {

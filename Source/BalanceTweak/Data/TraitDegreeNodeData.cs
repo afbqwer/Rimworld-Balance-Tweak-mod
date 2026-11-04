@@ -116,7 +116,7 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
     public override bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false)
     {
         base.SetParentTweak(data, type, tweaked);
-        propType = data.propType;
+        // propType 不用在这里抄父级：它现在是懒加载的，GetPropType 会自己查 parentTweakId（见文件末尾）。
         if (data.def is TraitDef def && index.HasValue)
         {
             if (index.Value < 0 || index.Value >= def.degreeDatas.Count)

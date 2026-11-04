@@ -116,8 +116,6 @@ class WeaponTraitData : TweakData<WeaponTraitData>
         if (def is not WeaponTraitDef d) return;
 
         defLabel ??= d.label;
-        // 特性描述就是玩家在枪械信息里看到的那段说明 —— 它比 "defName + description" 更有用。
-        desc = d.description.NullOrEmpty() ? d.defName : d.description;
 
         weaponCategory ??= d.weaponCategory;
         commonality ??= d.commonality;
@@ -201,6 +199,9 @@ class WeaponTraitData : TweakData<WeaponTraitData>
     /// 原版用 <c>weaponCategory == BladeLink</c>，但第三方 Mod 的人格特性可能不填分类却填了绑定/击杀想法，
     /// 所以把 <c>bondedThought</c> / <c>killThought</c> / <c>neverBond</c> 也算进来。
     /// </summary>
+    // 特性描述就是玩家在枪械信息里看到的那段说明 —— 它比 "defName + description" 更有用。
+    protected override string ResolveDesc() => DescriptionOrDefName();
+
     public override int GetPropType()
     {
         if (this.def is WeaponTraitDef d)

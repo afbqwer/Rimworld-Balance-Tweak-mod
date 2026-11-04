@@ -36,8 +36,36 @@ public abstract partial class TweakData : IExposable
 {
     public Def? def;
     public TweakID id;
-    public int propType = 0;
     public string modPackName = "";
+
+    private int? _propType;
+
+    /// <summary>
+    /// 分类整数（<see cref="GetPropType"/> 的结果），页签内的类型下拉与行过滤都读它。
+    /// <para>
+    /// <b>只用于展示 / 过滤</b> —— 不落盘、不参与 Apply，所以和 <see cref="label"/> 一样改成
+    /// <b>首次读取时</b>才算（<c>SetProps</c> 原先给全库每个 Def 都跑一遍）。大多数行在玩家打开
+    /// 对应页签之前根本不会有人问它的分类。
+    /// </para>
+    /// <para>
+    /// <b>def 未绑定时不缓存</b>：这时 <see cref="GetPropType"/> 只能给出兜底值，缓存下来会让之后
+    /// <c>SetDef</c> 补上 def 的行永远停在兜底分类。
+    /// </para>
+    /// <para>
+    /// <b>只读</b>：唯一来源是 <see cref="GetPropType"/>。子项（阶段 / 招式 / 程度）要继承父级分类，
+    /// 请在自己的 <c>GetPropType</c> 里查父级（先例 <see cref="HediffStageData"/>）。
+    /// </para>
+    /// </summary>
+    public int propType
+    {
+        get
+        {
+            if (_propType.HasValue) return _propType.Value;
+            int value = GetPropType();
+            if (def != null) _propType = value;
+            return value;
+        }
+    }
 
     private string? _label;
     private bool _labelResolved;
@@ -90,19 +118,26 @@ public abstract partial class TweakData : IExposable
     }
 
     /// <summary>
-    /// 丢弃已解析的标题与搜索串。
+    /// 丢弃所有"按 def 现算"的展示值缓存：标题、搜索串、分类、图标、图标色、描述。
     /// <para>
-    /// 两者一起清：<see cref="searchString"/> 默认就由 <see cref="label"/> 拼出来，
-    /// 只清一个会留下"标题变了、搜索还是旧词"的错位。换 def（<c>SetDef</c> / <c>SetParentTweak</c>）、
+    /// 它们必须一起清：<see cref="searchString"/> 默认由 <see cref="label"/> 拼出来，只清一个会留下
+    /// "标题变了、搜索还是旧词"的错位；其余几个同样是由 def（以及子项持有的 stage / degreeData）
+    /// 派生的，换 def 之后一律作废。换 def（<c>SetDef</c> / <c>SetParentTweak</c>）、
     /// <see cref="TweakData{T}.ApplyDefLabel"/> 写回 def 标签、以及 <see cref="Clone"/> 出新实例时都要调它。
     /// </para>
     /// </summary>
-    protected void ResetLabelCache()
+    protected void ResetPropsCache()
     {
         _label = null;
         _labelResolved = false;
         _searchString = null;
         _searchStringResolved = false;
+        _propType = null;
+        _uiIcon = null;
+        _uiIconResolved = false;
+        _uiIconColor = null;
+        _desc = null;
+        _descResolved = false;
     }
 
     private string? _searchString;
@@ -136,49 +171,134 @@ public abstract partial class TweakData : IExposable
 
     private Texture2D? _uiIcon;
     private bool _uiIconResolved;
+
+    /// <summary>
+    /// 名称列左侧的行图标。只用于绘制，不落盘、不参与 Apply ⇒ 首次读取时才算（<see cref="ResolveUiIcon"/>）。
+    /// <para>
+    /// <b>def 未绑定时不缓存</b>，理由同 <see cref="label"/>。
+    /// </para>
+    /// </summary>
     public Texture2D? uiIcon
     {
         get
         {
-            if (!_uiIconResolved)
+            if (_uiIconResolved) return _uiIcon;
+            Texture2D? value;
+            try
             {
-                _uiIconResolved = true;
-                _uiIcon = ResolveUiIcon();
+                value = ResolveUiIcon();
             }
-            return _uiIcon;
+            catch (Exception e)
+            {
+                // 少数 Def 的图标取值会抛（贴图缺失 / ContentFinder 出错）。图标只是展示，
+                // 绝不能把绘制循环带崩；缓存 null 让它只告警一次。
+                Log.Warning(e.ToString());
+                value = null;
+            }
+            if (def != null) { _uiIcon = value; _uiIconResolved = true; }
+            return value;
         }
-        set { _uiIcon = value; _uiIconResolved = true; }
     }
 
-    /// <summary>子类可重写：把图标解析推迟到首次访问。默认不延迟。</summary>
-    protected virtual Texture2D? ResolveUiIcon() => null;
+    /// <summary>
+    /// 子类可重写：默认取 <c>BuildableDef.uiIcon</c>（无效贴图视为没有）。
+    /// 自己解析图标的子类（Faction 的 <c>FactionIcon</c>、Meme/Gene 的 <c>Icon</c>、Recipe 的产物图标…）
+    /// 覆写这里。属性是<b>只读</b>的：想定制只能走这个钩子，绕不过懒加载。
+    /// 这里<b>不用</b>加 try/catch —— 属性 getter 已经兜住了所有子类的异常。
+    /// </summary>
+    protected virtual Texture2D? ResolveUiIcon()
+        => def is BuildableDef bd && IsUsableIcon(bd) ? bd.uiIcon : null;
 
-    public Color uiIconColor = Color.white;
+    private static bool IsUsableIcon(BuildableDef bd)
+    {
+        var icon = bd.uiIcon;
+        return icon != null && icon != BaseContent.BadTex;
+    }
+
+    private Color? _uiIconColor;
+
+    /// <summary>图标的着色（原版 <c>uiIconColor</c> / 派系色 / 基因色）。同样只用于绘制，首次读取时才算。</summary>
+    public Color uiIconColor
+    {
+        get
+        {
+            if (_uiIconColor.HasValue) return _uiIconColor.Value;
+            Color value;
+            try
+            {
+                value = ResolveUiIconColor();
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e.ToString());
+                value = Color.white;
+            }
+            if (def != null) _uiIconColor = value;
+            return value;
+        }
+    }
+
+    /// <summary>子类可重写：默认沿用 def 的 <c>uiIconColor</c>，没有可用图标时与原版一致地保持白色。</summary>
+    protected virtual Color ResolveUiIconColor()
+        => def is BuildableDef bd && IsUsableIcon(bd) ? bd.uiIconColor : Color.white;
 
     private string? _desc;
     private bool _descResolved;
+
+    /// <summary>
+    /// 行 tooltip 文本（"defName + 描述"）。只用于展示 ⇒ 首次读取时才算（<see cref="ResolveDesc"/>）。
+    /// 表格是行列双虚拟化的，只有真正画到屏幕上的那几十行会读它；子类里昂贵的实现（如
+    /// <see cref="AbilityData"/> 的 <c>GetTooltip</c>）因此只在一屏之内付出代价。
+    /// </summary>
     public string desc
     {
         get
         {
-            if (!_descResolved)
+            if (!_descResolved && def != null)
             {
-                _descResolved = true;
                 _desc = ResolveDesc();
+                _descResolved = true;
             }
-            return _desc ?? string.Empty;
+            return (_descResolved ? _desc : ResolveDesc()) ?? string.Empty;
         }
-        set { _desc = value; _descResolved = true; }
     }
 
-    /// <summary>子类可重写：把只用于 tooltip 的描述推迟到首次访问。默认不延迟。</summary>
-    protected virtual string ResolveDesc() => string.Empty;
+    /// <summary>子类可重写：默认"defName + 描述"，与原版 <c>ThingDef</c> / <c>BuildableDef</c> 的取法一致。</summary>
+    protected virtual string ResolveDesc()
+    {
+        if (def == null) return string.Empty;
+        try
+        {
+            // ThingDef 走 DescriptionDetailed（description + 额外说明），与原实现一致。
+            if (def is ThingDef t)
+                return $"{t.defName}\n{(t.description != null ? t.DescriptionDetailed : "")}";
+            if (def is BuildableDef bd)
+                return $"{bd.defName}\n{bd.description ?? ""}";
+            return $"{def.defName}\n{def.description ?? ""}";
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e.ToString());
+            return $"{def.defName}\n{def.description ?? ""}";
+        }
+    }
 
     /// <summary>丢弃已解析的描述，让下一次访问重新走 ResolveDesc（用于延迟生成昂贵 Tooltip 的子类）。</summary>
     protected void ResetDescCache()
     {
         _desc = null;
         _descResolved = false;
+    }
+
+    /// <summary>
+    /// 多数 Data 的 tooltip 口径：<c>def.description</c>，为空则回落 <c>def.defName</c>
+    /// （不带 defName 前缀 —— 这是本工程各页签既有的显示口径，不是笔误）。
+    /// 只给 <see cref="ResolveDesc"/> 的覆写用。
+    /// </summary>
+    protected string DescriptionOrDefName()
+    {
+        if (def == null) return string.Empty;
+        return def.description.NullOrEmpty() ? def.defName : def.description;
     }
     /// 是否显示重置按钮
     public bool tweaked = false;
@@ -480,14 +600,11 @@ public abstract partial class TweakData : IExposable
         // 克隆出来的是新实例，缓存标记不能跟着抄：否则 UI 从原始快照克隆的行会直接跳过按需计算，
         // 屏幕上留下原始快照那一刻的值。
         clone.displayValuesEnsured = false;
-        // label / searchString 的缓存标记同理：克隆体必须回到"未解析"状态，下次读取时对当前
-        // def 重新求值。虽然克隆体与原件共享同一 def 引用、缓存值眼下多半一致，但一旦之后
-        // def.label 被改写（ApplyDefLabel 路径）或克隆体被 SetDef 换绑，抄来的"已解析"标记
-        // 就会让它挂着旧标题。
-        clone._label = null;
-        clone._labelResolved = false;
-        clone._searchString = null;
-        clone._searchStringResolved = false;
+        // label / searchString / propType / uiIcon / uiIconColor / desc 都是按 def 现算的展示值，
+        // 克隆体一律回到"未解析"状态：虽然眼下与原件共享同一 def 引用、缓存值多半一致，
+        // 但一旦之后 def.label 被改写（ApplyDefLabel 路径）或克隆体被 SetDef 换绑，
+        // 抄来的"已解析"标记就会让它挂着旧值。
+        clone.ResetPropsCache();
         clone._modifiedFieldNames = new HashSet<string>(_modifiedFieldNames);
         clone._clearedFieldNames = new HashSet<string>(_clearedFieldNames);
         clone._corruptedFieldNames = new HashSet<string>(_corruptedFieldNames);
