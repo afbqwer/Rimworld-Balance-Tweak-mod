@@ -114,21 +114,27 @@ class DamageData : TweakData<DamageData>
     // ── Atmosphere Overhaul：冲击波致伤（可选 Mod，只有挂了 BlastOverpressureExtension 的伤害类型才有）──
     // 阈值只在爆炸结算那一刻读（BlastInjury.MinimumKPa），所以改完只影响之后的爆炸；
     // 已经形成的 AO_BlastInjury 不会被追溯。
+    // 五格统一由「大气致伤」触发列 + 配置窗口编辑（AtmosphereConfigWindow）。
+
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(AtmosphereConfigWindow), MayRequire = TweakDatabase.AO,
+        Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    public TweakID? aoBlastConfig = null;
 
     /// <summary>耳膜开始受损的阈值（kPa）。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? earThresholdKPa = null;
     /// <summary>耳膜必定受损的阈值（kPa）。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? earCertainKPa = null;
     /// <summary>满级损伤时每只耳留下永久听力损失的概率。</summary>
-    [TweakField(Style = ColumnStyle.Prec, MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? hearingLossChanceAtFull = null;
     /// <summary>肺开始受损的阈值（kPa）。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? lungThresholdKPa = null;
     /// <summary>肺完全摧毁的阈值（kPa）。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? lungDestroyedKPa = null;
 
     public static bool HiddenIfNoAoBlastExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.BlastExt);

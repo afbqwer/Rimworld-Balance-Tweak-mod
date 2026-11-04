@@ -336,10 +336,15 @@ class RaceData : TweakData<RaceData>, ISubItemHost
 
     // ── Atmosphere Overhaul：冲击波耐性（可选 Mod）──
     // ⚠ AO 自己没给任何种族挂 AtmospherePawnExtension（只在 XML 注释里提了一句 "per race"），
-    // 所以装了 AO 而没装别的兼容 Mod 时，这一列恒为空。保留它只为接口对齐。
+    // 所以装了 AO 而没装别的兼容 Mod 时，这一行的触发列恒为空白。保留它只为接口对齐。
+
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(AtmosphereConfigWindow), MayRequire = TweakDatabase.AO,
+        Hidden = nameof(HiddenIfNoAoPawnExtension))]
+    public TweakID? aoRaceConfig = null;
 
     /// <summary>爆炸冲击波耐性倍率（× 耳 / 肺阈值）。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoPawnExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? blastToleranceFactor = null;
 
     public static bool HiddenIfNoAoPawnExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.PawnExt);

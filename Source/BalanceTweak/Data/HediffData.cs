@@ -193,14 +193,19 @@ class HediffData : TweakData<HediffData>, ISubItemHost
     public override int LoadingOrd => 100;
 
     // ── Atmosphere Overhaul：耳膜破裂后遗（可选 Mod，只有 AO_Barotrauma 挂了 HearingAftermathExtension）──
+    // 两格由「大气听损」触发列 + 配置窗口编辑（AtmosphereConfigWindow）。
+
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(AtmosphereConfigWindow), MayRequire = TweakDatabase.AO,
+        Hidden = nameof(HiddenIfNoAoHearingExtension))]
+    public TweakID? aoHearingConfig = null;
 
     /// <summary>达到哪个严重度才触发"耳膜破裂"的后续事件。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoHearingExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? ruptureSeverity = null;
 
     /// <summary>每只耳留下永久听力损失的概率。</summary>
-    [TweakField(Style = ColumnStyle.Prec, MayRequire = TweakDatabase.AO,
-        Hidden = nameof(HiddenIfNoAoHearingExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? chancePerEar = null;
 
     public static bool HiddenIfNoAoHearingExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.HearingExt);

@@ -49,6 +49,13 @@
     <MST.breathingSupply>呼吸供给</MST.breathingSupply>
     <MST.breathingSupplyComment>三态：1 = 强制当作呼吸供给；0 = 强制不是；-1 = 按真空耐性自动判断。0 与 -1 含义不同。</MST.breathingSupplyComment>
     <MST.pressureShell>压力壳</MST.pressureShell>
-    <MST.suitPressureHpa>壳内压力</MST.suitPressureHpa>
+    <MST.suitPressureHpa>壳内压力 (hPa)</MST.suitPressureHpa>
     <MST.capacityAirTanks>气瓶当量</MST.capacityAirTanks>
+    <MST.aoApparelConfig>大气服饰</MST.aoApparelConfig>
+    <MST.aoApparelConfigComment>Atmosphere Overhaul 的服饰大气扩展：呼吸供给、压力壳、气瓶当量、壳内压力。只有挂了该扩展的服饰（氧气面罩 / 压力服之类）才有。</MST.aoApparelConfigComment>
+    <MST.aoApparelConfigEdit>编辑</MST.aoApparelConfigEdit>
+    <MST.pressureShellComment>三态：1 = 强制当作压力壳；0 = 强制不是；-1 = 自动判断（是否包住躯干）。0 与 -1 含义不同。</MST.pressureShellComment>
+    <MST.capacityAirTanksComment>气瓶当量；填 0 或负数 = 自动取 max(1, round(3 × 真空耐性))。</MST.capacityAirTanksComment>
+    <MST.suitPressureHpaComment>压力壳内部维持的压力（hPa）；地球海平面约 1013。</MST.suitPressureHpaComment>
+    <MST.aoApparelNote>呼吸供给与压力壳是三态：1 = 强制当作有，0 = 强制没有，-1 = 自动判断。真空头盔的呼吸供给由 AO 按真空耐性直接给出，不走这个扩展。</MST.aoApparelNote>
 </LanguageData>

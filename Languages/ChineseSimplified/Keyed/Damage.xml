@@ -75,10 +75,18 @@
     <MST.explosionAffectOutsidePartsOnlyComment>爆炸是否只影响身体最外层部位。</MST.explosionAffectOutsidePartsOnlyComment>
     <MST.igniteChanceByTargetFlammabilityComment>仅对火焰伤害（DamageWorker_Flame）有效：根据目标可燃性决定引燃几率曲线。</MST.igniteChanceByTargetFlammabilityComment>
     <MST.igniteCellChanceComment>仅对火焰伤害（DamageWorker_Flame）有效：每个格子的引燃几率。</MST.igniteCellChanceComment>
-    <MST.earThresholdKPa>耳膜损伤阈</MST.earThresholdKPa>
-    <MST.earCertainKPa>耳膜必损阈</MST.earCertainKPa>
+    <MST.earThresholdKPa>耳膜损伤阈 (kPa)</MST.earThresholdKPa>
+    <MST.earCertainKPa>耳膜必损阈 (kPa)</MST.earCertainKPa>
     <MST.hearingLossChanceAtFull>满级听损率</MST.hearingLossChanceAtFull>
-    <MST.lungThresholdKPa>肺损伤阈</MST.lungThresholdKPa>
-    <MST.lungDestroyedKPa>肺摧毁阈</MST.lungDestroyedKPa>
+    <MST.lungThresholdKPa>肺损伤阈 (kPa)</MST.lungThresholdKPa>
+    <MST.lungDestroyedKPa>肺摧毁阈 (kPa)</MST.lungDestroyedKPa>
     <MST.lungDestroyedKPaComment>阈值只在爆炸结算那一刻读取，改完只影响之后的爆炸，已经形成的损伤不会被追溯。</MST.lungDestroyedKPaComment>
+    <MST.aoBlastConfig>大气致伤</MST.aoBlastConfig>
+    <MST.aoBlastConfigComment>Atmosphere Overhaul 的冲击波致伤扩展：耳膜与肺的阈值、听力损失概率。只有挂了该扩展的爆炸伤害才有。</MST.aoBlastConfigComment>
+    <MST.aoBlastConfigEdit>编辑</MST.aoBlastConfigEdit>
+    <MST.earThresholdKPaComment>超压达到这个值（kPa）开始损伤耳膜；AO 默认 35。</MST.earThresholdKPaComment>
+    <MST.earCertainKPaComment>超压达到这个值（kPa）时耳膜必定受损；AO 默认 165。</MST.earCertainKPaComment>
+    <MST.hearingLossChanceAtFullComment>耳膜受满级损伤时，每只耳留下永久听力损失的概率；AO 默认 50%。</MST.hearingLossChanceAtFullComment>
+    <MST.lungThresholdKPaComment>超压达到这个值（kPa）开始损伤肺部；AO 默认 100。</MST.lungThresholdKPaComment>
+    <MST.aoBlastNote>阈值只在爆炸结算那一刻读取，改完只影响之后的爆炸；已经形成的 AO_BlastInjury 不会被追溯。种族的「冲击波耐性」会整体乘在这些阈值上。</MST.aoBlastNote>
 </LanguageData>

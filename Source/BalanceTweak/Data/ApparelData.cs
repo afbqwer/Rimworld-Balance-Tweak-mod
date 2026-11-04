@@ -187,26 +187,30 @@ public class ApparelData : TweakData<ApparelData>
     // ── Atmosphere Overhaul：呼吸供给 / 压力壳（可选 Mod）──
     // 只有挂了 AtmosphereApparelExtension 的服饰（AO_OxygenMask 之类）才有这几格；
     // 真空头盔的呼吸供给是 AO 按 VacuumResistance 自动给的，不走这个扩展。
+    // 四格由「大气服饰」触发列 + 配置窗口编辑（AtmosphereConfigWindow）。
+
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(AtmosphereConfigWindow), MayRequire = TweakDatabase.AO,
+        Hidden = nameof(HiddenIfNoAoApparelExtension))]
+    public TweakID? aoApparelConfig = null;
 
     /// <summary>
     /// **三态 int**：<c>1</c> = 强制当作呼吸供给；<c>0</c> = 强制不是；<c>-1</c> = 按真空耐性自动判断。
     /// <para>0 与 -1 语义不同（强制否 vs 自动），所以别把 0 当"未设置"。</para>
     /// </summary>
-    [TweakField(Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO,
-        Hidden = nameof(HiddenIfNoAoApparelExtension))]
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO)]
     public int? breathingSupply = null;
 
     /// <summary>同一套三态，自动档的判据是"包住躯干"。</summary>
-    [TweakField(Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO,
-        Hidden = nameof(HiddenIfNoAoApparelExtension))]
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO)]
     public int? pressureShell = null;
 
     /// <summary>气瓶当量。<c>&lt;= 0</c> 时自动取 <c>max(1, round(3 × 真空耐性))</c>。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoApparelExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? capacityAirTanks = null;
 
     /// <summary>壳内维持的压力（hPa）。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoApparelExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? suitPressureHpa = null;
 
     public static bool HiddenIfNoAoApparelExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.ApparelExt);

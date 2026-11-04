@@ -185,7 +185,7 @@ public class ConfigWindow : EditorWindowBase
         }
     }
 
-    private static bool KindMatches(ConfigRow.RowKind kind, Type fieldType)
+    internal static bool KindMatches(ConfigRow.RowKind kind, Type fieldType)
     {
         Type t = Nullable.GetUnderlyingType(fieldType) ?? fieldType;
         return kind switch

@@ -21,11 +21,18 @@
     <MST.Floor>Floor</MST.Floor>
     <MST.mode>tempMode</MST.mode>
     <MST.modeComment>Normal = driven by sun and air; Fixed = constant; Capped = clamped to the range. Only shown when Atmosphere Overhaul is loaded and the terrain has its extension.</MST.modeComment>
-    <MST.fixedTemperature>fixedTemp</MST.fixedTemperature>
-    <MST.minTemperature>minTemp</MST.minTemperature>
-    <MST.maxTemperature>maxTemp</MST.maxTemperature>
+    <MST.fixedTemperature>Fixed temp (C)</MST.fixedTemperature>
+    <MST.minTemperature>Min temp (C)</MST.minTemperature>
+    <MST.maxTemperature>Max temp (C)</MST.maxTemperature>
     <MST.albedo>albedo</MST.albedo>
     <MST.albedoComment>Empty = derived by AO.</MST.albedoComment>
     <MST.thermalRate>thermal</MST.thermalRate>
     <MST.thermalRateComment>Empty = derived by AO.</MST.thermalRateComment>
+    <MST.aoTerrainConfig>AO terrain</MST.aoTerrainConfig>
+    <MST.aoTerrainConfigComment>Atmosphere Overhaul's terrain extension: temperature mode, fixed temperature, temperature range, albedo, thermal rate. The resolve cache is cleared on write, so ground temperature updates without a restart.</MST.aoTerrainConfigComment>
+    <MST.aoTerrainConfigEdit>Edit</MST.aoTerrainConfigEdit>
+    <MST.fixedTemperatureComment>Ground temperature (C) in Fixed mode. Ignored when the mode is Normal or Capped.</MST.fixedTemperatureComment>
+    <MST.minTemperatureComment>Lower bound (C) in Capped mode. AO swaps the bounds if you enter them backwards.</MST.minTemperatureComment>
+    <MST.maxTemperatureComment>Upper bound (C) in Capped mode. AO swaps the bounds if you enter them backwards.</MST.maxTemperatureComment>
+    <MST.aoTerrainNote>Empty albedo / thermal rate = the value AO derives from the terrain type. AO caches the resolved ground material, and this mod clears that cache after a write, so the new value takes effect immediately.</MST.aoTerrainNote>
 </LanguageData>

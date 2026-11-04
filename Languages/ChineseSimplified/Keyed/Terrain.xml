@@ -28,4 +28,11 @@
     <MST.albedoComment>留空 = 用 AO 的推导值。</MST.albedoComment>
     <MST.thermalRate>热响应速率</MST.thermalRate>
     <MST.thermalRateComment>留空 = 用 AO 的推导值。</MST.thermalRateComment>
+    <MST.aoTerrainConfig>大气地形</MST.aoTerrainConfig>
+    <MST.aoTerrainConfigComment>Atmosphere Overhaul 的地形大气扩展：温度模式、恒定温度、温度区间、反照率、热响应速率。改完立刻清缓存，不重启也能看到地温变化。</MST.aoTerrainConfigComment>
+    <MST.aoTerrainConfigEdit>编辑</MST.aoTerrainConfigEdit>
+    <MST.fixedTemperatureComment>Fixed 模式下地面恒定的温度（℃）。模式为 Normal / Capped 时这一格不生效。</MST.fixedTemperatureComment>
+    <MST.minTemperatureComment>Capped 模式的下限（℃）。上下限填反时 AO 会自己交换。</MST.minTemperatureComment>
+    <MST.maxTemperatureComment>Capped 模式的上限（℃）。上下限填反时 AO 会自己交换。</MST.maxTemperatureComment>
+    <MST.aoTerrainNote>反照率与热响应速率留空 = 用 AO 按地形类型推导的值。AO 会把解析结果缓存进 GroundMaterialTable，本 Mod 改完会主动清缓存，所以地温会立刻重算。</MST.aoTerrainNote>
 </LanguageData>

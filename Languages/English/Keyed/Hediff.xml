@@ -151,6 +151,12 @@
     <MST.hasReactOnDamageComment>Toggle ReactOnDamage comp. If enabled, this hediff reacts when the pawn takes damage.</MST.hasReactOnDamageComment>
     <MST.reactOnDamageCreateHediff>ReactHed</MST.reactOnDamageCreateHediff>
     <MST.reactOnDamageCreateHediffComment>The hediff to create on the pawn when they take damage.</MST.reactOnDamageCreateHediffComment>
-    <MST.ruptureSeverity>ruptureAt</MST.ruptureSeverity>
-    <MST.chancePerEar>lossPerEar</MST.chancePerEar>
+    <MST.ruptureSeverity>Trigger severity</MST.ruptureSeverity>
+    <MST.chancePerEar>Loss per ear</MST.chancePerEar>
+    <MST.aoHearingConfig>AO hearing</MST.aoHearingConfig>
+    <MST.aoHearingConfigComment>Atmosphere Overhaul's eardrum rupture aftermath extension. In this mod only AO_Barotrauma carries it.</MST.aoHearingConfigComment>
+    <MST.aoHearingConfigEdit>Edit</MST.aoHearingConfigEdit>
+    <MST.ruptureSeverityComment>Severity at which the eardrum rupture check happens and the follow-up fires.</MST.ruptureSeverityComment>
+    <MST.chancePerEarComment>Rolled independently per ear; a hit leaves permanent hearing loss.</MST.chancePerEarComment>
+    <MST.aoHearingNote>When severity reaches the trigger value, each ear rolls the per-ear loss chance independently. Lowering both makes eardrum rupture rare and mild.</MST.aoHearingNote>
 </LanguageData>

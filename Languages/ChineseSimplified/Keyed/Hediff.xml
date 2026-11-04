@@ -153,4 +153,10 @@
     <MST.reactOnDamageCreateHediffComment>角色受伤时此健康状态产生的健康状态。</MST.reactOnDamageCreateHediffComment>
     <MST.ruptureSeverity>触发严重度</MST.ruptureSeverity>
     <MST.chancePerEar>每耳听损率</MST.chancePerEar>
+    <MST.aoHearingConfig>大气听损</MST.aoHearingConfig>
+    <MST.aoHearingConfigComment>Atmosphere Overhaul 的耳膜破裂后遗扩展。本 Mod 里只有 AO_Barotrauma 挂了这个扩展。</MST.aoHearingConfigComment>
+    <MST.aoHearingConfigEdit>编辑</MST.aoHearingConfigEdit>
+    <MST.ruptureSeverityComment>严重度达到这个值时才判定「耳膜破裂」并触发后续事件。</MST.ruptureSeverityComment>
+    <MST.chancePerEarComment>每只耳独立掷骰，命中则留下永久听力损失。</MST.chancePerEarComment>
+    <MST.aoHearingNote>严重度达到「触发严重度」时，每只耳按「每耳听损率」独立判定一次；两条都改小了会让耳膜破裂变得罕见且轻微。</MST.aoHearingNote>
 </LanguageData>

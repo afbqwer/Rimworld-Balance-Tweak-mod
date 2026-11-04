@@ -405,9 +405,9 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 #### 字段声明
 
 ```csharp
-/// <summary>只读触发列：打开大气建筑配置窗口。</summary>
+/// <summary>只读触发列：打开大气扩展配置窗口。</summary>
 [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
-    Editor = typeof(AtmosphereBuildingConfigWindow),
+    Editor = typeof(AtmosphereConfigWindow),
     MayRequire = TweakDatabase.AO,
     Hidden = nameof(HiddenIfNoAtmosphereComp))]   // 一个相关 Comp/扩展都没有的行整格留白
 public TweakID? atmosphereConfig = null;
@@ -422,8 +422,10 @@ public float? fanMaxPowerWatts = null;
 
 #### 窗口：声明分节
 
+下面的节是 P3（AO 建筑）的样子，用来演示"按 Comp 分节"；这个类目前已经在服务 P2 的五个宿主（地形 / 伤害 / 服饰 / 健康 / 种族），P3 开工时只是往里加一节。
+
 ```csharp
-public class AtmosphereBuildingConfigWindow : ConfigWindow
+public class AtmosphereConfigWindow : ConfigWindow
 {
     private static readonly ConfigSection[] Sections =
     {
@@ -441,7 +443,7 @@ public class AtmosphereBuildingConfigWindow : ConfigWindow
             ConfigRow.Percent(nameof(BuildingData.jetOxygenPercent))), // 界面 0~100，字段存 0~1
     };
 
-    public AtmosphereBuildingConfigWindow(TweakData data)
+    public AtmosphereConfigWindow(TweakData data)
         : base(data, "MST.atmosphereConfig", "MST.atmosphereConfigIntro", Sections,
                preferredHeight: 780f, noteKey: "MST.atmosphereConfigNote", validate: Validate)
     {
@@ -455,6 +457,8 @@ public class AtmosphereBuildingConfigWindow : ConfigWindow
 ```
 
 行的 `labelKey` 默认 `MST.{字段名}`、`commentKey` 默认 `MST.{字段名}Comment` —— 与表格列标题同一套约定，`CheckLoc` 会自动要求它们存在。
+
+**一个类服务多个宿主时的窗口标题**：`base(…)` 的标题是构造参数，而同一个类要按宿主换词，所以在 `base` 之前先算一次 —— `AtmosphereConfigWindow` 的写法是 `: base(data, TitleOf(data), …)`，`TitleOf` 是个 `static string TitleOf(TweakData)` 的 `is` 链，直接复用**触发列字段名对应的那个 key**（`MST.aoTerrainConfig` 等）。这样每页只需一份标题翻译，玩家看到的标题与刚点的按钮同名。
 
 #### 窗口能做的事
 
@@ -477,7 +481,9 @@ public class AtmosphereBuildingConfigWindow : ConfigWindow
 - **窗口高度不用传死值**：内容高度在绘制前算好再开滚动区（旧实现传死 `viewHeight`，字段一多就滚不到底）。`preferredHeight` 只影响窗口初始高度。
 - **IMGUI 全局状态**：改 `Text.Font` / `Text.Anchor` / `Text.WordWrap` 一律"保存 → 改 → 还原"（见 §4.7）。覆写 `DrawBody` 时自己也要守这条。
 
-> 现有 6 个触发列已全部迁到 `ColumnStyle.Config`。四个是 `ConfigWindow` 子类，只剩声明：`APSConfigWindow` 26 行 / `SweepConfigWindow` 54 行 / `ShieldConfigWindow` 94 行 / `RelayConfigWindow` 93 行（六节，服务种族 / 建筑 / 服装三个宿主）。
+> 现有 11 个触发列全部走 `ColumnStyle.Config`：Fortified 的 6 个（`APSConfigWindow` 26 行 / `SweepConfigWindow` 54 行 / `ShieldConfigWindow` 94 行 / `RelayConfigWindow` 93 行（六节，服务种族 / 建筑 / 服装三个宿主）+ `TurretConfigWindow` / `MechWeaponFilterWindow` 两个手写窗口）+ AO 的 5 个（`AtmosphereConfigWindow` 一节一宿主，五个宿主共用一个类）。
+>
+> AO 那 5 个是这条基础设施的**第一个"以后会不断复用"的用例**：18 个字段原本是 18 列（地形 6 / 伤害 5 / 服饰 4 / 健康 2 / 种族 1），每行只命中一两格，现在每页只剩 1 列。经验：**字段数 ≥3、且各行的命中率不齐时，一开始就该用触发列**，别等列挤爆了再迁（迁移要动 loc、文档与游戏内校验三处）。
 >
 > **`turretConfig` 与 `mechWeaponFilter` 仍是手写窗口**，不是漏迁。它们的行不是"TweakData 上的一组平铺字段"：炮塔的节数与行数由 `turretSlots` 列表的**当前长度**决定，每行的读写目标是窗口里的工作副本 `slot.warmingTime`，改完整份列表再 `ApplyValue` 一次；武器过滤则要一个"从武器库里挑"的自定义选择器和一块只读的候选预览。给 `ConfigWindow` 补上这两样（动态节 + 行级取值/写回委托）等于把它改成通用表单引擎，P3 那种"九个静态节、五十六个平铺字段"的场景却要为这层抽象买单。收益不抵成本，所以保留手写。
 

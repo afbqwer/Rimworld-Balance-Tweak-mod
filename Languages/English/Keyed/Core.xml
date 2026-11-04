@@ -335,4 +335,7 @@
     <MST.thingSetMakerTags>QTags</MST.thingSetMakerTags>
     <MST.thingSetMakerTagsComment>ThingSetMaker tags controlling which quest reward, item stash and other random loot categories this item can appear in. Add or remove tags such as RewardStandardCore, RewardStandardHighFreq, RewardStandardMidFreq, RewardStandardLowFreq, RewardStandardQualitySuper and Techprint. Empty means it is excluded from those categories.</MST.thingSetMakerTagsComment>
     <MST.visible>Visibility</MST.visible>
+    <MST.aoConfig>AO extension</MST.aoConfig>
+    <MST.aoConfigIntro>These fields come from Atmosphere Overhaul's optional extensions. Showing them as columns would crowd the table (each row only uses one or two of them), so they live in this window. Empty = AO's own default; a changed cell can be cleared to restore the original value.</MST.aoConfigIntro>
+    <MST.aoConfigNote>Every edit here goes through the same write path as a table cell (tri-state / reset / cache invalidation). Uncommitted text is applied when the window closes.</MST.aoConfigNote>
 </LanguageData>

@@ -56,29 +56,35 @@ class TerrainData : TweakData<TerrainData>
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
-    // ── Atmosphere Overhaul：地形大气扩展（可选 Mod，见 Docs/AtmosphereOverhaul_Editable_Plan.md §4.1）──
+    // ── Atmosphere Overhaul：地形大气扩展（可选 Mod，见 AtmosphereConfigWindow）──
     // 只有挂了 AtmosphereTerrainExtension 的地形（Space / HotSpring / LavaDeep…）才有这几格。
+    // 六格统一由「大气地形」触发列 + 配置窗口编辑，不再逐列展示（列太多，而每行只命中一两格）。
+
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(AtmosphereConfigWindow), MayRequire = TweakDatabase.AO,
+        Hidden = nameof(HiddenIfNoAoExtension))]
+    public TweakID? aoTerrainConfig = null;
 
     /// <summary>地面温度模式。<c>Normal</c> = 由太阳与空气决定；<c>Fixed</c> = 恒温；<c>Capped</c> = 夹在区间内。</summary>
-    [TweakField(Style = ColumnStyle.Enum, OptionsList = nameof(AoTerrainModeOptions),
-        MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoExtension))]
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Enum, OptionsList = nameof(AoTerrainModeOptions),
+        MayRequire = TweakDatabase.AO)]
     public string? mode = null;
 
     /// <summary>模式下拉的数据源。存字符串而不是枚举：类型来自 AO 的程序集，字段类型不能用它。</summary>
     public static readonly List<string> AoTerrainModeOptions = ["Normal", "Fixed", "Capped"];
 
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? fixedTemperature = null;
     /// <summary>Capped 模式的下限（上下限填反时 AO 会自己交换）。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? minTemperature = null;
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? maxTemperature = null;
     /// <summary>反照率。空 = 用 AO 的推导值（内部用 NaN 表示）。</summary>
-    [TweakField(Style = ColumnStyle.Prec, MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? albedo = null;
     /// <summary>热响应速率。空 = 用 AO 的推导值（内部用 NaN 表示）。</summary>
-    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoExtension))]
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
     public float? thermalRate = null;
 
     public static bool HiddenIfNoAoExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.TerrainExt);

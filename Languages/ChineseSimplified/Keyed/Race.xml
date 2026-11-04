@@ -109,4 +109,8 @@
     <MST.turretDefComment>机械炮塔（CompProperties_TurretGun）使用的武器。修改后需重新生成该机械才生效。</MST.turretDefComment>
     <MST.blastToleranceFactor>冲击波耐性</MST.blastToleranceFactor>
     <MST.blastToleranceFactorComment>爆炸冲击波耐性倍率（× 耳 / 肺阈值）。只有挂了大气种族扩展的种族才有这一格。</MST.blastToleranceFactorComment>
+    <MST.aoRaceConfig>大气耐性</MST.aoRaceConfig>
+    <MST.aoRaceConfigComment>Atmosphere Overhaul 的种族大气扩展：冲击波耐性倍率。</MST.aoRaceConfigComment>
+    <MST.aoRaceConfigEdit>编辑</MST.aoRaceConfigEdit>
+    <MST.aoRaceNote>倍率 1 = 标准阈值，2 = 需要两倍超压才受伤。AO 自己没给任何种族挂这个扩展（只在 XML 注释里提过一句），所以没装别的兼容 Mod 时这一行的按钮不会出现。</MST.aoRaceNote>
 </LanguageData>

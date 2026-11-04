@@ -107,6 +107,10 @@
     <MST.butcherProductsComment>Items produced when this mech is butchered.</MST.butcherProductsComment>
     <MST.turretDef>TurretGun</MST.turretDef>
     <MST.turretDefComment>Weapon used by the mech's turret (CompProperties_TurretGun). Takes effect on newly spawned mechs.</MST.turretDefComment>
-    <MST.blastToleranceFactor>blastTol</MST.blastToleranceFactor>
+    <MST.blastToleranceFactor>Blast tolerance</MST.blastToleranceFactor>
     <MST.blastToleranceFactorComment>Multiplier on blast ear/lung thresholds. Only present when the race carries AO's pawn extension.</MST.blastToleranceFactorComment>
+    <MST.aoRaceConfig>AO race</MST.aoRaceConfig>
+    <MST.aoRaceConfigComment>Atmosphere Overhaul's race extension: blast tolerance multiplier.</MST.aoRaceConfigComment>
+    <MST.aoRaceConfigEdit>Edit</MST.aoRaceConfigEdit>
+    <MST.aoRaceNote>1 = standard thresholds, 2 = twice the overpressure needed. AO itself attaches this extension to no race (it is only mentioned in an XML comment), so the button never appears unless another compatibility mod adds it.</MST.aoRaceNote>
 </LanguageData>

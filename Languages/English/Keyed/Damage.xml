@@ -75,10 +75,18 @@
     <MST.explosionAffectOutsidePartsOnlyComment>Whether the explosion only affects outermost body parts.</MST.explosionAffectOutsidePartsOnlyComment>
     <MST.igniteChanceByTargetFlammabilityComment>Only applies to fire damage (DamageWorker_Flame): chance to ignite based on target flammability.</MST.igniteChanceByTargetFlammabilityComment>
     <MST.igniteCellChanceComment>Only applies to fire damage (DamageWorker_Flame): per-cell ignite chance.</MST.igniteCellChanceComment>
-    <MST.earThresholdKPa>earThr</MST.earThresholdKPa>
-    <MST.earCertainKPa>earCertain</MST.earCertainKPa>
-    <MST.hearingLossChanceAtFull>hearLoss</MST.hearingLossChanceAtFull>
-    <MST.lungThresholdKPa>lungThr</MST.lungThresholdKPa>
-    <MST.lungDestroyedKPa>lungDead</MST.lungDestroyedKPa>
+    <MST.earThresholdKPa>Ear injury (kPa)</MST.earThresholdKPa>
+    <MST.earCertainKPa>Ear certain (kPa)</MST.earCertainKPa>
+    <MST.hearingLossChanceAtFull>Hearing loss</MST.hearingLossChanceAtFull>
+    <MST.lungThresholdKPa>Lung injury (kPa)</MST.lungThresholdKPa>
+    <MST.lungDestroyedKPa>Lung destroyed (kPa)</MST.lungDestroyedKPa>
     <MST.lungDestroyedKPaComment>Thresholds are read when the explosion resolves, so only later explosions are affected.</MST.lungDestroyedKPaComment>
+    <MST.aoBlastConfig>AO blast</MST.aoBlastConfig>
+    <MST.aoBlastConfigComment>Atmosphere Overhaul's blast injury extension: ear and lung thresholds plus the hearing-loss chance. Only explosive damage types carrying it are affected.</MST.aoBlastConfigComment>
+    <MST.aoBlastConfigEdit>Edit</MST.aoBlastConfigEdit>
+    <MST.earThresholdKPaComment>Overpressure (kPa) at which the eardrums start taking damage; AO default 35.</MST.earThresholdKPaComment>
+    <MST.earCertainKPaComment>Overpressure (kPa) at which the eardrums are always damaged; AO default 165.</MST.earCertainKPaComment>
+    <MST.hearingLossChanceAtFullComment>Chance per ear that full eardrum damage leaves permanent hearing loss; AO default 50%.</MST.hearingLossChanceAtFullComment>
+    <MST.lungThresholdKPaComment>Overpressure (kPa) at which the lungs start taking damage; AO default 100.</MST.lungThresholdKPaComment>
+    <MST.aoBlastNote>Thresholds are read when the explosion resolves, so only later explosions change; already-applied AO_BlastInjury is not retroactive. A race's blast tolerance multiplies all of these thresholds.</MST.aoBlastNote>
 </LanguageData>

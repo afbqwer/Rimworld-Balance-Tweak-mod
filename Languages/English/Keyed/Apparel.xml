@@ -48,7 +48,14 @@
     <MST.apparelTagListComment>Tags this apparel carries. Pawn generation only picks apparel sharing a tag with the pawn kind's apparel tags; tag-filtered requirements and random loot rely on it too. Empty means it is never picked by tag.</MST.apparelTagListComment>
     <MST.breathingSupply>breathing</MST.breathingSupply>
     <MST.breathingSupplyComment>Tri-state: 1 = force yes; 0 = force no; -1 = auto (by vacuum resistance). 0 and -1 mean different things.</MST.breathingSupplyComment>
-    <MST.pressureShell>shell</MST.pressureShell>
-    <MST.suitPressureHpa>suitHPa</MST.suitPressureHpa>
-    <MST.capacityAirTanks>airTanks</MST.capacityAirTanks>
+    <MST.pressureShell>Pressure shell</MST.pressureShell>
+    <MST.suitPressureHpa>Suit pressure</MST.suitPressureHpa>
+    <MST.capacityAirTanks>Air tanks</MST.capacityAirTanks>
+    <MST.aoApparelConfig>AO apparel</MST.aoApparelConfig>
+    <MST.aoApparelConfigComment>Atmosphere Overhaul's apparel extension: breathing supply, pressure shell, air tank capacity, suit pressure. Only apparel carrying it (oxygen masks, pressure suits) has these fields.</MST.aoApparelConfigComment>
+    <MST.aoApparelConfigEdit>Edit</MST.aoApparelConfigEdit>
+    <MST.pressureShellComment>Tri-state: 1 = force yes; 0 = force no; -1 = auto (whether it covers the torso). 0 and -1 mean different things.</MST.pressureShellComment>
+    <MST.capacityAirTanksComment>Air tank capacity; 0 or less = auto (max(1, round(3 x vacuum resistance))).</MST.capacityAirTanksComment>
+    <MST.suitPressureHpaComment>Pressure held inside the shell (hPa); sea level on Earth is about 1013.</MST.suitPressureHpaComment>
+    <MST.aoApparelNote>Breathing supply and pressure shell are tri-state: 1 = force yes, 0 = force no, -1 = auto. Vacuum helmets get their breathing supply from AO's vacuum resistance, not from this extension.</MST.aoApparelNote>
 </LanguageData>
