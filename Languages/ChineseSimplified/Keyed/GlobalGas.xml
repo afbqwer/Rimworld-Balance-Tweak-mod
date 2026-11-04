@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.GlobalGas>全球气体</MST.GlobalGas>
+    <MST.readoutLabel>读数名称</MST.readoutLabel>
+    <MST.lifetimeHours>寿命(小时)</MST.lifetimeHours>
+    <MST.washoutPerMm>冲刷/毫米</MST.washoutPerMm>
+    <MST.windThresholdMps>起沙风速</MST.windThresholdMps>
+    <MST.windScale>风致排放</MST.windScale>
+    <MST.dryHours>起沙干燥</MST.dryHours>
+    <MST.pollutionPerHour>污染排放</MST.pollutionPerHour>
+    <MST.episodeMeanDays>间隔均值</MST.episodeMeanDays>
+    <MST.episodeMinDays>间隔下限</MST.episodeMinDays>
+    <MST.episodeMaxDays>间隔上限</MST.episodeMaxDays>
+    <MST.randomEpisodeSources>随机事件源</MST.randomEpisodeSources>
+    <MST.randomEpisodePerHour>随机事件/h</MST.randomEpisodePerHour>
+    <MST.ventFraction>泄放比例</MST.ventFraction>
+    <MST.displayFloor>显示下限</MST.displayFloor>
+    <MST.renderRadius>绘制半径</MST.renderRadius>
+    <MST.renderQueue>绘制层序</MST.renderQueue>
+    <MST.renderQueueComment>纯视觉。默认 3536，改错会与其它图层穿插。</MST.renderQueueComment>
+    <MST.mapWeather>切换天气</MST.mapWeather>
+    <MST.mapWeatherComment>浓度超过阈值时把地图天气切成哪个 defName（不是 Def 引用）。</MST.mapWeatherComment>
+    <MST.mapWeatherFallback>天气回落</MST.mapWeatherFallback>
+    <MST.mapWeatherFallbackComment>没装 Odyssey 等提供该天气的 Mod 时的回落项。</MST.mapWeatherFallbackComment>
+    <MST.weatherThreshold>天气阈值</MST.weatherThreshold>
+    <MST.weatherEpisodeHours>持续时长</MST.weatherEpisodeHours>
+</LanguageData>

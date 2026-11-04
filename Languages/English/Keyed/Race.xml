@@ -107,4 +107,6 @@
     <MST.butcherProductsComment>Items produced when this mech is butchered.</MST.butcherProductsComment>
     <MST.turretDef>TurretGun</MST.turretDef>
     <MST.turretDefComment>Weapon used by the mech's turret (CompProperties_TurretGun). Takes effect on newly spawned mechs.</MST.turretDefComment>
+    <MST.blastToleranceFactor>blastTol</MST.blastToleranceFactor>
+    <MST.blastToleranceFactorComment>Multiplier on blast ear/lung thresholds. Only present when the race carries AO's pawn extension.</MST.blastToleranceFactorComment>
 </LanguageData>

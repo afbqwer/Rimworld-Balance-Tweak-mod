@@ -183,6 +183,33 @@ public class ApparelData : TweakData<ApparelData>
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
+    // ── Atmosphere Overhaul：呼吸供给 / 压力壳（可选 Mod）──
+    // 只有挂了 AtmosphereApparelExtension 的服饰（AO_OxygenMask 之类）才有这几格；
+    // 真空头盔的呼吸供给是 AO 按 VacuumResistance 自动给的，不走这个扩展。
+
+    /// <summary>
+    /// **三态 int**：<c>1</c> = 强制当作呼吸供给；<c>0</c> = 强制不是；<c>-1</c> = 按真空耐性自动判断。
+    /// <para>0 与 -1 语义不同（强制否 vs 自动），所以别把 0 当"未设置"。</para>
+    /// </summary>
+    [TweakField(Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO,
+        Hidden = nameof(HiddenIfNoAoApparelExtension))]
+    public int? breathingSupply = null;
+
+    /// <summary>同一套三态，自动档的判据是"包住躯干"。</summary>
+    [TweakField(Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO,
+        Hidden = nameof(HiddenIfNoAoApparelExtension))]
+    public int? pressureShell = null;
+
+    /// <summary>气瓶当量。<c>&lt;= 0</c> 时自动取 <c>max(1, round(3 × 真空耐性))</c>。</summary>
+    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoApparelExtension))]
+    public float? capacityAirTanks = null;
+
+    /// <summary>壳内维持的压力（hPa）。</summary>
+    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoApparelExtension))]
+    public float? suitPressureHpa = null;
+
+    public static bool HiddenIfNoAoApparelExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.ApparelExt);
+
     private static object? GetNormalSharpArmor(TweakData data) => GetDefaultStuffValue(data, StatDefOf.ArmorRating_Sharp);
     private static object? GetNormalBluntArmor(TweakData data) => GetDefaultStuffValue(data, StatDefOf.ArmorRating_Blunt);
     private static object? GetNormalHeatArmor(TweakData data) => GetDefaultStuffValue(data, StatDefOf.ArmorRating_Heat);
@@ -280,8 +307,32 @@ public class ApparelData : TweakData<ApparelData>
             LoadRelay(d);
             relayHasSubRelay ??= subRelayProps != null;
             LoadTurret(d);
+            LoadAoExtension(d);
         }
         //equipCP = (float?)GetEquipCP(this, isCompQuality, equipPower);
+    }
+
+    /// <summary>回填 AO 的服饰扩展；没有扩展的服饰整块跳过。</summary>
+    private void LoadAoExtension(ThingDef d)
+    {
+        var ext = AoHelper.Ext(d, AoHelper.ApparelExt);
+        if (ext == null) return;
+        breathingSupply ??= AoHelper.I(ext, "breathingSupply");
+        pressureShell ??= AoHelper.I(ext, "pressureShell");
+        capacityAirTanks ??= AoHelper.F(ext, "capacityAirTanks");
+        suitPressureHpa ??= AoHelper.F(ext, "suitPressureHpa");
+    }
+
+    /// <summary>写回 AO 的服饰扩展（没有扩展的服饰直接跳过）。</summary>
+    private void ApplyAoExtension(ThingDef def)
+    {
+        var ext = AoHelper.Ext(def, AoHelper.ApparelExt);
+        if (ext == null) return;
+        // 目标字段在扩展上是非空 int（-1 只是取值），所以用 ApplyV 而不是 ApplyN。
+        AoHelper.ApplyF<int>(this, ext, "breathingSupply", nameof(breathingSupply));
+        AoHelper.ApplyF<int>(this, ext, "pressureShell", nameof(pressureShell));
+        AoHelper.ApplyF<float>(this, ext, "capacityAirTanks", nameof(capacityAirTanks));
+        AoHelper.ApplyF<float>(this, ext, "suitPressureHpa", nameof(suitPressureHpa));
     }
 
     public override void EnsureDisplayValues()
@@ -341,6 +392,7 @@ public class ApparelData : TweakData<ApparelData>
         ApplyDefStats(def);
         ApplyRelay(def);
         ApplyTurret(def);
+        ApplyAoExtension(def);
         OnChangeStuffEffectMultiplierArmor(this);
         OnChangeStuffEffectMultiplierInsulationCold(this);
         OnChangeStuffEffectMultiplierInsulationHeat(this);

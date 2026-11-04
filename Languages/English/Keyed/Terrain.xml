@@ -19,4 +19,13 @@
     <MST.SandSoil>Sand / Soil</MST.SandSoil>
     <MST.Stone>Stone</MST.Stone>
     <MST.Floor>Floor</MST.Floor>
+    <MST.mode>tempMode</MST.mode>
+    <MST.modeComment>Normal = driven by sun and air; Fixed = constant; Capped = clamped to the range. Only shown when Atmosphere Overhaul is loaded and the terrain has its extension.</MST.modeComment>
+    <MST.fixedTemperature>fixedTemp</MST.fixedTemperature>
+    <MST.minTemperature>minTemp</MST.minTemperature>
+    <MST.maxTemperature>maxTemp</MST.maxTemperature>
+    <MST.albedo>albedo</MST.albedo>
+    <MST.albedoComment>Empty = derived by AO.</MST.albedoComment>
+    <MST.thermalRate>thermal</MST.thermalRate>
+    <MST.thermalRateComment>Empty = derived by AO.</MST.thermalRateComment>
 </LanguageData>

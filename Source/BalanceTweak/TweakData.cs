@@ -729,6 +729,21 @@ public abstract partial class TweakData : IExposable
     internal virtual FieldState StateOfField(string fieldName) => FieldState.Unset;
 
     /// <summary>
+    /// 跨类型的三态写入桥：语义与 <c>TweakData&lt;T&gt;.ApplyV</c> 完全一致（<c>Set</c> 写值 /
+    /// <c>Cleared</c> 还原 / 重置照抄），实现在泛型侧。
+    /// <para>
+    /// 给"只持有 <c>TweakData</c> 引用"的静态辅助类用（如 <c>AoHelper.ApplyF</c> 要按反射写可选 Mod 的
+    /// Def 字段）。<c>ApplyV</c> 声明在 <see cref="TweakData{T}"/> 上，静态类拿不到 ——
+    /// 而"泛型方法 + 显式类型实参"又要求 TSelf 也写出来（C# 没有部分类型推断），
+    /// 23 个字段各写一遍 <c>&lt;float, AtmosphereGasData&gt;</c> 不划算。
+    /// </para>
+    /// </summary>
+    internal virtual void ApplyRef<TV>(string fieldName, Action<TV> set) where TV : struct { }
+
+    /// <summary>字符串版的三态写入桥（见 <see cref="ApplyRef{TV}"/>）。</summary>
+    internal virtual void ApplyStrRef(string fieldName, Action<string> set) { }
+
+    /// <summary>
     /// SC2（复活检测）：返回 Apply 之后被 SetDef / GenValues 回填复活的 Cleared 字段名（空 = 未复活）。
     /// 见 Docs/NullSemantics_L0_Plan.md §4.2。
     /// </summary>

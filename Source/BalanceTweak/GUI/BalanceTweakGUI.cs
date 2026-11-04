@@ -280,6 +280,11 @@ public partial class BalanceTweakSettings : ModSettings
     private static bool IsTabVisible(SettingType type) => type switch
     {
         SettingType.HeavyEquipment => DataUtility.MayRequire(TweakDatabase.FFF),
+        // AO 的三个页签各自只在自己那一类 Def 上才有行；未装该 Mod 时整项隐藏，
+        // 否则玩家会看到三个永远空着的页签（默认分支 _ => true 不会替我们判断）。
+        SettingType.AtmosphereGas => DataUtility.MayRequire(TweakDatabase.AO),
+        SettingType.GlobalGas => DataUtility.MayRequire(TweakDatabase.AO),
+        SettingType.ExplosionProfile => DataUtility.MayRequire(TweakDatabase.AO),
         _ => true,
     };
     public enum SortModeType

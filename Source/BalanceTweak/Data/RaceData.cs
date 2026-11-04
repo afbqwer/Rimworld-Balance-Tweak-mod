@@ -324,6 +324,16 @@ class RaceData : TweakData<RaceData>, ISubItemHost
 
     public static bool HiddenIfNoTurretComp(TweakData data) => !FortifiedTurret.HasAny(data.def);
 
+    // ── Atmosphere Overhaul：冲击波耐性（可选 Mod）──
+    // ⚠ AO 自己没给任何种族挂 AtmospherePawnExtension（只在 XML 注释里提了一句 "per race"），
+    // 所以装了 AO 而没装别的兼容 Mod 时，这一列恒为空。保留它只为接口对齐。
+
+    /// <summary>爆炸冲击波耐性倍率（× 耳 / 肺阈值）。</summary>
+    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoPawnExtension))]
+    public float? blastToleranceFactor = null;
+
+    public static bool HiddenIfNoAoPawnExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.PawnExt);
+
     [TweakField(NotAColumn = true, Style = ColumnStyle.TurretSlotList, MayRequire = TweakDatabase.FFF)]
     public List<TurretSlotRecord>? turretSlots = null;
 
@@ -470,6 +480,7 @@ class RaceData : TweakData<RaceData>, ISubItemHost
             relayHasCommandRelay ??= commandRelayProps != null;
             relayHasOverseer ??= overseerProps != null;
             LoadTurret(d);
+            blastToleranceFactor ??= AoHelper.F(AoHelper.Ext(d, AoHelper.PawnExt), "blastToleranceFactor");
         }
     }
 
@@ -489,6 +500,8 @@ class RaceData : TweakData<RaceData>, ISubItemHost
         ApplyDefStats(def);
         ApplyEntityCompProps(def);
         ApplyAnimalCompProps(def);
+        AoHelper.ApplyF<float>(this, AoHelper.Ext(def, AoHelper.PawnExt), "blastToleranceFactor",
+            nameof(blastToleranceFactor));
         // 参考列按"当前 def 现算"：改完体型/血量/招式后，下一次读就该是新值。
         displayValuesEnsured = false;
     }

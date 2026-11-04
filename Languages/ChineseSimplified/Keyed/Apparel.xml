@@ -46,4 +46,9 @@
     <MST.blocksRangedWeapons>阻止远程</MST.blocksRangedWeapons>
     <MST.apparelTagList>衣物标签</MST.apparelTagList>
     <MST.apparelTagListComment>该衣物自身的标签。角色生成时，单位会从与本单位衣物标签有交集的衣物中挑选；按标签筛选的诉求与随机生成也依赖它。清空后该衣物不会再被按标签挑中。</MST.apparelTagListComment>
+    <MST.breathingSupply>呼吸供给</MST.breathingSupply>
+    <MST.breathingSupplyComment>三态：1 = 强制当作呼吸供给；0 = 强制不是；-1 = 按真空耐性自动判断。0 与 -1 含义不同。</MST.breathingSupplyComment>
+    <MST.pressureShell>压力壳</MST.pressureShell>
+    <MST.suitPressureHpa>壳内压力</MST.suitPressureHpa>
+    <MST.capacityAirTanks>气瓶当量</MST.capacityAirTanks>
 </LanguageData>

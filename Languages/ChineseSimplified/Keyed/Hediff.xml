@@ -151,4 +151,6 @@
     <MST.hasReactOnDamageComment>开关ReactOnDamage组件。启用后角色受伤时此健康状态会做出反应。</MST.hasReactOnDamageComment>
     <MST.reactOnDamageCreateHediff>反应产生</MST.reactOnDamageCreateHediff>
     <MST.reactOnDamageCreateHediffComment>角色受伤时此健康状态产生的健康状态。</MST.reactOnDamageCreateHediffComment>
+    <MST.ruptureSeverity>触发严重度</MST.ruptureSeverity>
+    <MST.chancePerEar>每耳听损率</MST.chancePerEar>
 </LanguageData>

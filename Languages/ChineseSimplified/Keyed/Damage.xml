@@ -75,4 +75,10 @@
     <MST.explosionAffectOutsidePartsOnlyComment>爆炸是否只影响身体最外层部位。</MST.explosionAffectOutsidePartsOnlyComment>
     <MST.igniteChanceByTargetFlammabilityComment>仅对火焰伤害（DamageWorker_Flame）有效：根据目标可燃性决定引燃几率曲线。</MST.igniteChanceByTargetFlammabilityComment>
     <MST.igniteCellChanceComment>仅对火焰伤害（DamageWorker_Flame）有效：每个格子的引燃几率。</MST.igniteCellChanceComment>
+    <MST.earThresholdKPa>耳膜损伤阈</MST.earThresholdKPa>
+    <MST.earCertainKPa>耳膜必损阈</MST.earCertainKPa>
+    <MST.hearingLossChanceAtFull>满级听损率</MST.hearingLossChanceAtFull>
+    <MST.lungThresholdKPa>肺损伤阈</MST.lungThresholdKPa>
+    <MST.lungDestroyedKPa>肺摧毁阈</MST.lungDestroyedKPa>
+    <MST.lungDestroyedKPaComment>阈值只在爆炸结算那一刻读取，改完只影响之后的爆炸，已经形成的损伤不会被追溯。</MST.lungDestroyedKPaComment>
 </LanguageData>

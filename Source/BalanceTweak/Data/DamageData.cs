@@ -111,6 +111,28 @@ class DamageData : TweakData<DamageData>
     [TweakField()]
     public float? igniteCellChance = null;
 
+    // ── Atmosphere Overhaul：冲击波致伤（可选 Mod，只有挂了 BlastOverpressureExtension 的伤害类型才有）──
+    // 阈值只在爆炸结算那一刻读（BlastInjury.MinimumKPa），所以改完只影响之后的爆炸；
+    // 已经形成的 AO_BlastInjury 不会被追溯。
+
+    /// <summary>耳膜开始受损的阈值（kPa）。</summary>
+    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    public float? earThresholdKPa = null;
+    /// <summary>耳膜必定受损的阈值（kPa）。</summary>
+    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    public float? earCertainKPa = null;
+    /// <summary>满级损伤时每只耳留下永久听力损失的概率。</summary>
+    [TweakField(Style = ColumnStyle.Prec, MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    public float? hearingLossChanceAtFull = null;
+    /// <summary>肺开始受损的阈值（kPa）。</summary>
+    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    public float? lungThresholdKPa = null;
+    /// <summary>肺完全摧毁的阈值（kPa）。</summary>
+    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoBlastExtension))]
+    public float? lungDestroyedKPa = null;
+
+    public static bool HiddenIfNoAoBlastExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.BlastExt);
+
     public override void SetDef(Def def, SettingType type, bool tweaked = false)
     {
         this.def = def;
@@ -163,7 +185,20 @@ class DamageData : TweakData<DamageData>
             explosionInteriorCellDistanceMultiplier ??= d.explosionInteriorCellDistanceMultiplier;
             igniteChanceByTargetFlammability ??= d.igniteChanceByTargetFlammability;
             igniteCellChance ??= d.igniteCellChance;
+            LoadAoExtension(d);
         }
+    }
+
+    /// <summary>回填 AO 的冲击波致伤扩展；该伤害类型没有扩展时整块跳过。</summary>
+    private void LoadAoExtension(DamageDef d)
+    {
+        var ext = AoHelper.Ext(d, AoHelper.BlastExt);
+        if (ext == null) return;
+        earThresholdKPa ??= AoHelper.F(ext, "earThresholdKPa");
+        earCertainKPa ??= AoHelper.F(ext, "earCertainKPa");
+        hearingLossChanceAtFull ??= AoHelper.F(ext, "hearingLossChanceAtFull");
+        lungThresholdKPa ??= AoHelper.F(ext, "lungThresholdKPa");
+        lungDestroyedKPa ??= AoHelper.F(ext, "lungDestroyedKPa");
     }
 
     public override void Apply()
@@ -216,6 +251,19 @@ class DamageData : TweakData<DamageData>
         ApplyV<float>(nameof(explosionInteriorCellDistanceMultiplier), v => def.explosionInteriorCellDistanceMultiplier = v);
         ApplyV<SimpleCurve>(nameof(igniteChanceByTargetFlammability), v => def.igniteChanceByTargetFlammability = v);
         ApplyV<float>(nameof(igniteCellChance), v => def.igniteCellChance = v);
+        ApplyAoExtension(def);
+    }
+
+    /// <summary>写回 AO 的冲击波致伤扩展（没有扩展的伤害类型直接跳过）。</summary>
+    private void ApplyAoExtension(DamageDef def)
+    {
+        var ext = AoHelper.Ext(def, AoHelper.BlastExt);
+        if (ext == null) return;
+        AoHelper.ApplyF<float>(this, ext, "earThresholdKPa", nameof(earThresholdKPa));
+        AoHelper.ApplyF<float>(this, ext, "earCertainKPa", nameof(earCertainKPa));
+        AoHelper.ApplyF<float>(this, ext, "hearingLossChanceAtFull", nameof(hearingLossChanceAtFull));
+        AoHelper.ApplyF<float>(this, ext, "lungThresholdKPa", nameof(lungThresholdKPa));
+        AoHelper.ApplyF<float>(this, ext, "lungDestroyedKPa", nameof(lungDestroyedKPa));
     }
 
     // 类型枚举和类型字符串

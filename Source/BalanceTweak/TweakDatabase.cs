@@ -68,6 +68,8 @@ public static partial class TweakDatabase
     public const string VEP = "vanillaexpanded.vpsycastse";
     /// <summary>Fortified Features Framework（重型装备 / 多炮塔 / 中继指挥的提供方）。</summary>
     public const string FFF = "AOBA.Framework";
+    /// <summary>Atmosphere Overhaul（大气模拟：气体 / 全球气体 / 爆炸剖面 / 建筑大气属性）。</summary>
+    public const string AO = "acutus.AtmosphereOverhaul.release";
     public static bool VCTAPDown = false;
     public static bool VCTAMDown = false;
 

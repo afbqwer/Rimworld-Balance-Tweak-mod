@@ -364,6 +364,11 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// <summary>跨类型只读入口（供 TweakDatabase 的 dry-run 与 TweakSelfCheck 用）。</summary>
     internal override FieldState StateOfField(string f) => StateOf(f);
 
+    /// <summary>跨类型写入桥：静态辅助类（<c>AoHelper</c>）按它走同一套三态门控。</summary>
+    internal override void ApplyRef<TV>(string f, Action<TV> set) => ApplyV(f, set);
+
+    internal override void ApplyStrRef(string f, Action<string> set) => ApplyS(f, set);
+
     /// <summary>
     /// SC2（复活检测）：检查 <see cref="_clearedSnapshot"/> 里的字段在 Apply 之后是否仍为空。
     /// 被 SetDef / GenValues 的 <c>??=</c> 回填 = 复活（漏了 <c>!IsFieldModified</c> 守卫）。

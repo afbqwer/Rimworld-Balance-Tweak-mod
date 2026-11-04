@@ -19,4 +19,13 @@
     <MST.SandSoil>沙土</MST.SandSoil>
     <MST.Stone>石头</MST.Stone>
     <MST.Floor>地板</MST.Floor>
+    <MST.mode>温度模式</MST.mode>
+    <MST.modeComment>正常 = 由太阳与空气决定；恒定 = 固定温度；夹取 = 限制在上下限之间。只有装了 Atmosphere Overhaul 且该地形挂了大气扩展时才出现。</MST.modeComment>
+    <MST.fixedTemperature>恒定温度</MST.fixedTemperature>
+    <MST.minTemperature>温度下限</MST.minTemperature>
+    <MST.maxTemperature>温度上限</MST.maxTemperature>
+    <MST.albedo>反照率</MST.albedo>
+    <MST.albedoComment>留空 = 用 AO 的推导值。</MST.albedoComment>
+    <MST.thermalRate>热响应速率</MST.thermalRate>
+    <MST.thermalRateComment>留空 = 用 AO 的推导值。</MST.thermalRateComment>
 </LanguageData>

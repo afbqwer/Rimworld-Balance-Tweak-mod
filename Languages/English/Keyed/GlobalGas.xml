@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.GlobalGas>Global Gas</MST.GlobalGas>
+    <MST.readoutLabel>readout</MST.readoutLabel>
+    <MST.lifetimeHours>life(h)</MST.lifetimeHours>
+    <MST.washoutPerMm>wash/mm</MST.washoutPerMm>
+    <MST.windThresholdMps>windThr</MST.windThresholdMps>
+    <MST.windScale>windScale</MST.windScale>
+    <MST.dryHours>dry(h)</MST.dryHours>
+    <MST.pollutionPerHour>poll/h</MST.pollutionPerHour>
+    <MST.episodeMeanDays>epMean(d)</MST.episodeMeanDays>
+    <MST.episodeMinDays>epMin(d)</MST.episodeMinDays>
+    <MST.episodeMaxDays>epMax(d)</MST.episodeMaxDays>
+    <MST.randomEpisodeSources>epSources</MST.randomEpisodeSources>
+    <MST.randomEpisodePerHour>ep/h</MST.randomEpisodePerHour>
+    <MST.ventFraction>vent</MST.ventFraction>
+    <MST.displayFloor>dispFloor</MST.displayFloor>
+    <MST.renderRadius>radius</MST.renderRadius>
+    <MST.renderQueue>layer</MST.renderQueue>
+    <MST.renderQueueComment>Visual only. Default 3536; a wrong value clips with other layers.</MST.renderQueueComment>
+    <MST.mapWeather>weather</MST.mapWeather>
+    <MST.mapWeatherComment>Weather defName to switch to above the threshold (a string, not a Def reference).</MST.mapWeatherComment>
+    <MST.mapWeatherFallback>weatherFb</MST.mapWeatherFallback>
+    <MST.mapWeatherFallbackComment>Fallback when the weather's source mod (e.g. Odyssey) is absent.</MST.mapWeatherFallbackComment>
+    <MST.weatherThreshold>wThr</MST.weatherThreshold>
+    <MST.weatherEpisodeHours>wHours</MST.weatherEpisodeHours>
+</LanguageData>

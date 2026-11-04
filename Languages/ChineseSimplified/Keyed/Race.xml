@@ -107,4 +107,6 @@
     <MST.butcherProductsComment>屠宰（拆解）该机械时产出的物品与数量。</MST.butcherProductsComment>
     <MST.turretDef>炮塔武器</MST.turretDef>
     <MST.turretDefComment>机械炮塔（CompProperties_TurretGun）使用的武器。修改后需重新生成该机械才生效。</MST.turretDefComment>
+    <MST.blastToleranceFactor>冲击波耐性</MST.blastToleranceFactor>
+    <MST.blastToleranceFactorComment>爆炸冲击波耐性倍率（× 耳 / 肺阈值）。只有挂了大气种族扩展的种族才有这一格。</MST.blastToleranceFactorComment>
 </LanguageData>

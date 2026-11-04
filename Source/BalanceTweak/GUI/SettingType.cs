@@ -51,6 +51,9 @@ public partial class BalanceTweakSettings
         WeaponTrait = 36,
         HeavyEquipment = 37,
         Quest = 38,
+        AtmosphereGas = 39,
+        GlobalGas = 40,
+        ExplosionProfile = 41,
     }
 
     /// <summary>
@@ -105,5 +108,8 @@ public partial class BalanceTweakSettings
         SettingType.Landmark, // odyssey DLC
         SettingType.WeaponTrait, // royal DLC
         SettingType.HeavyEquipment, // FFF mod
+        SettingType.AtmosphereGas, // Atmosphere Overhaul
+        SettingType.GlobalGas, // Atmosphere Overhaul
+        SettingType.ExplosionProfile, // Atmosphere Overhaul
     ];
 }

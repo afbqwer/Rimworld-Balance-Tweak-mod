@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.ExplosionProfile>Explosions</MST.ExplosionProfile>
+    <MST.damageDef>damage</MST.damageDef>
+    <MST.enabled>on</MST.enabled>
+    <MST.eqTNTkg>TNTkg</MST.eqTNTkg>
+    <MST.eqTNTkgComment>Empty = derive from vanilla. AO also has an alias (equivalentTntKg) that is only used when this one is unset, so only this column is exposed.</MST.eqTNTkgComment>
+    <MST.blastFactor>blast</MST.blastFactor>
+    <MST.heatFactor>heat</MST.heatFactor>
+    <MST.effectRadiusFactor>radiusX</MST.effectRadiusFactor>
+    <MST.airMassFactor>airMass</MST.airMassFactor>
+    <MST.coreRadius>coreR</MST.coreRadius>
+    <MST.coreRadiusFactor>coreRX</MST.coreRadiusFactor>
+    <MST.supportRadius>maxR</MST.supportRadius>
+    <MST.maxOverpressureKPa>maxOP</MST.maxOverpressureKPa>
+    <MST.maxRarefactionKPa>maxNeg</MST.maxRarefactionKPa>
+    <MST.maxRarefactionKPaComment>Must stay below 100: absolute pressure cannot go negative.</MST.maxRarefactionKPaComment>
+    <MST.maxWindSpeed>maxWind</MST.maxWindSpeed>
+    <MST.acousticCourant>courant</MST.acousticCourant>
+    <MST.acousticCourantComment>Must be &lt;= 0.707. Larger values are written as 0.707 with a warning: beyond it the explicit solver diverges.</MST.acousticCourantComment>
+    <MST.acousticDamping>aDamp</MST.acousticDamping>
+    <MST.acousticWindGain>aWind</MST.acousticWindGain>
+    <MST.acousticLifetimeTicks>aLife</MST.acousticLifetimeTicks>
+    <MST.acousticHandoffDelayTicks>aDelay</MST.acousticHandoffDelayTicks>
+    <MST.acousticHandoffRatePerTick>aRate</MST.acousticHandoffRatePerTick>
+    <MST.residualWindFraction>residWind</MST.residualWindFraction>
+    <MST.maxTemperatureDelta>maxDT</MST.maxTemperatureDelta>
+    <MST.heatEnergyJoules>heat(J)</MST.heatEnergyJoules>
+</LanguageData>

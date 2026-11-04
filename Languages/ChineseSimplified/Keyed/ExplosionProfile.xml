@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.ExplosionProfile>爆炸剖面</MST.ExplosionProfile>
+    <MST.damageDef>伤害类型</MST.damageDef>
+    <MST.enabled>启用</MST.enabled>
+    <MST.eqTNTkg>TNT当量</MST.eqTNTkg>
+    <MST.eqTNTkgComment>留空 = 沿用推导值。AO 里另有一个别名 equivalentTntKg，读取时优先取这一项，所以本页只开放它。</MST.eqTNTkgComment>
+    <MST.blastFactor>冲击波倍率</MST.blastFactor>
+    <MST.heatFactor>热量倍率</MST.heatFactor>
+    <MST.effectRadiusFactor>半径倍率</MST.effectRadiusFactor>
+    <MST.airMassFactor>空气质量</MST.airMassFactor>
+    <MST.coreRadius>核心半径</MST.coreRadius>
+    <MST.coreRadiusFactor>核心半径×</MST.coreRadiusFactor>
+    <MST.supportRadius>最大半径</MST.supportRadius>
+    <MST.maxOverpressureKPa>超压上限</MST.maxOverpressureKPa>
+    <MST.maxRarefactionKPa>负压上限</MST.maxRarefactionKPa>
+    <MST.maxRarefactionKPaComment>必须小于 100：绝对压力不能为负。</MST.maxRarefactionKPaComment>
+    <MST.maxWindSpeed>风速上限</MST.maxWindSpeed>
+    <MST.acousticCourant>Courant</MST.acousticCourant>
+    <MST.acousticCourantComment>必须 ≤ 0.707。填更大的值会按 0.707 写入并告警一次——超过它显式积分会发散，地图物理会失控。</MST.acousticCourantComment>
+    <MST.acousticDamping>声波阻尼</MST.acousticDamping>
+    <MST.acousticWindGain>声波风增益</MST.acousticWindGain>
+    <MST.acousticLifetimeTicks>声波寿命</MST.acousticLifetimeTicks>
+    <MST.acousticHandoffDelayTicks>移交延迟</MST.acousticHandoffDelayTicks>
+    <MST.acousticHandoffRatePerTick>移交比例</MST.acousticHandoffRatePerTick>
+    <MST.residualWindFraction>残余风占比</MST.residualWindFraction>
+    <MST.maxTemperatureDelta>温升上限</MST.maxTemperatureDelta>
+    <MST.heatEnergyJoules>沉积热量</MST.heatEnergyJoules>
+</LanguageData>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.AtmosphereGas>气体</MST.AtmosphereGas>
+    <MST.maxDensity>满浓度参照</MST.maxDensity>
+    <MST.maxDensityComment>密度网格里存的是绝对浓度，这一项只是“多浓算满”的参照：改它不会改变场上已有气体的绝对量，但会改变渲染饱和度与熄灭阈值。</MST.maxDensityComment>
+    <MST.activeThreshold>生效阈值</MST.activeThreshold>
+    <MST.shootObscuranceFactor>遮蔽系数</MST.shootObscuranceFactor>
+    <MST.blocksVision>遮挡视线</MST.blocksVision>
+    <MST.harmfulDensity>致病浓度</MST.harmfulDensity>
+    <MST.harmfulDensityComment>超过这个浓度就伤人。注意：把 0 改成正数时本工程会清一次 AO 的静态缓存，否则新加入的有害气体要重启游戏才生效。</MST.harmfulDensityComment>
+    <MST.densityContrast>浓度对比度</MST.densityContrast>
+    <MST.exposureStat>抗性属性</MST.exposureStat>
+    <MST.exposureStatComment>抗性开关，不是倍率：该属性大于 0（或留空）才会受伤。只和致病浓度一起起作用。</MST.exposureStatComment>
+    <MST.renderTexturePath>贴图路径</MST.renderTexturePath>
+    <MST.baseQuadCount>基础面片数</MST.baseQuadCount>
+    <MST.quadJitterScale>面片抖动</MST.quadJitterScale>
+    <MST.maxRenderDensity>满渲染浓度</MST.maxRenderDensity>
+    <MST.drawSize>绘制尺寸</MST.drawSize>
+    <MST.opacityFloor>最低透明</MST.opacityFloor>
+    <MST.advectionRate>平流速率</MST.advectionRate>
+    <MST.diffusionRate>扩散速率</MST.diffusionRate>
+    <MST.diffusionIterations>扩散迭代</MST.diffusionIterations>
+    <MST.diffusionIterationsComment>每 tick 的扩散迭代次数。性能敏感：调高会成倍增加传质开销。</MST.diffusionIterationsComment>
+    <MST.naturalVanishRatePerTick>消散/刻</MST.naturalVanishRatePerTick>
+    <MST.roofedVanishFactor>有顶消散</MST.roofedVanishFactor>
+    <MST.unroofedRelativeVanishPerTick>露天消散</MST.unroofedRelativeVanishPerTick>
+    <MST.extinctionDensityFraction>熄灭比例</MST.extinctionDensityFraction>
+    <MST.extinctionDensityFractionComment>低于 (该比例 × 满浓度参照) 的格子直接清零。</MST.extinctionDensityFractionComment>
+    <MST.vacuumVanishMultiplier>真空消散</MST.vacuumVanishMultiplier>
+    <MST.scheduled>后台调度</MST.scheduled>
+</LanguageData>

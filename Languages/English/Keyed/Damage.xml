@@ -75,4 +75,10 @@
     <MST.explosionAffectOutsidePartsOnlyComment>Whether the explosion only affects outermost body parts.</MST.explosionAffectOutsidePartsOnlyComment>
     <MST.igniteChanceByTargetFlammabilityComment>Only applies to fire damage (DamageWorker_Flame): chance to ignite based on target flammability.</MST.igniteChanceByTargetFlammabilityComment>
     <MST.igniteCellChanceComment>Only applies to fire damage (DamageWorker_Flame): per-cell ignite chance.</MST.igniteCellChanceComment>
+    <MST.earThresholdKPa>earThr</MST.earThresholdKPa>
+    <MST.earCertainKPa>earCertain</MST.earCertainKPa>
+    <MST.hearingLossChanceAtFull>hearLoss</MST.hearingLossChanceAtFull>
+    <MST.lungThresholdKPa>lungThr</MST.lungThresholdKPa>
+    <MST.lungDestroyedKPa>lungDead</MST.lungDestroyedKPa>
+    <MST.lungDestroyedKPaComment>Thresholds are read when the explosion resolves, so only later explosions are affected.</MST.lungDestroyedKPaComment>
 </LanguageData>

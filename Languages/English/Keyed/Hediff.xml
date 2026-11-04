@@ -151,4 +151,6 @@
     <MST.hasReactOnDamageComment>Toggle ReactOnDamage comp. If enabled, this hediff reacts when the pawn takes damage.</MST.hasReactOnDamageComment>
     <MST.reactOnDamageCreateHediff>ReactHed</MST.reactOnDamageCreateHediff>
     <MST.reactOnDamageCreateHediffComment>The hediff to create on the pawn when they take damage.</MST.reactOnDamageCreateHediffComment>
+    <MST.ruptureSeverity>ruptureAt</MST.ruptureSeverity>
+    <MST.chancePerEar>lossPerEar</MST.chancePerEar>
 </LanguageData>

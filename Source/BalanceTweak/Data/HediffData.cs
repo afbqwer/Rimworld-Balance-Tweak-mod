@@ -192,6 +192,19 @@ class HediffData : TweakData<HediffData>, ISubItemHost
 
     public override int LoadingOrd => 100;
 
+    // ── Atmosphere Overhaul：耳膜破裂后遗（可选 Mod，只有 AO_Barotrauma 挂了 HearingAftermathExtension）──
+
+    /// <summary>达到哪个严重度才触发"耳膜破裂"的后续事件。</summary>
+    [TweakField(MayRequire = TweakDatabase.AO, Hidden = nameof(HiddenIfNoAoHearingExtension))]
+    public float? ruptureSeverity = null;
+
+    /// <summary>每只耳留下永久听力损失的概率。</summary>
+    [TweakField(Style = ColumnStyle.Prec, MayRequire = TweakDatabase.AO,
+        Hidden = nameof(HiddenIfNoAoHearingExtension))]
+    public float? chancePerEar = null;
+
+    public static bool HiddenIfNoAoHearingExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.HearingExt);
+
     public override void SetDef(Def def, SettingType type, bool tweaked = false)
     {
         this.def = def;
@@ -352,7 +365,17 @@ class HediffData : TweakData<HediffData>, ISubItemHost
             }
 
             removeOnRedressChanceByDaysCurve ??= d.removeOnRedressChanceByDaysCurve;
+            LoadAoExtension(d);
         }
+    }
+
+    /// <summary>回填 AO 的听力后遗扩展；该 Hediff 没挂扩展时整块跳过。</summary>
+    private void LoadAoExtension(HediffDef d)
+    {
+        var ext = AoHelper.Ext(d, AoHelper.HearingExt);
+        if (ext == null) return;
+        ruptureSeverity ??= AoHelper.F(ext, "severity");
+        chancePerEar ??= AoHelper.F(ext, "chancePerEar");
     }
 
     public override void Apply()
@@ -509,6 +532,19 @@ class HediffData : TweakData<HediffData>, ISubItemHost
         ApplyL<AbilityDef>(nameof(abilities), v => def.abilities = v);
         ApplyL<HediffGiver>(nameof(hediffGivers), v => def.hediffGivers = v);
         ApplyV<SimpleCurve>(nameof(removeOnRedressChanceByDaysCurve), v => def.removeOnRedressChanceByDaysCurve = v);
+        ApplyAoExtension(def);
+    }
+
+    /// <summary>
+    /// 写回 AO 的听力后遗扩展（只有 AO_Barotrauma 挂了它）。
+    /// 阈值是"耳膜破裂那一刻"读的，所以改完只影响之后发生的事件。
+    /// </summary>
+    private void ApplyAoExtension(HediffDef def)
+    {
+        var ext = AoHelper.Ext(def, AoHelper.HearingExt);
+        if (ext == null) return;
+        AoHelper.ApplyF<float>(this, ext, "severity", nameof(ruptureSeverity));
+        AoHelper.ApplyF<float>(this, ext, "chancePerEar", nameof(chancePerEar));
     }
 
     public override void ExposeData()

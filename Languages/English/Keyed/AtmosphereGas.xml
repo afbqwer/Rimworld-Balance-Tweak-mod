@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <MST.AtmosphereGas>Gases</MST.AtmosphereGas>
+    <MST.maxDensity>maxDen</MST.maxDensity>
+    <MST.maxDensityComment>The density grid stores absolute density; this is only the 'full' reference. Changing it does not move existing gas, but does change render saturation and the extinction threshold.</MST.maxDensityComment>
+    <MST.activeThreshold>activeThr</MST.activeThreshold>
+    <MST.shootObscuranceFactor>obscur</MST.shootObscuranceFactor>
+    <MST.blocksVision>blocksVis</MST.blocksVision>
+    <MST.harmfulDensity>harmDen</MST.harmfulDensity>
+    <MST.harmfulDensityComment>Gas above this density harms pawns. Raising it from 0 clears AO's static cache here, otherwise newly harmful gas needs a game restart.</MST.harmfulDensityComment>
+    <MST.densityContrast>contrast</MST.densityContrast>
+    <MST.exposureStat>resistStat</MST.exposureStat>
+    <MST.exposureStatComment>A resistance switch, not a multiplier: damage happens only when this stat is above 0 (or unset).</MST.exposureStatComment>
+    <MST.renderTexturePath>texPath</MST.renderTexturePath>
+    <MST.baseQuadCount>quads</MST.baseQuadCount>
+    <MST.quadJitterScale>jitter</MST.quadJitterScale>
+    <MST.maxRenderDensity>renderMax</MST.maxRenderDensity>
+    <MST.drawSize>drawSize</MST.drawSize>
+    <MST.opacityFloor>minOpacity</MST.opacityFloor>
+    <MST.advectionRate>advect</MST.advectionRate>
+    <MST.diffusionRate>diffuse</MST.diffusionRate>
+    <MST.diffusionIterations>diffIter</MST.diffusionIterations>
+    <MST.diffusionIterationsComment>Diffusion iterations per tick. Performance sensitive.</MST.diffusionIterationsComment>
+    <MST.naturalVanishRatePerTick>van/tick</MST.naturalVanishRatePerTick>
+    <MST.roofedVanishFactor>roofedVan</MST.roofedVanishFactor>
+    <MST.unroofedRelativeVanishPerTick>openVan/tk</MST.unroofedRelativeVanishPerTick>
+    <MST.extinctionDensityFraction>extFrac</MST.extinctionDensityFraction>
+    <MST.extinctionDensityFractionComment>Cells below (fraction x max density) are zeroed.</MST.extinctionDensityFractionComment>
+    <MST.vacuumVanishMultiplier>vacuumVan</MST.vacuumVanishMultiplier>
+    <MST.scheduled>scheduled</MST.scheduled>
+</LanguageData>
