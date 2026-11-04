@@ -113,10 +113,25 @@ public partial class BalanceTweakSettings
         private static int initFrames;
 
         /// <summary>
-        /// 每帧最多克隆多少行。按 L1′ 之后约 4µs/行算，2000 行 ≈ 8ms ——
-        /// 卡在半帧之内，进度条才画得动。
+        /// 每帧留给"后台准备工作"的时间预算（毫秒）。建行缓存与页签派生两段共用这一个数。
+        /// <para>
+        /// 建行缓存原先写的是"每帧固定 2000 行"，按 4µs/行 折算约 8ms。问题正是"固定行数"：
+        /// 4µs 只是某台机器、某套 mod 组合下的数（克隆成本还随类型的字段数、<c>List</c> 长度、
+        /// 字典扩容、GC 打断而变），慢一点 2000 行就是 16~20ms，整帧被顶到下一个 vsync 档 ——
+        /// 22 帧于是变成 0.7s 而不是 0.37s。按时间切，机器快慢都不会超额。
+        /// </para>
+        /// <para>
+        /// 两段共用同一个值，因为它们的处境相同：都跑在"进度条在画、但世界仍在背景里跑"的帧上，
+        /// 需要的余量是同一个。改这个数等于同时改两段的帧长。
+        /// </para>
         /// </summary>
-        private const int RowsPerInitFrame = 2000;
+        private const double PrepareBudgetMs = 6.0;
+
+        /// <summary>
+        /// 每帧至少推进的行数。没有这个下限，单行成本突然变高时（字典扩容、GC 打断）
+        /// 会出现"一帧只推 1 行"的极端情况，把总时长拖成几十秒。
+        /// </summary>
+        private const int MinRowsPerInitFrame = 200;
 
         // === 当前页签的派生值推导（第二段分帧） ===
         // 和建行缓存分开：那段是"一次性的 43422 行克隆"，这段是"每个页签一次的全量 EnsureDisplayValues"。
@@ -127,9 +142,6 @@ public partial class BalanceTweakSettings
         private static bool deriveDirty = true;
         private static double deriveElapsedMs;
         private static int deriveFrames;
-
-        /// <summary>每帧留给推导的时间预算（毫秒）。单帧总开销要压在 8ms 以内。</summary>
-        private const double DeriveBudgetMs = 6.0;
 
         /// <summary>当前正在看的页签。派生值推导只关心这一页，别的页签切过去时自然会重推。</summary>
         public static SettingType CurrentType => curType;
@@ -213,7 +225,7 @@ public partial class BalanceTweakSettings
             }
 
             long stamp = PerfProbe.Stamp();
-            while (deriveCursor < deriveQueue.Count && PerfProbe.ElapsedMs(stamp) < DeriveBudgetMs)
+            while (deriveCursor < deriveQueue.Count && PerfProbe.ElapsedMs(stamp) < PrepareBudgetMs)
             {
                 var row = deriveQueue[deriveCursor++];
                 // 展示属性（标题 / 搜索串 / 分类 / 图标 / 图标色）一并预热。
@@ -240,9 +252,9 @@ public partial class BalanceTweakSettings
         /// <summary>
         /// 把首次建表推进一帧的份额。
         /// <para>
-        /// 43422 行一次克隆要 400ms，直接卡在打开窗口那一帧上。分成每帧 2000 行之后，
-        /// 总量不变，但每帧只占约 8ms，中间还能画进度条 —— 用户看到的是"在准备"而不是"死了"。
-        /// 小数据包（&lt; 2000 行）仍然一帧建完，不会看到进度条闪过。
+        /// 4 万行一次克隆要几百毫秒，直接卡在打开窗口那一帧上。按 <see cref="PrepareBudgetMs"/> 分帧之后，
+        /// 总量不变，但每帧只花预算内的时间，中间还能画进度条 —— 用户看到的是"在准备"而不是"死了"。
+        /// 小数据包（几百行）仍然一帧建完，不会看到进度条闪过。
         /// </para>
         /// </summary>
         private static void AdvanceInit()
@@ -259,13 +271,17 @@ public partial class BalanceTweakSettings
                     initQueue.Add(pair);
             }
 
-            int end = Math.Min(initCursor + RowsPerInitFrame, initQueue.Count);
-            for (; initCursor < end; initCursor++)
+            // 先保底推 MinRowsPerInitFrame 行（哪怕已超预算），再按时间推进到预算耗尽。
+            // 预算按时间而不是行数：克隆成本随机器、随字典扩容、随 GC 波动，固定行数做不到"固定耗时"。
+            int floor = Math.Min(initCursor + MinRowsPerInitFrame, initQueue.Count);
+            while (initCursor < initQueue.Count
+                   && (initCursor < floor || PerfProbe.ElapsedMs(stamp) < PrepareBudgetMs))
             {
                 var pair = initQueue[initCursor];
                 var live = tweakDatas!.TryGetValue(pair.Key);
                 // 存档里改过的行直接复用那个实例；没改过的克隆一份，避免编辑时写脏原始快照。
                 cachedData[pair.Key.settingType].SetOrAdd(pair.Key, live ?? pair.Value.Clone());
+                initCursor++;
             }
 
             initElapsedMs += PerfProbe.ElapsedMs(stamp);
@@ -278,7 +294,10 @@ public partial class BalanceTweakSettings
             cached = true;
             filterDirty = true;
 
-            TweakLog.Message($"[BalanceTweak][perf] 首次构建行缓存完成：{total} 行 / {initFrames} 帧，累计 {initElapsedMs:F0}ms");
+            // 均摊单行成本一并打出来：下一个人（或换了机器/整合包的我）要调 PrepareBudgetMs 时，
+            // 有 µs/行 就能直接算出"一帧预算大约能推多少行"，不用再猜。
+            double usPerRow = total > 0 ? initElapsedMs * 1000.0 / total : 0.0;
+            TweakLog.Message($"[BalanceTweak][perf] 首次构建行缓存完成：{total} 行 / {initFrames} 帧，累计 {initElapsedMs:F0}ms（{usPerRow:F1}µs/行）");
         }
 
         /// <summary>从数据中移除</summary>

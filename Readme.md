@@ -348,10 +348,10 @@ public override void Apply()
 
 | 段 | 入口 | 规模 | 预算 | 进度 |
 | --- | --- | --- | --- | --- |
-| ① 建行缓存（克隆） | `AdvanceInit` | 全库 4 万级，一次性 | 每帧 2000 行 | 0~90% |
-| ② 页签派生值 + 展示属性预热 | `AdvanceDerive` | 当前页签几百~几千行，每次切页签 | 每帧 6ms（按时间不按行数） | 90~100% |
+| ① 建行缓存（克隆） | `AdvanceInit` | 全库 4 万级，一次性 | 每帧 6ms（按时间，保底 200 行） | 0~90% |
+| ② 页签派生值 + 展示属性预热 | `AdvanceDerive` | 当前页签几百~几千行，每次切页签 | 每帧 6ms（同一个 `PrepareBudgetMs`） | 90~100% |
 
-约束：没建完不许 `UpdateFilters`（`cachedData` 不全，会缺行）；小数据包必须一帧做完（否则进度条闪一下）；`DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor`（提前 return 会把 IMGUI 全局状态漏给下一帧）；第 ② 段按时间给预算（各页签单行成本差两个数量级）。
+约束：没建完不许 `UpdateFilters`（`cachedData` 不全，会缺行）；小数据包必须一帧做完（否则进度条闪一下）；`DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor`（提前 return 会把 IMGUI 全局状态漏给下一帧）；**两段都按时间给预算（`PrepareBudgetMs`），不按行数**。① 原先是"每帧固定 2000 行"，问题在于 `4µs/行` 只是某个机器某个整合包下的数（克隆成本还随类型字段数、`List` 长度、字典扩容、GC 变化），慢一点 2000 行就是 16~20ms，整帧被顶到下一个 vsync 档：22 帧于是变成 0.7s 而不是 0.37s。按时间切则不论机器快慢都不超额，代价是慢机器上帧数变多、总墙钟时间随之变化。要调预算时看日志里的 `µs/行` 换算即可。
 
 > 派生值置脏时只有**当前页签**重推（`CombatPower.InvalidateRows` 判 `type == TweakUtility.CurrentType`）。列定义（反射 + `Translate`，约 20~30ms/类型）也在第 ② 段首帧预热。> `ApplyFullReset`（"完全重置"）仍是同步重建。
 > 克隆成本在 `TweakData<T>.DeepCopyFields`：只有 `List<T>` 需深拷贝，故那里有 `if (!meta.IsList) continue;`。
