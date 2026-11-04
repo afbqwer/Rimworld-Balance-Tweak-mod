@@ -471,10 +471,13 @@ public class AtmosphereBuildingConfigWindow : ConfigWindow
 
 - **写入只有一条路径**：全部走 `StatColumnConfig.ApplyValue` / `CheckAndApply`，与表格编辑同一条三态 / 重置 / `ResearchUnlocks` 失效 / `CombatPower.Invalidate` 路径。**不要**在窗口里直接写 Def 字段 —— 那样改了不进存档、重置也清不掉。
 - **节的 `Visible` 就是"这个 Def 有没有对应 Comp/扩展"**，绘制时逐行求值（几十次反射，可接受）。要"整个触发列在不适用行留白"另配 `Hidden`。
+- **同一份声明可以服务多个宿主**（种族 / 建筑 / 服装都挂同一组 Comp）：`ConfigWindow` 构造时按字段名解析一遍，取不到的整行跳过、不占高度。所以 `Visible` 通常写成 `d => FindComp(d.def) != null && Has(d, nameof(Xxx.某字段))` —— 前半个判"这个 Def 有没有这个 Comp"，后半个判"这个宿主有没有这个字段"。
 - **窗口高度不用传死值**：内容高度在绘制前算好再开滚动区（旧实现传死 `viewHeight`，字段一多就滚不到底）。`preferredHeight` 只影响窗口初始高度。
 - **IMGUI 全局状态**：改 `Text.Font` / `Text.Anchor` / `Text.WordWrap` 一律"保存 → 改 → 还原"（见 §4.7）。覆写 `DrawBody` 时自己也要守这条。
 
-> 现有 6 个触发列（`mechWeaponFilter` / `relayConfig` / `turretConfig` / `shieldConfig` / `apsConfig` / `sweepConfig`）已全部迁到 `ColumnStyle.Config`。前三个是手写窗口（`EditorWindowBase` 直出，因为要按 Comp 分节、增删 Comp、编辑槽位列表）；后三个是 `ConfigWindow` 子类，加起来不到 60 行。
+> 现有 6 个触发列已全部迁到 `ColumnStyle.Config`。四个是 `ConfigWindow` 子类，只剩声明：`APSConfigWindow` 19 行 / `ShieldConfigWindow` 71 行 / `SweepConfigWindow` 58 行 / `RelayConfigWindow` 108 行（六节，服务种族 / 建筑 / 服装三个宿主）。
+>
+> **`turretConfig` 与 `mechWeaponFilter` 仍是手写窗口**，不是漏迁。它们的行不是"TweakData 上的一组平铺字段"：炮塔的节数与行数由 `turretSlots` 列表的**当前长度**决定，每行的读写目标是窗口里的工作副本 `slot.warmingTime`，改完整份列表再 `ApplyValue` 一次；武器过滤则要一个"从武器库里挑"的自定义选择器和一块只读的候选预览。给 `ConfigWindow` 补上这两样（动态节 + 行级取值/写回委托）等于把它改成通用表单引擎，P3 那种"九个静态节、五十六个平铺字段"的场景却要为这层抽象买单。收益不抵成本，所以保留手写。
 
 ## 5. 参照表
 

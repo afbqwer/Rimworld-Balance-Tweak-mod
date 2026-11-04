@@ -50,8 +50,18 @@ public class ConfigWindow : EditorWindowBase
     private string? focusedField;
     private Vector2 scroll;
 
+    /// <summary>
+    /// 字段名 → 列配置。构造时解析一次：`GetFieldConfig` 是线性扫描，
+    /// 每帧每行都调的话，几十行 × 上百字段就是几千次字符串比较。
+    /// 值可以为 null —— 表示这个宿主上没有该字段（例如同一份声明同时服务种族 / 建筑 / 服装三个类）。
+    /// </summary>
+    private readonly Dictionary<string, StatColumnConfig?> columns = new();
+
     /// <summary>本节校验结果。每次重绘算一次，测量与绘制复用同一份，避免同一帧跑两遍。</summary>
     private List<ConfigIssue>? issues;
+
+    /// <summary>已经报过"行类型与字段类型不符"的窗口（每类只报一次，免得每次开窗刷日志）。</summary>
+    private static readonly HashSet<string> reportedKindMismatch = new();
 
     protected ConfigWindow(TweakData data,
         string titleKey,
@@ -69,6 +79,8 @@ public class ConfigWindow : EditorWindowBase
         this.noteKey = noteKey;
         this.validate = validate;
         doCloseX = true;
+
+        CacheColumnsAndValidateKinds();
     }
 
     public override Vector2 InitialSize => new(660f, Mathf.Clamp(preferredHeight + 100f, 260f, 860f));
@@ -141,6 +153,54 @@ public class ConfigWindow : EditorWindowBase
 
     private bool IsVisible(ConfigSection section) => section.visible?.Invoke(data!) ?? true;
 
+    /// <summary>取本行对应的列配置；<c>null</c> = 这个宿主上没有该字段。</summary>
+    private StatColumnConfig? ColumnOf(string field)
+        => columns.TryGetValue(field, out var cached) ? cached : data?.GetFieldConfig(field);
+
+    /// <summary>
+    /// 构造时把字段名解析成列配置，并核对"声明的行类型"和"字段的真实类型"。
+    ///
+    /// <para>
+    /// 为什么值得校验：<c>ConfigRow</c> 的 kind 是手写的，写错（把 <c>int?</c> 声明成 <c>Float</c>）
+    /// 编译期全绿，运行时 <c>ApplyValue(float)</c> 会往 <c>int?</c> 字段里塞 -> <c>InvalidCastException</c>，
+    /// 而那个异常发生在玩家拖完滑块之后。启动期一条日志比它便宜得多。
+    /// </para>
+    /// </summary>
+    private void CacheColumnsAndValidateKinds()
+    {
+        foreach (var section in sections)
+        {
+            foreach (var row in section.rows)
+            {
+                var cfg = data?.GetFieldConfig(row.field);
+                columns[row.field] = cfg;
+                if (cfg?.field == null) continue;
+                if (KindMatches(row.kind, cfg.field.FieldType)) continue;
+
+                string key = $"{GetType().Name}.{row.field}";
+                if (!reportedKindMismatch.Add(key)) continue;
+                Log.Error($"[BalanceTweak] {GetType().Name}.{row.field}：行声明为 ConfigRow.{row.kind}，" +
+                          $"字段实际类型是 {cfg.field.FieldType.Name}（数值会被截断或抛 InvalidCastException）");
+            }
+        }
+    }
+
+    private static bool KindMatches(ConfigRow.RowKind kind, Type fieldType)
+    {
+        Type t = Nullable.GetUnderlyingType(fieldType) ?? fieldType;
+        return kind switch
+        {
+            ConfigRow.RowKind.Int => t == typeof(int),
+            ConfigRow.RowKind.Float or ConfigRow.RowKind.Percent => t == typeof(float),
+            ConfigRow.RowKind.Bool => t == typeof(bool),
+            ConfigRow.RowKind.String => t == typeof(string),
+            ConfigRow.RowKind.Enum => t == typeof(string) || t.IsEnum,
+            ConfigRow.RowKind.Def => typeof(Def).IsAssignableFrom(t),
+            ConfigRow.RowKind.List => typeof(System.Collections.IList).IsAssignableFrom(t),
+            _ => false,
+        };
+    }
+
     // ── 高度测量（与 DrawSection 一一对应，改一边记得改另一边） ──
 
     private float MeasureHeight(float width)
@@ -169,11 +229,17 @@ public class ConfigWindow : EditorWindowBase
         return h + SectionGap;
     }
 
-    private static float MeasureSection(ConfigSection section, float width)
+    /// <summary>
+    /// 只累加真正会画出来的行 —— 字段不存在的行两处都跳过，否则测量值比实际大，
+    /// 滚动条会多出一段永远滚不到的空白。
+    /// </summary>
+    private float MeasureSection(ConfigSection section, float width)
     {
         float h = 0f;
         if (!section.titleKey.NullOrEmpty()) h += LineHeight + 4f;
-        h += section.rows.Count * LineHeight;
+
+        h += section.rows.Count(row => ColumnOf(row.field) != null) * LineHeight;
+
         if (!section.noteKey.NullOrEmpty())
             h += CalcTextHeight(section.noteKey!, width, GameFont.Tiny) + 2f;
         return h + SectionGap;
@@ -187,13 +253,9 @@ public class ConfigWindow : EditorWindowBase
 
         foreach (var row in section.rows)
         {
-            var cfg = data?.GetFieldConfig(row.field);
-            if (cfg == null)
-            {
-                // 字段不存在（改了名字 / 漏了 NotAColumn 声明）：跳过整行，别画一个永远读不出值的空框。
-                y += LineHeight;
-                continue;
-            }
+            var cfg = ColumnOf(row.field);
+            // 字段不存在（改了名字 / 漏了 NotAColumn 声明 / 这个宿主没有它）：整行不画也不占高。
+            if (cfg == null) continue;
 
             switch (row.kind)
             {
