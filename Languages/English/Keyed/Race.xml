@@ -42,16 +42,32 @@
     <MST.bodyDef>Body</MST.bodyDef>
     <MST.combatPowerComment>The raid point cost for this type.</MST.combatPowerComment>
     <MST.bioferriteDensity>BiofDens</MST.bioferriteDensity>
-    <MST.projectileInterceptorRadius>ShdRad</MST.projectileInterceptorRadius>
-    <MST.projectileInterceptorRadiusComment>The shield radius.</MST.projectileInterceptorRadiusComment>
-    <MST.projectileInterceptorHitPoints>ShdHP</MST.projectileInterceptorHitPoints>
+    <MST.shieldConfig>Shield</MST.shieldConfig>
+    <MST.shieldConfigComment>Open the projectile shield configuration window.</MST.shieldConfigComment>
+    <MST.shieldConfigEdit>Edit</MST.shieldConfigEdit>
+    <MST.shieldConfigIntro>These values are written back to CompProperties_ProjectileInterceptor on the ThingDef. Existing shields keep their current hit points.</MST.shieldConfigIntro>
+    <MST.shieldConfigNote>Existing shield instances keep their current hit points when the maximum changes.</MST.shieldConfigNote>
+    <MST.shieldInterceptSection>Interception</MST.shieldInterceptSection>
+    <MST.projectileInterceptorRadius>Radius</MST.projectileInterceptorRadius>
+    <MST.projectileInterceptorRadiusComment>The shield's interception radius in tiles.</MST.projectileInterceptorRadiusComment>
+    <MST.projectileInterceptorHitPoints>Hit points</MST.projectileInterceptorHitPoints>
     <MST.projectileInterceptorHitPointsComment>The shield's maximum hit points.</MST.projectileInterceptorHitPointsComment>
-    <MST.projectileInterceptorChargeDurationTicks>ChrgDur</MST.projectileInterceptorChargeDurationTicks>
-    <MST.projectileInterceptorChargeDurationTicksComment>How long the shield stays active after charging.</MST.projectileInterceptorChargeDurationTicksComment>
-    <MST.projectileInterceptorRechargeHitPointsIntervalTicks>RchrgHP</MST.projectileInterceptorRechargeHitPointsIntervalTicks>
-    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>How many ticks between each HP recharge tick.</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
-    <MST.projectileInterceptorDisarmedByEmpForTicks>EmpDur</MST.projectileInterceptorDisarmedByEmpForTicks>
-    <MST.projectileInterceptorDisarmedByEmpForTicksComment>How long the shield is disabled by EMP.</MST.projectileInterceptorDisarmedByEmpForTicksComment>
+    <MST.projectileInterceptorChargeDurationTicks>Charge time</MST.projectileInterceptorChargeDurationTicks>
+    <MST.projectileInterceptorChargeDurationTicksComment>Ticks the shield spends recharging after its HP is depleted.</MST.projectileInterceptorChargeDurationTicksComment>
+    <MST.projectileInterceptorRechargeHitPointsIntervalTicks>Recharge interval</MST.projectileInterceptorRechargeHitPointsIntervalTicks>
+    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>Ticks between each HP restore tick; only used when instant refill after charge is disabled.</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
+    <MST.projectileInterceptorDisarmedByEmpForTicks>EMP disarm</MST.projectileInterceptorDisarmedByEmpForTicks>
+    <MST.projectileInterceptorDisarmedByEmpForTicksComment>How long EMP disables the shield, in ticks.</MST.projectileInterceptorDisarmedByEmpForTicksComment>
+    <MST.interceptGroundProjectiles>Ground projectiles</MST.interceptGroundProjectiles>
+    <MST.interceptGroundProjectilesComment>Intercept ordinary ground-level projectiles.</MST.interceptGroundProjectilesComment>
+    <MST.interceptAirProjectiles>Air projectiles</MST.interceptAirProjectiles>
+    <MST.interceptAirProjectilesComment>Intercept overhead projectiles such as mortar shells. DMS leaves this off by default.</MST.interceptAirProjectilesComment>
+    <MST.interceptNonHostileProjectiles>Non-hostile</MST.interceptNonHostileProjectiles>
+    <MST.interceptNonHostileProjectilesComment>Also intercept projectiles with no launcher or a non-hostile launcher.</MST.interceptNonHostileProjectilesComment>
+    <MST.interceptOutgoingProjectiles>Outgoing</MST.interceptOutgoingProjectiles>
+    <MST.interceptOutgoingProjectilesComment>Also intercept projectiles fired from inside the shield. Usually leave this off so the shield does not shoot down friendly fire.</MST.interceptOutgoingProjectilesComment>
+    <MST.hitPointsRestoreInstantlyAfterCharge>Instant refill</MST.hitPointsRestoreInstantlyAfterCharge>
+    <MST.hitPointsRestoreInstantlyAfterChargeComment>Restore all hit points at once when the recharge cycle ends instead of regenerating gradually.</MST.hitPointsRestoreInstantlyAfterChargeComment>
     <MST.eggLayIntervalDays>EggDays</MST.eggLayIntervalDays>
     <MST.eggCountRangeMin>EggCntMn</MST.eggCountRangeMin>
     <MST.eggCountRangeMax>EggCntMx</MST.eggCountRangeMax>

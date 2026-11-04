@@ -51,6 +51,28 @@ class AbilityData : TweakData<AbilityData>
     [TweakField(Style = ColumnStyle.StatModList, Available = nameof(AvailableIfNonVEFAbility))]
     public List<StatModifier>? statBases = null;
 
+    // ── Fortified 主动防御系统（APS，见 APSConfigWindow）──
+    // 4 个平衡字段全在 AbilityDef.comps 的 CompProperties_ActiveProtectionSystem 上。
+    // 表格里只留一个只读触发列，字段本身 NotAColumn，由窗口统一编辑。
+
+    /// <summary>只读触发列：打开主动防御配置窗口。没有 APS Comp 的行整格留白。</summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.APSConfig,
+        MayRequire = TweakDatabase.FFF, Hidden = nameof(HiddenIfNoActiveProtectionSystem))]
+    public TweakID? apsConfig = null;
+
+    public static bool HiddenIfNoActiveProtectionSystem(TweakData data)
+        => !FortifiedProtection.HasActiveProtection(data.def);
+
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? apsRadius = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Float, MayRequire = TweakDatabase.FFF)]
+    public float? apsChanceToFail = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? apsActiveTicks = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? apsInterceptCountMax = null;
+
+    private object? apsProps = null;
 
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.String, Available = nameof(AvailableIfOther))]
     public string? AbilityGroup = null;
@@ -92,6 +114,8 @@ class AbilityData : TweakData<AbilityData>
             }
             if (!IsFieldModified(nameof(statBases))) statBases ??= d.statBases?.Select(s => new StatModifier { stat = s.stat, value = s.value }).ToList();
         }
+        apsProps = FortifiedProtection.FindActiveProtection(this.def);
+        if (apsProps != null) LoadAps(apsProps);
         if (DataUtility.MayRequire(TweakDatabase.VEP))
         {
             GetVEP();
@@ -113,6 +137,31 @@ class AbilityData : TweakData<AbilityData>
     // 未加载该 Mod 的玩家在启动期 TypeLoadException（详见 Docs 与 DataUtility 顶部注释）。
     private const string VefAbilityDefType = "VEF.Abilities.AbilityDef";
     private const string PsycastExtensionType = "VanillaPsycastsExpanded.AbilityExtension_Psycast";
+
+    /// <summary>从 <c>CompProperties_ActiveProtectionSystem</c> 回填窗口字段。</summary>
+    private void LoadAps(object props)
+    {
+        apsRadius ??= DataUtility.AsInt(DataUtility.GetByName(props, "Radius"));
+        apsChanceToFail ??= DataUtility.AsFloat(DataUtility.GetByName(props, "chanceToFail"));
+        apsActiveTicks ??= DataUtility.AsInt(DataUtility.GetByName(props, "activeTicks"));
+        apsInterceptCountMax ??= DataUtility.AsInt(DataUtility.GetByName(props, "interceptCountMax"));
+    }
+
+    /// <summary>把窗口里的值写回 APS Comp。没有 Comp 的能力直接跳过。</summary>
+    private void ApplyAps()
+    {
+        // FFF 缺席时 APS 字段全部不在 Fields 里，任何 ApplyV 都可能撞到不存在的字段；直接跳过。
+        if (!DataUtility.MayRequire(TweakDatabase.FFF)) return;
+
+        var props = apsProps ??= FortifiedProtection.FindActiveProtection(this.def);
+        if (props == null) return;
+        var p = props; // 闭包只捕获 object
+
+        ApplyV<int>(nameof(apsRadius), v => DataUtility.SetByName(p, "Radius", Mathf.Max(0, v)));
+        ApplyV<float>(nameof(apsChanceToFail), v => DataUtility.SetByName(p, "chanceToFail", Mathf.Clamp01(v)));
+        ApplyV<int>(nameof(apsActiveTicks), v => DataUtility.SetByName(p, "activeTicks", Mathf.Max(0, v)));
+        ApplyV<int>(nameof(apsInterceptCountMax), v => DataUtility.SetByName(p, "interceptCountMax", Mathf.Max(0, v)));
+    }
 
     private void GetVEP()
     {
@@ -154,6 +203,7 @@ class AbilityData : TweakData<AbilityData>
             ApplyV<int>(nameof(psylevel), v => def.level = v);
             ApplyV<bool>(nameof(aiCanUse), v => def.aiCanUse = v);
             ApplyV<IntRange>(nameof(cooldownTicksRange), v => def.cooldownTicksRange = v);
+            ApplyAps();
 
             // 应用Verb属性
             if (Verb != null)

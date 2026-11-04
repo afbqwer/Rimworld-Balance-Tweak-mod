@@ -25,4 +25,17 @@
     <MST.abilityGroupCooldownTicksComment>The cooldown time for all abilities in the ability group. Changing this will affect all abilities in the same group. In ticks (1/60 second), e.g., 30 ticks is 0.5 seconds.</MST.abilityGroupCooldownTicksComment>
     <MST.aiCanUseComment>Whether the AI can use this ability. Even if enabled, your own pawns must be under AI control to be affected, and the AI may still not use it due to other conditions.</MST.aiCanUseComment>
     <MST.AbilityGroupComment>The AbilityGroup to which the ability belongs.</MST.AbilityGroupComment>
+    <MST.apsConfig>APS</MST.apsConfig>
+    <MST.apsConfigComment>Open the active protection system configuration window.</MST.apsConfigComment>
+    <MST.apsConfigEdit>Edit</MST.apsConfigEdit>
+    <MST.apsConfigIntro>Fields on Fortified.CompProperties_ActiveProtectionSystem. Only balance-relevant scalars are exposed; visual and target-list settings stay in XML.</MST.apsConfigIntro>
+    <MST.apsConfigNote>Fail chance is entered as a percentage: 97 means 97% fail / 3% success, which is what DMS uses. The default rules already cover explosive projectiles and names containing rocket / missile / grenade.</MST.apsConfigNote>
+    <MST.apsRadius>Radius</MST.apsRadius>
+    <MST.apsRadiusComment>Interception radius in tiles.</MST.apsRadiusComment>
+    <MST.apsChanceToFail>Fail chance (%)</MST.apsChanceToFail>
+    <MST.apsChanceToFailComment>Per-projectile interception failure chance (0-100). DMS uses 97, i.e. only a 3% success chance.</MST.apsChanceToFailComment>
+    <MST.apsActiveTicks>Duration</MST.apsActiveTicks>
+    <MST.apsActiveTicksComment>How long the system stays active after activation, in ticks (60 ticks = 1 second).</MST.apsActiveTicksComment>
+    <MST.apsInterceptCountMax>Max / tick</MST.apsInterceptCountMax>
+    <MST.apsInterceptCountMaxComment>Maximum number of projectiles evaluated per tick while active.</MST.apsInterceptCountMaxComment>
 </LanguageData>

@@ -56,6 +56,8 @@
     <MST.RelayConfig>Relay</MST.RelayConfig>
     <MST.TurretConfig>Turrets</MST.TurretConfig>
     <MST.TurretSlotList>TurretSlots</MST.TurretSlotList>
+    <MST.ShieldConfig>Shield</MST.ShieldConfig>
+    <MST.APSConfig>APS</MST.APSConfig>
     <MST.Range>Range</MST.Range>
     <MST.SkillReqList>SkillReqList</MST.SkillReqList>
     <MST.TraitReqList>TraitReqList</MST.TraitReqList>

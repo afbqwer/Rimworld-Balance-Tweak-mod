@@ -95,7 +95,7 @@ public class StatColumnConfig
         { FieldType.Enum, new[] { ColumnStyle.Enum, ColumnStyle.Flags } },
         { FieldType.SimpleCurve, new[] { ColumnStyle.Curve } },
         { FieldType.List, new[] { ColumnStyle.StringList, ColumnStyle.IntList, ColumnStyle.StatModList, ColumnStyle.CapModList, ColumnStyle.DamageModList, ColumnStyle.DefList, ColumnStyle.HediffGiverList, ColumnStyle.MentalStateGiverList, ColumnStyle.SkillGainList, ColumnStyle.AptitudeList, ColumnStyle.GeneticTraitList, ColumnStyle.ThingDefCountList, ColumnStyle.IngredientList, ColumnStyle.SkillReqList, ColumnStyle.TraitReqList, ColumnStyle.ProcessIngredientList, ColumnStyle.ProcessResultList, ColumnStyle.BodyPartTree, ColumnStyle.BiomePlantList, ColumnStyle.BiomeAnimalList, ColumnStyle.FishChanceList, ColumnStyle.DiseaseList, ColumnStyle.WeatherCommonalityList, ColumnStyle.TerrainThresholdList, ColumnStyle.StockGenList, ColumnStyle.XenotypeChanceList, ColumnStyle.ThingSetTags, ColumnStyle.FactionCurveList, ColumnStyle.SkillRangeList, ColumnStyle.BackstoryTraitList, ColumnStyle.PossessionList, ColumnStyle.PawnGroupMakerList, ColumnStyle.UnlockList, ColumnStyle.MutatorChanceList, ColumnStyle.ExtraDamageList, ColumnStyle.TurretSlotList } },
-        { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks, ColumnStyle.WeaponLinks, ColumnStyle.PawnWeaponLinks, ColumnStyle.MechWeaponFilter, ColumnStyle.RelayConfig, ColumnStyle.TurretConfig } },
+        { FieldType.TweakID, new[] { ColumnStyle.Link, ColumnStyle.RaceLinks, ColumnStyle.BodyLinks, ColumnStyle.WeaponLinks, ColumnStyle.PawnWeaponLinks, ColumnStyle.MechWeaponFilter, ColumnStyle.RelayConfig, ColumnStyle.TurretConfig, ColumnStyle.ShieldConfig, ColumnStyle.APSConfig } },
     };
 
     private Func<TweakData, object?>? _getter;
@@ -196,7 +196,7 @@ public class StatColumnConfig
     }
 
     public enum ColumnDataType { Field, Display }
-    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks, PawnGroupMakerList, UnlockList, PawnWeaponLinks, MutatorChanceList, ExtraDamageList, MechWeaponFilter, RelayConfig, TurretConfig, TurretSlotList }
+    public enum ColumnStyle { Float, Prec, Int, Bool, Range, String, Link, Enum, Curve, Flags, StatModList, DefSelector, CapModList, DamageModList, StringList, IntList, DefList, HediffGiverList, MentalStateGiverList, SkillGainList, AptitudeList, GeneticTraitList, ThingDefCountList, IngredientList, IngredientFilter, SkillReqList, TraitReqList, ProcessIngredientList, ProcessResultList, BodyPartTree, RaceLinks, BodyLinks, BiomePlantList, BiomeAnimalList, FishChanceList, DiseaseList, WeatherCommonalityList, TerrainThresholdList, StockGenList, XenotypeChanceList, ThingSetTags, FactionCurveList, SkillRangeList, BackstoryTraitList, PossessionList, WeaponLinks, PawnGroupMakerList, UnlockList, PawnWeaponLinks, MutatorChanceList, ExtraDamageList, MechWeaponFilter, RelayConfig, TurretConfig, TurretSlotList, ShieldConfig, APSConfig }
     public enum FieldType { Float, Int, Bool, FloatRange, IntRange, String, TweakID, Enum, SimpleCurve, List, Def, ThingFilter, Other }
 
     public static bool IsListStyle(ColumnStyle style)
@@ -235,7 +235,8 @@ public class StatColumnConfig
     public static bool IsTriggerStyle(ColumnStyle style)
         => style is ColumnStyle.Link or ColumnStyle.RaceLinks or ColumnStyle.BodyLinks
             or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList
-            or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig or ColumnStyle.TurretConfig;
+            or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig or ColumnStyle.TurretConfig
+            or ColumnStyle.ShieldConfig or ColumnStyle.APSConfig;
 
     /// <summary>按字段类型决定这一列能用哪种列过滤。判据只在构造时算一次。</summary>
     private ColumnFilterKind ResolveFilterKind(ColumnStyle style)
@@ -1041,6 +1042,16 @@ public class StatColumnConfig
         {
             // 只读触发列：主炮 + 各副炮槽统一在 TurretConfigWindow 里编辑。
             return "MST.turretConfigEdit".Translate().RawText;
+        }
+        if (columnType == ColumnStyle.ShieldConfig)
+        {
+            // 只读触发列：护盾的数值与拦截开关统一在 ShieldConfigWindow 里编辑。
+            return "MST.shieldConfigEdit".Translate().RawText;
+        }
+        if (columnType == ColumnStyle.APSConfig)
+        {
+            // 只读触发列：APS 的 4 个平衡字段统一在 APSConfigWindow 里编辑。
+            return "MST.apsConfigEdit".Translate().RawText;
         }
         if (cachedFieldType == FieldType.FloatRange)
         {

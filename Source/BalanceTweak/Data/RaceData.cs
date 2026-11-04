@@ -163,16 +163,39 @@ class RaceData : TweakData<RaceData>, ISubItemHost
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Int)]
     public float? corepartHP = null;
 
-    [TweakField(Style = ColumnStyle.Float, Available = nameof(AvailableIfMech))]
+    // ── 原版投射物护盾（CompProperties_ProjectileInterceptor，见 ShieldConfigWindow）──
+    // 字段多、实际挂载的种族少：表格里只留一个只读触发列，其余字段 NotAColumn，由窗口统一编辑。
+
+    /// <summary>只读触发列：打开护盾配置窗口。没有该 Comp 的行整格留白（护盾是机体硬件，不提供“添加”）。</summary>
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.ShieldConfig,
+        Available = nameof(AvailableIfMech), Hidden = nameof(HiddenIfNoProjectileInterceptor))]
+    public TweakID? shieldConfig = null;
+
+    public static bool HiddenIfNoProjectileInterceptor(TweakData data)
+        => data.def is not ThingDef d || d.GetCompProperties<CompProperties_ProjectileInterceptor>() == null;
+
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Float, Available = nameof(AvailableIfMech))]
     public float? projectileInterceptorRadius = null;
-    [TweakField(Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
     public int? projectileInterceptorHitPoints = null;
-    [TweakField(Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
     public int? projectileInterceptorChargeDurationTicks = null;
-    [TweakField(Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
     public int? projectileInterceptorRechargeHitPointsIntervalTicks = null;
-    [TweakField(Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, Available = nameof(AvailableIfMech))]
     public int? projectileInterceptorDisarmedByEmpForTicks = null;
+
+    // 决定“拦什么”的开关；DMS 只开了 ground，默认不拦迫击炮。
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool)]
+    public bool? interceptGroundProjectiles = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool)]
+    public bool? interceptAirProjectiles = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool)]
+    public bool? interceptNonHostileProjectiles = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool)]
+    public bool? interceptOutgoingProjectiles = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool)]
+    public bool? hitPointsRestoreInstantlyAfterCharge = null;
 
     [TweakField(Style = ColumnStyle.StatModList)]
     public List<StatModifier>? statBases = null;
@@ -395,6 +418,11 @@ class RaceData : TweakData<RaceData>, ISubItemHost
                     projectileInterceptorChargeDurationTicks ??= interceptor.chargeDurationTicks;
                     projectileInterceptorRechargeHitPointsIntervalTicks ??= interceptor.rechargeHitPointsIntervalTicks;
                     projectileInterceptorDisarmedByEmpForTicks ??= interceptor.disarmedByEmpForTicks;
+                    interceptGroundProjectiles ??= interceptor.interceptGroundProjectiles;
+                    interceptAirProjectiles ??= interceptor.interceptAirProjectiles;
+                    interceptNonHostileProjectiles ??= interceptor.interceptNonHostileProjectiles;
+                    interceptOutgoingProjectiles ??= interceptor.interceptOutgoingProjectiles;
+                    hitPointsRestoreInstantlyAfterCharge ??= interceptor.hitPointsRestoreInstantlyAfterCharge;
                 }
                 else if (cp is CompProperties_EggLayer eggLayer)
                 {
@@ -702,6 +730,11 @@ class RaceData : TweakData<RaceData>, ISubItemHost
                 ApplyV<int>(nameof(projectileInterceptorChargeDurationTicks), v => interceptor.chargeDurationTicks = v);
                 ApplyV<int>(nameof(projectileInterceptorRechargeHitPointsIntervalTicks), v => interceptor.rechargeHitPointsIntervalTicks = v);
                 ApplyV<int>(nameof(projectileInterceptorDisarmedByEmpForTicks), v => interceptor.disarmedByEmpForTicks = v);
+                ApplyV<bool>(nameof(interceptGroundProjectiles), v => interceptor.interceptGroundProjectiles = v);
+                ApplyV<bool>(nameof(interceptAirProjectiles), v => interceptor.interceptAirProjectiles = v);
+                ApplyV<bool>(nameof(interceptNonHostileProjectiles), v => interceptor.interceptNonHostileProjectiles = v);
+                ApplyV<bool>(nameof(interceptOutgoingProjectiles), v => interceptor.interceptOutgoingProjectiles = v);
+                ApplyV<bool>(nameof(hitPointsRestoreInstantlyAfterCharge), v => interceptor.hitPointsRestoreInstantlyAfterCharge = v);
             }
         }
     }

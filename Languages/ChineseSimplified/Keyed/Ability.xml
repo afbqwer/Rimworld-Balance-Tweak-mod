@@ -25,4 +25,17 @@
     <MST.abilityGroupCooldownTicksComment>能力组中所有能力的冷却时间。修改之后会影响所有同一组的能力。单位为刻（1/60秒），如30刻为0.5秒。</MST.abilityGroupCooldownTicksComment>
     <MST.aiCanUseComment>AI是否可以使用此能力。即使此项已经开启，我方单位必须处于AI控制才会受到此项影响，并且AI仍然可能由于其它条件而不使用此能力。</MST.aiCanUseComment>
     <MST.AbilityGroupComment>能力所在的能力组（AbilityGroup）。</MST.AbilityGroupComment>
+    <MST.apsConfig>主动防御</MST.apsConfig>
+    <MST.apsConfigComment>打开主动防御系统配置窗口。</MST.apsConfigComment>
+    <MST.apsConfigEdit>编辑</MST.apsConfigEdit>
+    <MST.apsConfigIntro>字段位于 Fortified.CompProperties_ActiveProtectionSystem；这里只开放影响平衡的数值，特效与目标名单仍留在 XML。</MST.apsConfigIntro>
+    <MST.apsConfigNote>失败率按百分比填写：97 = 97% 失败 / 3% 成功，DMS 即为 97。默认规则已覆盖爆炸物与名字含 rocket / missile / grenade 的弹种。</MST.apsConfigNote>
+    <MST.apsRadius>拦截半径</MST.apsRadius>
+    <MST.apsRadiusComment>拦截范围（格）。</MST.apsRadiusComment>
+    <MST.apsChanceToFail>拦截失败率 (%)</MST.apsChanceToFail>
+    <MST.apsChanceToFailComment>每发投射物的拦截失败率（0~100）。DMS 为 97，即只有 3% 成功率。</MST.apsChanceToFailComment>
+    <MST.apsActiveTicks>持续时间</MST.apsActiveTicks>
+    <MST.apsActiveTicksComment>启动后持续多少刻（60 刻 = 1 秒）。</MST.apsActiveTicksComment>
+    <MST.apsInterceptCountMax>单刻判定数</MST.apsInterceptCountMax>
+    <MST.apsInterceptCountMaxComment>生效期间每个 tick 最多判定几个投射物。</MST.apsInterceptCountMaxComment>
 </LanguageData>

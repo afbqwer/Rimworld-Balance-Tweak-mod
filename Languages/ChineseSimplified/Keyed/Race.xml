@@ -42,16 +42,32 @@
     <MST.bodyDef>身体</MST.bodyDef>
     <MST.combatPowerComment>此类型占用的袭击点数。</MST.combatPowerComment>
     <MST.bioferriteDensity>活铁密度</MST.bioferriteDensity>
+    <MST.shieldConfig>护盾</MST.shieldConfig>
+    <MST.shieldConfigComment>打开投射物护盾配置窗口。</MST.shieldConfigComment>
+    <MST.shieldConfigEdit>编辑</MST.shieldConfigEdit>
+    <MST.shieldConfigIntro>这些字段写回 ThingDef 上的 CompProperties_ProjectileInterceptor；只改 Def 配置，已存在的护盾实例保留当前 HP。</MST.shieldConfigIntro>
+    <MST.shieldConfigNote>已存在的护盾实例当前 HP 不会因为修改最大值而重置。</MST.shieldConfigNote>
+    <MST.shieldInterceptSection>拦截规则</MST.shieldInterceptSection>
     <MST.projectileInterceptorRadius>护盾半径</MST.projectileInterceptorRadius>
-    <MST.projectileInterceptorRadiusComment>护盾的半径范围。</MST.projectileInterceptorRadiusComment>
+    <MST.projectileInterceptorRadiusComment>护盾的拦截半径（格）。</MST.projectileInterceptorRadiusComment>
     <MST.projectileInterceptorHitPoints>护盾HP</MST.projectileInterceptorHitPoints>
     <MST.projectileInterceptorHitPointsComment>护盾的最大生命值。</MST.projectileInterceptorHitPointsComment>
-    <MST.projectileInterceptorChargeDurationTicks>充能持续</MST.projectileInterceptorChargeDurationTicks>
-    <MST.projectileInterceptorChargeDurationTicksComment>护盾充能后持续的时间（ tick ）。</MST.projectileInterceptorChargeDurationTicksComment>
+    <MST.projectileInterceptorChargeDurationTicks>充能时长</MST.projectileInterceptorChargeDurationTicks>
+    <MST.projectileInterceptorChargeDurationTicksComment>护盾耗尽后重新充能所需的 tick 数。</MST.projectileInterceptorChargeDurationTicksComment>
     <MST.projectileInterceptorRechargeHitPointsIntervalTicks>回复间隔</MST.projectileInterceptorRechargeHitPointsIntervalTicks>
-    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>每次HP回复之间的间隔（ tick ）。</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
+    <MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>每次 HP 回复之间的间隔（ tick ）；仅在未开启“充能后立即回满”时生效。</MST.projectileInterceptorRechargeHitPointsIntervalTicksComment>
     <MST.projectileInterceptorDisarmedByEmpForTicks>EMP瘫痪</MST.projectileInterceptorDisarmedByEmpForTicks>
-    <MST.projectileInterceptorDisarmedByEmpForTicksComment>EMP瘫痪护盾的时长（ tick ）。</MST.projectileInterceptorDisarmedByEmpForTicksComment>
+    <MST.projectileInterceptorDisarmedByEmpForTicksComment>EMP 瘫痪护盾的时长（ tick ）。</MST.projectileInterceptorDisarmedByEmpForTicksComment>
+    <MST.interceptGroundProjectiles>地面投射物</MST.interceptGroundProjectiles>
+    <MST.interceptGroundProjectilesComment>拦截普通地面高度的投射物。</MST.interceptGroundProjectilesComment>
+    <MST.interceptAirProjectiles>空中投射物</MST.interceptAirProjectiles>
+    <MST.interceptAirProjectilesComment>拦截迫击炮等越过屋顶的空中投射物；DMS 默认关闭。</MST.interceptAirProjectilesComment>
+    <MST.interceptNonHostileProjectiles>非敌对投射物</MST.interceptNonHostileProjectiles>
+    <MST.interceptNonHostileProjectilesComment>同时拦截没有发射者或发射者非敌对的投射物。</MST.interceptNonHostileProjectilesComment>
+    <MST.interceptOutgoingProjectiles>己方射出</MST.interceptOutgoingProjectiles>
+    <MST.interceptOutgoingProjectilesComment>同时拦截从护盾内部射出的投射物；通常保持关闭，避免把己方火力打下来。</MST.interceptOutgoingProjectilesComment>
+    <MST.hitPointsRestoreInstantlyAfterCharge>充能后回满</MST.hitPointsRestoreInstantlyAfterCharge>
+    <MST.hitPointsRestoreInstantlyAfterChargeComment>充能结束时一次性回满 HP，而不是按回复间隔逐渐恢复。</MST.hitPointsRestoreInstantlyAfterChargeComment>
     <MST.eggLayIntervalDays>产蛋间隔</MST.eggLayIntervalDays>
     <MST.eggCountRangeMin>最少产蛋</MST.eggCountRangeMin>
     <MST.eggCountRangeMax>最多产蛋</MST.eggCountRangeMax>

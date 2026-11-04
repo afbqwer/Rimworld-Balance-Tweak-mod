@@ -1714,7 +1714,7 @@ public partial class BalanceTweakSettings : ModSettings
                     Event.current.Use();
                 }
             }
-            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig or ColumnStyle.TurretConfig)
+            else if (config.columnType is ColumnStyle.RaceLinks or ColumnStyle.BodyLinks or ColumnStyle.WeaponLinks or ColumnStyle.PawnWeaponLinks or ColumnStyle.UnlockList or ColumnStyle.MechWeaponFilter or ColumnStyle.RelayConfig or ColumnStyle.TurretConfig or ColumnStyle.ShieldConfig or ColumnStyle.APSConfig)
             {
                 // 只读的关联入口：点击打开链接列表窗口（关联列 / 研究解锁列共用同一套绘制）。
                 // 兵种侧对「没有武器标签」的行返回空串 —— 那种行没有可列的候选，画个空按钮只会误导。
@@ -1766,6 +1766,18 @@ public partial class BalanceTweakSettings : ModSettings
                         // 主炮 + 各副炮槽按宿主实际 Comp 分节显示。
                         if (data is RaceData or ApparelData)
                             Find.WindowStack.Add(new TurretConfigWindow(data));
+                    }
+                    else if (config.columnType == ColumnStyle.ShieldConfig)
+                    {
+                        // 原版投射物护盾：数值 + 拦截开关统一编辑。
+                        if (data is RaceData)
+                            Find.WindowStack.Add(new ShieldConfigWindow(data));
+                    }
+                    else if (config.columnType == ColumnStyle.APSConfig)
+                    {
+                        // Fortified 主动防御系统：AbilityDef 上的 4 个平衡字段。
+                        if (data is AbilityData)
+                            Find.WindowStack.Add(new APSConfigWindow(data));
                     }
                     else if (config.columnType == ColumnStyle.BodyLinks)
                     {
