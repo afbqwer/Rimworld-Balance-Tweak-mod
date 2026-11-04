@@ -370,6 +370,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     internal override void ApplyRef<TV>(string f, Action<TV> set) => ApplyV(f, set);
 
     internal override void ApplyStrRef(string f, Action<string> set) => ApplyS(f, set);
+    internal override void ApplyDefRef<TV>(string f, Action<TV> set) => ApplyD<TV>(f, v => set(v!));
 
     /// <summary>
     /// SC2（复活检测）：检查 <see cref="_clearedSnapshot"/> 里的字段在 Apply 之后是否仍为空。

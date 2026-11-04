@@ -117,4 +117,141 @@
     <MST.mineablePreventNaturalRockOnSurface>防地表岩石</MST.mineablePreventNaturalRockOnSurface>
     <MST.isNaturalRock>天然岩石</MST.isNaturalRock>
     <MST.isResourceRock>资源岩石</MST.isResourceRock>
+    <MST.aoBuildingConfig>大气建筑</MST.aoBuildingConfig>
+    <MST.aoBuildingConfigComment>Atmosphere Overhaul 的建筑扩展：风扇 / 涡轮喷气 / 空压机 / 气瓶 / 加湿 / 除湿 / 发条 / 集雨 / 灌溉九个 Comp，以及建筑大气属性。窗口按这个建筑实际挂载的 Comp 分节。</MST.aoBuildingConfigComment>
+    <MST.aoBuildingConfigEdit>编辑</MST.aoBuildingConfigEdit>
+    <MST.aoFanSection>风扇</MST.aoFanSection>
+    <MST.aoFanNote>「默认功率」与「初始储能」是生成时抄进实例的：允许调输出时老建筑不跟着变，初始储能只给新建筑。其余字段每 tick 现读，改完立即生效。</MST.aoFanNote>
+    <MST.fanPowerSource>供能方式</MST.fanPowerSource>
+    <MST.fanPowerSourceComment>Electricity = 接电网；StoredEnergy = 发条储能；Unlimited = 不耗能。发条风扇必须选 StoredEnergy，否则 AO 的自检会报错。</MST.fanPowerSourceComment>
+    <MST.fanMaxPowerWatts>最大功率 (W)</MST.fanMaxPowerWatts>
+    <MST.fanMaxPowerWattsComment>风机的功率上限，决定最大送风量。原版 80。</MST.fanMaxPowerWattsComment>
+    <MST.fanDefaultPowerWatts>默认功率 (W)</MST.fanDefaultPowerWatts>
+    <MST.fanDefaultPowerWattsComment>建筑生成时的初始输出。允许调输出时老建筑用 gizmo 调过的那份值，改这里只影响新建筑；不允许调输出时（发条风扇）每 tick 现读，改动立即生效。</MST.fanDefaultPowerWattsComment>
+    <MST.fanRatedFreeAirFlow>额定风量 (m³/s)</MST.fanRatedFreeAirFlow>
+    <MST.fanRatedFreeAirFlowComment>满功率时的体积流量。原版 0.5。</MST.fanRatedFreeAirFlowComment>
+    <MST.fanOutletAreaM2>出风口面积 (m²)</MST.fanOutletAreaM2>
+    <MST.fanOutletAreaM2Comment>风口截面积，影响出口风速与扩散范围。原版 0.12。</MST.fanOutletAreaM2Comment>
+    <MST.fanWindResponsePerTick>风响应 / tick</MST.fanWindResponsePerTick>
+    <MST.fanWindResponsePerTickComment>每 tick 转速向目标值靠拢的比例，越大起停越干脆。原版 0.1。</MST.fanWindResponsePerTickComment>
+    <MST.fanAllowEasyRotation>允许快速旋转</MST.fanAllowEasyRotation>
+    <MST.fanAllowEasyRotationComment>是否允许在游戏里直接旋转朝向，而不必拆了重建。</MST.fanAllowEasyRotationComment>
+    <MST.fanAllowOutputAdjustment>允许调输出</MST.fanAllowOutputAdjustment>
+    <MST.fanAllowOutputAdjustmentComment>是否给建筑一个调节输出功率的 gizmo。关掉后功率恒为「默认功率」。</MST.fanAllowOutputAdjustmentComment>
+    <MST.fanStoredEnergyCapacityJoules>储能上限 (J)</MST.fanStoredEnergyCapacityJoules>
+    <MST.fanStoredEnergyCapacityJoulesComment>只在供能方式为「发条储能」时有意义。原版 1000。</MST.fanStoredEnergyCapacityJoulesComment>
+    <MST.fanInitialStoredEnergyJoules>初始储能 (J)</MST.fanInitialStoredEnergyJoules>
+    <MST.fanInitialStoredEnergyJoulesComment>只在建筑生成时给一次，改它不影响已建成的建筑。</MST.fanInitialStoredEnergyJoulesComment>
+    <MST.aoJetSection>涡轮喷气</MST.aoJetSection>
+    <MST.aoJetNote>氧含量类字段一律填百分比数值（13 = 13%）。熄火氧压必须低于复燃氧压，填反了喷气会点不着。进气 / 出气口的几何尺寸与灯光不在本窗口内。</MST.aoJetNote>
+    <MST.jetFuelPerSecond>燃料 / 秒</MST.jetFuelPerSecond>
+    <MST.jetFuelPerSecondComment>满推力时每秒烧掉的燃料。原版 10。</MST.jetFuelPerSecondComment>
+    <MST.jetWaterKgPerFuel>水 / 份燃料 (kg)</MST.jetWaterKgPerFuel>
+    <MST.jetWaterKgPerFuelComment>每份燃料同时消耗的水。原版 1。</MST.jetWaterKgPerFuelComment>
+    <MST.jetMaxSpeed>最大风速 (m/s)</MST.jetMaxSpeed>
+    <MST.jetMaxSpeedComment>满推力时的气流速度。原版 90。</MST.jetMaxSpeedComment>
+    <MST.jetHalfSpeed>半推力风速 (m/s)</MST.jetHalfSpeed>
+    <MST.jetHalfSpeedComment>半功率档的气流速度。原版 30。</MST.jetHalfSpeedComment>
+    <MST.jetMaxTemperature>最高温度 (℃)</MST.jetMaxTemperature>
+    <MST.jetMaxTemperatureComment>满推力时的排气温度。原版 750。</MST.jetMaxTemperatureComment>
+    <MST.jetMaxPressureRatio>最大压比</MST.jetMaxPressureRatio>
+    <MST.jetMaxPressureRatioComment>满推力时出口 / 进口的压力比。原版 2。</MST.jetMaxPressureRatioComment>
+    <MST.jetHalfPressureRatio>半推力压比</MST.jetHalfPressureRatio>
+    <MST.jetHalfPressureRatioComment>半功率档的出口 / 进口压力比。原版 1.1。</MST.jetHalfPressureRatioComment>
+    <MST.jetInletPressureRatio>进口压比</MST.jetInletPressureRatio>
+    <MST.jetInletPressureRatioComment>进口侧的抽吸压比，越低抽得越猛。原版 0.5。</MST.jetInletPressureRatioComment>
+    <MST.jetOxygenPercent>排气氧含量 (%)</MST.jetOxygenPercent>
+    <MST.jetOxygenPercentComment>按百分比数值填（13 = 13%），不是 0~1。原版 13。</MST.jetOxygenPercentComment>
+    <MST.jetColumnHeight>气柱高度 (格)</MST.jetColumnHeight>
+    <MST.jetColumnHeightComment>向上吹出的气柱长度。原版 5。</MST.jetColumnHeightComment>
+    <MST.jetOxygenConsumptionPercent>耗氧 (%/秒)</MST.jetOxygenConsumptionPercent>
+    <MST.jetOxygenConsumptionPercentComment>每秒烧掉进气中氧气的百分比数值（8 = 8%/秒）。原版 8。</MST.jetOxygenConsumptionPercentComment>
+    <MST.jetFlameoutOxygenKPa>熄火氧压 (kPa)</MST.jetFlameoutOxygenKPa>
+    <MST.jetFlameoutOxygenKPaComment>进气氧分压低于它就熄火。原版 12。</MST.jetFlameoutOxygenKPaComment>
+    <MST.jetRelightOxygenKPa>复燃氧压 (kPa)</MST.jetRelightOxygenKPa>
+    <MST.jetRelightOxygenKPaComment>进气氧分压高于它才允许重新点火，必须高于熄火值。原版 14。</MST.jetRelightOxygenKPaComment>
+    <MST.jetAllowEasyRotation>允许快速旋转</MST.jetAllowEasyRotation>
+    <MST.jetAllowEasyRotationComment>是否允许在游戏里直接旋转朝向，而不必拆了重建。</MST.jetAllowEasyRotationComment>
+    <MST.aoCompressorSection>空压机</MST.aoCompressorSection>
+    <MST.aoCompressorNote>目标压力可以在建筑自己的 UI 里调，这里的「上限」只是那个滑块的右端。两个产品 Def 留空即用 AO 的默认气瓶。</MST.aoCompressorNote>
+    <MST.compressorIntakeM3PerTick>进气 (m³/tick)</MST.compressorIntakeM3PerTick>
+    <MST.compressorIntakeM3PerTickComment>每 tick 从周围吸入的体积。原版 1/30。</MST.compressorIntakeM3PerTickComment>
+    <MST.compressorRunningWatts>运转功率 (W)</MST.compressorRunningWatts>
+    <MST.compressorRunningWattsComment>工作时的耗电。原版 800。</MST.compressorRunningWattsComment>
+    <MST.compressorIdleWatts>待机功率 (W)</MST.compressorIdleWatts>
+    <MST.compressorIdleWattsComment>闲置时的耗电。原版 20。</MST.compressorIdleWattsComment>
+    <MST.compressorMaxGoalKPa>目标压力上限 (kPa)</MST.compressorMaxGoalKPa>
+    <MST.compressorMaxGoalKPaComment>建筑 UI 里目标压力滑块的上限。原版 150。</MST.compressorMaxGoalKPaComment>
+    <MST.compressorSeparateOxygen>分离氧气</MST.compressorSeparateOxygen>
+    <MST.compressorSeparateOxygenComment>开启后把氧气单独压成氧气瓶，否则产出普通空气瓶。</MST.compressorSeparateOxygenComment>
+    <MST.compressorProductDef>产品 Def</MST.compressorProductDef>
+    <MST.compressorProductDefComment>留空 = AO 的 AO_AirTank。</MST.compressorProductDefComment>
+    <MST.compressorOxygenProductDef>氧气产品 Def</MST.compressorOxygenProductDef>
+    <MST.compressorOxygenProductDefComment>留空 = AO 的 AO_OxygenTank。只在开启「分离氧气」时有意义。</MST.compressorOxygenProductDefComment>
+    <MST.aoGasTankSection>气瓶</MST.aoGasTankSection>
+    <MST.aoGasTankNote>氧含量按百分比数值填。爆裂温度是摄氏度；瓶内温度由 AO 按环境与放气降温推算，与这里无关。</MST.aoGasTankNote>
+    <MST.gasTankOxygenPercent>氧含量 (%)</MST.gasTankOxygenPercent>
+    <MST.gasTankOxygenPercentComment>放气时的氧含量百分比数值（21 = 空气）。原版 21。</MST.gasTankOxygenPercentComment>
+    <MST.gasTankExplodeAboveCelsius>爆裂温度 (℃)</MST.gasTankExplodeAboveCelsius>
+    <MST.gasTankExplodeAboveCelsiusComment>瓶温超过它就爆。原版 200。</MST.gasTankExplodeAboveCelsiusComment>
+    <MST.aoHumidifierSection>加湿器</MST.aoHumidifierSection>
+    <MST.aoHumidifierNote>目标湿度是建筑实例上的存档值（CompHumidifier.goalPercent），不是 Def 字段，所以这里没有它 —— 在建筑自己的 UI 里调。</MST.aoHumidifierNote>
+    <MST.humidifierMaxKgPerHour>最大加湿 (kg/时)</MST.humidifierMaxKgPerHour>
+    <MST.humidifierMaxKgPerHourComment>每小时最多蒸发多少水。原版 1。</MST.humidifierMaxKgPerHourComment>
+    <MST.humidifierRunningWatts>运转功率 (W)</MST.humidifierRunningWatts>
+    <MST.humidifierRunningWattsComment>工作时的耗电。原版 60。</MST.humidifierRunningWattsComment>
+    <MST.humidifierIdleWatts>待机功率 (W)</MST.humidifierIdleWatts>
+    <MST.humidifierIdleWattsComment>闲置时的耗电。原版 5。</MST.humidifierIdleWattsComment>
+    <MST.aoDehumidifierSection>除湿机</MST.aoDehumidifierSection>
+    <MST.aoDehumidifierNote>同上：目标湿度是建筑实例上的存档值，不在 Def 上。</MST.aoDehumidifierNote>
+    <MST.dehumidifierSweptVolumes>扫气体积 / 间隔</MST.dehumidifierSweptVolumes>
+    <MST.dehumidifierSweptVolumesComment>每次结算扫过多少倍房间体积的空气。原版 1。</MST.dehumidifierSweptVolumesComment>
+    <MST.dehumidifierRunningWatts>运转功率 (W)</MST.dehumidifierRunningWatts>
+    <MST.dehumidifierRunningWattsComment>工作时的耗电。原版 300。</MST.dehumidifierRunningWattsComment>
+    <MST.dehumidifierIdleWatts>待机功率 (W)</MST.dehumidifierIdleWatts>
+    <MST.dehumidifierIdleWattsComment>闲置时的耗电。原版 10。</MST.dehumidifierIdleWattsComment>
+    <MST.aoMainspringSection>发条</MST.aoMainspringSection>
+    <MST.aoMainspringNote>上弦耗时立即生效；「自动上弦」在建筑初始化时抄进实例并存档，改完只影响新建筑。本 Comp 要求同一个 Def 上有风扇且供能方式为「发条储能」，否则 AO 自检会报错。</MST.aoMainspringNote>
+    <MST.mainspringWindingTicks>上弦耗时 (tick)</MST.mainspringWindingTicks>
+    <MST.mainspringWindingTicksComment>给发条上满一次要多久，必须大于 0。原版 180。</MST.mainspringWindingTicksComment>
+    <MST.mainspringAutoRewind>自动上弦</MST.mainspringAutoRewind>
+    <MST.mainspringAutoRewindComment>是否自动重新上弦。只在建筑初始化时读一次，改完只影响新建筑。</MST.mainspringAutoRewindComment>
+    <MST.aoRainCollectorSection>集雨器</MST.aoRainCollectorSection>
+    <MST.aoRainCollectorNote>容量单位是水单位，1 单位 = 0.25 kg。</MST.aoRainCollectorNote>
+    <MST.rainCollectorCatchmentM2>集雨面积 (m²)</MST.rainCollectorCatchmentM2>
+    <MST.rainCollectorCatchmentM2Comment>接雨的截面积，决定下雨时每小时收多少水。原版 1。</MST.rainCollectorCatchmentM2Comment>
+    <MST.rainCollectorCapacityUnits>容量 (单位)</MST.rainCollectorCapacityUnits>
+    <MST.rainCollectorCapacityUnitsComment>1 单位 = 0.25 kg 水。原版 150。</MST.rainCollectorCapacityUnitsComment>
+    <MST.aoIrrigatorSection>灌溉器</MST.aoIrrigatorSection>
+    <MST.aoIrrigatorNote>单次喷洒时长 × 每次水量决定一轮灌溉的毫米数；检查间隔到了才会开始下一轮，休息时长是两轮之间的停顿。</MST.aoIrrigatorNote>
+    <MST.irrigatorSprayRadius>喷洒半径 (格)</MST.irrigatorSprayRadius>
+    <MST.irrigatorSprayRadiusComment>喷头覆盖的半径。原版 9。</MST.irrigatorSprayRadiusComment>
+    <MST.irrigatorPumpRadius>抽水半径 (格)</MST.irrigatorPumpRadius>
+    <MST.irrigatorPumpRadiusComment>从多远范围内的水源抽水。原版 3。</MST.irrigatorPumpRadiusComment>
+    <MST.irrigatorSprayTicks>单次喷洒 (tick)</MST.irrigatorSprayTicks>
+    <MST.irrigatorSprayTicksComment>一轮喷洒持续多久。原版 300。</MST.irrigatorSprayTicksComment>
+    <MST.irrigatorSessionMm>每次水量 (mm)</MST.irrigatorSessionMm>
+    <MST.irrigatorSessionMmComment>一轮喷洒浇下多少毫米水。原版 20。</MST.irrigatorSessionMmComment>
+    <MST.irrigatorCheckIntervalTicks>检查间隔 (tick)</MST.irrigatorCheckIntervalTicks>
+    <MST.irrigatorCheckIntervalTicksComment>多久检查一次土壤干湿、决定要不要开始下一轮。原版 2000。</MST.irrigatorCheckIntervalTicksComment>
+    <MST.irrigatorRestTicks>休息时长 (tick)</MST.irrigatorRestTicks>
+    <MST.irrigatorRestTicksComment>两轮喷洒之间的停顿。原版 300。</MST.irrigatorRestTicksComment>
+    <MST.irrigatorSprayWatts>喷洒功率 (W)</MST.irrigatorSprayWatts>
+    <MST.irrigatorSprayWattsComment>喷水时的耗电。原版 150。</MST.irrigatorSprayWattsComment>
+    <MST.irrigatorIdleWatts>待机功率 (W)</MST.irrigatorIdleWatts>
+    <MST.irrigatorIdleWattsComment>闲置时的耗电。原版 10。</MST.irrigatorIdleWattsComment>
+    <MST.aoBuildingExtSection>建筑大气属性</MST.aoBuildingExtSection>
+    <MST.aoBuildingExtNote>四个倍率都是相对于 AO 从 HP 推导出的值：1 = 标准，0 = 完全不漏 / 不导热。只对已经挂了这个扩展的建筑有效（原版里只有地热发电机、空调、通风口、重力船体、真空屏障）。给别的建筑加扩展属于改结构，本 Mod 不做。</MST.aoBuildingExtNote>
+    <MST.buildingPressureTolerance>压力耐受倍率</MST.buildingPressureTolerance>
+    <MST.buildingPressureToleranceComment>× AO 从 HP 推导的耐压值。1 = 标准，5 = 重力船体，1000000 = 真空屏障。</MST.buildingPressureToleranceComment>
+    <MST.buildingWindTolerance>抗风倍率</MST.buildingWindTolerance>
+    <MST.buildingWindToleranceComment>× 推导出的抗风值。1 = 标准，1.7 = AO 给空调与通风口的那份加成。</MST.buildingWindToleranceComment>
+    <MST.buildingAirLeak>漏气倍率</MST.buildingAirLeak>
+    <MST.buildingAirLeakComment>0 = 完全气密。1 = 按材质与缝隙正常漏气。</MST.buildingAirLeakComment>
+    <MST.buildingHeatExchange>换热倍率</MST.buildingHeatExchange>
+    <MST.buildingHeatExchangeComment>0 = 完全隔热。1 = 正常与外界换热。</MST.buildingHeatExchangeComment>
+    <MST.buildingAirPassable>允许透气</MST.buildingAirPassable>
+    <MST.buildingAirPassableComment>小人过不去、但空气能穿过的建筑（地热发电机就是这样）。空气阻力按下面的填充率打折。</MST.buildingAirPassableComment>
+    <MST.buildingAirFillPercent>透气填充率</MST.buildingAirFillPercent>
+    <MST.buildingAirFillPercentComment>-1 = 沿用 def 自己的 fillPercent；0.5 = 半填充（地热发电机的值）。</MST.buildingAirFillPercentComment>
 </LanguageData>

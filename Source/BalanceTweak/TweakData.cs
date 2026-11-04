@@ -744,6 +744,13 @@ public abstract partial class TweakData : IExposable
     internal virtual void ApplyStrRef(string fieldName, Action<string> set) { }
 
     /// <summary>
+    /// Def 引用版的三态写入桥（见 <see cref="ApplyRef{TV}"/>）：<c>ApplyD</c> 同样是
+    /// <c>TweakData&lt;T&gt;</c> 上的 <c>protected internal</c>，静态辅助类够不着。
+    /// 目前只有 AO 建筑的两个「产品 Def」字段用得上。
+    /// </summary>
+    internal virtual void ApplyDefRef<TV>(string fieldName, Action<TV> set) where TV : Def { }
+
+    /// <summary>
     /// SC2（复活检测）：返回 Apply 之后被 SetDef / GenValues 回填复活的 Cleared 字段名（空 = 未复活）。
     /// 见 Docs/NullSemantics_L0_Plan.md §4.2。
     /// </summary>

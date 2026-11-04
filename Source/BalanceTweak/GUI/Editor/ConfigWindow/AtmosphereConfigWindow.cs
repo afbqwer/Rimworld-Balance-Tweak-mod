@@ -72,6 +72,106 @@ public class AtmosphereConfigWindow : ConfigWindow
         ConfigSection.Of(null, d => d is RaceData,
                 ConfigRow.Float(nameof(RaceData.blastToleranceFactor), 0f, 10f))
             .Note("MST.aoRaceNote"),
+
+        // ══════ 以下是建筑页（P3）：按"这个 Def 实际挂了哪些 Comp"分节 ══════
+        // 判据一律是 AoBuilding 里的静态方法组 —— 它们只碰 object / Def，不碰 AO 的类型。
+
+        // ── 风扇（CompProperties_SingleFieldFan）：4 个风扇共用一个 Comp ──
+        ConfigSection.Of("MST.aoFanSection", AoBuilding.HasFan,
+                ConfigRow.Enum(nameof(BuildingData.fanPowerSource)),
+                ConfigRow.Float(nameof(BuildingData.fanMaxPowerWatts), 0f, 100000f),
+                ConfigRow.Float(nameof(BuildingData.fanDefaultPowerWatts), 0f, 100000f),
+                ConfigRow.Float(nameof(BuildingData.fanRatedFreeAirFlow), 0f, 1000f),
+                ConfigRow.Float(nameof(BuildingData.fanOutletAreaM2), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.fanWindResponsePerTick), 0f, 10f),
+                ConfigRow.Bool(nameof(BuildingData.fanAllowOutputAdjustment)),
+                ConfigRow.Bool(nameof(BuildingData.fanAllowEasyRotation)),
+                ConfigRow.Float(nameof(BuildingData.fanStoredEnergyCapacityJoules), 0f, 10000000f),
+                ConfigRow.Float(nameof(BuildingData.fanInitialStoredEnergyJoules), 0f, 10000000f))
+            .Note("MST.aoFanNote"),
+
+        // ── 涡轮喷气（CompProperties_PairedJet）──
+        ConfigSection.Of("MST.aoJetSection", AoBuilding.HasJet,
+                ConfigRow.Float(nameof(BuildingData.jetFuelPerSecond), 0f, 1000f),
+                ConfigRow.Float(nameof(BuildingData.jetWaterKgPerFuel), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.jetMaxSpeed), 0f, 1000f),
+                ConfigRow.Float(nameof(BuildingData.jetHalfSpeed), 0f, 1000f),
+                ConfigRow.Float(nameof(BuildingData.jetMaxTemperature), -273f, 3000f),
+                ConfigRow.Float(nameof(BuildingData.jetMaxPressureRatio), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.jetHalfPressureRatio), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.jetInletPressureRatio), 0f, 10f),
+                ConfigRow.Float(nameof(BuildingData.jetOxygenPercent), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.jetColumnHeight), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.jetOxygenConsumptionPercent), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.jetFlameoutOxygenKPa), 0f, 1000f),
+                ConfigRow.Float(nameof(BuildingData.jetRelightOxygenKPa), 0f, 1000f),
+                ConfigRow.Bool(nameof(BuildingData.jetAllowEasyRotation)))
+            .Note("MST.aoJetNote"),
+
+        // ── 空压机 / PSA（CompProperties_AirCompressor）──
+        ConfigSection.Of("MST.aoCompressorSection", AoBuilding.HasCompressor,
+                ConfigRow.Float(nameof(BuildingData.compressorIntakeM3PerTick), 0f, 1000f),
+                ConfigRow.Float(nameof(BuildingData.compressorRunningWatts), 0f, 100000f),
+                ConfigRow.Float(nameof(BuildingData.compressorIdleWatts), 0f, 100000f),
+                ConfigRow.Float(nameof(BuildingData.compressorMaxGoalKPa), 0f, 10000f),
+                ConfigRow.Bool(nameof(BuildingData.compressorSeparateOxygen)),
+                ConfigRow.Def(nameof(BuildingData.compressorProductDef)),
+                ConfigRow.Def(nameof(BuildingData.compressorOxygenProductDef)))
+            .Note("MST.aoCompressorNote"),
+
+        // ── 气瓶（CompProperties_GasTank）──
+        ConfigSection.Of("MST.aoGasTankSection", AoBuilding.HasGasTank,
+                ConfigRow.Float(nameof(BuildingData.gasTankOxygenPercent), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.gasTankExplodeAboveCelsius), -273f, 3000f))
+            .Note("MST.aoGasTankNote"),
+
+        // ── 加湿器（CompProperties_Humidifier）──
+        ConfigSection.Of("MST.aoHumidifierSection", AoBuilding.HasHumidifier,
+                ConfigRow.Float(nameof(BuildingData.humidifierMaxKgPerHour), 0f, 1000f),
+                ConfigRow.Float(nameof(BuildingData.humidifierRunningWatts), 0f, 100000f),
+                ConfigRow.Float(nameof(BuildingData.humidifierIdleWatts), 0f, 100000f))
+            .Note("MST.aoHumidifierNote"),
+
+        // ── 除湿机（CompProperties_Dehumidifier）──
+        ConfigSection.Of("MST.aoDehumidifierSection", AoBuilding.HasDehumidifier,
+                ConfigRow.Float(nameof(BuildingData.dehumidifierSweptVolumes), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.dehumidifierRunningWatts), 0f, 100000f),
+                ConfigRow.Float(nameof(BuildingData.dehumidifierIdleWatts), 0f, 100000f))
+            .Note("MST.aoDehumidifierNote"),
+
+        // ── 发条（CompProperties_Mainspring）──
+        ConfigSection.Of("MST.aoMainspringSection", AoBuilding.HasMainspring,
+                ConfigRow.Int(nameof(BuildingData.mainspringWindingTicks), 1, 100000),
+                ConfigRow.Bool(nameof(BuildingData.mainspringAutoRewind)))
+            .Note("MST.aoMainspringNote"),
+
+        // ── 集雨器（CompProperties_RainCollector）──
+        ConfigSection.Of("MST.aoRainCollectorSection", AoBuilding.HasRainCollector,
+                ConfigRow.Float(nameof(BuildingData.rainCollectorCatchmentM2), 0f, 1000f),
+                ConfigRow.Float(nameof(BuildingData.rainCollectorCapacityUnits), 0f, 100000f))
+            .Note("MST.aoRainCollectorNote"),
+
+        // ── 灌溉器（CompProperties_Irrigator）──
+        ConfigSection.Of("MST.aoIrrigatorSection", AoBuilding.HasIrrigator,
+                ConfigRow.Float(nameof(BuildingData.irrigatorSprayRadius), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.irrigatorPumpRadius), 0f, 100f),
+                ConfigRow.Int(nameof(BuildingData.irrigatorSprayTicks), 0, 100000),
+                ConfigRow.Float(nameof(BuildingData.irrigatorSessionMm), 0f, 1000f),
+                ConfigRow.Int(nameof(BuildingData.irrigatorCheckIntervalTicks), 0, 100000),
+                ConfigRow.Int(nameof(BuildingData.irrigatorRestTicks), 0, 100000),
+                ConfigRow.Float(nameof(BuildingData.irrigatorSprayWatts), 0f, 100000f),
+                ConfigRow.Float(nameof(BuildingData.irrigatorIdleWatts), 0f, 100000f))
+            .Note("MST.aoIrrigatorNote"),
+
+        // ── 建筑大气属性（BuildingAtmosphereExtension）：原版建筑唯一可改的一组 ──
+        ConfigSection.Of("MST.aoBuildingExtSection", AoBuilding.HasAtmosphereExtension,
+                ConfigRow.Float(nameof(BuildingData.buildingPressureTolerance), 0f, 1000000f),
+                ConfigRow.Float(nameof(BuildingData.buildingWindTolerance), 0f, 1000f),
+                ConfigRow.Float(nameof(BuildingData.buildingAirLeak), 0f, 100f),
+                ConfigRow.Float(nameof(BuildingData.buildingHeatExchange), 0f, 100f),
+                ConfigRow.Bool(nameof(BuildingData.buildingAirPassable)),
+                ConfigRow.Float(nameof(BuildingData.buildingAirFillPercent), -1f, 1f))
+            .Note("MST.aoBuildingExtNote"),
     };
 
     public AtmosphereConfigWindow(TweakData data)
@@ -90,6 +190,7 @@ public class AtmosphereConfigWindow : ConfigWindow
         if (data is ApparelData) return "MST.aoApparelConfig";
         if (data is HediffData) return "MST.aoHearingConfig";
         if (data is RaceData) return "MST.aoRaceConfig";
+        if (data is BuildingData) return "MST.aoBuildingConfig";
         return "MST.aoConfig";
     }
 }

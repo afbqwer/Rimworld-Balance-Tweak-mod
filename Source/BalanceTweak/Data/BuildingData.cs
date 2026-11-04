@@ -329,6 +329,182 @@ class BuildingData : TweakData<BuildingData>
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
+    // ── Atmosphere Overhaul：建筑（可选 Mod，见 AtmosphereConfigWindow）──
+    // AO 给建筑挂了 9 个 CompProperties + 1 个 BuildingAtmosphereExtension，一共 57 个数值，
+    // 但每个建筑只命中其中 2~10 个：全部做成列会让建筑页签多 57 列恒空白，列宽与列序被永久占住。
+    // 做法与 P2 一致 —— 只留一个只读触发列，字段全部 NotAColumn，窗口按"实际挂了哪些 Comp"分节。
+
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(AtmosphereConfigWindow), MayRequire = TweakDatabase.AO,
+        Hidden = nameof(HiddenIfNoAoBuildingData))]
+    public TweakID? aoBuildingConfig = null;
+
+    public static bool HiddenIfNoAoBuildingData(TweakData data) => !AoBuilding.HasAny(data.def);
+
+    // 风扇（CompProperties_SingleFieldFan）：4 个风扇共用这一个 Comp，靠字段值区分。
+    /// <summary>供能方式。<c>Electricity</c> = 接电网；<c>StoredEnergy</c> = 发条储能；<c>Unlimited</c> = 不耗能。</summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Enum, OptionsList = nameof(FanPowerSourceOptions),
+        MayRequire = TweakDatabase.AO)]
+    public string? fanPowerSource = null;
+    /// <summary>下拉数据源。存字符串而不是枚举：类型来自 AO 的程序集，字段类型不能用它。</summary>
+    public static readonly List<string> FanPowerSourceOptions = ["Electricity", "StoredEnergy", "Unlimited"];
+
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? fanMaxPowerWatts = null;
+    /// <summary>默认输出功率。<c>allowOutputAdjustment = true</c> 时只影响新建筑（老建筑用 gizmo 那份值）。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? fanDefaultPowerWatts = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? fanRatedFreeAirFlow = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? fanOutletAreaM2 = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? fanWindResponsePerTick = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.AO)]
+    public bool? fanAllowEasyRotation = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.AO)]
+    public bool? fanAllowOutputAdjustment = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? fanStoredEnergyCapacityJoules = null;
+    /// <summary>初始储能：只在生成时给一次，改它不影响已建成的建筑。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? fanInitialStoredEnergyJoules = null;
+
+    // 涡轮喷气（CompProperties_PairedJet）。几何（inletSize / outletSize / offset）与四个灯光字段不做。
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetFuelPerSecond = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetWaterKgPerFuel = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetMaxSpeed = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetHalfSpeed = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetMaxTemperature = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetMaxPressureRatio = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetHalfPressureRatio = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetInletPressureRatio = null;
+    /// <summary>排气氧含量，**按百分比数值**填（13 = 13%），不是 0~1。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetOxygenPercent = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetColumnHeight = null;
+    /// <summary>每秒烧掉进气里氧气的百分比数值（8 = 8%/秒）。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetOxygenConsumptionPercent = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetFlameoutOxygenKPa = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? jetRelightOxygenKPa = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.AO)]
+    public bool? jetAllowEasyRotation = null;
+
+    // 空压机 / PSA（CompProperties_AirCompressor）。
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? compressorIntakeM3PerTick = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? compressorRunningWatts = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? compressorIdleWatts = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? compressorMaxGoalKPa = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.AO)]
+    public bool? compressorSeparateOxygen = null;
+    /// <summary>产出的气瓶 Def；留空 = AO 的 <c>AO_AirTank</c>。</summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.DefSelector, MayRequire = TweakDatabase.AO)]
+    public ThingDef? compressorProductDef = null;
+    /// <summary>分离出的氧气瓶 Def；留空 = AO 的 <c>AO_OxygenTank</c>。</summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.DefSelector, MayRequire = TweakDatabase.AO)]
+    public ThingDef? compressorOxygenProductDef = null;
+
+    // 气瓶（CompProperties_GasTank）。
+    /// <summary>瓶内氧含量百分比数值（21 = 空气）。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? gasTankOxygenPercent = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? gasTankExplodeAboveCelsius = null;
+
+    // 加湿器（CompProperties_Humidifier）。目标湿度是 CompHumidifier 上的存档值，不是 Def 字段。
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? humidifierMaxKgPerHour = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? humidifierRunningWatts = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? humidifierIdleWatts = null;
+
+    // 除湿机（CompProperties_Dehumidifier）。
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? dehumidifierSweptVolumes = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? dehumidifierRunningWatts = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? dehumidifierIdleWatts = null;
+
+    // 发条（CompProperties_Mainspring）。windingTicks 每 tick 现读；autoRewind 在 Initialize 时抄进实例并存档。
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO)]
+    public int? mainspringWindingTicks = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.AO)]
+    public bool? mainspringAutoRewind = null;
+
+    // 集雨器（CompProperties_RainCollector）。容量单位是"水单位"，1 单位 = 0.25 kg。
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? rainCollectorCatchmentM2 = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? rainCollectorCapacityUnits = null;
+
+    // 灌溉器（CompProperties_Irrigator）。
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? irrigatorSprayRadius = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? irrigatorPumpRadius = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO)]
+    public int? irrigatorSprayTicks = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? irrigatorSessionMm = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO)]
+    public int? irrigatorCheckIntervalTicks = null;
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.AO)]
+    public int? irrigatorRestTicks = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? irrigatorSprayWatts = null;
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? irrigatorIdleWatts = null;
+
+    // 建筑大气属性（BuildingAtmosphereExtension）：原版建筑里**唯一**能改的一组。
+    /// <summary>压力耐受倍率（× HP 推导值）。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? buildingPressureTolerance = null;
+    /// <summary>抗风倍率（× HP 推导值）。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? buildingWindTolerance = null;
+    /// <summary>漏气倍率，0 = 完全气密。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? buildingAirLeak = null;
+    /// <summary>换热倍率，0 = 完全隔热。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? buildingHeatExchange = null;
+    /// <summary>是否允许空气穿过（与小人能否通过无关）。</summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.AO)]
+    public bool? buildingAirPassable = null;
+    /// <summary>空气阻力用的填充率；-1 = 沿用 def 的 <c>fillPercent</c>。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? buildingAirFillPercent = null;
+
+    // 上面这些 Comp / 扩展的引用（SetDef 时解析一次；闭包里只捕获 object）。
+    private object? fanProps = null;
+    private object? jetProps = null;
+    private object? compressorProps = null;
+    private object? gasTankProps = null;
+    private object? humidifierProps = null;
+    private object? dehumidifierProps = null;
+    private object? mainspringProps = null;
+    private object? rainCollectorProps = null;
+    private object? irrigatorProps = null;
+    private object? buildingAtmosphereExt = null;
+
     // ===== FieldInfo 反射 =====
     static FieldInfo CompPropertiesBasePowerConsumption = Reflect.Field(typeof(CompProperties_Power), "basePowerConsumption");
     static FieldInfo CompPropertiesfuelMultiplier = Reflect.Field(typeof(CompProperties_Refuelable), "fuelMultiplier");
@@ -464,6 +640,7 @@ class BuildingData : TweakData<BuildingData>
             }
 
             LoadRelay(d);
+            LoadAoBuilding(d);
             relayHasSubRelay ??= subRelayProps != null;
             relayHasOverseer ??= overseerProps != null;
             relayHasOverseerFacility ??= overseerFacilityProps != null;
@@ -573,6 +750,7 @@ class BuildingData : TweakData<BuildingData>
         ApplyBuildingProp(def);
         ApplyDefStats(def);
         ApplyRelay(def);
+        ApplyAoBuilding();
         // 炮塔的射击节奏（冷却 / 预热）写在建筑上，挂载的那把枪只是据它算 DPS。
         // 改完必须主动刷那一行，否则武器页签的 DPS / 强度停在旧值 —— 与弹丸改动后
         // 刷新共用武器（ProjectileData.RefreshSharedWeapons）是同一条道理。
@@ -610,6 +788,262 @@ class BuildingData : TweakData<BuildingData>
         if (gun.def == null) return;
         if (ReferenceEquals(TweakDatabase.GetOriginal(gun.id), gun)) return;
         gun.GenValues();
+    }
+
+    /// <summary>
+    /// 回填 AO 的 9 个 Comp + 建筑大气扩展。没有的 Comp 整块跳过（字段保持 null）。
+    /// <para>
+    /// 只在 SetDef 里调一次，不做 <c>syncUnmodified</c>：这些 Comp 不会被本 Mod 增删，
+    /// 不像中继那样需要"Comp 可能在 Apply 里刚被加进来"再同步一遍。
+    /// </para>
+    /// </summary>
+    private void LoadAoBuilding(ThingDef d)
+    {
+        buildingAtmosphereExt = AoHelper.Ext(d, AoHelper.BuildingExt);
+        if (buildingAtmosphereExt != null)
+        {
+            var ext = buildingAtmosphereExt;
+            buildingPressureTolerance ??= AoHelper.F(ext, "pressureToleranceFactor");
+            buildingWindTolerance ??= AoHelper.F(ext, "windToleranceFactor");
+            buildingAirLeak ??= AoHelper.F(ext, "airLeakFactor");
+            buildingHeatExchange ??= AoHelper.F(ext, "heatExchangeFactor");
+            buildingAirPassable ??= AoHelper.B(ext, "airPassable");
+            buildingAirFillPercent ??= AoHelper.F(ext, "airFillPercent");
+        }
+
+        fanProps = AoBuilding.FindComp(d, AoBuilding.FanProps);
+        if (fanProps != null)
+        {
+            var p = fanProps;
+            fanPowerSource ??= AoHelper.G(p, "powerSource")?.ToString();
+            fanMaxPowerWatts ??= AoHelper.F(p, "maxPowerWatts");
+            fanDefaultPowerWatts ??= AoHelper.F(p, "defaultPowerWatts");
+            fanRatedFreeAirFlow ??= AoHelper.F(p, "ratedFreeAirFlowM3PerSecond");
+            fanOutletAreaM2 ??= AoHelper.F(p, "outletAreaM2");
+            fanWindResponsePerTick ??= AoHelper.F(p, "windResponsePerTick");
+            fanAllowEasyRotation ??= AoHelper.B(p, "allowEasyRotation");
+            fanAllowOutputAdjustment ??= AoHelper.B(p, "allowOutputAdjustment");
+            fanStoredEnergyCapacityJoules ??= AoHelper.F(p, "storedEnergyCapacityJoules");
+            fanInitialStoredEnergyJoules ??= AoHelper.F(p, "initialStoredEnergyJoules");
+        }
+
+        jetProps = AoBuilding.FindComp(d, AoBuilding.JetProps);
+        if (jetProps != null)
+        {
+            var p = jetProps;
+            jetFuelPerSecond ??= AoHelper.F(p, "fuelPerSecond");
+            jetWaterKgPerFuel ??= AoHelper.F(p, "waterKgPerFuel");
+            jetMaxSpeed ??= AoHelper.F(p, "maxSpeed");
+            jetHalfSpeed ??= AoHelper.F(p, "halfSpeed");
+            jetMaxTemperature ??= AoHelper.F(p, "maxTemperature");
+            jetMaxPressureRatio ??= AoHelper.F(p, "maxPressureRatio");
+            jetHalfPressureRatio ??= AoHelper.F(p, "halfPressureRatio");
+            jetInletPressureRatio ??= AoHelper.F(p, "inletPressureRatio");
+            jetOxygenPercent ??= AoHelper.F(p, "oxygenPercent");
+            jetColumnHeight ??= AoHelper.F(p, "columnHeight");
+            jetOxygenConsumptionPercent ??= AoHelper.F(p, "oxygenConsumptionPercent");
+            jetFlameoutOxygenKPa ??= AoHelper.F(p, "flameoutOxygenKPa");
+            jetRelightOxygenKPa ??= AoHelper.F(p, "relightOxygenKPa");
+            jetAllowEasyRotation ??= AoHelper.B(p, "allowEasyRotation");
+        }
+
+        compressorProps = AoBuilding.FindComp(d, AoBuilding.CompressorProps);
+        if (compressorProps != null)
+        {
+            var p = compressorProps;
+            compressorIntakeM3PerTick ??= AoHelper.F(p, "intakeCubicMetresPerTick");
+            compressorRunningWatts ??= AoHelper.F(p, "runningWatts");
+            compressorIdleWatts ??= AoHelper.F(p, "idleWatts");
+            compressorMaxGoalKPa ??= AoHelper.F(p, "maxGoalKPa");
+            compressorSeparateOxygen ??= AoHelper.B(p, "separateOxygen");
+            compressorProductDef ??= AoHelper.G(p, "productDef") as ThingDef;
+            compressorOxygenProductDef ??= AoHelper.G(p, "oxygenProductDef") as ThingDef;
+        }
+
+        gasTankProps = AoBuilding.FindComp(d, AoBuilding.GasTankProps);
+        if (gasTankProps != null)
+        {
+            var p = gasTankProps;
+            gasTankOxygenPercent ??= AoHelper.F(p, "oxygenPercent");
+            gasTankExplodeAboveCelsius ??= AoHelper.F(p, "explodeAboveCelsius");
+        }
+
+        humidifierProps = AoBuilding.FindComp(d, AoBuilding.HumidifierProps);
+        if (humidifierProps != null)
+        {
+            var p = humidifierProps;
+            humidifierMaxKgPerHour ??= AoHelper.F(p, "maxKgPerHour");
+            humidifierRunningWatts ??= AoHelper.F(p, "runningWatts");
+            humidifierIdleWatts ??= AoHelper.F(p, "idleWatts");
+        }
+
+        dehumidifierProps = AoBuilding.FindComp(d, AoBuilding.DehumidifierProps);
+        if (dehumidifierProps != null)
+        {
+            var p = dehumidifierProps;
+            dehumidifierSweptVolumes ??= AoHelper.F(p, "sweptCellVolumesPerInterval");
+            dehumidifierRunningWatts ??= AoHelper.F(p, "runningWatts");
+            dehumidifierIdleWatts ??= AoHelper.F(p, "idleWatts");
+        }
+
+        mainspringProps = AoBuilding.FindComp(d, AoBuilding.MainspringProps);
+        if (mainspringProps != null)
+        {
+            var p = mainspringProps;
+            mainspringWindingTicks ??= AoHelper.I(p, "windingTicks");
+            mainspringAutoRewind ??= AoHelper.B(p, "autoRewind");
+        }
+
+        rainCollectorProps = AoBuilding.FindComp(d, AoBuilding.RainCollectorProps);
+        if (rainCollectorProps != null)
+        {
+            var p = rainCollectorProps;
+            rainCollectorCatchmentM2 ??= AoHelper.F(p, "catchmentM2");
+            rainCollectorCapacityUnits ??= AoHelper.F(p, "capacityUnits");
+        }
+
+        irrigatorProps = AoBuilding.FindComp(d, AoBuilding.IrrigatorProps);
+        if (irrigatorProps != null)
+        {
+            var p = irrigatorProps;
+            irrigatorSprayRadius ??= AoHelper.F(p, "sprayRadius");
+            irrigatorPumpRadius ??= AoHelper.F(p, "pumpRadius");
+            irrigatorSprayTicks ??= AoHelper.I(p, "sprayTicks");
+            irrigatorSessionMm ??= AoHelper.F(p, "sessionMm");
+            irrigatorCheckIntervalTicks ??= AoHelper.I(p, "checkIntervalTicks");
+            irrigatorRestTicks ??= AoHelper.I(p, "restTicks");
+            irrigatorSprayWatts ??= AoHelper.F(p, "sprayWatts");
+            irrigatorIdleWatts ??= AoHelper.F(p, "idleWatts");
+        }
+    }
+
+    /// <summary>
+    /// 把窗口里的值写回 AO 的 Comp / 扩展。三态门控，没动过的字段不写；没有对应 Comp 的建筑直接跳过。
+    /// <para>
+    /// <b>不用清任何缓存</b>：这些 Comp 每 tick 现读 <c>Props.xxx</c>；<c>BuildingAtmosphereExtension</c>
+    /// 的静态 <c>Cache</c> 只缓存**实例引用**、字段是活的（见 §4.0）。只有"增删扩展"才需要清，
+    /// 而本 Mod 不做增删。
+    /// </para>
+    /// </summary>
+    private void ApplyAoBuilding()
+    {
+        if (!DataUtility.MayRequire(TweakDatabase.AO)) return;
+
+        if (buildingAtmosphereExt != null)
+        {
+            var ext = buildingAtmosphereExt;
+            AoHelper.ApplyF<float>(this, ext, "pressureToleranceFactor", nameof(buildingPressureTolerance));
+            AoHelper.ApplyF<float>(this, ext, "windToleranceFactor", nameof(buildingWindTolerance));
+            AoHelper.ApplyF<float>(this, ext, "airLeakFactor", nameof(buildingAirLeak));
+            AoHelper.ApplyF<float>(this, ext, "heatExchangeFactor", nameof(buildingHeatExchange));
+            AoHelper.ApplyF<bool>(this, ext, "airPassable", nameof(buildingAirPassable));
+            AoHelper.ApplyF<float>(this, ext, "airFillPercent", nameof(buildingAirFillPercent));
+        }
+
+        if (fanProps != null)
+        {
+            var p = fanProps;
+            ApplyS(nameof(fanPowerSource), name =>
+            {
+                // 跨 Mod 枚举：写入前按 AO 的枚举类型解析。脏值（手输 / 旧存档）直接跳过，
+                // 不猜"最接近的那个"—— 猜错等于把风扇的供能方式静默改掉。
+                if (name.NullOrEmpty()) return;
+                var enumType = AoHelper.T(AoHelper.FanPowerSource);
+                if (enumType != null && System.Enum.TryParse(enumType, name, out var parsed)
+                    && System.Enum.IsDefined(enumType, parsed))
+                    AoHelper.S(p, "powerSource", parsed);
+            });
+            AoHelper.ApplyF<float>(this, p, "maxPowerWatts", nameof(fanMaxPowerWatts));
+            AoHelper.ApplyF<float>(this, p, "defaultPowerWatts", nameof(fanDefaultPowerWatts));
+            AoHelper.ApplyF<float>(this, p, "ratedFreeAirFlowM3PerSecond", nameof(fanRatedFreeAirFlow));
+            AoHelper.ApplyF<float>(this, p, "outletAreaM2", nameof(fanOutletAreaM2));
+            AoHelper.ApplyF<float>(this, p, "windResponsePerTick", nameof(fanWindResponsePerTick));
+            AoHelper.ApplyF<bool>(this, p, "allowEasyRotation", nameof(fanAllowEasyRotation));
+            AoHelper.ApplyF<bool>(this, p, "allowOutputAdjustment", nameof(fanAllowOutputAdjustment));
+            AoHelper.ApplyF<float>(this, p, "storedEnergyCapacityJoules", nameof(fanStoredEnergyCapacityJoules));
+            AoHelper.ApplyF<float>(this, p, "initialStoredEnergyJoules", nameof(fanInitialStoredEnergyJoules));
+        }
+
+        if (jetProps != null)
+        {
+            var p = jetProps;
+            AoHelper.ApplyF<float>(this, p, "fuelPerSecond", nameof(jetFuelPerSecond));
+            AoHelper.ApplyF<float>(this, p, "waterKgPerFuel", nameof(jetWaterKgPerFuel));
+            AoHelper.ApplyF<float>(this, p, "maxSpeed", nameof(jetMaxSpeed));
+            AoHelper.ApplyF<float>(this, p, "halfSpeed", nameof(jetHalfSpeed));
+            AoHelper.ApplyF<float>(this, p, "maxTemperature", nameof(jetMaxTemperature));
+            AoHelper.ApplyF<float>(this, p, "maxPressureRatio", nameof(jetMaxPressureRatio));
+            AoHelper.ApplyF<float>(this, p, "halfPressureRatio", nameof(jetHalfPressureRatio));
+            AoHelper.ApplyF<float>(this, p, "inletPressureRatio", nameof(jetInletPressureRatio));
+            AoHelper.ApplyF<float>(this, p, "oxygenPercent", nameof(jetOxygenPercent));
+            AoHelper.ApplyF<float>(this, p, "columnHeight", nameof(jetColumnHeight));
+            AoHelper.ApplyF<float>(this, p, "oxygenConsumptionPercent", nameof(jetOxygenConsumptionPercent));
+            AoHelper.ApplyF<float>(this, p, "flameoutOxygenKPa", nameof(jetFlameoutOxygenKPa));
+            AoHelper.ApplyF<float>(this, p, "relightOxygenKPa", nameof(jetRelightOxygenKPa));
+            AoHelper.ApplyF<bool>(this, p, "allowEasyRotation", nameof(jetAllowEasyRotation));
+        }
+
+        if (compressorProps != null)
+        {
+            var p = compressorProps;
+            AoHelper.ApplyF<float>(this, p, "intakeCubicMetresPerTick", nameof(compressorIntakeM3PerTick));
+            AoHelper.ApplyF<float>(this, p, "runningWatts", nameof(compressorRunningWatts));
+            AoHelper.ApplyF<float>(this, p, "idleWatts", nameof(compressorIdleWatts));
+            AoHelper.ApplyF<float>(this, p, "maxGoalKPa", nameof(compressorMaxGoalKPa));
+            AoHelper.ApplyF<bool>(this, p, "separateOxygen", nameof(compressorSeparateOxygen));
+            AoHelper.ApplyDef<ThingDef>(this, p, "productDef", nameof(compressorProductDef));
+            AoHelper.ApplyDef<ThingDef>(this, p, "oxygenProductDef", nameof(compressorOxygenProductDef));
+        }
+
+        if (gasTankProps != null)
+        {
+            var p = gasTankProps;
+            AoHelper.ApplyF<float>(this, p, "oxygenPercent", nameof(gasTankOxygenPercent));
+            AoHelper.ApplyF<float>(this, p, "explodeAboveCelsius", nameof(gasTankExplodeAboveCelsius));
+        }
+
+        if (humidifierProps != null)
+        {
+            var p = humidifierProps;
+            AoHelper.ApplyF<float>(this, p, "maxKgPerHour", nameof(humidifierMaxKgPerHour));
+            AoHelper.ApplyF<float>(this, p, "runningWatts", nameof(humidifierRunningWatts));
+            AoHelper.ApplyF<float>(this, p, "idleWatts", nameof(humidifierIdleWatts));
+        }
+
+        if (dehumidifierProps != null)
+        {
+            var p = dehumidifierProps;
+            AoHelper.ApplyF<float>(this, p, "sweptCellVolumesPerInterval", nameof(dehumidifierSweptVolumes));
+            AoHelper.ApplyF<float>(this, p, "runningWatts", nameof(dehumidifierRunningWatts));
+            AoHelper.ApplyF<float>(this, p, "idleWatts", nameof(dehumidifierIdleWatts));
+        }
+
+        if (mainspringProps != null)
+        {
+            var p = mainspringProps;
+            AoHelper.ApplyF<int>(this, p, "windingTicks", nameof(mainspringWindingTicks));
+            AoHelper.ApplyF<bool>(this, p, "autoRewind", nameof(mainspringAutoRewind));
+        }
+
+        if (rainCollectorProps != null)
+        {
+            var p = rainCollectorProps;
+            AoHelper.ApplyF<float>(this, p, "catchmentM2", nameof(rainCollectorCatchmentM2));
+            AoHelper.ApplyF<float>(this, p, "capacityUnits", nameof(rainCollectorCapacityUnits));
+        }
+
+        if (irrigatorProps != null)
+        {
+            var p = irrigatorProps;
+            AoHelper.ApplyF<float>(this, p, "sprayRadius", nameof(irrigatorSprayRadius));
+            AoHelper.ApplyF<float>(this, p, "pumpRadius", nameof(irrigatorPumpRadius));
+            AoHelper.ApplyF<int>(this, p, "sprayTicks", nameof(irrigatorSprayTicks));
+            AoHelper.ApplyF<float>(this, p, "sessionMm", nameof(irrigatorSessionMm));
+            AoHelper.ApplyF<int>(this, p, "checkIntervalTicks", nameof(irrigatorCheckIntervalTicks));
+            AoHelper.ApplyF<int>(this, p, "restTicks", nameof(irrigatorRestTicks));
+            AoHelper.ApplyF<float>(this, p, "sprayWatts", nameof(irrigatorSprayWatts));
+            AoHelper.ApplyF<float>(this, p, "idleWatts", nameof(irrigatorIdleWatts));
+        }
     }
 
     /// <summary>

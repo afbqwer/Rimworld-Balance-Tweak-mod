@@ -409,8 +409,8 @@ Fortified 的三个同类触发列（`MechWeaponFilter` / `RelayConfig` / `Turre
 [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
     Editor = typeof(AtmosphereConfigWindow),
     MayRequire = TweakDatabase.AO,
-    Hidden = nameof(HiddenIfNoAtmosphereComp))]   // 一个相关 Comp/扩展都没有的行整格留白
-public TweakID? atmosphereConfig = null;
+    Hidden = nameof(HiddenIfNoAoBuildingData))]   // 一个相关 Comp/扩展都没有的行整格留白
+public TweakID? aoBuildingConfig = null;
 
 [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
 public float? fanMaxPowerWatts = null;
@@ -418,7 +418,9 @@ public float? fanMaxPowerWatts = null;
 
 - 字段类型必须是 `TweakID?`（占位，永远不存值）。
 - `Editor` 必须是本程序集的 `Window` 子类、且只有一个 `(TweakData)` 构造。启动期校验一次，写错是一条日志，不会等玩家点下去才抛。**不许指向可选 Mod 的类型** —— 那会编出 typeref（`AssemblyReferenceTests` 会拦）。
-- 按钮文字默认 `MST.{字段名}Edit`（例：`atmosphereConfig` → `MST.atmosphereConfigEdit`），`CheckLoc` 把它认作代码引用，不会成孤儿键。要按行换词时加 `ButtonText = nameof(静态方法)`（唯一用例：中继配置没有任何 Comp 时说"添加"）。
+- 按钮文字默认 `MST.{字段名}Edit`（例：`aoBuildingConfig` → `MST.aoBuildingConfigEdit`），`CheckLoc` 把它认作代码引用，不会成孤儿键。要按行换词时加 `ButtonText = nameof(静态方法)`（唯一用例：中继配置没有任何 Comp 时说「添加」）。
+- **列标题与窗口标题可以是同一个 key**：`MST.aoBuildingConfig` 既是列表头（「大气建筑」）又是窗口标题，窗口用 `TitleOf(data)` 按宿主选 key 即可。字段名因此要起得像个标签（`aoBuildingConfig` 而不是 `atmosphereTrigger`）。
+- **`Hidden` 是每帧每行求值的**，判据别写成九次 `FindComp`：`AoBuilding.HasAny` 用一次遍历 + 全名 `HashSet`（AO 的 Comp 全 `sealed`，精确匹配即可）。
 
 #### 窗口：声明分节
 
@@ -444,13 +446,14 @@ public class AtmosphereConfigWindow : ConfigWindow
     };
 
     public AtmosphereConfigWindow(TweakData data)
-        : base(data, "MST.atmosphereConfig", "MST.atmosphereConfigIntro", Sections,
+        : base(data, TitleOf(data), "MST.aoConfigIntro", Sections,
                preferredHeight: 780f, noteKey: "MST.atmosphereConfigNote", validate: Validate)
     {
     }
 
     // 出现条件必须是**方法组**；不要在 lambda 里碰可选 Mod 的类型（会编出 typeref）。
-    private static bool HasFan(TweakData d) => AoHelper.FindComp(d.def, AoHelper.FanProps) != null;
+    // 真实实现见 AoBuilding.HasFan —— 一行 FindComp，参数是 TweakData，正好当 Func<TweakData, bool> 用。
+    private static bool HasFan(TweakData d) => AoBuilding.FindComp(d.def, AoBuilding.FanProps) != null;
 
     private static IReadOnlyList<ConfigIssue> Validate(TweakData d) { /* … */ }
 }
@@ -481,9 +484,30 @@ public class AtmosphereConfigWindow : ConfigWindow
 - **窗口高度不用传死值**：内容高度在绘制前算好再开滚动区（旧实现传死 `viewHeight`，字段一多就滚不到底）。`preferredHeight` 只影响窗口初始高度。
 - **IMGUI 全局状态**：改 `Text.Font` / `Text.Anchor` / `Text.WordWrap` 一律"保存 → 改 → 还原"（见 §4.7）。覆写 `DrawBody` 时自己也要守这条。
 
-> 现有 11 个触发列全部走 `ColumnStyle.Config`：Fortified 的 6 个（`APSConfigWindow` 26 行 / `SweepConfigWindow` 54 行 / `ShieldConfigWindow` 94 行 / `RelayConfigWindow` 93 行（六节，服务种族 / 建筑 / 服装三个宿主）+ `TurretConfigWindow` / `MechWeaponFilterWindow` 两个手写窗口）+ AO 的 5 个（`AtmosphereConfigWindow` 一节一宿主，五个宿主共用一个类）。
+> 现有 12 个触发列全部走 `ColumnStyle.Config`：Fortified 的 6 个（`APSConfigWindow` 26 行 / `SweepConfigWindow` 54 行 / `ShieldConfigWindow` 94 行 / `RelayConfigWindow` 93 行（六节，服务种族 / 建筑 / 服装三个宿主）+ `TurretConfigWindow` / `MechWeaponFilterWindow` 两个手写窗口）+ AO 的 6 个（`AtmosphereConfigWindow` 一个类服务六个宿主：地形 / 伤害 / 服饰 / 健康 / 种族 / 建筑，共十四节）。
 >
-> AO 那 5 个是这条基础设施的**第一个"以后会不断复用"的用例**：18 个字段原本是 18 列（地形 6 / 伤害 5 / 服饰 4 / 健康 2 / 种族 1），每行只命中一两格，现在每页只剩 1 列。经验：**字段数 ≥3、且各行的命中率不齐时，一开始就该用触发列**，别等列挤爆了再迁（迁移要动 loc、文档与游戏内校验三处）。
+> AO 那 6 个是这条基础设施的**第一个「以后会不断复用」的用例**：建筑页原本要 57 列（9 个 Comp + 1 个扩展），
+> 加上 P2 的 18 格一共 75 格，现在六个页签各只剩 1 列。经验：**字段数 ≥3、且各行的命中率不齐时，
+> 一开始就该用触发列**，别等列挤爆了再迁（迁移要动 loc、文档与游戏内校验三处）。
+>
+> 一个类服务多个宿主时，**分节判据要按「字段是否存在于该宿主」或「该 Def 有没有这个 Comp」写**，
+> 不要用 `d is XxxData` 去猜（P2 那五节能这么写是因为一个宿主一节；建筑页十节共用 `BuildingData`，
+> 只能靠 Comp 判据）。
+
+### 4.9 可选 Mod 数据的反射写入
+
+可选 Mod 的字段一律走 `AoHelper`：
+
+| 场景 | 写法 | 备注 |
+|---|---|---|
+| 标量（float / int / bool） | `AoHelper.ApplyF<TV>(this, props, "成员名", nameof(字段))` | 内部走 `ApplyRef` → `ApplyV`，三态一致 |
+| 字符串 / 跨 Mod 枚举 | `ApplyS` + `Enum.TryParse` + `Enum.IsDefined` 自己校验；或用 `AoHelper.ApplyString` | 枚举类型来自对方程序集，只能按全名反射 |
+| Def 引用 | `AoHelper.ApplyDef<ThingDef>(this, props, "成员名", nameof(字段))` | `ApplyF<TV>` 要求 `TV : struct`，Def 是类；内部走 `ApplyDefRef` → `ApplyD` |
+| 静态缓存 | `ClearHarmfulGases` / `ClearGroundCache` / `ClearBuildingExtensionCache` | 只在**值被固化**或**增删结构**时才需要，改 Comp 字段不用 |
+
+> 三个 `Apply*Ref` 桥（`ApplyRef` / `ApplyStrRef` / `ApplyDefRef`）都是「基类给虚签名、泛型侧一行转调」。
+> 必须这么绕的原因：`ApplyV` / `ApplyS` / `ApplyD` 都声明在 `TweakData<T>` 上，静态辅助类只持有 `TweakData` 基类引用；
+> 而 C# 不支持部分类型推断（写 `<float>` 就必须写全 `<float, AtmosphereGasData>`），75 个字段各写一遍不划算。
 >
 > **`turretConfig` 与 `mechWeaponFilter` 仍是手写窗口**，不是漏迁。它们的行不是"TweakData 上的一组平铺字段"：炮塔的节数与行数由 `turretSlots` 列表的**当前长度**决定，每行的读写目标是窗口里的工作副本 `slot.warmingTime`，改完整份列表再 `ApplyValue` 一次；武器过滤则要一个"从武器库里挑"的自定义选择器和一块只读的候选预览。给 `ConfigWindow` 补上这两样（动态节 + 行级取值/写回委托）等于把它改成通用表单引擎，P3 那种"九个静态节、五十六个平铺字段"的场景却要为这层抽象买单。收益不抵成本，所以保留手写。
 

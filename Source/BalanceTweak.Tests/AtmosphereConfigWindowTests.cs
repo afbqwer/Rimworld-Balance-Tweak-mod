@@ -22,6 +22,11 @@ namespace BalanceTweak.Tests;
 /// </list>
 /// <para>
 /// 三条都只读元数据，不需要 <c>DefDatabase</c>，因此能在没有游戏数据的测试进程里跑。
+///
+/// <para>
+/// P3 把建筑页也接了进来（9 个 Comp + 1 个扩展、57 格、十节），字段数从 18 涨到 75，
+/// 手抄对应关系的出错面随之变大 —— 这三条断言的价值主要在建筑这半边。
+/// </para>
 /// </para>
 /// </summary>
 public class AtmosphereConfigWindowTests
@@ -29,6 +34,7 @@ public class AtmosphereConfigWindowTests
     private static readonly Type[] Hosts =
     {
         typeof(TerrainData), typeof(DamageData), typeof(ApparelData), typeof(HediffData), typeof(RaceData),
+        typeof(BuildingData),
     };
 
     private static IEnumerable<(ConfigSection Section, ConfigRow Row)> Rows()
@@ -115,11 +121,15 @@ public class AtmosphereConfigWindowTests
     }
 
     /// <summary>
-    /// 五个页签各**恰好**一个触发列，且都指向这一个窗口 —— 多一个就成了两列，
+    /// 每个宿主**恰好**一个指向本窗口的触发列 —— 多一个就成了两列，
     /// 少一个则那一页的 AO 数据彻底不可编辑（字段已经全是 <c>NotAColumn</c>）。
+    /// <para>
+    /// 建筑页另有 <c>relayConfig</c> / <c>turretConfig</c> 两个 Fortified 触发列，按 <c>Editor</c>
+    /// 过滤后不影响这条断言（它们指向别的窗口）。
+    /// </para>
     /// </summary>
     [Fact]
-    public void 五个宿主各一个触发列()
+    public void 每个宿主各一个触发列()
     {
         foreach (var host in Hosts)
         {

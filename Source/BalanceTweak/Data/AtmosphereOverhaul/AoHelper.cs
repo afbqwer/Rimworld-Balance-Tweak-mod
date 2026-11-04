@@ -43,6 +43,9 @@ internal static class AoHelper
     /// <summary>跨 Mod 枚举：地形的地面温度模式（<c>Normal / Fixed / Capped</c>）。</summary>
     internal const string GroundMode = "AtmosphereOverhaul.Simulation.AtmosphereGroundMode";
 
+    /// <summary>跨 Mod 枚举：风扇的供能方式（<c>Electricity / StoredEnergy / Unlimited</c>）。</summary>
+    internal const string FanPowerSource = "AtmosphereOverhaul.Buildings.FanPowerSource";
+
     // ── 一次性静态缓存的宿主 ──
     private const string BreathingGearType = "AtmosphereOverhaul.Pawns.BreathingGear";
     private const string GroundTableType = "AtmosphereOverhaul.Simulation.GroundMaterialTable";
@@ -95,6 +98,18 @@ internal static class AoHelper
         var mi = DataUtility.FindMember(target.GetType(), member);
         if (mi == null) return;
         data.ApplyRef<TV>(field, v => DataUtility.SetMember(target, mi, v));
+    }
+
+    /// <summary>
+    /// Def 引用版本（AO 建筑的两个「产品 Def」：<c>productDef</c> / <c>oxygenProductDef</c>）。
+    /// <c>ApplyF&lt;TV&gt;</c> 要求 <c>TV : struct</c>，<see cref="ThingDef"/> 是类，只能走 <c>ApplyD</c>。
+    /// </summary>
+    internal static void ApplyDef<TV>(TweakData data, object? target, string member, string field) where TV : Def
+    {
+        if (target == null) return;
+        var mi = DataUtility.FindMember(target.GetType(), member);
+        if (mi == null) return;
+        data.ApplyDefRef<TV>(field, v => DataUtility.SetMember(target, mi, v));
     }
 
     /// <summary>字符串版本（<c>readoutLabel</c> / <c>renderTexturePath</c> / <c>mapWeather</c>）。</summary>

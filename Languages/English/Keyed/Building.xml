@@ -117,4 +117,141 @@
     <MST.mineablePreventNaturalRockOnSurface>NoSurfRock</MST.mineablePreventNaturalRockOnSurface>
     <MST.isNaturalRock>NatRock</MST.isNaturalRock>
     <MST.isResourceRock>ResRock</MST.isResourceRock>
+    <MST.aoBuildingConfig>AO bldg</MST.aoBuildingConfig>
+    <MST.aoBuildingConfigComment>Atmosphere Overhaul's building data: fan / jet / compressor / gas tank / humidifier / dehumidifier / mainspring / rain collector / irrigator comps plus the building atmosphere extension. Sections appear only for the comps this building actually has.</MST.aoBuildingConfigComment>
+    <MST.aoBuildingConfigEdit>Edit</MST.aoBuildingConfigEdit>
+    <MST.aoFanSection>Fan</MST.aoFanSection>
+    <MST.aoFanNote>Default power and initial stored energy are copied into the building at spawn: with output adjustment enabled old buildings keep their own value, and initial energy only applies to new ones. Everything else is read every tick.</MST.aoFanNote>
+    <MST.fanPowerSource>Power source</MST.fanPowerSource>
+    <MST.fanPowerSourceComment>Electricity = grid; StoredEnergy = spring; Unlimited = free. A mainspring fan must use StoredEnergy or AO's config check fails.</MST.fanPowerSourceComment>
+    <MST.fanMaxPowerWatts>Max power (W)</MST.fanMaxPowerWatts>
+    <MST.fanMaxPowerWattsComment>Upper power limit, which sets the maximum airflow. Vanilla 80.</MST.fanMaxPowerWattsComment>
+    <MST.fanDefaultPowerWatts>Default power (W)</MST.fanDefaultPowerWatts>
+    <MST.fanDefaultPowerWattsComment>Initial output at spawn. With output adjustment enabled old buildings keep their gizmo value; without it (spring fan) the value is read every tick. Vanilla 40.</MST.fanDefaultPowerWattsComment>
+    <MST.fanRatedFreeAirFlow>Rated flow (m3/s)</MST.fanRatedFreeAirFlow>
+    <MST.fanRatedFreeAirFlowComment>Volume flow at full power. Vanilla 0.5.</MST.fanRatedFreeAirFlowComment>
+    <MST.fanOutletAreaM2>Outlet area (m2)</MST.fanOutletAreaM2>
+    <MST.fanOutletAreaM2Comment>Outlet cross-section; affects exit speed and spread. Vanilla 0.12.</MST.fanOutletAreaM2Comment>
+    <MST.fanWindResponsePerTick>Wind response /tick</MST.fanWindResponsePerTick>
+    <MST.fanWindResponsePerTickComment>How fast the fan spins up to its target each tick. Vanilla 0.1.</MST.fanWindResponsePerTickComment>
+    <MST.fanAllowEasyRotation>Easy rotation</MST.fanAllowEasyRotation>
+    <MST.fanAllowEasyRotationComment>Allow rotating the building in place instead of rebuilding it.</MST.fanAllowEasyRotationComment>
+    <MST.fanAllowOutputAdjustment>Output adjustment</MST.fanAllowOutputAdjustment>
+    <MST.fanAllowOutputAdjustmentComment>Give the building a gizmo to change output. When off, output is always the default power.</MST.fanAllowOutputAdjustmentComment>
+    <MST.fanStoredEnergyCapacityJoules>Stored energy (J)</MST.fanStoredEnergyCapacityJoules>
+    <MST.fanStoredEnergyCapacityJoulesComment>Only meaningful with the StoredEnergy power source. Vanilla 1000.</MST.fanStoredEnergyCapacityJoulesComment>
+    <MST.fanInitialStoredEnergyJoules>Initial energy (J)</MST.fanInitialStoredEnergyJoules>
+    <MST.fanInitialStoredEnergyJoulesComment>Granted once at spawn; changing it does not affect existing buildings.</MST.fanInitialStoredEnergyJoulesComment>
+    <MST.aoJetSection>Jet</MST.aoJetSection>
+    <MST.aoJetNote>Oxygen fields take percentage numbers (13 = 13%). Flameout must stay below relight or the jet will not light. Intake/outlet geometry and lights are not exposed here.</MST.aoJetNote>
+    <MST.jetFuelPerSecond>Fuel /s</MST.jetFuelPerSecond>
+    <MST.jetFuelPerSecondComment>Fuel burned per second at full thrust. Vanilla 10.</MST.jetFuelPerSecondComment>
+    <MST.jetWaterKgPerFuel>Water /fuel (kg)</MST.jetWaterKgPerFuel>
+    <MST.jetWaterKgPerFuelComment>Water consumed per unit of fuel. Vanilla 1.</MST.jetWaterKgPerFuelComment>
+    <MST.jetMaxSpeed>Max speed (m/s)</MST.jetMaxSpeed>
+    <MST.jetMaxSpeedComment>Airflow speed at full thrust. Vanilla 90.</MST.jetMaxSpeedComment>
+    <MST.jetHalfSpeed>Half speed (m/s)</MST.jetHalfSpeed>
+    <MST.jetHalfSpeedComment>Airflow speed at half power. Vanilla 30.</MST.jetHalfSpeedComment>
+    <MST.jetMaxTemperature>Max temp (C)</MST.jetMaxTemperature>
+    <MST.jetMaxTemperatureComment>Exhaust temperature at full thrust. Vanilla 750.</MST.jetMaxTemperatureComment>
+    <MST.jetMaxPressureRatio>Max pressure ratio</MST.jetMaxPressureRatio>
+    <MST.jetMaxPressureRatioComment>Outlet / inlet pressure ratio at full thrust. Vanilla 2.</MST.jetMaxPressureRatioComment>
+    <MST.jetHalfPressureRatio>Half pressure ratio</MST.jetHalfPressureRatio>
+    <MST.jetHalfPressureRatioComment>Outlet / inlet pressure ratio at half power. Vanilla 1.1.</MST.jetHalfPressureRatioComment>
+    <MST.jetInletPressureRatio>Inlet pressure ratio</MST.jetInletPressureRatio>
+    <MST.jetInletPressureRatioComment>Suction ratio on the intake side; lower pulls harder. Vanilla 0.5.</MST.jetInletPressureRatioComment>
+    <MST.jetOxygenPercent>Exhaust oxygen (%)</MST.jetOxygenPercent>
+    <MST.jetOxygenPercentComment>Percentage number (13 = 13%), not 0-1. Vanilla 13.</MST.jetOxygenPercentComment>
+    <MST.jetColumnHeight>Column height (cells)</MST.jetColumnHeight>
+    <MST.jetColumnHeightComment>Length of the air column blown upward. Vanilla 5.</MST.jetColumnHeightComment>
+    <MST.jetOxygenConsumptionPercent>Oxygen use (%/s)</MST.jetOxygenConsumptionPercent>
+    <MST.jetOxygenConsumptionPercentComment>Percentage of intake oxygen burned per second (8 = 8%/s). Vanilla 8.</MST.jetOxygenConsumptionPercentComment>
+    <MST.jetFlameoutOxygenKPa>Flameout (kPa)</MST.jetFlameoutOxygenKPa>
+    <MST.jetFlameoutOxygenKPaComment>Flames out below this intake oxygen pressure. Vanilla 12.</MST.jetFlameoutOxygenKPaComment>
+    <MST.jetRelightOxygenKPa>Relight (kPa)</MST.jetRelightOxygenKPa>
+    <MST.jetRelightOxygenKPaComment>Can only relight above this value; must be higher than flameout. Vanilla 14.</MST.jetRelightOxygenKPaComment>
+    <MST.jetAllowEasyRotation>Easy rotation</MST.jetAllowEasyRotation>
+    <MST.jetAllowEasyRotationComment>Allow rotating the building in place instead of rebuilding it.</MST.jetAllowEasyRotationComment>
+    <MST.aoCompressorSection>Compressor</MST.aoCompressorSection>
+    <MST.aoCompressorNote>Target pressure is set from the building's own UI; the max here is just the right end of that slider. Leaving a product def empty uses AO's default tank.</MST.aoCompressorNote>
+    <MST.compressorIntakeM3PerTick>Intake (m3/tick)</MST.compressorIntakeM3PerTick>
+    <MST.compressorIntakeM3PerTickComment>Volume pulled from the surroundings each tick. Vanilla 1/30.</MST.compressorIntakeM3PerTickComment>
+    <MST.compressorRunningWatts>Running (W)</MST.compressorRunningWatts>
+    <MST.compressorRunningWattsComment>Power draw while working. Vanilla 800.</MST.compressorRunningWattsComment>
+    <MST.compressorIdleWatts>Idle (W)</MST.compressorIdleWatts>
+    <MST.compressorIdleWattsComment>Power draw while idle. Vanilla 20.</MST.compressorIdleWattsComment>
+    <MST.compressorMaxGoalKPa>Max target (kPa)</MST.compressorMaxGoalKPa>
+    <MST.compressorMaxGoalKPaComment>Upper end of the target-pressure slider in the building UI. Vanilla 150.</MST.compressorMaxGoalKPaComment>
+    <MST.compressorSeparateOxygen>Separate oxygen</MST.compressorSeparateOxygen>
+    <MST.compressorSeparateOxygenComment>Compress oxygen into oxygen tanks instead of plain air tanks.</MST.compressorSeparateOxygenComment>
+    <MST.compressorProductDef>Product def</MST.compressorProductDef>
+    <MST.compressorProductDefComment>Empty = AO_AirTank.</MST.compressorProductDefComment>
+    <MST.compressorOxygenProductDef>Oxygen def</MST.compressorOxygenProductDef>
+    <MST.compressorOxygenProductDefComment>Empty = AO_OxygenTank. Only used when oxygen separation is on.</MST.compressorOxygenProductDefComment>
+    <MST.aoGasTankSection>Gas tank</MST.aoGasTankSection>
+    <MST.aoGasTankNote>Oxygen takes a percentage number. Burst temperature is Celsius; the tank's own temperature is simulated by AO and is not affected here.</MST.aoGasTankNote>
+    <MST.gasTankOxygenPercent>Oxygen (%)</MST.gasTankOxygenPercent>
+    <MST.gasTankOxygenPercentComment>Percentage number released with the gas (21 = air). Vanilla 21.</MST.gasTankOxygenPercentComment>
+    <MST.gasTankExplodeAboveCelsius>Burst temp (C)</MST.gasTankExplodeAboveCelsius>
+    <MST.gasTankExplodeAboveCelsiusComment>The tank explodes above this temperature. Vanilla 200.</MST.gasTankExplodeAboveCelsiusComment>
+    <MST.aoHumidifierSection>Humidifier</MST.aoHumidifierSection>
+    <MST.aoHumidifierNote>Target humidity is a per-building saved value (CompHumidifier.goalPercent), not a Def field, so it is set from the building's own UI instead.</MST.aoHumidifierNote>
+    <MST.humidifierMaxKgPerHour>Max output (kg/h)</MST.humidifierMaxKgPerHour>
+    <MST.humidifierMaxKgPerHourComment>Water evaporated per hour at full power. Vanilla 1.</MST.humidifierMaxKgPerHourComment>
+    <MST.humidifierRunningWatts>Running (W)</MST.humidifierRunningWatts>
+    <MST.humidifierRunningWattsComment>Power draw while working. Vanilla 60.</MST.humidifierRunningWattsComment>
+    <MST.humidifierIdleWatts>Idle (W)</MST.humidifierIdleWatts>
+    <MST.humidifierIdleWattsComment>Power draw while idle. Vanilla 5.</MST.humidifierIdleWattsComment>
+    <MST.aoDehumidifierSection>Dehumidifier</MST.aoDehumidifierSection>
+    <MST.aoDehumidifierNote>Same as the humidifier: target humidity is a per-building saved value, not a Def field.</MST.aoDehumidifierNote>
+    <MST.dehumidifierSweptVolumes>Swept volumes</MST.dehumidifierSweptVolumes>
+    <MST.dehumidifierSweptVolumesComment>Room volumes of air processed per interval. Vanilla 1.</MST.dehumidifierSweptVolumesComment>
+    <MST.dehumidifierRunningWatts>Running (W)</MST.dehumidifierRunningWatts>
+    <MST.dehumidifierRunningWattsComment>Power draw while working. Vanilla 300.</MST.dehumidifierRunningWattsComment>
+    <MST.dehumidifierIdleWatts>Idle (W)</MST.dehumidifierIdleWatts>
+    <MST.dehumidifierIdleWattsComment>Power draw while idle. Vanilla 10.</MST.dehumidifierIdleWattsComment>
+    <MST.aoMainspringSection>Mainspring</MST.aoMainspringSection>
+    <MST.aoMainspringNote>Winding time applies immediately; auto-rewind is copied into the building at init and saved, so it only affects new buildings. This comp requires a fan with the StoredEnergy power source on the same def.</MST.aoMainspringNote>
+    <MST.mainspringWindingTicks>Winding (ticks)</MST.mainspringWindingTicks>
+    <MST.mainspringWindingTicksComment>Ticks to wind the spring fully; must be positive. Vanilla 180.</MST.mainspringWindingTicksComment>
+    <MST.mainspringAutoRewind>Auto rewind</MST.mainspringAutoRewind>
+    <MST.mainspringAutoRewindComment>Read once at building init and saved; only new buildings are affected.</MST.mainspringAutoRewindComment>
+    <MST.aoRainCollectorSection>Rain collector</MST.aoRainCollectorSection>
+    <MST.aoRainCollectorNote>Capacity is in water units; 1 unit = 0.25 kg.</MST.aoRainCollectorNote>
+    <MST.rainCollectorCatchmentM2>Catchment (m2)</MST.rainCollectorCatchmentM2>
+    <MST.rainCollectorCatchmentM2Comment>Rain-catching area, which sets the hourly yield. Vanilla 1.</MST.rainCollectorCatchmentM2Comment>
+    <MST.rainCollectorCapacityUnits>Capacity (units)</MST.rainCollectorCapacityUnits>
+    <MST.rainCollectorCapacityUnitsComment>1 unit = 0.25 kg of water. Vanilla 150.</MST.rainCollectorCapacityUnitsComment>
+    <MST.aoIrrigatorSection>Irrigator</MST.aoIrrigatorSection>
+    <MST.aoIrrigatorNote>Spray ticks times session mm sets how much one session waters; the next session starts only after the check interval, and rest ticks is the pause between sessions.</MST.aoIrrigatorNote>
+    <MST.irrigatorSprayRadius>Spray radius</MST.irrigatorSprayRadius>
+    <MST.irrigatorSprayRadiusComment>Radius covered by the spray head. Vanilla 9.</MST.irrigatorSprayRadiusComment>
+    <MST.irrigatorPumpRadius>Pump radius</MST.irrigatorPumpRadius>
+    <MST.irrigatorPumpRadiusComment>How far away it can draw water from. Vanilla 3.</MST.irrigatorPumpRadiusComment>
+    <MST.irrigatorSprayTicks>Spray duration</MST.irrigatorSprayTicks>
+    <MST.irrigatorSprayTicksComment>How long one spray session lasts. Vanilla 300.</MST.irrigatorSprayTicksComment>
+    <MST.irrigatorSessionMm>Water per session (mm)</MST.irrigatorSessionMm>
+    <MST.irrigatorSessionMmComment>Millimetres delivered in one session. Vanilla 20.</MST.irrigatorSessionMmComment>
+    <MST.irrigatorCheckIntervalTicks>Check interval</MST.irrigatorCheckIntervalTicks>
+    <MST.irrigatorCheckIntervalTicksComment>How often it checks soil dryness to start the next session. Vanilla 2000.</MST.irrigatorCheckIntervalTicksComment>
+    <MST.irrigatorRestTicks>Rest duration</MST.irrigatorRestTicks>
+    <MST.irrigatorRestTicksComment>Pause between two sessions. Vanilla 300.</MST.irrigatorRestTicksComment>
+    <MST.irrigatorSprayWatts>Spray power (W)</MST.irrigatorSprayWatts>
+    <MST.irrigatorSprayWattsComment>Power draw while spraying. Vanilla 150.</MST.irrigatorSprayWattsComment>
+    <MST.irrigatorIdleWatts>Idle (W)</MST.irrigatorIdleWatts>
+    <MST.irrigatorIdleWattsComment>Power draw while idle. Vanilla 10.</MST.irrigatorIdleWattsComment>
+    <MST.aoBuildingExtSection>Building atmosphere</MST.aoBuildingExtSection>
+    <MST.aoBuildingExtNote>All four factors are relative to the value AO derives from hit points: 1 = standard, 0 = no leak / no heat exchange. Only buildings that already carry this extension are affected (in vanilla: geothermal generator, cooler, vent, gravship hull, vac barrier). Adding the extension to other buildings is a structural change this mod does not do.</MST.aoBuildingExtNote>
+    <MST.buildingPressureTolerance>Pressure tolerance</MST.buildingPressureTolerance>
+    <MST.buildingPressureToleranceComment>x the pressure rating AO derives from hit points. 1 = standard, 5 = gravship hull, 1000000 = vac barrier.</MST.buildingPressureToleranceComment>
+    <MST.buildingWindTolerance>Wind tolerance</MST.buildingWindTolerance>
+    <MST.buildingWindToleranceComment>x the derived wind rating. 1 = standard, 1.7 = what AO gives coolers and vents.</MST.buildingWindToleranceComment>
+    <MST.buildingAirLeak>Air leak</MST.buildingAirLeak>
+    <MST.buildingAirLeakComment>0 = airtight, 1 = normal leakage.</MST.buildingAirLeakComment>
+    <MST.buildingHeatExchange>Heat exchange</MST.buildingHeatExchange>
+    <MST.buildingHeatExchangeComment>0 = fully insulated, 1 = normal heat exchange.</MST.buildingHeatExchangeComment>
+    <MST.buildingAirPassable>Air passable</MST.buildingAirPassable>
+    <MST.buildingAirPassableComment>Pawns cannot pass but air can (the geothermal generator works this way). Drag is scaled by the fill percent below.</MST.buildingAirPassableComment>
+    <MST.buildingAirFillPercent>Air fill percent</MST.buildingAirFillPercent>
+    <MST.buildingAirFillPercentComment>-1 = use the def's own fillPercent; 0.5 = half filled (the geothermal generator's value).</MST.buildingAirFillPercentComment>
 </LanguageData>
