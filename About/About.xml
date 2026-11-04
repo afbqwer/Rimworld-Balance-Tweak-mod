@@ -25,5 +25,5 @@ Edit game Def data in a datatable within its own window, opened from Mod Setting
     <li>vanillaexpanded.vpsycastse</li>
     <li>assssssqwww.ModResearchTweak</li>
   </loadAfter>
-  <modVersion IgnoreIfNoMatchingField="True">1.8.0</modVersion>
+  <modVersion IgnoreIfNoMatchingField="True">2.0.0</modVersion>
 </ModMetaData>
