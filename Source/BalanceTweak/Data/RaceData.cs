@@ -349,6 +349,10 @@ class RaceData : TweakData<RaceData>, ISubItemHost
 
     public static bool HiddenIfNoAoPawnExtension(TweakData data) => !AoHelper.HasExt(data.def, AoHelper.PawnExt);
 
+    /// <summary>需水倍率。1 = 标准；0.3 = 骆驼那一档；0 = 永不失水。</summary>
+    [TweakField(StatDef = "AO_HydrationRateFactor", Style = ColumnStyle.Float, MayRequire = TweakDatabase.AO)]
+    public float? hydrationRateFactor = null;
+
     [TweakField(NotAColumn = true, Style = ColumnStyle.TurretSlotList, MayRequire = TweakDatabase.FFF)]
     public List<TurretSlotRecord>? turretSlots = null;
 

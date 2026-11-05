@@ -113,4 +113,6 @@
     <MST.aoRaceConfigComment>Atmosphere Overhaul 的种族大气扩展：冲击波耐性倍率。</MST.aoRaceConfigComment>
     <MST.aoRaceConfigEdit>编辑</MST.aoRaceConfigEdit>
     <MST.aoRaceNote>倍率 1 = 标准阈值，2 = 需要两倍超压才受伤。AO 没有给任何种族挂这个扩展，只有别的兼容 Mod 会加。</MST.aoRaceNote>
+    <MST.hydrationRateFactor>需水量</MST.hydrationRateFactor>
+    <MST.hydrationRateFactorComment>Atmosphere Overhaul 的需水倍率，乘在饮水需求的消耗速度上。1 = 标准（AO 默认）；0.3 = 骆驼那一档；0 = 永不失水。AO 自己只给双峰驼、耳廓狐、鬣蜴与陆龟配了值，其余种族改这里即可生效。清空 = 移除该项，回到默认。</MST.hydrationRateFactorComment>
 </LanguageData>

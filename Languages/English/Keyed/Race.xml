@@ -113,4 +113,6 @@
     <MST.aoRaceConfigComment>Atmosphere Overhaul's race extension: blast tolerance multiplier.</MST.aoRaceConfigComment>
     <MST.aoRaceConfigEdit>Edit</MST.aoRaceConfigEdit>
     <MST.aoRaceNote>1 = standard thresholds, 2 = twice the overpressure needed. AO attaches this extension to no race; only other compatibility mods add it.</MST.aoRaceNote>
+    <MST.hydrationRateFactor>Water need</MST.hydrationRateFactor>
+    <MST.hydrationRateFactorComment>Atmosphere Overhaul's hydration factor, multiplying how fast the water need drains. 1 = standard (AO default); 0.3 = the dromedary tier; 0 = never loses water. AO only ships values for the dromedary, fennec fox, iguana and tortoise; edit here for any other race. Clear = remove the entry, back to default.</MST.hydrationRateFactorComment>
 </LanguageData>
