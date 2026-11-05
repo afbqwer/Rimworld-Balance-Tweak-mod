@@ -425,7 +425,7 @@ public float? fanMaxPowerWatts = null;
 
 - 字段类型必须是 `TweakID?`（占位，永远不存值）。
 - `Editor` 必须是本程序集的 `Window` 子类、且只有一个 `(TweakData)` 构造。启动期校验一次，写错是一条日志，不会等玩家点下去才抛。**不许指向可选 Mod 的类型** —— 那会编出 typeref（`AssemblyReferenceTests` 会拦）。
-- 按钮文字默认 `MST.{字段名}Edit`（例：`aoBuildingConfig` → `MST.aoBuildingConfigEdit`），`CheckLoc` 把它认作代码引用，不会成孤儿键。要按行换词时加 `ButtonText = nameof(静态方法)`（唯一用例：中继配置没有任何 Comp 时说「添加」）。
+- 按钮文字默认 `MST.{字段名}Edit`（例：`aoBuildingConfig` → `MST.aoBuildingConfigEdit`），`CheckLoc` 把它认作代码引用，不会成孤儿键。要按行换词时加 `ButtonText = nameof(静态方法)`，两个用例：中继配置没有任何 Comp 时说「添加」；AO 建筑在没有任何 AO Comp / 扩展时说「添加」（改建筑大气属性任一格就会现挂扩展），有则说「编辑」。
 - **列标题与窗口标题可以是同一个 key**：`MST.aoBuildingConfig` 既是列表头（「大气建筑」）又是窗口标题，窗口用 `TitleOf(data)` 按宿主选 key 即可。字段名因此要起得像个标签（`aoBuildingConfig` 而不是 `atmosphereTrigger`）。
 - **`Hidden` 是每帧每行求值的**，判据别写成九次 `FindComp`：`AoBuilding.HasAny` 用一次遍历 + 全名 `HashSet`（AO 的 Comp 全 `sealed`，精确匹配即可）。
 
@@ -481,6 +481,7 @@ public class AtmosphereConfigWindow : ConfigWindow
 | `ConfigRow.Def` | 按钮 → `DefSelectionWindow` | 由选择器 |
 | `ConfigRow.String` | 内联文本框 | `CheckAndApply` |
 | `ConfigRow.List` | 按钮 → 该列样式对应的列表窗口（复用表格那张 `EditorWindowFactory`） | 由列表窗口 |
+| `ConfigRow.Info` | 只读行：左边标签、右边一段由回调算出的文本（例：HP → 耐压 kPa）。不绑字段，无法写入；`field` 是按 labelKey 拼的合成键，同一节内必须唯一 | — |
 | `validate` | 窗口底部「配置检查」：错误红 / 提示黄 / 无问题绿 | — |
 
 四条不变式：
@@ -491,7 +492,7 @@ public class AtmosphereConfigWindow : ConfigWindow
 - **窗口高度不用传死值**：内容高度在绘制前算好再开滚动区（旧实现传死 `viewHeight`，字段一多就滚不到底）。`preferredHeight` 只影响窗口初始高度。
 - **IMGUI 全局状态**：改 `Text.Font` / `Text.Anchor` / `Text.WordWrap` 一律"保存 → 改 → 还原"（见 §4.7）。覆写 `DrawBody` 时自己也要守这条。
 
-> 现有 12 个触发列全部走 `ColumnStyle.Config`：Fortified 的 6 个（`APSConfigWindow` 26 行 / `SweepConfigWindow` 54 行 / `ShieldConfigWindow` 94 行 / `RelayConfigWindow` 93 行（六节，服务种族 / 建筑 / 服装三个宿主）+ `TurretConfigWindow` / `MechWeaponFilterWindow` 两个手写窗口）+ AO 的 6 个（`AtmosphereConfigWindow` 一个类服务六个宿主：地形 / 伤害 / 服饰 / 健康 / 种族 / 建筑，共十四节）。
+> 现有 12 个触发列全部走 `ColumnStyle.Config`（其中 `BuildingData.aoBuildingConfig` 不设 `Hidden`：它承担"给普通建筑现挂大气扩展"的入口职责，代价是建筑页每行都有按钮）：Fortified 的 6 个（`APSConfigWindow` 26 行 / `SweepConfigWindow` 54 行 / `ShieldConfigWindow` 94 行 / `RelayConfigWindow` 93 行（六节，服务种族 / 建筑 / 服装三个宿主）+ `TurretConfigWindow` / `MechWeaponFilterWindow` 两个手写窗口）+ AO 的 6 个（`AtmosphereConfigWindow` 一个类服务六个宿主：地形 / 伤害 / 服饰 / 健康 / 种族 / 建筑，共十四节）。
 >
 > AO 那 6 个是这条基础设施的**第一个「以后会不断复用」的用例**：建筑页原本要 57 列（9 个 Comp + 1 个扩展），
 > 加上 P2 的 18 格一共 75 格，现在六个页签各只剩 1 列。经验：**字段数 ≥3、且各行的命中率不齐时，
@@ -511,6 +512,7 @@ public class AtmosphereConfigWindow : ConfigWindow
 | 字符串 / 跨 Mod 枚举 | `ApplyS` + `Enum.TryParse` + `Enum.IsDefined` 自己校验；或用 `AoHelper.ApplyString` | 枚举类型来自对方程序集，只能按全名反射 |
 | Def 引用 | `AoHelper.ApplyDef<ThingDef>(this, props, "成员名", nameof(字段))` | `ApplyF<TV>` 要求 `TV : struct`，Def 是类；内部走 `ApplyDefRef` → `ApplyD` |
 | 静态缓存 | `ClearHarmfulGases` / `ClearGroundCache` / `ClearBuildingExtensionCache` | 只在**值被固化**或**增删结构**时才需要，改 Comp 字段不用 |
+| **现挂扩展** | `AoHelper.EnsureExt(def, typeName)` → 反射 new 挂进 `modExtensions` | 挂完**必须清对应 Cache**（`For(def)` 只在缺键时查，不清永远返回 `Defaults`）；摘除走 `RemoveExtAddedByUs`，只认本 Mod 亲手挂的那个（defName 集合），XML / 别的 Mod 配的不动 |
 
 > 三个 `Apply*Ref` 桥（`ApplyRef` / `ApplyStrRef` / `ApplyDefRef`）都是「基类给虚签名、泛型侧一行转调」。
 > 必须这么绕的原因：`ApplyV` / `ApplyS` / `ApplyD` 都声明在 `TweakData<T>` 上，静态辅助类只持有 `TweakData` 基类引用；

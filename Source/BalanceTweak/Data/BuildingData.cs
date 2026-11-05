@@ -331,15 +331,26 @@ class BuildingData : TweakData<BuildingData>
 
     // ── Atmosphere Overhaul：建筑（可选 Mod，见 AtmosphereConfigWindow）──
     // AO 给建筑挂了 9 个 CompProperties + 1 个 BuildingAtmosphereExtension，一共 57 个数值，
-    // 但每个建筑只命中其中 2~10 个：全部做成列会让建筑页签多 57 列恒空白，列宽与列序被永久占住。
+    // 每个建筑只命中其中 2~10 个：全部做成列会让建筑页签多 57 列恒空白。
     // 做法与 P2 一致 —— 只留一个只读触发列，字段全部 NotAColumn，窗口按"实际挂了哪些 Comp"分节。
+    //
+    // 触发列对**所有建筑**显示（不加 Hidden）：建筑大气扩展本来只有 5 个原版建筑有，
+    // 而"给普通墙 / 门加扩展"必须有一个入口，表格里没有别的单元格可点。
 
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
-        Editor = typeof(AtmosphereConfigWindow), MayRequire = TweakDatabase.AO,
-        Hidden = nameof(HiddenIfNoAoBuildingData))]
+        Editor = typeof(AtmosphereConfigWindow), ButtonText = nameof(AoBuildingConfigButtonText),
+        MayRequire = TweakDatabase.AO)]
     public TweakID? aoBuildingConfig = null;
 
-    public static bool HiddenIfNoAoBuildingData(TweakData data) => !AoBuilding.HasAny(data.def);
+    /// <summary>
+    /// 这个 Def 上没有任何 AO 建筑数据（九个 Comp 之一、大气扩展都没有）时按钮说「添加」，
+    /// 窗口里改建筑大气属性的任一格就会现挂扩展；有则说「编辑」。
+    /// 与 <see cref="RaceData.RelayConfigButtonText"/> 同一套机制（<see cref="TweakFieldAttribute.ButtonText"/>）。
+    /// </summary>
+    public static string AoBuildingConfigButtonText(TweakData data)
+        => AoBuilding.HasAny(data.def)
+            ? "MST.aoBuildingConfigEdit".Translate().RawText
+            : "MST.aoBuildingConfigAdd".Translate().RawText;
 
     // 风扇（CompProperties_SingleFieldFan）：4 个风扇共用这一个 Comp，靠字段值区分。
     /// <summary>供能方式。<c>Electricity</c> = 接电网；<c>StoredEnergy</c> = 发条储能；<c>Unlimited</c> = 不耗能。</summary>
@@ -920,14 +931,37 @@ class BuildingData : TweakData<BuildingData>
     /// <summary>
     /// 把窗口里的值写回 AO 的 Comp / 扩展。三态门控，没动过的字段不写；没有对应 Comp 的建筑直接跳过。
     /// <para>
-    /// <b>不用清任何缓存</b>：这些 Comp 每 tick 现读 <c>Props.xxx</c>；<c>BuildingAtmosphereExtension</c>
-    /// 的静态 <c>Cache</c> 只缓存**实例引用**、字段是活的（见 §4.0）。只有"增删扩展"才需要清，
-    /// 而本 Mod 不做增删。
+    /// <b>建筑大气扩展可以现挂</b>：六格里只要有一格被设过值，而 Def 上还没有扩展，就在这里
+    /// <c>new</c> 一个挂上去（<see cref="AoHelper.EnsureExt"/>）。挂完必须清 AO 的
+    /// <c>BuildingAtmosphereExtension.Cache</c>，否则 <c>For(def)</c> 一直返回共享的 <c>Defaults</c>，
+    /// 改动看起来写了、读出来还是默认值。六格全清空时再摘掉（只摘本 Mod 挂的那个）。
+    /// </para>
+    /// <para>
+    /// 九个 Comp 不用清任何缓存：它们每 tick 现读 <c>Props.xxx</c>。
     /// </para>
     /// </summary>
     private void ApplyAoBuilding()
     {
         if (!DataUtility.MayRequire(TweakDatabase.AO)) return;
+
+        bool wantsExt = buildingPressureTolerance != null || buildingWindTolerance != null
+            || buildingAirLeak != null || buildingHeatExchange != null
+            || buildingAirPassable != null || buildingAirFillPercent != null;
+
+        if (buildingAtmosphereExt == null && wantsExt)
+        {
+            buildingAtmosphereExt = AoHelper.EnsureExt(def, AoHelper.BuildingExt);
+            if (buildingAtmosphereExt == null)
+                Log.Warning($"[BalanceTweak] {def?.defName}：无法添加 BuildingAtmosphereExtension，" +
+                            "建筑大气属性的改动不会生效。");
+        }
+        else if (buildingAtmosphereExt != null && !wantsExt && AoHelper.AddedByUs(def))
+        {
+            // 六格全被清空 + 扩展是本 Mod 挂的 → 摘掉，回到「本来没有」的状态。
+            // AO 自己 XML 配的扩展不走这条（AddedByUs 为 false），否则一清空就把 AO 的配置抹了。
+            AoHelper.RemoveExtAddedByUs(def, AoHelper.BuildingExt);
+            buildingAtmosphereExt = null;
+        }
 
         if (buildingAtmosphereExt != null)
         {
@@ -1044,6 +1078,27 @@ class BuildingData : TweakData<BuildingData>
             AoHelper.ApplyF<float>(this, p, "sprayWatts", nameof(irrigatorSprayWatts));
             AoHelper.ApplyF<float>(this, p, "idleWatts", nameof(irrigatorIdleWatts));
         }
+    }
+
+    /// <summary>
+    /// 窗口里那行只读的耐压估算。优先用**窗口里还没写回扩展的字段值**，
+    /// 这样刚把倍率从 1 改成 5 时数字立刻变成 5 倍，而不是等下一次 Apply。
+    /// <para>
+    /// 参数依次：HP、AO 的额定值、开始掉血的压差（kPa）、一击摧毁的压差（kPa）。
+    /// </para>
+    /// </summary>
+    internal static string PressureInfoText(TweakData data)
+    {
+        if (data is not BuildingData bd || data.def is not ThingDef td) return "";
+
+        float factor = bd.buildingPressureTolerance
+                       ?? AoHelper.F(AoHelper.Ext(td, AoHelper.BuildingExt), "pressureToleranceFactor")
+                       ?? 1f;
+
+        var p = AoHelper.WallPressureOf(td, factor);
+        return "MST.aoPressureFormat".Translate(
+            p.hp.ToString("0"), p.rating.ToString("0"),
+            p.yieldKPa.ToString("0.#"), p.breakKPa.ToString("0.#")).RawText;
     }
 
     /// <summary>

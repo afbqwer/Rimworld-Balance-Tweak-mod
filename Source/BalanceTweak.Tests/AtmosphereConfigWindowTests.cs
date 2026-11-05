@@ -38,9 +38,10 @@ public class AtmosphereConfigWindowTests
     };
 
     private static IEnumerable<(ConfigSection Section, ConfigRow Row)> Rows()
-        => AtmosphereConfigWindow.Sections.SelectMany(s => s.rows.Select(r => (s, r)));
+        => AtmosphereConfigWindow.Sections.SelectMany(s => s.rows.Select(r => (s, r)))
+            .Where(x => x.r.kind != ConfigRow.RowKind.Info);
 
-    /// <summary>五个宿主上所有"只落盘、不出列"的 AO 字段（触发列本身不在此列）。</summary>
+    /// <summary>五个宿主上所有"只落盘、不出列"的 AO 字段（触发列与 Info 只读行不在此列）。</summary>
     private static Dictionary<string, Type> AoFields()
     {
         var map = new Dictionary<string, Type>();
@@ -57,6 +58,7 @@ public class AtmosphereConfigWindowTests
 
     /// <summary>
     /// 一格不多、一格不少：窗口的行集合必须与五个宿主上的 AO 字段集合完全相等。
+    /// <see cref="ConfigRow.RowKind.Info"/> 是只读行（不绑字段），已被 <see cref="Rows"/> 过滤掉。
     /// 加了字段忘加行 → 这里挂；写了行但字段名打错 → 这里也挂（<c>nameof</c> 打错会编译失败，
     /// 但"抄了别的宿主的字段名"能过编译）。
     /// </summary>
@@ -87,6 +89,7 @@ public class AtmosphereConfigWindowTests
         foreach (var section in AtmosphereConfigWindow.Sections)
         {
             var owners = section.rows
+                .Where(r => r.kind != ConfigRow.RowKind.Info)
                 .Select(r => AoFields().TryGetValue(r.field, out var t) ? t.Name : "?" + r.field)
                 .Distinct()
                 .ToList();
@@ -128,6 +131,24 @@ public class AtmosphereConfigWindowTests
     /// 过滤后不影响这条断言（它们指向别的窗口）。
     /// </para>
     /// </summary>
+    /// <summary>
+    /// Info 行不绑字段，<c>field</c> 是按 labelKey 拼的合成键 —— 两个 Info 行撞名会让
+    /// 缓存字典里的键互相覆盖，高度测量与绘制各自取到不同的行。
+    /// </summary>
+    [Fact]
+    public void 只读行的合成键互不冲突()
+    {
+        var infoRows = AtmosphereConfigWindow.Sections
+            .SelectMany(s => s.rows)
+            .Where(r => r.kind == ConfigRow.RowKind.Info)
+            .ToList();
+
+        Assert.True(infoRows.Count > 0, "窗口里没有任何 Info 行（耐压估算没有落点）");
+        var duplicated = infoRows.GroupBy(r => r.field).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        Assert.True(duplicated.Count == 0, "Info 行的合成键重复：" + string.Join(", ", duplicated));
+        Assert.All(infoRows, r => Assert.NotNull(r.infoText));
+    }
+
     [Fact]
     public void 每个宿主各一个触发列()
     {

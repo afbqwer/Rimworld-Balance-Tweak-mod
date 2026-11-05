@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using RimWorld;
 using Verse;
 
 namespace BalanceTweak;
@@ -129,6 +130,147 @@ internal static class AoHelper
     internal static object? Ext(Def? def, string typeName) => DataUtility.FindModExtension(def, typeName);
 
     internal static bool HasExt(Def? def, string typeName) => DataUtility.FindModExtension(def, typeName) != null;
+
+    /// <summary>
+    /// 本 Mod 亲手上过扩展的 Def（按 defName）。只用于判断「摘扩展时能不能动」：
+    /// XML 配的、别的 Mod 加的一律不碰。
+    /// </summary>
+    private static readonly HashSet<string> extAddedByUs = new();
+
+    internal static bool AddedByUs(Def? def) => def != null && extAddedByUs.Contains(def.defName);
+
+    /// <summary>
+    /// 保证 <paramref name="def"/> 上有该扩展：已经有就原样返回，没有就 new 一个挂上去。
+    /// <para>
+    /// 挂完必须清 <c>BuildingAtmosphereExtension.Cache</c> —— 它是
+    /// <c>Dictionary&lt;ThingDef, 扩展&gt;</c>，只在缺键时才查 <c>GetModExtension</c>；
+    /// 不清的话新扩展永远读不到，<c>For(def)</c> 一直返回那张共享的 <c>Defaults</c>。
+    /// </para>
+    /// <para>
+    /// 新建的实例全是字段默认值（倍率 1、<c>airFillPercent = -1</c>），与「没扩展」语义等价，
+    /// 所以这个操作本身不改变游戏行为，只是给了字段一个可写的落点。
+    /// </para>
+    /// </summary>
+    internal static object? EnsureExt(Def? def, string typeName, [CallerMemberName] string context = "")
+    {
+        if (def == null) return null;
+        var existing = Ext(def, typeName);
+        if (existing != null) return existing;
+
+        var type = T(typeName, context);
+        if (type == null) return null;
+        if (Activator.CreateInstance(type) is not DefModExtension instance)
+        {
+            Diagnostics.MissMember(type, ".ctor", "无参构造", context);
+            return null;
+        }
+
+        (def.modExtensions ??= new List<DefModExtension>()).Add(instance);
+        extAddedByUs.Add(def.defName);
+        ClearBuildingExtensionCache(context);
+        return instance;
+    }
+
+    /// <summary>
+    /// 摘掉**本 Mod 加的**扩展。XML 配的、别的 Mod 加的一律不动（返回 false）。
+    /// 用于「用户把窗口里那几格全清空了」的情况 —— 此时留着空扩展等于留下一堆恒等默认值的死字段。
+    /// </summary>
+    internal static bool RemoveExtAddedByUs(Def? def, string typeName, [CallerMemberName] string context = "")
+    {
+        if (def?.modExtensions == null) return false;
+        if (!extAddedByUs.Remove(def.defName)) return false;
+
+        int removed = def.modExtensions.RemoveAll(e => e != null && e.GetType().FullName == typeName);
+        if (removed > 0) ClearBuildingExtensionCache(context);
+        return removed > 0;
+    }
+
+    #endregion
+
+    #region 墙压估算
+
+    /// <summary>
+    /// AO 的风压/风载常数。全部取自 <c>LocalAtmosphereSettings.Default</c>（反射读，失败用源码里的初始值兜底），
+    /// 这样 AO 改默认值时窗口里显示的耐压值跟着变，而不是写死一套过期数字。
+    /// </summary>
+    private const string SettingsType = "AtmosphereOverhaul.Simulation.LocalAtmosphereSettings";
+
+    private static bool settingsRead;
+    private static float baseSpeed = 2.24f;
+    private static float speedPerHp = 0.056f;
+    private static float wallPressureScale = 0.0125f;
+    private static float shareBeta = 0.8f;
+    private static float capacityExponent = 1.7f;
+    private static float minCapacity = 0.25f;
+    private static float gustLoad = 2.5f;
+
+    private static void ReadSettings()
+    {
+        if (settingsRead) return;
+        settingsRead = true;
+
+        var t = T(SettingsType);
+        var defaults = t?.GetField("Default", StaticAny)?.GetValue(null);
+        if (defaults == null) return;         // 没装 AO / 改了结构：保持常量兜底
+
+        baseSpeed = F(defaults, "WindDamageBaseSpeed") ?? baseSpeed;
+        speedPerHp = F(defaults, "WindDamageSpeedPerHitPoint") ?? speedPerHp;
+        wallPressureScale = F(defaults, "WindDamageWallPressureScale") ?? wallPressureScale;
+        shareBeta = F(defaults, "WindDamageShareBeta") ?? shareBeta;
+        capacityExponent = F(defaults, "WindDamageCapacityExponent") ?? capacityExponent;
+        minCapacity = F(defaults, "WindDamageMinCapacity") ?? minCapacity;
+        gustLoad = F(defaults, "WindDamageGustLoad") ?? gustLoad;
+    }
+
+    /// <summary>一格墙的耐压估算结果（单位：Pa / 无量纲）。</summary>
+    internal readonly struct WallPressure
+    {
+        internal readonly float hp;
+        internal readonly float rating;
+        internal readonly float hold;
+        /// <summary>单格满血墙链开始掉血的两侧压差（kPa）。</summary>
+        internal readonly float yieldKPa;
+        /// <summary>单格满血墙链被一击摧毁的压差（kPa）。</summary>
+        internal readonly float breakKPa;
+
+        internal WallPressure(float hp, float rating, float hold, float yieldKPa, float breakKPa)
+        {
+            this.hp = hp;
+            this.rating = rating;
+            this.hold = hold;
+            this.yieldKPa = yieldKPa;
+            this.breakKPa = breakKPa;
+        }
+    }
+
+    /// <summary>
+    /// 复刻 AO 的 <c>WindLoadField</c> 公式算一格墙的耐压，供窗口显示。
+    /// <para>
+    /// 载荷比 = <c>chainQ / (capacityCoef × Σhold)</c>，其中
+    /// <c>chainQ = 2 × scale × ΔP / 1.225</c>（ΔP 单位 Pa）；
+    /// 单格满血链的 <c>capacityCoef = (1 − 0.5·β)^exponent</c>（β=0.8、exp=1.7 时约 0.42）。
+    /// 反解出载荷比 = 1（开始掉血）与 = <c>WindDamageGustLoad</c>（一击摧毁）对应的 ΔP。
+    /// </para>
+    /// <para>
+    /// 这里按**单格墙链**算：多格厚链的 Σhold 变大、但 capacityCoef 同时掉到 0.25 附近，
+    /// 净收益只有两成左右，所以单格值是玩家实际会遇到的最常见情形。
+    /// </para>
+    /// </summary>
+    internal static WallPressure WallPressureOf(ThingDef? def, float pressureFactor)
+    {
+        ReadSettings();
+
+        float hp = Math.Max(1f, def?.GetStatValueAbstract(StatDefOf.MaxHitPoints) ?? 1f);
+        float speed = Math.Max(0.1f, baseSpeed + speedPerHp * hp);
+        float rating = speed * speed;
+        float hold = rating * Math.Max(0.01f, pressureFactor * 1.2f);
+
+        // capacityCoef 下限是 minCapacity（默认 0.25），单格链按公式算正好落在 0.42 附近。
+        float coef = Math.Max(minCapacity, (float)Math.Pow(Math.Max(0.01f, 1f - 0.5f * shareBeta), capacityExponent));
+        float paPerLoad = coef * hold * 1.225f / Math.Max(0.0001f, 2f * wallPressureScale);
+
+        return new WallPressure(hp, rating, hold, paPerLoad / 1000f, paPerLoad * gustLoad / 1000f);
+    }
 
     #endregion
 

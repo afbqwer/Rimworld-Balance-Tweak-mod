@@ -112,5 +112,5 @@
     <MST.aoRaceConfig>大气耐性</MST.aoRaceConfig>
     <MST.aoRaceConfigComment>Atmosphere Overhaul 的种族大气扩展：冲击波耐性倍率。</MST.aoRaceConfigComment>
     <MST.aoRaceConfigEdit>编辑</MST.aoRaceConfigEdit>
-    <MST.aoRaceNote>倍率 1 = 标准阈值，2 = 需要两倍超压才受伤。AO 自己没给任何种族挂这个扩展（只在 XML 注释里提过一句），所以没装别的兼容 Mod 时这一行的按钮不会出现。</MST.aoRaceNote>
+    <MST.aoRaceNote>倍率 1 = 标准阈值，2 = 需要两倍超压才受伤。AO 没有给任何种族挂这个扩展，只有别的兼容 Mod 会加。</MST.aoRaceNote>
 </LanguageData>

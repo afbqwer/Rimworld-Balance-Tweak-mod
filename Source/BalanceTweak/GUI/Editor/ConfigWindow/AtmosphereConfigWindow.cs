@@ -163,8 +163,12 @@ public class AtmosphereConfigWindow : ConfigWindow
                 ConfigRow.Float(nameof(BuildingData.irrigatorIdleWatts), 0f, 100000f))
             .Note("MST.aoIrrigatorNote"),
 
-        // ── 建筑大气属性（BuildingAtmosphereExtension）：原版建筑唯一可改的一组 ──
-        ConfigSection.Of("MST.aoBuildingExtSection", AoBuilding.HasAtmosphereExtension,
+        // ── 建筑大气属性（BuildingAtmosphereExtension）：对**所有建筑**开放 ──
+        // AO 只给 5 个原版建筑配了这个扩展；这一节不按"有没有扩展"隐藏，
+        // 因为"给普通墙 / 门加上"本身就是要做的事：改下面任一格都会现挂一个扩展。
+        // visible 传 null 而不是 HasAtmosphereExtension —— 后者会让节在普通墙上消失。
+        ConfigSection.Of("MST.aoBuildingExtSection", null,
+                ConfigRow.Info("MST.aoPressureInfo", BuildingData.PressureInfoText),
                 ConfigRow.Float(nameof(BuildingData.buildingPressureTolerance), 0f, 1000000f),
                 ConfigRow.Float(nameof(BuildingData.buildingWindTolerance), 0f, 1000f),
                 ConfigRow.Float(nameof(BuildingData.buildingAirLeak), 0f, 100f),

@@ -336,6 +336,6 @@
     <MST.thingSetMakerTagsComment>控制该物品参与任务奖励、物品藏匿点等 ThingSetMaker 随机内容时所属的类别。可增删 RewardStandardCore、RewardStandardHighFreq、RewardStandardMidFreq、RewardStandardLowFreq、RewardStandardQualitySuper、Techprint 等标签；清空后不参与这些类别。</MST.thingSetMakerTagsComment>
     <MST.visible>可见性</MST.visible>
     <MST.aoConfig>大气扩展</MST.aoConfig>
-    <MST.aoConfigIntro>以下字段来自 Atmosphere Overhaul 的可选扩展。逐列展示会把表格挤爆（每行通常只命中一两格），因此统一收进这个窗口。留空 = 用 AO 自己的默认值；改过的格子可以清空以还原原值。</MST.aoConfigIntro>
-    <MST.aoConfigNote>本窗口的每次提交都走与表格单元格完全相同的写入路径（三态 / 重置 / 缓存失效）；关窗时还没回车的输入也会提交。</MST.aoConfigNote>
+    <MST.aoConfigIntro>以下字段属于 Atmosphere Overhaul 的大气模拟。留空 = 保持 AO 自己的值；清空改过的格子即可还原。</MST.aoConfigIntro>
+    <MST.aoConfigNote>AO 的多数参数改完立即生效，少数在建筑生成时就抄进了实例并存档 —— 这类字段的说明里会写明只影响新建筑。</MST.aoConfigNote>
 </LanguageData>

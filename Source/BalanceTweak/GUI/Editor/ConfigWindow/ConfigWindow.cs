@@ -197,6 +197,8 @@ public class ConfigWindow : EditorWindowBase
             ConfigRow.RowKind.Enum => t == typeof(string) || t.IsEnum,
             ConfigRow.RowKind.Def => typeof(Def).IsAssignableFrom(t),
             ConfigRow.RowKind.List => typeof(System.Collections.IList).IsAssignableFrom(t),
+            // Info 行不绑字段（field 只是给缓存字典用的合成键），没有类型可校验。
+            ConfigRow.RowKind.Info => true,
             _ => false,
         };
     }
@@ -238,7 +240,15 @@ public class ConfigWindow : EditorWindowBase
         float h = 0f;
         if (!section.titleKey.NullOrEmpty()) h += LineHeight + 4f;
 
-        h += section.rows.Count(row => ColumnOf(row.field) != null) * LineHeight;
+        foreach (var row in section.rows)
+        {
+            if (row.kind == ConfigRow.RowKind.Info)
+            {
+                h += InfoRowHeight(row, width);
+                continue;
+            }
+            if (ColumnOf(row.field) != null) h += LineHeight;
+        }
 
         if (!section.noteKey.NullOrEmpty())
             h += CalcTextHeight(section.noteKey!, width, GameFont.Tiny) + 2f;
@@ -253,6 +263,12 @@ public class ConfigWindow : EditorWindowBase
 
         foreach (var row in section.rows)
         {
+            if (row.kind == ConfigRow.RowKind.Info)
+            {
+                DrawInfoRow(x, ref y, width, row);
+                continue;
+            }
+
             var cfg = ColumnOf(row.field);
             // 字段不存在（改了名字 / 漏了 NotAColumn 声明 / 这个宿主没有它）：整行不画也不占高。
             if (cfg == null) continue;
@@ -305,6 +321,58 @@ public class ConfigWindow : EditorWindowBase
         }
         Tip(fieldRect, row.commentKey);
         y += LineHeight;
+    }
+
+    /// <summary>
+    /// 只读行：左边标签、右边一段可换行的计算值。用于「当前 HP → 耐压多少 kPa」这类
+    /// 由别的字段推出来的量 —— 它不能写，写回去也没有落点。
+    /// <para>
+    /// 高度由文本长度决定，所以测量与绘制必须用同一个宽度算法（<see cref="InfoLabelWidth"/>），
+    /// 否则滚动区会多出一截永远滚不到的空白。
+    /// </para>
+    /// </summary>
+    private void DrawInfoRow(float x, ref float y, float width, ConfigRow row)
+    {
+        string text = row.infoText?.Invoke(data!) ?? "";
+        if (text.Length == 0) return;
+
+        float labelW = InfoLabelWidth(width);
+        float valueW = width - labelW;
+
+        var prevFont = Text.Font;
+        var prevWrap = Text.WordWrap;
+        var prevAnchor = Text.Anchor;
+
+        Text.Font = GameFont.Small;
+        Text.WordWrap = true;
+        float valueH = Text.CalcHeight(text, valueW);
+        float rowH = Mathf.Max(LineHeight, valueH);
+
+        Text.Anchor = TextAnchor.UpperLeft;
+        Widgets.Label(new Rect(x, y, labelW - Spacing, rowH), row.labelKey.Translate().RawText);
+        Widgets.Label(new Rect(x + labelW, y, valueW, valueH), text);
+
+        Text.Anchor = prevAnchor;
+        Text.WordWrap = prevWrap;
+        Text.Font = prevFont;
+        y += rowH;
+    }
+
+    private static float InfoLabelWidth(float width) => Mathf.Min(200f, width * 0.38f);
+
+    private float InfoRowHeight(ConfigRow row, float width)
+    {
+        string text = row.infoText?.Invoke(data!) ?? "";
+        if (text.Length == 0) return 0f;
+
+        var prevFont = Text.Font;
+        var prevWrap = Text.WordWrap;
+        Text.Font = GameFont.Small;
+        Text.WordWrap = true;
+        float h = Mathf.Max(LineHeight, Text.CalcHeight(text, width - InfoLabelWidth(width)));
+        Text.WordWrap = prevWrap;
+        Text.Font = prevFont;
+        return h;
     }
 
     private void DrawBoolRow(float x, ref float y, float width, StatColumnConfig cfg, ConfigRow row)
@@ -582,7 +650,7 @@ public sealed class ConfigSection
 /// </summary>
 public sealed class ConfigRow
 {
-    public enum RowKind { Int, Float, Percent, Bool, Enum, Def, String, List }
+    public enum RowKind { Int, Float, Percent, Bool, Enum, Def, String, List, Info }
 
     public readonly RowKind kind;
     public readonly string field;
@@ -591,8 +659,13 @@ public sealed class ConfigRow
     public readonly float min;
     public readonly float max;
 
-    private ConfigRow(RowKind kind, string field, string? labelKey, string? commentKey, float min, float max)
+    /// <summary>Info 行的取值回调（已翻译文本）。其余行为 null。</summary>
+    public readonly Func<TweakData, string>? infoText;
+
+    private ConfigRow(RowKind kind, string field, string? labelKey, string? commentKey, float min, float max,
+        Func<TweakData, string>? infoText = null)
     {
+        this.infoText = infoText;
         this.kind = kind;
         this.field = field;
         this.labelKey = labelKey ?? "MST." + field;
@@ -633,6 +706,13 @@ public sealed class ConfigRow
     /// </summary>
     public static ConfigRow List(string field, string? labelKey = null, string? commentKey = null)
         => new(RowKind.List, field, labelKey, commentKey, 0f, 0f);
+
+    /// <summary>
+    /// 只读行：显示由其它字段算出来的值（例：HP → 耐压 kPa）。
+    /// 不绑任何字段，<c>field</c> 只是缓存字典的合成键，所以必须唯一 —— 直接用 labelKey 拼。
+    /// </summary>
+    public static ConfigRow Info(string labelKey, Func<TweakData, string> text, string? commentKey = null)
+        => new(RowKind.Info, "$info." + labelKey, labelKey, commentKey, 0f, 0f, text);
 }
 
 /// <summary>一条配置检查结果。<see cref="isError"/> = 错误（红），否则是提示（黄）。</summary>
