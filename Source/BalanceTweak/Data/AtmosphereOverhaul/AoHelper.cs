@@ -18,28 +18,22 @@ namespace BalanceTweak;
 /// </para>
 ///
 /// <para>
-/// 三个自有 Def 类型（气体 / 全球气体 / 爆炸剖面）不在原版里，只能靠
-/// <c>[TweakFor(TypeName = ...)]</c> + 本类的全名字面量挂上去；字段读写全部走
-/// <see cref="G"/> / <see cref="ApplyF{TV}"/>。
+/// AO 是**可选 Mod**：这里一律按全名反射访问其类型与成员，绝不静态引用
+/// （包括 <c>typeof</c> / 泛型参数 / 把该类型的变量捕获进闭包 —— 见 <see cref="DataUtility"/> 顶部注释）。
+/// 闭包里只允许出现 <c>object</c> / <c>MemberInfo</c> / BCL 值类型。
 /// </para>
 /// </summary>
 internal static class AoHelper
 {
     internal const string Mod = TweakDatabase.AO;
 
-    // ── 自有 Def 类型（新页签的载体）──
-    internal const string GasDef = "AtmosphereOverhaul.Gases.AtmosphereGasDef";
-    internal const string GlobalGas = "AtmosphereOverhaul.Simulation.Global.GlobalGasDef";
-    internal const string Profile = "AtmosphereOverhaul.Simulation.AtmosphereExplosionProfileDef";
-
-    // ── 挂在原版 Def 上的扩展（现有页签扩列）──
+    // ── 挂在原版 Def 上的扩展 ──
     internal const string TerrainExt = "AtmosphereOverhaul.Simulation.AtmosphereTerrainExtension";
     internal const string BlastExt = "AtmosphereOverhaul.Pawns.BlastOverpressureExtension";
     internal const string ApparelExt = "AtmosphereOverhaul.Pawns.AtmosphereApparelExtension";
     internal const string HearingExt = "AtmosphereOverhaul.Pawns.HearingAftermathExtension";
     internal const string PawnExt = "AtmosphereOverhaul.Pawns.AtmospherePawnExtension";
     internal const string BuildingExt = "AtmosphereOverhaul.Simulation.BuildingAtmosphereExtension";
-    internal const string ExplosionExt = "AtmosphereOverhaul.Simulation.ExplosionAtmosphereExtension";
 
     /// <summary>跨 Mod 枚举：地形的地面温度模式（<c>Normal / Fixed / Capped</c>）。</summary>
     internal const string GroundMode = "AtmosphereOverhaul.Simulation.AtmosphereGroundMode";
@@ -48,7 +42,6 @@ internal static class AoHelper
     internal const string FanPowerSource = "AtmosphereOverhaul.Buildings.FanPowerSource";
 
     // ── 一次性静态缓存的宿主 ──
-    private const string BreathingGearType = "AtmosphereOverhaul.Pawns.BreathingGear";
     private const string GroundTableType = "AtmosphereOverhaul.Simulation.GroundMaterialTable";
 
     #region 类型解析
@@ -111,15 +104,6 @@ internal static class AoHelper
         var mi = DataUtility.FindMember(target.GetType(), member);
         if (mi == null) return;
         data.ApplyDefRef<TV>(field, v => DataUtility.SetMember(target, mi, v));
-    }
-
-    /// <summary>字符串版本（<c>readoutLabel</c> / <c>renderTexturePath</c> / <c>mapWeather</c>）。</summary>
-    internal static void ApplyString(TweakData data, object? target, string member, string field)
-    {
-        if (target == null) return;
-        var mi = DataUtility.FindMember(target.GetType(), member);
-        if (mi == null) return;
-        data.ApplyStrRef(field, v => DataUtility.SetMember(target, mi, v));
     }
 
     #endregion
@@ -276,29 +260,13 @@ internal static class AoHelper
 
     #region 静态缓存刷新
 
-    // AO 有四处 private static 一次性缓存，全程序集没有任何重置点。改完 Def 字段，代码仍读旧值，
-    // 日志里一句话都没有 —— 表现就是「功能做完了但不生效」。这里只处理必须清的三处：
-    //   · harmfulGases          0 → 正数时列表里根本没有这条气体
+    // AO 有三处 private static 一次性缓存，全程序集没有任何重置点。改完 Def 字段，代码仍读旧值，
+    // 日志里一句话都没有 —— 表现就是「功能做完了但不生效」。这里处理必须清的两处：
     //   · GroundTable.ResolveCache  地形扩展的六个字段全部被固化成结构体
     //   · BuildingAtmosphereExtension.Cache  增删扩展后仍返回旧的 Defaults
-    // 第四个 AtmosphereTuningManager.baseSettings 不做，理由见 Docs 计划 §5.1。
+    // AtmosphereTuningManager.baseSettings 不做，理由见 Docs 计划 §5.1。
 
     private const BindingFlags StaticAny = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-
-    /// <summary>
-    /// 把静态字段**置 null**（下次读时由 AO 自己重建）。
-    /// 只能用在「null 即缓存未建」的字段上：<c>harmfulGases</c> 的读取是
-    /// <c>if (harmfulGases == null) 重建</c>，清空集合会让它永远非 null、永远不重建 ——
-    /// 那比不刷新更糟（所有气体一起失去毒性）。
-    /// </summary>
-    internal static void ResetStaticToNull(string typeName, string fieldName, [CallerMemberName] string context = "")
-    {
-        var type = T(typeName, context);
-        if (type == null) return;
-        var field = type.GetField(fieldName, StaticAny);
-        if (field == null) { Diagnostics.MissMember(type, fieldName, "静态字段", context); return; }
-        field.SetValue(null, null);
-    }
 
     /// <summary>
     /// 清空静态集合（字典 / 列表），供只做查表缓存的容器使用。
@@ -327,10 +295,6 @@ internal static class AoHelper
         if (gate != null) { lock (gate) { Clear(); } }
         else Clear();
     }
-
-    /// <summary><c>BreathingGear.harmfulGases</c>：哪些气体算「有害」，只在 == null 时建一次。</summary>
-    internal static void ClearHarmfulGases([CallerMemberName] string context = "")
-        => ResetStaticToNull(BreathingGearType, "harmfulGases", context);
 
     /// <summary><c>GroundMaterialTable.ResolveCache</c>：地形扩展六个字段的固化结果。</summary>
     internal static void ClearGroundCache([CallerMemberName] string context = "")

@@ -384,7 +384,6 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// <summary>跨类型写入桥：静态辅助类（<c>AoHelper</c>）按它走同一套三态门控。</summary>
     internal override void ApplyRef<TV>(string f, Action<TV> set) => ApplyV(f, set);
 
-    internal override void ApplyStrRef(string f, Action<string> set) => ApplyS(f, set);
     internal override void ApplyDefRef<TV>(string f, Action<TV> set) => ApplyD<TV>(f, v => set(v!));
 
     /// <summary>

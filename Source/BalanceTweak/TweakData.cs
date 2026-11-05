@@ -754,13 +754,10 @@ public abstract partial class TweakData : IExposable
     /// 给"只持有 <c>TweakData</c> 引用"的静态辅助类用（如 <c>AoHelper.ApplyF</c> 要按反射写可选 Mod 的
     /// Def 字段）。<c>ApplyV</c> 声明在 <see cref="TweakData{T}"/> 上，静态类拿不到 ——
     /// 而"泛型方法 + 显式类型实参"又要求 TSelf 也写出来（C# 没有部分类型推断），
-    /// 23 个字段各写一遍 <c>&lt;float, AtmosphereGasData&gt;</c> 不划算。
+    /// 几十个字段各写一遍 <c>&lt;float, XxxData&gt;</c> 不划算。
     /// </para>
     /// </summary>
     internal virtual void ApplyRef<TV>(string fieldName, Action<TV> set) where TV : struct { }
-
-    /// <summary>字符串版的三态写入桥（见 <see cref="ApplyRef{TV}"/>）。</summary>
-    internal virtual void ApplyStrRef(string fieldName, Action<string> set) { }
 
     /// <summary>
     /// Def 引用版的三态写入桥（见 <see cref="ApplyRef{TV}"/>）：<c>ApplyD</c> 同样是

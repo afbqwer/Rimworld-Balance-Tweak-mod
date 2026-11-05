@@ -511,12 +511,12 @@ public class AtmosphereConfigWindow : ConfigWindow
 | 标量（float / int / bool） | `AoHelper.ApplyF<TV>(this, props, "成员名", nameof(字段))` | 内部走 `ApplyRef` → `ApplyV`，三态一致 |
 | 字符串 / 跨 Mod 枚举 | `ApplyS` + `Enum.TryParse` + `Enum.IsDefined` 自己校验；或用 `AoHelper.ApplyString` | 枚举类型来自对方程序集，只能按全名反射 |
 | Def 引用 | `AoHelper.ApplyDef<ThingDef>(this, props, "成员名", nameof(字段))` | `ApplyF<TV>` 要求 `TV : struct`，Def 是类；内部走 `ApplyDefRef` → `ApplyD` |
-| 静态缓存 | `ClearHarmfulGases` / `ClearGroundCache` / `ClearBuildingExtensionCache` | 只在**值被固化**或**增删结构**时才需要，改 Comp 字段不用 |
+| 静态缓存 | `ClearGroundCache` / `ClearBuildingExtensionCache` | 只在**值被固化**或**增删结构**时才需要，改 Comp 字段不用 |
 | **现挂扩展** | `AoHelper.EnsureExt(def, typeName)` → 反射 new 挂进 `modExtensions` | 挂完**必须清对应 Cache**（`For(def)` 只在缺键时查，不清永远返回 `Defaults`）；摘除走 `RemoveExtAddedByUs`，只认本 Mod 亲手挂的那个（defName 集合），XML / 别的 Mod 配的不动 |
 
-> 三个 `Apply*Ref` 桥（`ApplyRef` / `ApplyStrRef` / `ApplyDefRef`）都是「基类给虚签名、泛型侧一行转调」。
-> 必须这么绕的原因：`ApplyV` / `ApplyS` / `ApplyD` 都声明在 `TweakData<T>` 上，静态辅助类只持有 `TweakData` 基类引用；
-> 而 C# 不支持部分类型推断（写 `<float>` 就必须写全 `<float, AtmosphereGasData>`），75 个字段各写一遍不划算。
+> 两个 `Apply*Ref` 桥（`ApplyRef` / `ApplyDefRef`）都是「基类给虚签名、泛型侧一行转调」。
+> 必须这么绕的原因：`ApplyV` / `ApplyD` 都声明在 `TweakData<T>` 上，静态辅助类只持有 `TweakData` 基类引用；
+> 而 C# 不支持部分类型推断（写 `<float>` 就必须写全 `<float, TerrainData>`），75 个字段各写一遍不划算。
 >
 > **`turretConfig` 与 `mechWeaponFilter` 仍是手写窗口**，不是漏迁。它们的行不是"TweakData 上的一组平铺字段"：炮塔的节数与行数由 `turretSlots` 列表的**当前长度**决定，每行的读写目标是窗口里的工作副本 `slot.warmingTime`，改完整份列表再 `ApplyValue` 一次；武器过滤则要一个"从武器库里挑"的自定义选择器和一块只读的候选预览。给 `ConfigWindow` 补上这两样（动态节 + 行级取值/写回委托）等于把它改成通用表单引擎，P3 那种"九个静态节、五十六个平铺字段"的场景却要为这层抽象买单。收益不抵成本，所以保留手写。
 
