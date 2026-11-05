@@ -309,10 +309,11 @@ public override void Apply()
 
 **原始快照**（`TweakDatabase.GetOriginal`）是只读基准，任何派生同步都不许写它：
 
-- **快照是稀疏的、按需补建的**。Init 只建"本轮 Apply 会读到或写到"的行（`tweakDatas` ∪ Incident ∪ Recipe ∪ 被武器引用的弹丸），其余进 `deferredRows`，到窗口打开（`AdvanceInit` 分帧）或首次 `GetOriginal` 时才 `SetDef`。不变量是**被 Apply 写过的 def 一定有快照**，所以补建时读到的一定还是原值。
+- **快照是稀疏的、按需补建的**。分类阶段只记「Def + 规则」，**不造实例**（34k 个 Data 对象 20~30MB，九成会被推迟，先造出来等于白发一轮 GC）；Init 只建"本轮 Apply 会读到或写到"的行（`tweakDatas` ∪ Incident ∪ Recipe ∪ 被武器引用的弹丸），其余进 `deferredRows`，到窗口打开（`AdvanceInit` 分帧）或首次 `GetOriginal` 时才 `rule.Factory()` + `SetDef`。不变量是**被 Apply 写过的 def 一定有快照**，所以补建时读到的一定还是原值。
+  - 排序用的 `LoadingOrd` 缓存在 `TweakRule` 上（注册时读一次），因为排序发生时实例还不存在。
+  - UI 的行源是 `AllRows`（Def + 规则），不是 `AllOriginals`（只含已建的那些）。
   - 新增一处"Init 期按全量遍历快照"的逻辑 → 必须把那个页签加进 `MustBuildInInit`，否则它只看到一部分行。
   - 新增一处跨行写 def（像武器改弹丸那样）→ 必须把它加进 `PromoteCrossRowTargets`，否则目标行补建时读到的是改后值。
-  - 要遍历**全量**行用 `AllRows`；`AllOriginals` 只含已建的那些，别拿它当行源。
 - 建快照期间（`TweakDatabase.buildingOriginals`）跨行读取走原始层；**不要用 `SetDef(tweaked: false)` 反推**（自检探针 `MakeProbe` 也用 false，它要读当前 def）。
 - `ProjectileData.RefreshSharedWeapons` / `BuildingData.RefreshTurretGun` 跳过快照，只刷活实例。
 - 从快照克隆出的行在 `EnsureDisplayValues` 里补一次镜像同步（`WeaponData.SyncMirrorsFromProjectile`），因此 `Clone()` 必须清 `displayValuesEnsured`（基类 `TweakData.Clone()` 统一清零）。

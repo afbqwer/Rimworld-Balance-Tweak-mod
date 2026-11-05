@@ -73,6 +73,15 @@ public sealed class TweakRule
     /// <summary>Data 实例工厂（表达式树编译，避免 Activator 开销）。</summary>
     public Func<TweakData> Factory = null!;
 
+    /// <summary>
+    /// 该 Data 类的加载顺序（<see cref="TweakData.LoadingOrd"/>），注册时读一次缓存下来。
+    /// <para>
+    /// 分类阶段不再造实例（3.4 万个对象约 20~30MB），但建快照要按这个顺序稳定排序
+    /// （弹丸先于武器、武器先于兵种）。它是各子类写死的常量，缓存一份即可，不必为排序造对象。
+    /// </para>
+    /// </summary>
+    public int LoadingOrd = 100;
+
     private bool? _available;
 
     /// <summary>所需 Mod 是否就绪。延迟求值：首次使用时才读 ModsConfig。</summary>
@@ -234,6 +243,9 @@ public static class TweakRegistry
         try
         {
             rule.Factory = Expression.Lambda<Func<TweakData>>(Expression.New(dataType)).Compile();
+            // 读一次 LoadingOrd 缓存到规则上：建快照的排序要用它，而排序发生在"实例还不存在"的阶段。
+            // 每个规则只多造一个对象（36 条规则），与 3.4 万个的差别在量级上。
+            rule.LoadingOrd = rule.Factory().LoadingOrd;
         }
         catch (Exception e)
         {

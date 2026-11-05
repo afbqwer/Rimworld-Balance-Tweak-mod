@@ -35,17 +35,14 @@ public class LookupIndexTests
         var race = new ThingDef { defName = "BT_TestRace" };
         var bullet = new ThingDef { defName = "BT_TestBullet" };
 
-        // 刻意不调 SetDef、不给 id：这与 Init 里的真实时序一致（索引先于建快照）。
-        var bd = new BuildingData();
-        var rd = new RaceData();
-        var pd = new ProjectileData();
-        Assert.Equal(default, bd.id);   // 前提断言：此刻 id 确实是空的
+        // 索引阶段实例还不存在（分类只记 Def + 规则），所以这里只给规则的 DataType。
+        static TweakRule Rule<T>() => new() { DataType = typeof(T) };
 
-        var items = new List<(Def, TweakData, SettingType)>
+        var items = new List<(Def, TweakRule, SettingType)>
         {
-            (turret, bd, SettingType.Building),
-            (race, rd, SettingType.Race),
-            (bullet, pd, SettingType.Projectile),
+            (turret, Rule<BuildingData>(), SettingType.Building),
+            (race, Rule<RaceData>(), SettingType.Race),
+            (bullet, Rule<ProjectileData>(), SettingType.Projectile),
         };
 
         try
@@ -62,7 +59,7 @@ public class LookupIndexTests
         finally
         {
             // 这三个字典是全局静态的：测试里喂进去的假 defName 不能留给别的用例。
-            TweakDatabase.BuildLookupIndices(new List<(Def, TweakData, SettingType)>());
+            TweakDatabase.BuildLookupIndices(new List<(Def, TweakRule, SettingType)>());
         }
     }
 }

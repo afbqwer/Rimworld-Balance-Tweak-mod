@@ -25,8 +25,8 @@ public static partial class TweakDatabase
     /// （34k 个空对象约 15ms），贵的是 SetDef（读 def 填字段，20µs/行），那部分可以推迟。
     /// </para>
     /// </summary>
-    private static List<(Def def, TweakData data, SettingType type)> allRows = [];
-    public static IReadOnlyList<(Def def, TweakData data, SettingType type)> AllRows => allRows;
+    private static List<(Def def, TweakRule rule, SettingType type)> allRows = [];
+    public static IReadOnlyList<(Def def, TweakRule rule, SettingType type)> AllRows => allRows;
 
     /// <summary>
     /// 延迟建快照的行。Init 只建"Apply 期间会被读到或写到"的那些，其余在这里等：
@@ -36,7 +36,7 @@ public static partial class TweakDatabase
     /// 所以走到补建的行，def 必然还是原值，补出来的值是对的。
     /// </para>
     /// </summary>
-    private static Dictionary<TweakID, (Def def, TweakData data)>? deferredRows;
+    private static Dictionary<TweakID, (Def def, TweakRule rule)>? deferredRows;
 
     private static int deferredBuilt;
 
@@ -76,20 +76,21 @@ public static partial class TweakDatabase
         deferredRows.Remove(id);
         try
         {
-            row.data.SetDef(row.def, id.settingType, false);
-            originalData[id] = row.data;
+            var data = row.rule.Factory();
+            data.SetDef(row.def, id.settingType, false);
+            originalData[id] = data;
             deferredBuilt++;
 
             // 子项（招式 / 想法阶段 / 健康阶段 / 特性程度）同样要补 ——
             // 它们是独立的行，UI 与 Apply 都按 id 直接取，缺了就是整段列表空着。
-            if (row.data is ISubItemHost host)
+            if (data is ISubItemHost host)
             {
-                foreach (var sub in host.CreateSubItems(row.data, false))
+                foreach (var sub in host.CreateSubItems(data, false))
                 {
                     if (originalData.TryAdd(sub.id, sub)) deferredSubs.Add(sub);
                 }
             }
-            return row.data;
+            return data;
         }
         catch (Exception e)
         {
@@ -185,7 +186,12 @@ public static partial class TweakDatabase
     /// <summary>分类结果（含诊断用的统计）。</summary>
     private sealed class ClassifyResult
     {
-        public readonly List<(Def, TweakData, SettingType)> Items = new();
+        /// <summary>
+        /// 命中的行：<c>Def + 规则 + 页签</c>，<b>不含实例</b>。
+        /// 实例推迟到"确实要建快照"时再 <c>Factory()</c> —— 34k 个 Data 对象合计 20~30MB，
+        /// 在分类阶段造出来只是为了稍后把其中大半放进延迟表，等于白发一轮 GC。
+        /// </summary>
+        public readonly List<(Def, TweakRule, SettingType)> Items = new();
         public readonly Dictionary<SettingType, int> ByTab = new();
         public readonly Dictionary<Type, int> ByDefType = new();
         public readonly Dictionary<ThingCategory, int> FallbackByCategory = new();
@@ -229,7 +235,7 @@ public static partial class TweakDatabase
                         if (rule.IsFallback) continue;
                         if (rule.Matcher != null && !rule.Matcher(def)) continue;
 
-                        res.Items.Add((def, rule.Factory(), rule.Tab));
+                        res.Items.Add((def, rule, rule.Tab));
                         res.ByTab[rule.Tab] = res.ByTab.GetValueOrDefault(rule.Tab) + 1;
 
                         if (primaryDone)
@@ -255,7 +261,7 @@ public static partial class TweakDatabase
                         continue;
                     }
 
-                    res.Items.Add((def, fallback.Factory(), fallback.Tab));
+                    res.Items.Add((def, fallback, fallback.Tab));
                     res.ByTab[fallback.Tab] = res.ByTab.GetValueOrDefault(fallback.Tab) + 1;
                     res.Fallback++;
                     if (def is ThingDef thing)
@@ -327,7 +333,7 @@ public static partial class TweakDatabase
     /// </para>
     /// <para>只依赖 Def 本身，与 SetDef / Apply 的先后无关，所以放在分类之后、建快照之前。</para>
     /// </summary>
-    internal static void BuildLookupIndices(List<(Def def, TweakData data, SettingType type)> items)
+    internal static void BuildLookupIndices(List<(Def def, TweakRule rule, SettingType type)> items)
     {
         projectileDatas.Clear();
         turretBuildingDatas.Clear();
@@ -335,8 +341,8 @@ public static partial class TweakDatabase
 
         for (int i = 0; i < items.Count; i++)
         {
-            var (def, data, type) = items[i];
-            if (def == null || data == null) continue;
+            var (def, rule, type) = items[i];
+            if (def == null || rule == null) continue;
 
             // 键必须在这里现拼，不能用 data.id：id 是在随后的 SetDef 里才赋值的
             // （`TweakData<T>.SetDef` → `id = new(def.defName, type)`），本方法跑在建快照之前，
@@ -345,22 +351,25 @@ public static partial class TweakDatabase
             // 炮塔枪拿到一个空 TweakID（点链接还会 KeyNotFound）。
             var id = new TweakID(def.defName, type);
 
-            switch (data)
+            // 判类型改看规则的 DataType（实例还没造）。用 IsAssignableFrom 而不是 ==：
+            // 规则可以声明在子类上（HeavyEquippableDefData : BuildingData），== 会漏掉它们。
+            if (typeof(ProjectileData).IsAssignableFrom(rule.DataType))
             {
-                case ProjectileData:
-                    projectileDatas.SetOrAdd(def.defName, id);
-                    break;
-                case RaceData:
-                    raceDatas.SetOrAdd(def.defName, id);
-                    break;
-                case BuildingData when def is ThingDef td && td.building?.turretGunDef is ThingDef gun
-                                      && !td.IsFrame && td.thingClass?.Namespace != "VFEProps":
-                    // 多座建筑挂同一把枪时保留第一个（与原来的 TryAdd 一致）：
-                    // 武器只需要一个能拿到 turretBurstCooldownTime / turretBurstWarmupTime 的把手。
-                    // 排除 Frame / VFE 道具：它们也是 BuildingData 行，但建筑属性是复制来的空壳，
-                    // 拿它们当把手会把射速算成默认值（原先写在各行 GetPropType 里，天然被那两处分支挡掉）。
-                    turretBuildingDatas.TryAdd(gun.defName, id);
-                    break;
+                projectileDatas.SetOrAdd(def.defName, id);
+            }
+            else if (typeof(RaceData).IsAssignableFrom(rule.DataType))
+            {
+                raceDatas.SetOrAdd(def.defName, id);
+            }
+            else if (typeof(BuildingData).IsAssignableFrom(rule.DataType)
+                     && def is ThingDef td && td.building?.turretGunDef is ThingDef gun
+                     && !td.IsFrame && td.thingClass?.Namespace != "VFEProps")
+            {
+                // 多座建筑挂同一把枪时保留第一个（与原来的 TryAdd 一致）：
+                // 武器只需要一个能拿到 turretBurstCooldownTime / turretBurstWarmupTime 的把手。
+                // 排除 Frame / VFE 道具：它们也是 BuildingData 行，但建筑属性是复制来的空壳，
+                // 拿它们当把手会把射速算成默认值（原先写在各行 GetPropType 里，天然被那两处分支挡掉）。
+                turretBuildingDatas.TryAdd(gun.defName, id);
             }
         }
     }
@@ -397,7 +406,7 @@ public static partial class TweakDatabase
         InitAllMeleeDamageDef();
         Mark("InitAllMeleeDamageDef");
 
-        var pendingItems = new List<(Def, TweakData, SettingType)>();
+        var pendingItems = new List<(Def, TweakRule, SettingType)>();
         int thingDefCount = DefDatabase<ThingDef>.DefCount;
         TweakLog.Message($"[BalanceTweak] Def 统计：ThingDef={thingDefCount}, PawnKindDef={DefDatabase<PawnKindDef>.DefCount}, AbilityDef={DefDatabase<AbilityDef>.DefCount}, ThoughtDef={DefDatabase<ThoughtDef>.DefCount}, GeneDef={DefDatabase<GeneDef>.DefCount}, MemeDef={DefDatabase<MemeDef>.DefCount}, IncidentDef={DefDatabase<IncidentDef>.DefCount}, ResearchProjectDef={DefDatabase<ResearchProjectDef>.DefCount}, FactionDef={DefDatabase<FactionDef>.DefCount}, HediffDef={DefDatabase<HediffDef>.DefCount}, TraitDef={DefDatabase<TraitDef>.DefCount}, TerrainDef={DefDatabase<TerrainDef>.DefCount}");
         // 上面那句 Def 统计日志不计入任何阶段（会落到"未归属"），这里重新起表，让"规则分类"只含分类本身。
@@ -423,14 +432,14 @@ public static partial class TweakDatabase
         //    Log.Message($"[BalanceTweak] 放弃的 ThingDef 示例（最多 30）：{string.Join(", ", classify.UncoveredSamples)}");
         // 按 LoadingOrd 升序的稳定桶排序：组内保持 pendingItems 原有相对顺序，组间按键升序。
         // 手工分桶（而不是 LINQ GroupBy/OrderBy），避免 3 万项上的 Lookup/排序分配。
-        var sortedItems = new List<(Def, TweakData, SettingType)>(pendingItems.Count);
-        var loadingBuckets = new SortedDictionary<int, List<(Def, TweakData, SettingType)>>();
+        var sortedItems = new List<(Def, TweakRule, SettingType)>(pendingItems.Count);
+        var loadingBuckets = new SortedDictionary<int, List<(Def, TweakRule, SettingType)>>();
         foreach (var item in pendingItems)
         {
             int ord = item.Item2.LoadingOrd;
             if (!loadingBuckets.TryGetValue(ord, out var bucket))
             {
-                bucket = new List<(Def, TweakData, SettingType)>();
+                bucket = new List<(Def, TweakRule, SettingType)>();
                 loadingBuckets.Add(ord, bucket);
             }
             bucket.Add(item);
@@ -460,28 +469,30 @@ public static partial class TweakDatabase
         // 而 Revert / ResetTo / 强度刻度全靠它当原值基准。见 WeaponData.ResolveProjectile。
         // 用静态开关而不是 `tweaked == false` 判断：自检里的探针也会用 false 建实例（MakeProbe），
         // 那种探针要的是"读当前 def"，不该被顺手切成原始层。
-        // 全量行源留给 UI：分类阶段实例已经造好（34k 个空对象约 15ms），贵的是 SetDef。
+        // 全量行源留给 UI。分类阶段只记了"Def + 规则"，实例到这里才按需造 ——
+        // 3.4 万个 Data 对象合计 20~30MB，其中九成会被推迟，先造出来等于白发一轮 GC。
         allRows = sortedItems;
         deferredRows = [];
 
         // 哪些行必须现在建 —— 判据只有一条：**本轮 Apply 会读或写它的 def**。
         //   · tweakDatas 的行：Apply 会改它们的 def，快照必须抓到改前值；
         //   · Incident / Recipe：Init 里有按全量遍历的逻辑（概率重算、processUser 回填），此刻要原值。
-        // 其余行推迟到窗口打开或首次 GetOriginal 时才 SetDef —— 它们只读不写，def 在 Apply 之后仍是原值。
+        // 其余行推迟到窗口打开或首次 GetOriginal 时才 Factory + SetDef —— 它们只读不写，def 之后仍是原值。
         var mustBuild = new HashSet<TweakID>(tweakDatas.Count);
         foreach (var key in tweakDatas.Keys) mustBuild.Add(key);
 
         buildingOriginals = true;
         try
         {
-            foreach (var (def, data, settingType) in sortedItems)
+            foreach (var (def, rule, settingType) in sortedItems)
             {
                 var rowId = new TweakID(def.defName, settingType);
                 if (!mustBuild.Contains(rowId) && !MustBuildInInit(settingType))
                 {
-                    deferredRows[rowId] = (def, data);
+                    deferredRows[rowId] = (def, rule);
                     continue;
                 }
+                TweakData data = rule.Factory();
                 try
                 {
                     itemSw.Restart();

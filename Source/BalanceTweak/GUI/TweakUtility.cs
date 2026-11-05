@@ -112,7 +112,7 @@ public partial class BalanceTweakSettings
         /// 首次建表还没建完的行（null = 从未开始或已完成）。
         /// 分行不一次性建，是<see cref="AdvanceInit"/> 的全部目的。
         /// </summary>
-        private static List<KeyValuePair<TweakID, TweakData>>? initQueue;
+        private static List<TweakID>? initQueue;
         private static int initCursor;
         private static double initElapsedMs;
         private static int initFrames;
@@ -286,20 +286,17 @@ public partial class BalanceTweakSettings
                 initElapsedMs = 0;
                 initFrames = 0;
                 subsQueued = 0;
-                initQueue = new List<KeyValuePair<TweakID, TweakData>>(TweakDatabase.AllRows.Count + 16384);
+                initQueue = new List<TweakID>(TweakDatabase.AllRows.Count + 16384);
                 // 行源是"全量行"，不是"已建快照的行"：后者只含 Apply 需要的那部分，
-                // 其余要在这里分帧 SetDef 补出来（见 TweakDatabase.deferredRows）。
+                // 其余要在这里分帧 Factory + SetDef 补出来（见 TweakDatabase.deferredRows）。
                 foreach (var row in TweakDatabase.AllRows)
-                    initQueue.Add(new(new TweakID(row.def.defName, row.type), row.data));
+                    initQueue.Add(new TweakID(row.def.defName, row.type));
             }
 
             // 补建父项时会顺带产生子项行（招式 / 阶段 / 程度），它们不在 AllRows 里 ——
             // 每帧把新产生的追加到队尾。子项只可能由已处理的父项产生，所以队尾追加不会打乱游标。
             for (; subsQueued < TweakDatabase.DeferredSubs.Count; subsQueued++)
-            {
-                var sub = TweakDatabase.DeferredSubs[subsQueued];
-                initQueue.Add(new(sub.id, sub));
-            }
+                initQueue.Add(TweakDatabase.DeferredSubs[subsQueued].id);
 
             // 先保底推 MinRowsPerInitFrame 行（哪怕已超预算），再按时间推进到预算耗尽。
             // 预算按时间而不是行数：克隆成本随机器、随字典扩容、随 GC 波动，固定行数做不到"固定耗时"。
@@ -307,13 +304,13 @@ public partial class BalanceTweakSettings
             while (initCursor < initQueue.Count
                    && (initCursor < floor || PerfProbe.ElapsedMs(stamp) < PrepareBudgetMs))
             {
-                var pair = initQueue[initCursor];
-                // 延迟的行在这一帧才 SetDef（分帧摊的正是这一步）；已建的直接取。
-                var orig = TweakDatabase.GetOriginal(pair.Key) ?? pair.Value;
-                var live = tweakDatas!.TryGetValue(pair.Key);
+                var id = initQueue[initCursor++];
+                // 延迟的行在这一帧才 Factory + SetDef（分帧摊的正是这一步）；已建的直接取。
+                // 补建失败（Def 已不存在 / SetDef 抛异常）就跳过：这一行本来也显示不出来。
+                if (TweakDatabase.GetOriginal(id) is not { } orig) continue;
+                var live = tweakDatas!.TryGetValue(id);
                 // 存档里改过的行直接复用那个实例；没改过的克隆一份，避免编辑时写脏原始快照。
-                cachedData[pair.Key.settingType].SetOrAdd(pair.Key, live ?? orig.Clone());
-                initCursor++;
+                cachedData[id.settingType].SetOrAdd(id, live ?? orig.Clone());
             }
 
             initElapsedMs += PerfProbe.ElapsedMs(stamp);
