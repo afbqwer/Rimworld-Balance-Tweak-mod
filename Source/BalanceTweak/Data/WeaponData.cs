@@ -912,13 +912,15 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
         var baseline = TweakDatabase.GetOriginal(ChargeRifleId) as WeaponData;
         if (baseline == null)
         {
-            // 电荷步枪被 mod 删掉：随便挑一把快照武器把 RDPS / HumanDPS 顶上。
-            // 远程刻度本身会退化成 FallbackChargePower，那是既有的兜底行为。
-            foreach (var data in TweakDatabase.AllOriginals.Values)
+            // 电荷步枪被 mod 删掉：挑一把武器把 RDPS / HumanDPS 顶上。
+            // 必须遍历全量行源，不能遍历 AllOriginals —— 后者只含"Apply 要用"的那部分，
+            // 武器页签通常不在其中。GetOriginal 会在这里把那一行补建出来（此刻 def 仍是原值）。
+            foreach (var row in TweakDatabase.AllRows)
             {
-                if (data is WeaponData wd)
+                if (row.type != SettingType.Weapon) continue;
+                if (TweakDatabase.GetOriginal(new TweakID(row.def.defName, row.type)) is WeaponData w)
                 {
-                    baseline = wd;
+                    baseline = w;
                     break;
                 }
             }

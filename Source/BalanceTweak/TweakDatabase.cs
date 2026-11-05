@@ -18,15 +18,85 @@ public static partial class TweakDatabase
 {
     private static Dictionary<TweakID, TweakData> originalData = [];
 
-    /// <summary>获取原始数据</summary>
-    public static TweakData? GetOriginal(TweakID id) => originalData.GetValueOrDefault(id);
-    /// <summary>尝试获取原始数据</summary>
-    public static bool TryGetOriginal(TweakID id, out TweakData? data) => originalData.TryGetValue(id, out data);
+    /// <summary>
+    /// 全量行源（分类结果）。窗口打开时用它建行，也用它把延迟的快照补齐。
+    /// <para>
+    /// 与 <see cref="originalData"/> 的区别：那个只装"已经 SetDef 过的"行。分类阶段实例就造好了
+    /// （34k 个空对象约 15ms），贵的是 SetDef（读 def 填字段，20µs/行），那部分可以推迟。
+    /// </para>
+    /// </summary>
+    private static List<(Def def, TweakData data, SettingType type)> allRows = [];
+    public static IReadOnlyList<(Def def, TweakData data, SettingType type)> AllRows => allRows;
+
+    /// <summary>
+    /// 延迟建快照的行。Init 只建"Apply 期间会被读到或写到"的那些，其余在这里等：
+    /// 窗口打开（<c>AdvanceInit</c>）或首次 <see cref="GetOriginal"/> 时才 SetDef。
+    /// <para>
+    /// 不变量：<b>被 Apply 写过的 def，其快照一定已在 <see cref="originalData"/> 里</b>。
+    /// 所以走到补建的行，def 必然还是原值，补出来的值是对的。
+    /// </para>
+    /// </summary>
+    private static Dictionary<TweakID, (Def def, TweakData data)>? deferredRows;
+
+    private static int deferredBuilt;
+
+    /// <summary>
+    /// 补建时顺带产生的子项行（招式 / 想法阶段 / 健康阶段 / 特性程度）。
+    /// 它们只存在于父项 SetDef 之后，而 UI 的行源是 <see cref="AllRows"/>（父项）——
+    /// 所以要把这些追加进去，否则这几千行在表格里整段消失。
+    /// </summary>
+    private static readonly List<TweakData> deferredSubs = [];
+    public static IReadOnlyList<TweakData> DeferredSubs => deferredSubs;
+
+    /// <summary>获取原始数据（未建的行会在此刻补建）。</summary>
+    public static TweakData? GetOriginal(TweakID id)
+    {
+        if (originalData.TryGetValue(id, out var data)) return data;
+        return deferredRows == null ? null : MaterializeDeferred(id);
+    }
+
+    /// <summary>尝试获取原始数据（未建的行会在此刻补建）。</summary>
+    public static bool TryGetOriginal(TweakID id, out TweakData? data)
+    {
+        data = GetOriginal(id);
+        return data != null;
+    }
+
     /// <summary>尝试获取原始数据的克隆</summary>
     public static TweakData? CloneOriginal(TweakID id)
-        => originalData.TryGetValue(id, out var data) ? data.Clone() : null;
-    /// <summary>遍历所有原始数据</summary>
+        => GetOriginal(id)?.Clone();
+
+    /// <summary>遍历所有原始数据（<b>只含已建的行</b>；要全量请用 <see cref="AllRows"/>）。</summary>
     public static Dictionary<TweakID, TweakData> AllOriginals => originalData;
+
+    /// <summary>把一行延迟的快照补建出来。失败返回 null（该行随后按"无原值"处理）。</summary>
+    private static TweakData? MaterializeDeferred(TweakID id)
+    {
+        if (!deferredRows!.TryGetValue(id, out var row)) return null;
+        deferredRows.Remove(id);
+        try
+        {
+            row.data.SetDef(row.def, id.settingType, false);
+            originalData[id] = row.data;
+            deferredBuilt++;
+
+            // 子项（招式 / 想法阶段 / 健康阶段 / 特性程度）同样要补 ——
+            // 它们是独立的行，UI 与 Apply 都按 id 直接取，缺了就是整段列表空着。
+            if (row.data is ISubItemHost host)
+            {
+                foreach (var sub in host.CreateSubItems(row.data, false))
+                {
+                    if (originalData.TryAdd(sub.id, sub)) deferredSubs.Add(sub);
+                }
+            }
+            return row.data;
+        }
+        catch (Exception e)
+        {
+            Log.Error($"[BalanceTweak] 补建延迟快照失败，id={id}: {e}");
+            return null;
+        }
+    }
     public static Dictionary<string, TweakID> turretBuildingDatas = [];
     public static Dictionary<string, TweakID> projectileDatas = [];
     public static Dictionary<string, TweakID> raceDatas = [];
@@ -303,6 +373,12 @@ public static partial class TweakDatabase
         double measuredMs = 0;
         InitPerf.Start();
 
+        // 上一轮（热重载 / 重复初始化）的延迟状态不能带进来：allRows 已换新，旧的 deferred 键会指向失效的 Def。
+        allRows = [];
+        deferredRows = null;
+        deferredBuilt = 0;
+        deferredSubs.Clear();
+
         // 阶段计时统一走这里：读表 → 累加已归属耗时 → 记一行 → 重新计时。
         // 之前各阶段散落的 sw.Restart()/sw.Elapsed 容易出现"忘记读"或"忘记重启"，让阶段之和与总计对不上。
         void Mark(string name)
@@ -384,11 +460,28 @@ public static partial class TweakDatabase
         // 而 Revert / ResetTo / 强度刻度全靠它当原值基准。见 WeaponData.ResolveProjectile。
         // 用静态开关而不是 `tweaked == false` 判断：自检里的探针也会用 false 建实例（MakeProbe），
         // 那种探针要的是"读当前 def"，不该被顺手切成原始层。
+        // 全量行源留给 UI：分类阶段实例已经造好（34k 个空对象约 15ms），贵的是 SetDef。
+        allRows = sortedItems;
+        deferredRows = [];
+
+        // 哪些行必须现在建 —— 判据只有一条：**本轮 Apply 会读或写它的 def**。
+        //   · tweakDatas 的行：Apply 会改它们的 def，快照必须抓到改前值；
+        //   · Incident / Recipe：Init 里有按全量遍历的逻辑（概率重算、processUser 回填），此刻要原值。
+        // 其余行推迟到窗口打开或首次 GetOriginal 时才 SetDef —— 它们只读不写，def 在 Apply 之后仍是原值。
+        var mustBuild = new HashSet<TweakID>(tweakDatas.Count);
+        foreach (var key in tweakDatas.Keys) mustBuild.Add(key);
+
         buildingOriginals = true;
         try
         {
             foreach (var (def, data, settingType) in sortedItems)
             {
+                var rowId = new TweakID(def.defName, settingType);
+                if (!mustBuild.Contains(rowId) && !MustBuildInInit(settingType))
+                {
+                    deferredRows[rowId] = (def, data);
+                    continue;
+                }
                 try
                 {
                     itemSw.Restart();
@@ -434,6 +527,10 @@ public static partial class TweakDatabase
             buildingOriginals = false;
         }
 
+        // 武器行的 Apply 会写它关联的弹丸 def（PushWeaponEditsToProjectile），而弹丸行可能被推迟了。
+        // 必须在 Apply 之前把这类"会被写的目标"补建出来 —— 之后再建，读到的就是改后的值。
+        int promoted = PromoteCrossRowTargets();
+
         var totalMs = setDefMs.Values.Sum() + subItemMs;
         measuredMs += totalMs;
         timings.Add($"  originalData 创建 ({totalMs:F1}ms):");
@@ -442,6 +539,11 @@ public static partial class TweakDatabase
             timings.Add($"    {kv.Key}: {kv.Value:F1}ms ({setDefCount[kv.Key]} 项)");
         }
         timings.Add($"    子项合计: {subItemMs:F1}ms（{string.Join(", ", subItemCount.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}: {kv.Value}"))}）");
+        if (deferredRows != null && deferredRows.Count > 0)
+        {
+            timings.Add($"    延迟到窗口打开: {deferredRows.Count} 行"
+                        + (promoted > 0 ? $"（其中 {promoted} 行因被武器跨行写入已提前建）" : ""));
+        }
         // 该段耗时已由上面的细分统计认领，这里只把外层表归零，免得它被算进下一个阶段。
         sw.Restart();
 
@@ -698,6 +800,42 @@ public static partial class TweakDatabase
     /// （<see cref="WeaponData.FreezePowerBaseline"/>）。成本恒定，与存档里改了多少行无关。
     /// </para>
     /// </summary>
+    /// <summary>
+    /// Init 期间存在"按全量遍历快照"的逻辑，因此这些页签不能延迟：
+    /// Incident（<see cref="IncidentData.RecalculateFromOriginals"/> 要遍历全部行重算概率）、
+    /// Recipe（<see cref="RecipeProcessHelper.PopulateProcessUsers"/> 要给每一行回填 processUser）。
+    /// <para>
+    /// <b>新增一处按全量遍历的 Init 逻辑时，记得把对应页签加进来</b> —— 否则它只会看到一半的行，
+    /// 而且不会报错，表现是"某些项的概率 / 显示值悄悄没算"。
+    /// </para>
+    /// </summary>
+    private static bool MustBuildInInit(SettingType type)
+        => type is SettingType.Incident or SettingType.Recipe;
+
+    /// <summary>
+    /// 把"会被其它行写 def"的目标提前建快照。目前只有一处：武器的 Apply 会把伤害 / 穿透推进
+    /// 关联弹丸的 def（<c>PushWeaponEditsToProjectile</c>）。这些目标如果被推迟，之后再补建就会
+    /// 读到"已被武器改过"的值 —— 重置时会还原成改后值，且没有任何报错。
+    /// </summary>
+    private static int PromoteCrossRowTargets()
+    {
+        int before = deferredBuilt;
+        // 先复制一份：GetOriginal 会往 originalData 里加行，直接遍历 Values 会抛"集合已修改"。
+        // 目标从 <c>def.Verbs[].defaultProjectile</c> 现读，不用 <c>WeaponData.Projectile</c> ——
+        // 那个字段要到 GenValues / ResolveProjectile 才填，此刻可能还是 null。
+        foreach (var data in originalData.Values.ToList())
+        {
+            if (data is not WeaponData { def: ThingDef d } || d.Verbs.NullOrEmpty()) continue;
+            for (int i = 0; i < d.Verbs.Count; i++)
+            {
+                var projectile = d.Verbs[i]?.defaultProjectile;
+                if (projectile != null)
+                    GetOriginal(new TweakID(projectile.defName, SettingType.Projectile));
+            }
+        }
+        return deferredBuilt - before;
+    }
+
     private static int PrepareDeferredDisplayValues()
     {
         if (tweakDatas.Count == 0) return 0;

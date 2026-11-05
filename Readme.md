@@ -309,6 +309,10 @@ public override void Apply()
 
 **原始快照**（`TweakDatabase.GetOriginal`）是只读基准，任何派生同步都不许写它：
 
+- **快照是稀疏的、按需补建的**。Init 只建"本轮 Apply 会读到或写到"的行（`tweakDatas` ∪ Incident ∪ Recipe ∪ 被武器引用的弹丸），其余进 `deferredRows`，到窗口打开（`AdvanceInit` 分帧）或首次 `GetOriginal` 时才 `SetDef`。不变量是**被 Apply 写过的 def 一定有快照**，所以补建时读到的一定还是原值。
+  - 新增一处"Init 期按全量遍历快照"的逻辑 → 必须把那个页签加进 `MustBuildInInit`，否则它只看到一部分行。
+  - 新增一处跨行写 def（像武器改弹丸那样）→ 必须把它加进 `PromoteCrossRowTargets`，否则目标行补建时读到的是改后值。
+  - 要遍历**全量**行用 `AllRows`；`AllOriginals` 只含已建的那些，别拿它当行源。
 - 建快照期间（`TweakDatabase.buildingOriginals`）跨行读取走原始层；**不要用 `SetDef(tweaked: false)` 反推**（自检探针 `MakeProbe` 也用 false，它要读当前 def）。
 - `ProjectileData.RefreshSharedWeapons` / `BuildingData.RefreshTurretGun` 跳过快照，只刷活实例。
 - 从快照克隆出的行在 `EnsureDisplayValues` 里补一次镜像同步（`WeaponData.SyncMirrorsFromProjectile`），因此 `Clone()` 必须清 `displayValuesEnsured`（基类 `TweakData.Clone()` 统一清零）。
@@ -319,7 +323,7 @@ public override void Apply()
 | 规则 | 说明 |
 | --- | --- |
 | `SetDef` 只填镜像与可编辑字段的原值 | 不跑 DPS 等派生计算 |
-| 派生列在**进入页签时**全量算完 | 入口 `TweakUtility.AdvanceDerive`，按每帧 6ms 预算逐行 `EnsureDisplayValues()`，显示进度条 |
+| 派生列在**进入页签时**全量算完 | 入口 `TweakUtility.AdvanceDerive`，按每帧 100ms 预算逐行 `EnsureDisplayValues()`，显示进度条 |
 | 算完置 `displayValuesEnsured = true` | `Apply()` 结束置回 false（参考值按当前 def 现算） |
 | 只有**跨行基准**需在 `Apply` 前定格 | `PrepareDeferredDisplayValues` 只做两件事：`CombatPower.EnsureAnchors()`（动物 / 机械锚）与 `WeaponData.FreezePowerBaseline()`（电荷步枪基准 + 近战分母 `RDPS`/`HumanDPS`）。**不逐行预热** —— 快照行的派生列没有消费者，重置走的是 clone → `ApplyAuthoritative` → `EnsureDisplayValues`，克隆体重算。曾按"存档里每一行修改"逐行预热，实测 957 行实算 576 行、633ms 全是白算 |
 
@@ -332,7 +336,7 @@ public override void Apply()
 | 规则 | 说明 |
 | --- | --- |
 | 首次读取时才算（`ResolveLabel` / `ResolveSearchString` / `GetPropType` / `ResolveUiIcon` / `ResolveUiIconColor` / `ResolveDesc`） | 原先每个 `SetDef` 都给全库四万行算一遍：label 要翻译、`propType` 要跑分类判定、tooltip 要拼字符串 —— 而绝大多数行根本不会被显示 |
-| **滚动路径上不许首读** | 前五个值由 `AdvanceDerive` 分帧预热（`TweakData.WarmDisplayProps`，每帧 6ms、带进度条），筛选与绘制只剩字段读。**不能只靠"用到才算"**：新滚进视野的行会在滚动那一帧当场解析，卡顿正好落在手指上 |
+| **滚动路径上不许首读** | 前五个值由 `AdvanceDerive` 分帧预热（`TweakData.WarmDisplayProps`，每帧 100ms、带进度条），筛选与绘制只剩字段读。**不能只靠"用到才算"**：新滚进视野的行会在滚动那一帧当场解析，卡顿正好落在手指上 |
 | `desc` 例外：**悬停才算** | 绘制行的 `if (Mouse.IsOver(rowRect))` 里才登记 tooltip，未悬停不生成字符串。`TipRegion` 本来也是"不悬停就不显示"，结果等价；它不参与预热（整页签白付一遍拼接没意义） |
 | def 未绑定时**不缓存** | 此时只能算出兜底值，缓存下来会让之后补上 def 的行永久停在兜底标题 / 兜底分类 |
 | 清缓存只走 `ResetPropsCache()` | 由 `SetProps` 调用（所有 `SetDef` / `SetParentTweak` 的必经之路，写在基类 `SetDef` 会漏掉重写者）与 `Clone` 调用。六个值一起清：`searchString` 由 `label` 拼出来，图标 / 描述也由 def 派生，单清一个就留下错位 |
@@ -349,10 +353,12 @@ public override void Apply()
 
 | 段 | 入口 | 规模 | 预算 | 进度 |
 | --- | --- | --- | --- | --- |
-| ① 建行缓存（克隆） | `AdvanceInit` | 全库 4 万级，一次性 | 每帧 6ms（按时间，保底 200 行） | 0~90% |
-| ② 页签派生值 + 展示属性预热 | `AdvanceDerive` | 当前页签几百~几千行，每次切页签 | 每帧 6ms（同一个 `PrepareBudgetMs`） | 90~100% |
+| ① 建行缓存（克隆） | `AdvanceInit` | 全库 4 万级，一次性 | 每帧 100ms（按时间，保底 200 行） | 0~90% |
+| ② 页签派生值 + 展示属性预热 | `AdvanceDerive` | 当前页签几百~几千行，每次切页签 | 每帧 100ms（同一个 `PrepareBudgetMs`） | 90~100% |
 
-约束：没建完不许 `UpdateFilters`（`cachedData` 不全，会缺行）；小数据包必须一帧做完（否则进度条闪一下）；`DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor`（提前 return 会把 IMGUI 全局状态漏给下一帧）；**两段都按时间给预算（`PrepareBudgetMs`），不按行数**。① 原先是"每帧固定 2000 行"，问题在于 `4µs/行` 只是某个机器某个整合包下的数（克隆成本还随类型字段数、`List` 长度、字典扩容、GC 变化），慢一点 2000 行就是 16~20ms，整帧被顶到下一个 vsync 档：22 帧于是变成 0.7s 而不是 0.37s。按时间切则不论机器快慢都不超额，代价是慢机器上帧数变多、总墙钟时间随之变化。要调预算时看日志里的 `µs/行` 换算即可。
+约束：没建完不许 `UpdateFilters`（`cachedData` 不全，会缺行）；小数据包必须一帧做完（否则进度条闪一下）；`DrawInitProgress` 要还回 `Text.Font` / `Text.Anchor`（提前 return 会把 IMGUI 全局状态漏给下一帧）；**两段都按时间给预算（`PrepareBudgetMs`），不按行数**。① 原先是"每帧固定 2000 行"，问题在于 `4µs/行` 只是某个机器某个整合包下的数（克隆成本还随类型字段数、`List` 长度、字典扩容、GC 变化），慢一点 2000 行就是 16~20ms，整帧被顶到下一个 vsync 档：22 帧于是变成 0.7s 而不是 0.37s。按时间切则不论机器快慢都不超额。
+
+预算取值只看**进度条要多少帧**，不看 vsync：这两个窗口都是模态的，打开期间输入已阻断，背景世界没有要维持帧率的东西，实测这段时间 GC 也不频繁（克隆是纯分配）。10fps 的进度条看上去已经连续，对应 100ms。注意它换的是**总时长与单帧卡顿**：墙钟 ≈ 帧数 ×（预算 + 固定渲染开销），预算越大帧数越少、固定开销摊得越薄，总时长反而更短；切成几十帧的话，多出来的全是每帧那份渲染开销。要调就调 `PrepareBudgetMs`，看日志里的 `µs/行` 换算帧数。
 
 > 派生值置脏时只有**当前页签**重推（`CombatPower.InvalidateRows` 判 `type == TweakUtility.CurrentType`）。列定义（反射 + `Translate`，约 20~30ms/类型）也在第 ② 段首帧预热。> `ApplyFullReset`（"完全重置"）仍是同步重建。
 > 克隆成本在 `TweakData<T>.DeepCopyFields`：只有 `List<T>` 需深拷贝，故那里有 `if (!meta.IsList) continue;`。

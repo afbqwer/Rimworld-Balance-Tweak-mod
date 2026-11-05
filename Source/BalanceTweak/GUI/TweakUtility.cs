@@ -94,6 +94,11 @@ public partial class BalanceTweakSettings
             {
                 dict.Clear();
             }
+            // 先把延迟的行全部补建（此刻窗口已开、def 已是最终值，补出来的正是各行该有的基准），
+            // 再按 AllOriginals 统一重置 —— 子项（招式 / 阶段）不在 AllRows 里，只能从前者拿到。
+            foreach (var row in TweakDatabase.AllRows)
+                TweakDatabase.GetOriginal(new TweakID(row.def.defName, row.type));
+
             foreach ((var key, var data) in TweakDatabase.AllOriginals)
             {
                 var clone = data.Clone();
@@ -111,6 +116,8 @@ public partial class BalanceTweakSettings
         private static int initCursor;
         private static double initElapsedMs;
         private static int initFrames;
+        /// <summary>已追加进 <see cref="initQueue"/> 的子项数（补建父项时才产生，逐帧追加入队）。</summary>
+        private static int subsQueued;
 
         /// <summary>
         /// 每帧留给"后台准备工作"的时间预算（毫秒）。建行缓存与页签派生两段共用这一个数。
@@ -121,11 +128,23 @@ public partial class BalanceTweakSettings
         /// 22 帧于是变成 0.7s 而不是 0.37s。按时间切，机器快慢都不会超额。
         /// </para>
         /// <para>
-        /// 两段共用同一个值，因为它们的处境相同：都跑在"进度条在画、但世界仍在背景里跑"的帧上，
-        /// 需要的余量是同一个。改这个数等于同时改两段的帧长。
+        /// <b>取值依据是"进度条动画要多少帧"，不再是"别掉 vsync"。</b>这两个窗口都是模态的：
+        /// 打开期间输入已被阻断，背景世界没有需要维持帧率的东西；实测这段时间 GC 也不频繁
+        /// （克隆只是纯分配，不触发回收）。所以单帧可以长得多 —— 10fps 的进度条看上去已经足够连续，
+        /// 对应 100ms。
+        /// </para>
+        /// <para>
+        /// 改这个数是在**总时长与单帧卡顿之间换**，不是在"流畅/卡"之间换：墙钟时间 ≈ 帧数 ×
+        /// （本预算 + 固定的 UI 渲染开销），预算越大帧数越少、固定开销摊得越薄，总时长反而更短。
+        /// 反过来说，预算小到把工作切成几十帧时，多出来的全是每帧那份渲染开销。
+        /// </para>
+        /// <para>
+        /// 两段共用同一个值，因为它们的处境相同（都是模态窗口里的进度条）。
+        /// 若实测某台机器上单帧过重（比如派生值里夹着建装备池那种不可切分的工作），退到 50ms 即可，
+        /// 别回 6ms —— 那等于把固定开销付几十遍。
         /// </para>
         /// </summary>
-        private const double PrepareBudgetMs = 6.0;
+        private const double PrepareBudgetMs = 100.0;
 
         /// <summary>
         /// 每帧至少推进的行数。没有这个下限，单行成本突然变高时（字典扩容、GC 打断）
@@ -253,7 +272,7 @@ public partial class BalanceTweakSettings
         /// 把首次建表推进一帧的份额。
         /// <para>
         /// 4 万行一次克隆要几百毫秒，直接卡在打开窗口那一帧上。按 <see cref="PrepareBudgetMs"/> 分帧之后，
-        /// 总量不变，但每帧只花预算内的时间，中间还能画进度条 —— 用户看到的是"在准备"而不是"死了"。
+        /// 每帧只花预算内的时间，中间还能画进度条 —— 用户看到的是"在准备"而不是"死了"。
         /// 小数据包（几百行）仍然一帧建完，不会看到进度条闪过。
         /// </para>
         /// </summary>
@@ -266,9 +285,20 @@ public partial class BalanceTweakSettings
                 initCursor = 0;
                 initElapsedMs = 0;
                 initFrames = 0;
-                initQueue = new List<KeyValuePair<TweakID, TweakData>>(TweakDatabase.AllOriginals.Count);
-                foreach (var pair in TweakDatabase.AllOriginals)
-                    initQueue.Add(pair);
+                subsQueued = 0;
+                initQueue = new List<KeyValuePair<TweakID, TweakData>>(TweakDatabase.AllRows.Count + 16384);
+                // 行源是"全量行"，不是"已建快照的行"：后者只含 Apply 需要的那部分，
+                // 其余要在这里分帧 SetDef 补出来（见 TweakDatabase.deferredRows）。
+                foreach (var row in TweakDatabase.AllRows)
+                    initQueue.Add(new(new TweakID(row.def.defName, row.type), row.data));
+            }
+
+            // 补建父项时会顺带产生子项行（招式 / 阶段 / 程度），它们不在 AllRows 里 ——
+            // 每帧把新产生的追加到队尾。子项只可能由已处理的父项产生，所以队尾追加不会打乱游标。
+            for (; subsQueued < TweakDatabase.DeferredSubs.Count; subsQueued++)
+            {
+                var sub = TweakDatabase.DeferredSubs[subsQueued];
+                initQueue.Add(new(sub.id, sub));
             }
 
             // 先保底推 MinRowsPerInitFrame 行（哪怕已超预算），再按时间推进到预算耗尽。
@@ -278,9 +308,11 @@ public partial class BalanceTweakSettings
                    && (initCursor < floor || PerfProbe.ElapsedMs(stamp) < PrepareBudgetMs))
             {
                 var pair = initQueue[initCursor];
+                // 延迟的行在这一帧才 SetDef（分帧摊的正是这一步）；已建的直接取。
+                var orig = TweakDatabase.GetOriginal(pair.Key) ?? pair.Value;
                 var live = tweakDatas!.TryGetValue(pair.Key);
                 // 存档里改过的行直接复用那个实例；没改过的克隆一份，避免编辑时写脏原始快照。
-                cachedData[pair.Key.settingType].SetOrAdd(pair.Key, live ?? pair.Value.Clone());
+                cachedData[pair.Key.settingType].SetOrAdd(pair.Key, live ?? orig.Clone());
                 initCursor++;
             }
 
@@ -693,7 +725,7 @@ public partial class BalanceTweakSettings
 
             if (TweakDatabase.GetOriginal(id) is not { } original)
             {
-                // Def 已不存在：这一行本来就不在 cachedData 里（行源是 AllOriginals），删了也只是兜底。
+                // Def 已不存在：这一行本来就不在 cachedData 里（行源是 AllRows），删了也只是兜底。
                 foreach (var dict in cachedData.Values)
                     dict.Remove(id);
                 return;
