@@ -89,6 +89,7 @@ public static partial class TweakDatabase
                 // Init 抛异常也要关掉计量：否则 initPerf 会一直 Active，运行期每次 Apply / GenValues
                 // 都往一张永远不会被打印的表里累加。
                 InitPerf.Finish();
+                DataUtility.AbortDeferredStuffRefresh();
                 // 诊断层自己绝不能变成新的故障源：TweakRegistry 的静态构造若抛异常，
                 // 这里会变成 TypeInitializationException 并把真正的 Initialize 异常挤掉。
                 TryReport("可选 Mod 兼容概览", TweakRegistry.ReportCompat);
@@ -500,6 +501,10 @@ public static partial class TweakDatabase
         if (InitPerf.PoolBuilds > 0)
             timings.Add($"    其中建池 {InitPerf.PoolMs:F1}ms / {InitPerf.PoolBuilds} 次");
 
+        // 材料配对表的刷新先登记后合并：窗口内每条材料 Apply 只记一笔，
+        // 循环结束后统一刷一次表（见 DataUtility.FlushDeferredStuffRefresh）。
+        DataUtility.BeginDeferredStuffRefresh();
+
         // 注意：必须先过滤 null 再 OrderBy —— 排序键 p.Value.LoadingOrd 本身就会解引用，
         // 把 null 判断写在循环体内是来不及的（会在 OrderBy 求键时抛 NRE）。
         foreach ((var id, var data) in tweakDatas.Where(p => p.Value != null).OrderBy(p => p.Value.LoadingOrd))
@@ -536,6 +541,10 @@ public static partial class TweakDatabase
         if (notFoundCount > 0)
             TweakLog.Message($"[BalanceTweak] 有 {notFoundCount} 个修改项未找到对应的 Def（可能因 Mod 变动导致），已跳过。");
         Mark($"直接修改项 Apply ({appliedModified} 已应用)");
+
+        int mergedStuffRefreshes = DataUtility.FlushDeferredStuffRefresh();
+        if (mergedStuffRefreshes > 0)
+            Mark($"材料配对表刷新（{mergedStuffRefreshes} 条材料改动合并为一次）");
 
         // Apply 会把一部分行的展示值重新置脏（等 UI 首次读时再算）。统计有多少行欠着账：
         // 这个数字越接近总数，说明 Apply 阶段里算过的派生值越多是白算的。

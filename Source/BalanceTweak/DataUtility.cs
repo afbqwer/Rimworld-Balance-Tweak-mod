@@ -260,11 +260,45 @@ public static class DataUtility
     /// <summary>
     /// 把 <paramref name="stuff"/> 的改动同步到原版两张配对表。
     /// 语义等同"重启游戏后重新生成配对表"，但只碰受影响的条目。
+    /// <para>
+    /// 处在 <see cref="BeginDeferredStuffRefresh"/> 打开的窗口内时只登记不执行：
+    /// Init 的一轮 Apply 里 N 条材料改动会各刷一次表，而每次都要把整张表扫两遍。
+    /// 结果只取决于收尾那一刻各材料的当前值，中间态没有任何人读，合并成一次即可。
+    /// </para>
     /// </summary>
     public static void RefreshStuffGenerationCaches(ThingDef? stuff, StuffCacheAspect aspect)
     {
         if (stuff?.stuffProps == null || aspect == StuffCacheAspect.None) return;
 
+        if (pendingStuffRefresh != null)
+        {
+            pendingStuffRefresh[stuff] = pendingStuffRefresh.TryGetValue(stuff, out var prev) ? prev | aspect : aspect;
+            return;
+        }
+        ApplyStuffRefresh(new Dictionary<ThingDef, StuffCacheAspect>(1) { [stuff] = aspect });
+    }
+
+    /// <summary>合并刷新的登记表；null = 不在窗口内（调用即刷）。</summary>
+    private static Dictionary<ThingDef, StuffCacheAspect>? pendingStuffRefresh;
+
+    /// <summary>打开合并窗口（Init 的批量 Apply 用）。窗口内 <see cref="RefreshStuffGenerationCaches"/> 只登记。</summary>
+    internal static void BeginDeferredStuffRefresh() => pendingStuffRefresh ??= [];
+
+    /// <summary>关闭窗口并合并执行一次。返回被合并的材料条数。</summary>
+    internal static int FlushDeferredStuffRefresh()
+    {
+        var pending = pendingStuffRefresh;
+        pendingStuffRefresh = null;
+        if (pending == null || pending.Count == 0) return 0;
+        ApplyStuffRefresh(pending);
+        return pending.Count;
+    }
+
+    /// <summary>异常路径用：丢弃未执行的请求（Def 可能只写了一半，刷表反而会把错值固化）。</summary>
+    internal static void AbortDeferredStuffRefresh() => pendingStuffRefresh = null;
+
+    private static void ApplyStuffRefresh(Dictionary<ThingDef, StuffCacheAspect> pending)
+    {
         var weaponPairs = PawnWeaponGenerator.AllWeaponPairs;
         if (weaponPairs == null)
         {
@@ -274,7 +308,7 @@ public static class DataUtility
         else
         {
             // 武器：AllWith 之后 Reset 还会把"该物品全部材料的 Commonality 之和"拉回 generateCommonality。
-            PatchPairTable(weaponPairs, stuff, useAllWithNormalization: false, aspect);
+            PatchPairTable(weaponPairs, pending, useAllWithNormalization: false);
         }
 
         // allApparelPairs 是私有静态字段且每次 Reset 都会整个换掉，所以缓存 FieldInfo、每次重取实例。
@@ -291,7 +325,7 @@ public static class DataUtility
         if (_apparelPairsField?.GetValue(null) is List<ThingStuffPair> apparelPairs)
         {
             // 服饰：Reset 只调 AllWith，归一化口径就是 mult = 1/n/avg(stuff.commonality)，没有二次修正。
-            PatchPairTable(apparelPairs, stuff, useAllWithNormalization: true, aspect);
+            PatchPairTable(apparelPairs, pending, useAllWithNormalization: true);
         }
         else
         {
@@ -300,42 +334,42 @@ public static class DataUtility
         }
     }
 
-    private static void PatchPairTable(List<ThingStuffPair> pairs, ThingDef stuff,
-        bool useAllWithNormalization, StuffCacheAspect aspect)
+    /// <summary>
+    /// 把若干材料的改动合并进配对表：<b>整表只扫两遍</b>（一遍重建条目 + 收集受影响物品，一遍分组），
+    /// 扫描次数与材料条数无关。
+    /// <para>
+    /// 归一化必须以"物品"为粒度、且在<b>所有</b>材料的条目都重建完之后做 —— 它读的是各材料当前的
+    /// commonality / stat。逐材料刷新时，同一物品下后面的材料会纠正前面算出的倍数（纯缩放，收敛）；
+    /// 合并后一次算出的就是收敛值，等价且少做一半。
+    /// </para>
+    /// </summary>
+    private static void PatchPairTable(List<ThingStuffPair> pairs,
+        Dictionary<ThingDef, StuffCacheAspect> pending, bool useAllWithNormalization)
     {
-        bool touchStats = (aspect & StuffCacheAspect.PairStats) != 0;
         HashSet<ThingDef>? affected = null;
 
-        // 1) 重建该材料参与的条目：cachedPrice / 保温 / 毒抗等全部按当前 stat 重算。
+        // 1) 重建受影响材料的条目：cachedPrice / 保温 / 毒抗等全部按当前 stat 重算。
         //    只用 new ThingStuffPair(thing, stuff, multiplier) —— multiplier 原样带过去，
-        //    归一化放在下一步统一处理，两步互不干扰。
-        if (touchStats)
+        //    归一化放在第 2 步统一处理，两步互不干扰。
+        //    只改 commonality 的材料不必重建，但同样要收集物品集合（归一化按物品重算倍数）。
+        for (int i = 0; i < pairs.Count; i++)
         {
-            for (int i = 0; i < pairs.Count; i++)
-            {
-                ThingStuffPair p = pairs[i];
-                if (p.stuff != stuff) continue;
-                (affected ??= new HashSet<ThingDef>()).Add(p.thing);
+            ThingStuffPair p = pairs[i];
+            ThingDef? stuff = p.stuff;
+            if (stuff == null || !pending.TryGetValue(stuff, out var aspect)) continue;
+
+            (affected ??= []).Add(p.thing);
+            if ((aspect & StuffCacheAspect.PairStats) != 0)
                 pairs[i] = new ThingStuffPair(p.thing, stuff, p.commonalityMultiplier);
-            }
         }
+        if (affected == null) return;
 
         // 2) 归一化。除了 commonality 本身，stat 改动也可能间接触发它：
         //    IsDerpWeapon / IsDerpApparel 是按材料 stat（护甲乘数）判定的，改了护甲值可能让某条
         //    配对在"derp（×0.01）"与"正常"之间翻转，那样求和结果就变了 —— 原版 Reset 会连归一化
         //    一起重算，这里保持一致。k≈1 时是纯 no-op，所以只有 commonality 未变时代价可忽略。
-        if (affected == null)
-        {
-            // 只改了 commonality：受影响物品集合得单独扫一遍。
-            for (int i = 0; i < pairs.Count; i++)
-            {
-                ThingStuffPair p = pairs[i];
-                if (p.stuff == stuff) (affected ??= new HashSet<ThingDef>()).Add(p.thing);
-            }
-            if (affected == null) return;
-        }
-
-        // 3) 按物品分组（归一化以"物品"为粒度：一个物品下所有材料共享同一个倍数）。
+        //
+        //    先按物品分组（归一化以"物品"为粒度：一个物品下所有材料共享同一个倍数）。
         var groups = new Dictionary<ThingDef, List<int>>(affected.Count);
         foreach (ThingDef t in affected) groups[t] = new List<int>();
         for (int i = 0; i < pairs.Count; i++)
