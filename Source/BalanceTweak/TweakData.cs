@@ -382,11 +382,25 @@ public abstract partial class TweakData : IExposable
     public bool forceWriteAll;
     protected string? _idTag; // 缓存 id.ToString()
 
-    public struct TweakID(string defName, SettingType settingType) : IExposable
+    public struct TweakID(string defName, SettingType settingType) : IExposable, IEquatable<TweakID>
     {
         public string defName = defName;
         public SettingType settingType = settingType;
         public override string ToString() => $"{defName}:{settingType}";
+
+        /// <summary>
+        /// 必须显式实现。<see cref="TweakID"/> 是所有字典的键（originalData 3.4 万项、deferredRows 2.8 万项、
+        /// tweakDatas、每页签的 cachedData），不写这个就走 <c>ValueType.GetHashCode</c> —— 那会反射遍历字段
+        /// （含 string 的引用哈希），比直接算慢一个量级。补建延迟行时一次操作要 hash 三次（查、删、插）。
+        /// </summary>
+        public override int GetHashCode()
+            => unchecked(((defName?.GetHashCode() ?? 0) * 397) ^ (int)settingType);
+
+        public bool Equals(TweakID other)
+            => settingType == other.settingType && string.Equals(defName, other.defName, StringComparison.Ordinal);
+
+        public override bool Equals(object? obj) => obj is TweakID other && Equals(other);
+
         public void ExposeData()
         {
             Scribe_Values.Look(ref defName, "defName", "");
