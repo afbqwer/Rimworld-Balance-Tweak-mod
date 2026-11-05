@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-    <MST.Quest>随机任务</MST.Quest>
+    <MST.Quest>任务</MST.Quest>
     <MST.Random>随机</MST.Random>
-    <MST.Decree>敕令</MST.Decree>
+    <MST.Decree>法令</MST.Decree>
     <MST.rootSelectionWeight>抽取权重</MST.rootSelectionWeight>
     <MST.rootSelectionWeightComment>参与随机抽取的基础权重（按权重随机，不是概率）。同池内所有任务的权重之和才是分母；填 0 等于把该任务从随机池里摘掉。</MST.rootSelectionWeightComment>
     <MST.rootSelectionWeightFactorFromPointsCurve>点数曲线</MST.rootSelectionWeightFactorFromPointsCurve>
@@ -19,14 +19,14 @@
     <MST.expireDaysRangeComment>任务出现后可供接受的时限范围（天，每次在区间内随机取一值）。-1~-1 表示永不过期。</MST.expireDaysRangeComment>
     <MST.autoAccept>自动接受</MST.autoAccept>
     <MST.autoAcceptComment>任务出现后自动接受，跳过玩家点「接受」这一步（也就没有拒绝的机会）。与「接受期限」互斥：两者同时生效会让原版报一条配置错误（只写日志、不影响运行），本页签不拦。</MST.autoAcceptComment>
-    <MST.decreeSelectionWeight>敕令权重</MST.decreeSelectionWeight>
-    <MST.decreeSelectionWeightComment>皇权「敕令」的抽取权重，与随机池互不竞争。填 0 表示不作为敕令出现。</MST.decreeSelectionWeightComment>
+    <MST.decreeSelectionWeight>法令权重</MST.decreeSelectionWeight>
+    <MST.decreeSelectionWeightComment>皇权法令任务的抽取权重，与随机池互不竞争。填 0 表示不作为法令出现。</MST.decreeSelectionWeightComment>
     <MST.defaultChallengeRating>挑战等级</MST.defaultChallengeRating>
     <MST.defaultChallengeRatingComment>任务的挑战等级，决定人数上限与可选负面事件的档位（1 最轻、3 最重）。-1 表示未设置，沿用生成过程中的默认值。</MST.defaultChallengeRatingComment>
     <MST.randomlySelectable>随机抽取</MST.randomlySelectable>
     <MST.randomlySelectableComment>是否允许被随机抽取。关掉后即使权重非零也不会出现在随机任务里（权重可以保留，方便以后重新打开）。</MST.randomlySelectableComment>
     <MST.rootIncreasesPopulation>增员任务</MST.rootIncreasesPopulation>
     <MST.rootIncreasesPopulationComment>是否算「增加人口」的任务。游戏按人口意向曲线在两个池之间分配概率，两个池内部各自按权重抽取，池间不互相竞争。</MST.rootIncreasesPopulationComment>
-    <MST.canGiveRoyalFavor>皇家恩惠</MST.canGiveRoyalFavor>
-    <MST.canGiveRoyalFavorComment>该任务是否可能给予皇家恩惠。当玩家有可授予恩惠的派系时，非恩惠任务的权重会按天数衰减，标上它可以避免被这条曲线压低。</MST.canGiveRoyalFavorComment>
+    <MST.canGiveRoyalFavor>皇权荣誉</MST.canGiveRoyalFavor>
+    <MST.canGiveRoyalFavorComment>该任务是否可能给予皇权荣誉。当玩家有可授予荣誉的派系时，非荣誉任务的权重会按天数衰减，标上它可以避免被这条曲线压低。</MST.canGiveRoyalFavorComment>
 </LanguageData>

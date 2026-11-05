@@ -16,7 +16,7 @@ namespace BalanceTweak;
 /// <c>NaturalRandomQuestChooser.ChooseNaturalRandomQuest</c> 先按人口分流
 /// （<c>rootIncreasesPopulation</c>），再对候选集按 <c>GetNaturalRandomSelectionWeight</c> 加权随机。
 /// 权重 = <c>rootSelectionWeight</c> × <c>rootSelectionWeightFactorFromPointsCurve</c>(点数)
-/// × 近期重复惩罚 × 皇家恩惠因子；但先过五道门槛（任一不过即归零）：
+/// × 近期重复惩罚 × 皇权荣誉因子；但先过五道门槛（任一不过即归零）：
 /// 权重 ≤ 0、点数 &lt; <c>rootMinPoints</c>、天数 &lt; <c>rootEarliestDay</c>、
 /// 进度 &lt; <c>rootMinProgressScore</c>、该任务仍在 <c>minRefireDays</c> 冷却内。
 /// 所以"某任务总也不出"通常是门槛把它归零了，而不是权重本身太小。
@@ -25,7 +25,7 @@ namespace BalanceTweak;
 /// <b>三个布尔列不是装饰</b>：<c>randomlySelectable</c> 是 <c>IsRootRandomSelected</c> 的一半判据
 /// （权重非零 + 它），关掉等于把该任务从随机池里摘出去；<c>rootIncreasesPopulation</c> 决定它落在
 /// "增员 / 非增员"哪个池（两个池按 <c>QuestTuning.IncreasesPopQuestChanceByPopIntentCurve</c> 分别抽，
-/// 池间不互相竞争）；<c>canGiveRoyalFavor</c> 在玩家想要皇家恩惠时会把非恩惠任务的权重乘上一条随时间回升的惩罚曲线。
+/// 池间不互相竞争）；<c>canGiveRoyalFavor</c> 在玩家想要皇权荣誉时会把非荣誉任务的权重乘上一条随时间回升的惩罚曲线。
 /// </para>
 /// <para>
 /// <b>写入时机与例外</b>：以上字段都在"每次抽任务时现读"。唯一的缓存是 <c>CanRun</c> 的
@@ -117,7 +117,7 @@ class QuestData : TweakData<QuestData>
     [TweakField(Style = ColumnStyle.Bool)]
     public bool? rootIncreasesPopulation = null;
 
-    /// <summary>玩家想要皇家恩惠时，该任务是否算"给恩惠的"（否则其权重按天数惩罚曲线衰减）。</summary>
+    /// <summary>玩家想要皇权荣誉时，该任务是否算"给荣誉的"（否则其权重按天数惩罚曲线衰减）。</summary>
     [TweakField(Style = ColumnStyle.Bool)]
     public bool? canGiveRoyalFavor = null;
 

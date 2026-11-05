@@ -37,8 +37,8 @@
     <MST.showInDebugSpawner>Debug显示</MST.showInDebugSpawner>
     <MST.royalTitleChance>头衔概率</MST.royalTitleChance>
     <MST.useFactionXenotypes>派系基因</MST.useFactionXenotypes>
-    <MST.allowRoyalRoomRequirements>皇家房间</MST.allowRoyalRoomRequirements>
-    <MST.allowRoyalApparelRequirements>皇家服装</MST.allowRoyalApparelRequirements>
+    <MST.allowRoyalRoomRequirements>皇权房间</MST.allowRoyalRoomRequirements>
+    <MST.allowRoyalApparelRequirements>皇权服装</MST.allowRoyalApparelRequirements>
 
     <!-- Second Priority: Combat & AI -->
     <MST.isFighter>战斗单位</MST.isFighter>
