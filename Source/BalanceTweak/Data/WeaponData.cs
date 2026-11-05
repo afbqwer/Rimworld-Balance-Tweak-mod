@@ -892,6 +892,40 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     /// <summary>强度刻度的参照物：原版电荷步枪。</summary>
     private static readonly TweakID ChargeRifleId = new("Gun_ChargeRifle", SettingType.Weapon);
 
+    /// <summary>
+    /// 在 Apply 之前把武器强度刻度定格。
+    /// <para>
+    /// 刻度由两样东西决定，两者都必须按<b>改动前</b>的 def 算一次 —— 否则 Apply 改完 def 之后再算，
+    /// 刻度会跟着改动漂（改一把枪，全表强度一起变）：
+    /// </para>
+    /// <list type="bullet">
+    /// <item>电荷步枪基准：<see cref="RangedPower"/> 走原始层，读快照行的 <c>LRangedDPS</c>；</item>
+    /// <item>近战分母 <c>RDPS</c> / <c>HumanDPS</c>：第一次 <see cref="GetEquipPower"/> 时算的静态缓存。</item>
+    /// </list>
+    /// <para>
+    /// 两件事各算一次就够：前者只针对基准那一行，后者是静态的。原实现为了定格它们遍历了存档里每一行修改，
+    /// 但快照行的派生列没有任何消费者（重置走的是 clone → ApplyAuthoritative → EnsureDisplayValues，克隆体重算）。
+    /// </para>
+    /// </summary>
+    internal static void FreezePowerBaseline()
+    {
+        var baseline = TweakDatabase.GetOriginal(ChargeRifleId) as WeaponData;
+        if (baseline == null)
+        {
+            // 电荷步枪被 mod 删掉：随便挑一把快照武器把 RDPS / HumanDPS 顶上。
+            // 远程刻度本身会退化成 FallbackChargePower，那是既有的兜底行为。
+            foreach (var data in TweakDatabase.AllOriginals.Values)
+            {
+                if (data is WeaponData wd)
+                {
+                    baseline = wd;
+                    break;
+                }
+            }
+        }
+        baseline?.EnsureDisplayValues();
+    }
+
     /// <summary>电荷步枪数据缺席时的兜底强度（19.52134 × log10(30)，与旧实现同一个常量）。</summary>
     private static readonly float FallbackChargePower =
         Mathf.Sqrt(20.33f * 21.18f) * Mathf.Pow(1f + 0.18f * 1.5f, 2f) * Mathf.Log10(30f);

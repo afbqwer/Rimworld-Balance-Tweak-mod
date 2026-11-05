@@ -321,7 +321,7 @@ public override void Apply()
 | `SetDef` 只填镜像与可编辑字段的原值 | 不跑 DPS 等派生计算 |
 | 派生列在**进入页签时**全量算完 | 入口 `TweakUtility.AdvanceDerive`，按每帧 6ms 预算逐行 `EnsureDisplayValues()`，显示进度条 |
 | 算完置 `displayValuesEnsured = true` | `Apply()` 结束置回 false（参考值按当前 def 现算） |
-| 只有原始快照需在 `Apply` 前定格 | `PrepareDeferredDisplayValues` 只遍历 `tweakDatas.Keys` |
+| 只有**跨行基准**需在 `Apply` 前定格 | `PrepareDeferredDisplayValues` 只做两件事：`CombatPower.EnsureAnchors()`（动物 / 机械锚）与 `WeaponData.FreezePowerBaseline()`（电荷步枪基准 + 近战分母 `RDPS`/`HumanDPS`）。**不逐行预热** —— 快照行的派生列没有消费者，重置走的是 clone → `ApplyAuthoritative` → `EnsureDisplayValues`，克隆体重算。曾按"存档里每一行修改"逐行预热，实测 957 行实算 576 行、633ms 全是白算 |
 
 - **不要在 `UpdateFilters` 里补算**：那是全表遍历，而表格按行列双虚拟化，一屏只有几十格；全量推导只能走 `AdvanceDerive`（只有它分帧、有进度条）。`StatColumnConfig.EnsureForDisplay` 保留但只作 O(1) 兜底。
 - `GenValues()`（镜像 + DPS + 强度全量重算）只给"数据真的变了"的路径用：`Apply` / 弹丸推送 / 招式编辑 / 自检。新增 Display 列 = 字段 + `EnsureDisplayValues` 里的计算 + `Apply` 末尾置脏。

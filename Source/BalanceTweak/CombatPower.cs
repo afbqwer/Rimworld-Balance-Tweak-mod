@@ -678,7 +678,12 @@ internal static class CombatPower
     /// 这是可接受的（只影响显示口径，不影响存档），要完全固定得把原始数值另存一份，不值得。
     /// </para>
     /// </summary>
-    private static void EnsureAnchors()
+    /// <summary>
+    /// 把战斗力刻度（锚）定格。必须在 Apply 之前调用一次：锚直接读 def 算，
+    /// Apply 改完 def 之后再算，全表战斗力会跟着改动一起漂。
+    /// internal 供 <see cref="TweakDatabase.Init"/> 的基准定格阶段显式触发。
+    /// </summary>
+    internal static void EnsureAnchors()
     {
         if (anchorsReady) return;
         anchorsReady = true;

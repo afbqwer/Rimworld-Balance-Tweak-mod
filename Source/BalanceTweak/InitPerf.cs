@@ -41,11 +41,6 @@ internal static class InitPerf
 
     internal static bool Active => active;
 
-    // Prepare 阶段（逐行 EnsureDisplayValues）
-    internal static int PrepareRows;
-    internal static int PrepareComputed;
-    internal static double PrepareMs;
-
     // Apply 期间被触发的池构建（CombatGear 上报）
     internal static double PoolMs;
     internal static int PoolBuilds;
@@ -64,8 +59,8 @@ internal static class InitPerf
     internal static void Start()
     {
         rows.Clear();
-        PrepareRows = PrepareComputed = PoolBuilds = 0;
-        PrepareMs = PoolMs = 0;
+        PoolBuilds = 0;
+        PoolMs = 0;
         StaleAfterApply = StaleTotal = 0;
         ThingSetRefreshes = RecipeRegens = 0;
         active = true;

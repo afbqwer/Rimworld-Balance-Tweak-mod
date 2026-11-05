@@ -495,17 +495,10 @@ public static partial class TweakDatabase
         // 展示值定格单独计时：它做的是"逐行 EnsureDisplayValues"，成本与改过的行数成正比，
         // 而且会顺带触发 CombatPower 建装备池（武器 / 服装）。混在 Apply 里，
         // Apply 就会被算成"改一个字段要 1ms"，从而看不出真正的问题是派生计算而不是写回。
-        long tPrepare = InitPerf.T();
-        InitPerf.PrepareComputed = PrepareDeferredDisplayValues();
-        InitPerf.PrepareMs = InitPerf.MsSince(tPrepare);
-        Mark($"Prepare 展示值（{InitPerf.PrepareRows} 行，实算 {InitPerf.PrepareComputed} 行）");
-        if (InitPerf.PrepareComputed > 0)
-        {
-            // 建池是一次性的（1~2 次就够），逐行成本才是"每行算展示值"该看的数 ——
-            // 两者混在一起，会把一次性的 190ms 摊到每一行头上，得出"每行 300µs"的假象。
-            double perRow = (InitPerf.PrepareMs - InitPerf.PoolMs) * 1000.0 / InitPerf.PrepareComputed;
-            timings.Add($"    其中建池 {InitPerf.PoolMs:F1}ms / {InitPerf.PoolBuilds} 次；逐行均 {perRow:F0}µs");
-        }
+        PrepareDeferredDisplayValues();
+        Mark($"Prepare 基准定格（存档修改 {tweakDatas.Count} 行；锚 + 武器刻度）");
+        if (InitPerf.PoolBuilds > 0)
+            timings.Add($"    其中建池 {InitPerf.PoolMs:F1}ms / {InitPerf.PoolBuilds} 次");
 
         // 注意：必须先过滤 null 再 OrderBy —— 排序键 p.Value.LoadingOrd 本身就会解引用，
         // 把 null 判断写在循环体内是来不及的（会在 OrderBy 求键时抛 NRE）。
@@ -685,34 +678,37 @@ public static partial class TweakDatabase
     }
 
     /// <summary>
-    /// 参考值改成"UI 首次要时按当前 def 现算"之后，唯一还需要提前算的，是<b>原始快照</b>：
-    /// 它是 ResetTo / 整行重置的原值来源，而 Def 在本轮 Apply 之后就是"改后"的了。
+    /// 在 Apply 之前定格"跨行取数的基准"—— 只有基准，不是每一行的展示值。
     /// <para>
-    /// 只对"存档里真有修改"的那些行做 —— 成本与改动条数成正比，不再按类型整批摊开。
-    /// 未修改的行不在这里算：它们的 def 没被动过，UI 首次读时现算与现在算一模一样。
+    /// 展示值（DPS / 战斗力 / 强度）都改成 UI 首次读时按当前 def 现算了，所以快照行不需要预热：
+    /// 重置走 clone 快照 → ApplyAuthoritative → EnsureDisplayValues，克隆体重算，值一定是对的。
     /// </para>
     /// <para>
-    /// 武器强度的刻度基准（原版电荷步枪）也走原始快照，所以它同样在这一步定格；
-    /// 否则改过基准武器之后，全表的强度会跟着基准一起漂。
+    /// 还需要提前算的只剩两处刻度，它们读的是"改动前"的 def，Apply 之后就算不出来了：
+    /// 战斗力锚（<see cref="CombatPower.EnsureAnchors"/>）与武器强度基准
+    /// （<see cref="WeaponData.FreezePowerBaseline"/>）。成本恒定，与存档里改了多少行无关。
     /// </para>
     /// </summary>
     private static int PrepareDeferredDisplayValues()
     {
-        InitPerf.PrepareRows = tweakDatas.Count;
         if (tweakDatas.Count == 0) return 0;
 
-        // 数"真算了多少行"而不是"遍历了多少行"：EnsureDisplayValues 自己在 def / 环境未就绪时会直接返回，
-        // 这种行没花钱。两者混为一谈会让"每行多少 µs"这个指标完全失真。
-        int computed = 0;
-        foreach (var id in tweakDatas.Keys)
-        {
-            var orig = GetOriginal(id);
-            if (orig == null) continue;
-            bool before = orig.DisplayValuesEnsured;
-            orig.EnsureDisplayValues();
-            if (!before && orig.DisplayValuesEnsured) computed++;
-        }
-        return computed;
+        // 只定格"跨行取数基准"，不再逐行预热展示值。
+        //
+        // 展示值（DPS / 战斗力 / 强度）是 UI 的派生列：活行在 UI 首次读时按当前 def 现算，
+        // 那时 def 已是最终值，与在 Init 里算完全一致。而快照行预先算过的那份更没有消费者 ——
+        // 重置路径（RemoveData / DropFailedItem）都是 clone 快照 → ApplyAuthoritative → EnsureDisplayValues，
+        // 克隆体的 displayValuesEnsured 被 Clone 置 false，会在 def 已还原的状态下重算。
+        // 原来这里按"存档里改过的每一行"跑一遍 EnsureDisplayValues，实测 957 行里实算 576 行、
+        // 633ms —— 全部是白算。
+        //
+        // 真正必须在 Apply 之前定格的是两处基准，否则 Apply 改完 def 之后刻度会跟着漂：
+        //   · 战斗力锚（动物 / 机械兵种的攻防）—— EnsureAnchors 直接读 def 算；
+        //   · 武器强度刻度（电荷步枪基准 + 近战分母 RDPS / HumanDPS）。
+        // 两者都与"改了多少行"无关，各算一次即可。
+        CombatPower.EnsureAnchors();
+        WeaponData.FreezePowerBaseline();
+        return 2;
     }
 
     /// <summary>集合类字段（List&lt;&gt; / ThingFilter）：Cleared 的语义是"移除全部项"（写空集合，不写 null）；其余是"还原原值"。</summary>
