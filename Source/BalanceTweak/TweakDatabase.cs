@@ -351,25 +351,23 @@ public static partial class TweakDatabase
             // 炮塔枪拿到一个空 TweakID（点链接还会 KeyNotFound）。
             var id = new TweakID(def.defName, type);
 
-            // 判类型改看规则的 DataType（实例还没造）。用 IsAssignableFrom 而不是 ==：
-            // 规则可以声明在子类上（HeavyEquippableDefData : BuildingData），== 会漏掉它们。
-            if (typeof(ProjectileData).IsAssignableFrom(rule.DataType))
+            // 判类型看规则预先算好的 Kind（注册时判一次），不在 3.4 万行里跑 Type.IsAssignableFrom。
+            switch (rule.Kind)
             {
-                projectileDatas.SetOrAdd(def.defName, id);
-            }
-            else if (typeof(RaceData).IsAssignableFrom(rule.DataType))
-            {
-                raceDatas.SetOrAdd(def.defName, id);
-            }
-            else if (typeof(BuildingData).IsAssignableFrom(rule.DataType)
-                     && def is ThingDef td && td.building?.turretGunDef is ThingDef gun
-                     && !td.IsFrame && td.thingClass?.Namespace != "VFEProps")
-            {
-                // 多座建筑挂同一把枪时保留第一个（与原来的 TryAdd 一致）：
-                // 武器只需要一个能拿到 turretBurstCooldownTime / turretBurstWarmupTime 的把手。
-                // 排除 Frame / VFE 道具：它们也是 BuildingData 行，但建筑属性是复制来的空壳，
-                // 拿它们当把手会把射速算成默认值（原先写在各行 GetPropType 里，天然被那两处分支挡掉）。
-                turretBuildingDatas.TryAdd(gun.defName, id);
+                case RuleKind.Projectile:
+                    projectileDatas.SetOrAdd(def.defName, id);
+                    break;
+                case RuleKind.Race:
+                    raceDatas.SetOrAdd(def.defName, id);
+                    break;
+                case RuleKind.Building when def is ThingDef td && td.building?.turretGunDef is ThingDef gun
+                                            && !td.IsFrame && td.thingClass?.Namespace != "VFEProps":
+                    // 多座建筑挂同一把枪时保留第一个（与原来的 TryAdd 一致）：
+                    // 武器只需要一个能拿到 turretBurstCooldownTime / turretBurstWarmupTime 的把手。
+                    // 排除 Frame / VFE 道具：它们也是 BuildingData 行，但建筑属性是复制来的空壳，
+                    // 拿它们当把手会把射速算成默认值（原先写在各行 GetPropType 里，天然被那两处分支挡掉）。
+                    turretBuildingDatas.TryAdd(gun.defName, id);
+                    break;
             }
         }
     }

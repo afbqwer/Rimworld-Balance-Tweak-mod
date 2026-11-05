@@ -54,10 +54,45 @@ public sealed class TweakForAttribute(Type defType, SettingType tab) : Attribute
     public string? MayRequire { get; set; }
 }
 
+/// <summary>
+/// 建反查索引时要区分哪几类行。<b>在注册时算一次</b>，不要在 3.4 万行的循环里反复
+/// <c>Type.IsAssignableFrom</c> —— 那一个调用约 200ns，每行三次就是 20ms。
+/// </summary>
+public enum RuleKind
+{
+    Other,
+    Projectile,
+    Race,
+    Building,
+}
+
 /// <summary>规则的运行时形态。</summary>
 public sealed class TweakRule
 {
-    public Type DataType = null!;
+    private Type _dataType = null!;
+
+    /// <summary>
+    /// 这条规则对应的 Data 类。写它就顺带算出 <see cref="Kind"/> ——
+    /// 两个字段分开设会出现"改了类型忘了改类别"的静默错配，而类别错了索引就空。
+    /// </summary>
+    public Type DataType
+    {
+        get => _dataType;
+        set
+        {
+            _dataType = value;
+            // 用 IsAssignableFrom 而不是 ==：规则可以声明在子类上（HeavyEquippableDefData : BuildingData）。
+            Kind = value == null ? RuleKind.Other
+                 : typeof(ProjectileData).IsAssignableFrom(value) ? RuleKind.Projectile
+                 : typeof(RaceData).IsAssignableFrom(value) ? RuleKind.Race
+                 : typeof(BuildingData).IsAssignableFrom(value) ? RuleKind.Building
+                 : RuleKind.Other;
+        }
+    }
+
+    /// <summary>该规则归属的反查索引类别（随 <see cref="DataType"/> 自动推导，注册时算一次）。</summary>
+    public RuleKind Kind { get; private set; }
+
     public Type DefType = null!;
     public Type DeclaredDefType = null!;
     public SettingType Tab;
@@ -240,14 +275,15 @@ public static class TweakRegistry
             MatchName = attr.MatchMethod,
         };
 
+        // 类别（Kind）由 DataType 的 setter 顺带算出，见 TweakRule.DataType。
+
         try
         {
             rule.Factory = Expression.Lambda<Func<TweakData>>(Expression.New(dataType)).Compile();
             // 读一次 LoadingOrd 缓存到规则上：建快照的排序要用它，而排序发生在"实例还不存在"的阶段。
             // 每个规则只多造一个对象（36 条规则），与 3.4 万个的差别在量级上。
             rule.LoadingOrd = rule.Factory().LoadingOrd;
-        }
-        catch (Exception e)
+        }        catch (Exception e)
         {
             buildErrors.Add($"{dataType.Name} 缺少无参构造函数：{e.Message}");
             return null;
