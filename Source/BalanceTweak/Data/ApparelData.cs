@@ -475,11 +475,14 @@ public class ApparelData : TweakData<ApparelData>
 
         if (costChanged)
         {
+            int regenerated = 0;
             foreach (var recipe in DefDatabase<RecipeDef>.AllDefs.Where(r =>
                 r.generated && r.products != null && r.products.Count == 1 && r.products[0].thingDef == def))
             {
                 RecipeDefGenerator.SetIngredients(recipe, def, recipe.adjustedCount);
+                regenerated++;
             }
+            InitPerf.AddRecipeRegen(regenerated);
             CostListCalculator.Reset();
         }
 

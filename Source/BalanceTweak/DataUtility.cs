@@ -155,6 +155,7 @@ public static class DataUtility
     /// <summary>在任何 ThingDef.thingSetMakerTags 写回之后调用，重建 ThingSetMaker 过滤器缓存。</summary>
     public static void RefreshThingSetMakerFilters()
     {
+        InitPerf.AddThingSetRefresh();
         var defs = DefDatabase<ThingSetMakerDef>.AllDefsListForReading;
         if (defs.Count == 0) return;
 

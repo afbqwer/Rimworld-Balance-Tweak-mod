@@ -615,6 +615,11 @@ public abstract partial class TweakData : IExposable
     /// </summary>
     internal void InvalidateDisplayValues() => displayValuesEnsured = false;
 
+    /// <summary>Init 计量用：这一行的展示值是否还欠着（未算或被 Apply 置脏）。</summary>
+    internal bool DisplayValuesStale => !displayValuesEnsured;
+    /// <summary>Init 计量用：这一行的展示值是否已算过。</summary>
+    internal bool DisplayValuesEnsured => displayValuesEnsured;
+
     public virtual TweakData Clone()
     {
         var clone = (TweakData)MemberwiseClone();

@@ -86,6 +86,9 @@ public static partial class TweakDatabase
             }
             finally
             {
+                // Init 抛异常也要关掉计量：否则 initPerf 会一直 Active，运行期每次 Apply / GenValues
+                // 都往一张永远不会被打印的表里累加。
+                InitPerf.Finish();
                 // 诊断层自己绝不能变成新的故障源：TweakRegistry 的静态构造若抛异常，
                 // 这里会变成 TypeInitializationException 并把真正的 Initialize 异常挤掉。
                 TryReport("可选 Mod 兼容概览", TweakRegistry.ReportCompat);
@@ -215,8 +218,22 @@ public static partial class TweakDatabase
 
             if (rule.Tab != id.settingType) drifted.Add((id, data));
 
+            // 二次 SetDef 与 Apply 分开计：前者是"重新绑 def + 回填默认值"（每个项目都付一次），
+            // 后者才是各数据类自己的写回与派生计算。混在一起就分不清是反射贵还是算法贵。
+            long tSetDef = InitPerf.T();
             data.SetDef(def, rule.Tab, true);
-            data.Apply();
+            double setDefMs = InitPerf.MsSince(tSetDef);
+
+            long tApply = InitPerf.T();
+            try
+            {
+                data.Apply();
+            }
+            finally
+            {
+                // 异常路径同样记账：抛异常的那条也是花了时间才抛的，丢掉会让总数对不上。
+                InitPerf.AddApply(rule.Tab, setDefMs, InitPerf.MsSince(tApply));
+            }
             return true;
         }
         return false;
@@ -283,6 +300,7 @@ public static partial class TweakDatabase
         var totalSw = Stopwatch.StartNew();
         var timings = new List<string>();
         double measuredMs = 0;
+        InitPerf.Start();
 
         // 阶段计时统一走这里：读表 → 累加已归属耗时 → 记一行 → 重新计时。
         // 之前各阶段散落的 sw.Restart()/sw.Elapsed 容易出现"忘记读"或"忘记重启"，让阶段之和与总计对不上。
@@ -474,7 +492,20 @@ public static partial class TweakDatabase
         int notFoundCount = 0;
         var drifted = new List<(TweakID oldKey, TweakData data)>();
 
-        PrepareDeferredDisplayValues();
+        // 展示值定格单独计时：它做的是"逐行 EnsureDisplayValues"，成本与改过的行数成正比，
+        // 而且会顺带触发 CombatPower 建装备池（武器 / 服装）。混在 Apply 里，
+        // Apply 就会被算成"改一个字段要 1ms"，从而看不出真正的问题是派生计算而不是写回。
+        long tPrepare = InitPerf.T();
+        InitPerf.PrepareComputed = PrepareDeferredDisplayValues();
+        InitPerf.PrepareMs = InitPerf.MsSince(tPrepare);
+        Mark($"Prepare 展示值（{InitPerf.PrepareRows} 行，实算 {InitPerf.PrepareComputed} 行）");
+        if (InitPerf.PrepareComputed > 0)
+        {
+            // 建池是一次性的（1~2 次就够），逐行成本才是"每行算展示值"该看的数 ——
+            // 两者混在一起，会把一次性的 190ms 摊到每一行头上，得出"每行 300µs"的假象。
+            double perRow = (InitPerf.PrepareMs - InitPerf.PoolMs) * 1000.0 / InitPerf.PrepareComputed;
+            timings.Add($"    其中建池 {InitPerf.PoolMs:F1}ms / {InitPerf.PoolBuilds} 次；逐行均 {perRow:F0}µs");
+        }
 
         // 注意：必须先过滤 null 再 OrderBy —— 排序键 p.Value.LoadingOrd 本身就会解引用，
         // 把 null 判断写在循环体内是来不及的（会在 OrderBy 求键时抛 NRE）。
@@ -512,6 +543,14 @@ public static partial class TweakDatabase
         if (notFoundCount > 0)
             TweakLog.Message($"[BalanceTweak] 有 {notFoundCount} 个修改项未找到对应的 Def（可能因 Mod 变动导致），已跳过。");
         Mark($"直接修改项 Apply ({appliedModified} 已应用)");
+
+        // Apply 会把一部分行的展示值重新置脏（等 UI 首次读时再算）。统计有多少行欠着账：
+        // 这个数字越接近总数，说明 Apply 阶段里算过的派生值越多是白算的。
+        InitPerf.StaleTotal = tweakDatas.Count;
+        foreach (var d in tweakDatas.Values)
+        {
+            if (d != null && d.DisplayValuesStale) InitPerf.StaleAfterApply++;
+        }
 
         // 分类规则调整会让旧存档里的 settingType 与新规则不一致。
         // 数据本身已按新规则正确落到对应 def 上，这里只把字典键一并归一化 —— 否则
@@ -608,13 +647,7 @@ public static partial class TweakDatabase
         if (reclassified > 0)
             TweakLog.Message($"[BalanceTweak] 有 {reclassified} 条数据的目标 Def/父项已不存在，已归入上游错误，不再计入内部引用解析失败。");
 
-        // 各阶段之和若小于总计，差额就是没被任何阶段认领的开销 —— 显式打出来，免得"账对不上"却无从判断。
-        totalSw.Stop();
-        double elapsedMs = totalSw.Elapsed.TotalMilliseconds;
-        timings.Add($"  未归属: {elapsedMs - measuredMs:F1}ms");
-
-        var report = string.Join("\n", timings);
-        TweakLog.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {elapsedMs:F1}ms");
+        Mark("上游错误归类");
 
         // 研究解锁缓存必须在两轮 Apply 之后再打回一次，理由是时序：
         // 加载期 CompProperties_Techprint.ResolveReferences 就调过 project.UnlockedDefs（拼物品描述），
@@ -625,13 +658,30 @@ public static partial class TweakDatabase
         // 顺带丢掉索引本身：换存档/热重载后静态缓存里的 Def 实例可能已经作废。
         ResearchUnlocks.Invalidate();
         ResearchUnlocks.ClearAllVanillaCaches();
+        Mark($"清空研究项原版缓存（{DefDatabase<ResearchProjectDef>.DefCount} 项）");
 
         // 中继 Comp 的运行时缓存（带宽 / 指挥范围 / 平方距离）：两轮 Apply 结束后统一补刷一次。
         // 读档期地图还没建好时 Flush 会直接丢弃 —— 那时新建的 Comp 会按新 Props 初始化。
         FortifiedRelay.Flush();
+        Mark("FortifiedRelay.Flush");
 
         // C3：运行期自检（SC1–SC6）。Debug 构建里强制开启；发布版默认关闭（零开销）。
         TweakSelfCheck.RunAll();
+        Mark("TweakSelfCheck.RunAll");
+
+        // 各阶段之和若小于总计，差额就是没被任何阶段认领的开销 —— 显式打出来，免得"账对不上"却无从判断。
+        //
+        // 收口必须放在上面三步之后：以前 totalSw.Stop() 在清缓存 / 刷新 / 自检之前就停表了，
+        // 那三步（研究缓存清理是 831 项 × 3 次反射写，自检在 Debug 版强制开启）从来没进过"总计"——
+        // 报告看着 2.1s，真实启动开销比它高。
+        InitPerf.Finish();
+        totalSw.Stop();
+        double elapsedMs = totalSw.Elapsed.TotalMilliseconds;
+        timings.Add($"  未归属: {elapsedMs - measuredMs:F1}ms");
+        InitPerf.AppendReport(timings);
+
+        var report = string.Join("\n", timings);
+        TweakLog.Message($"[BalanceTweak] ===== 初始化耗时报告 =====\n{report}\n总计: {elapsedMs:F1}ms");
     }
 
     /// <summary>
@@ -646,11 +696,23 @@ public static partial class TweakDatabase
     /// 否则改过基准武器之后，全表的强度会跟着基准一起漂。
     /// </para>
     /// </summary>
-    private static void PrepareDeferredDisplayValues()
+    private static int PrepareDeferredDisplayValues()
     {
-        if (tweakDatas.Count == 0) return;
+        InitPerf.PrepareRows = tweakDatas.Count;
+        if (tweakDatas.Count == 0) return 0;
+
+        // 数"真算了多少行"而不是"遍历了多少行"：EnsureDisplayValues 自己在 def / 环境未就绪时会直接返回，
+        // 这种行没花钱。两者混为一谈会让"每行多少 µs"这个指标完全失真。
+        int computed = 0;
         foreach (var id in tweakDatas.Keys)
-            GetOriginal(id)?.EnsureDisplayValues();
+        {
+            var orig = GetOriginal(id);
+            if (orig == null) continue;
+            bool before = orig.DisplayValuesEnsured;
+            orig.EnsureDisplayValues();
+            if (!before && orig.DisplayValuesEnsured) computed++;
+        }
+        return computed;
     }
 
     /// <summary>集合类字段（List&lt;&gt; / ThingFilter）：Cleared 的语义是"移除全部项"（写空集合，不写 null）；其余是"还原原值"。</summary>

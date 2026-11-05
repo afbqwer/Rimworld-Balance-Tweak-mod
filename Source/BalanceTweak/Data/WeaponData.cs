@@ -573,6 +573,9 @@ public class WeaponData : TweakData<WeaponData>, ISubItemHost
     /// </summary>
     public void GenValues()
     {
+        // Init 计量：这个函数会被 Apply、弹丸改动后的共享武器刷新、炮塔节奏刷新各调一次，
+        // 调用次数明显大于武器行数就说明存在跨行重复计算。运行期 Active 为 false，只多一次静态读。
+        InitPerf.AddGenValues(id.settingType);
         EnsureStatics();
         GenMirrors();
         if (def is not ThingDef d) return;

@@ -74,6 +74,21 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
     /// </summary>
     protected void ApplyDefStats(Def def)
     {
+        // 只包一层计时，方法体原样留在 Core 里：stat 列的写回（两次全字段遍历 + 反射读写）
+        // 是 Apply 里唯一有固定成本的部分，跟各数据类自己的算法分开记，才知道钱花在哪。
+        long t0 = InitPerf.T();
+        try
+        {
+            ApplyDefStatsCore(def);
+        }
+        finally
+        {
+            InitPerf.AddStat(id.settingType, InitPerf.MsSince(t0));
+        }
+    }
+
+    private void ApplyDefStatsCore(Def def)
+    {
         bool anyWrite = false;
 
         // Phase 1: Write List<StatModifier> fields to def IF they were directly modified by the user.
@@ -517,6 +532,7 @@ public abstract partial class TweakData<T> : TweakData where T : TweakData<T>
         {
             def.label = v;
             def.ClearCachedData();
+            InitPerf.AddLabelClear(id.settingType);
             // 本行的展示值缓存也要丢：行标题（label/searchString）可能已经按旧 def.label
             // 解析过并缓存（首次绘制 / 搜索就会触发），不清的话应用改动后这一行仍显示旧名，
             // 直到下次 SetDef。ResetPropsCache 与 ClearCachedData 的先后无所谓 —— 前者只是
