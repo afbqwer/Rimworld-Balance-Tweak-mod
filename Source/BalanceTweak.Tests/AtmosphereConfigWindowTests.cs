@@ -34,7 +34,7 @@ public class AtmosphereConfigWindowTests
     private static readonly Type[] Hosts =
     {
         typeof(TerrainData), typeof(DamageData), typeof(ApparelData), typeof(HediffData), typeof(RaceData),
-        typeof(BuildingData),
+        typeof(BuildingData), typeof(FoodData),
     };
 
     private static IEnumerable<(ConfigSection Section, ConfigRow Row)> Rows()

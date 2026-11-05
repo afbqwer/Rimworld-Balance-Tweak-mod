@@ -102,6 +102,30 @@ class FoodData : TweakData<FoodData>
     [TweakField(Style = ColumnStyle.ThingSetTags)]
     public List<string>? thingSetMakerTags = null;
 
+    // ── Atmosphere Overhaul：植物抗风（可选 Mod，见 AtmosphereConfigWindow）──
+    // AO 的风载引擎对树 / 作物 / 野生植物统一读 BuildingAtmosphereExtension.windToleranceFactor
+    // （Evaluate 里对三种 Kind 同一行调用），扩展其余字段只对建筑生效，所以这里只暴露这一格。
+    // 与 BuildingData.aoBuildingConfig 同一套「现挂扩展」机制：改这一格会自动挂扩展，清空则摘掉
+    // （仅限本 Mod 挂的；AO XML / 别的 Mod 配的不动）。
+
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(AtmosphereConfigWindow), ButtonText = nameof(AoPlantConfigButtonText),
+        Available = nameof(AvailableIfPlant), MayRequire = TweakDatabase.AO)]
+    public TweakID? aoPlantConfig = null;
+
+    /// <summary>Def 上没有 AO 大气扩展时按钮说「添加」，有则说「编辑」。与建筑触发列同一套机制。</summary>
+    public static string AoPlantConfigButtonText(TweakData data)
+        => AoHelper.Ext(data.def, AoHelper.BuildingExt) != null
+            ? "MST.aoPlantConfigEdit".Translate().RawText
+            : "MST.aoPlantConfigAdd".Translate().RawText;
+
+    /// <summary>抗风倍率。× AO 按植物当前 HP 推导的折断风速，公式里是平方项，1 = 标准。</summary>
+    [TweakField(NotAColumn = true, MayRequire = TweakDatabase.AO)]
+    public float? plantWindTolerance = null;
+
+    // 扩展引用（SetDef 时解析一次；非植物保持 null，Apply 里的增删都以此为界）。
+    private object? plantAtmosphereExt = null;
+
     [TweakField(Style = ColumnStyle.String)]
     public string? defLabel = null;
 
@@ -138,6 +162,9 @@ class FoodData : TweakData<FoodData>
             }
             if (d.plant != null)
             {
+                plantAtmosphereExt = AoHelper.Ext(d, AoHelper.BuildingExt);
+                plantWindTolerance ??= AoHelper.F(plantAtmosphereExt, "windToleranceFactor");
+
                 growDays ??= d.plant.growDays;
                 harvestYield ??= d.plant.harvestYield;
                 sowWork ??= d.plant.sowWork;
@@ -233,6 +260,34 @@ class FoodData : TweakData<FoodData>
             ApplyL<ResearchProjectDef>(nameof(sowResearchPrerequisites), v => def.plant.sowResearchPrerequisites = v);
             ApplyV<Pollution>(nameof(pollution), v => def.plant.pollution = v);
         }
+        ApplyAoPlant();
+    }
+
+    /// <summary>
+    /// 把窗口里的「抗风倍率」写回 AO 的建筑大气扩展。与 <see cref="BuildingData"/> 的现挂语义一致：
+    /// 改了值而 Def 上还没有扩展 → 现挂（挂完 <see cref="AoHelper.EnsureExt"/> 内部会清
+    /// <c>BuildingAtmosphereExtension.Cache</c>，不清的话风载引擎读到的仍是共享 Defaults）；
+    /// 清空且扩展是本 Mod 挂的 → 摘掉。AO XML 配的扩展只写字段、永不摘除。
+    /// </summary>
+    private void ApplyAoPlant()
+    {
+        if (!DataUtility.MayRequire(TweakDatabase.AO)) return;
+
+        if (plantAtmosphereExt == null && plantWindTolerance != null)
+        {
+            plantAtmosphereExt = AoHelper.EnsureExt(def, AoHelper.BuildingExt);
+            if (plantAtmosphereExt == null)
+                Log.Warning($"[BalanceTweak] {def?.defName}：无法添加 BuildingAtmosphereExtension，" +
+                            "植物抗风的改动不会生效。");
+        }
+        else if (plantAtmosphereExt != null && plantWindTolerance == null && AoHelper.AddedByUs(def))
+        {
+            AoHelper.RemoveExtAddedByUs(def, AoHelper.BuildingExt);
+            plantAtmosphereExt = null;
+        }
+
+        if (plantAtmosphereExt != null)
+            AoHelper.ApplyF<float>(this, plantAtmosphereExt, "windToleranceFactor", nameof(plantWindTolerance));
     }
     private static void EnsureHarvestedByMap()
     {

@@ -62,4 +62,12 @@
     <MST.harvestFailableComment>When disabled, harvesting always succeeds (skill ignored).</MST.harvestFailableComment>
     <MST.dieIfNoSunlightComment>Whether the plant dies without sunlight (turn off for cave plants).</MST.dieIfNoSunlightComment>
     <MST.minSpacingBetweenSamePlantComment>Minimum spacing between same plant types. 0 = unlimited.</MST.minSpacingBetweenSamePlantComment>
+    <MST.aoPlantConfig>Plant wind</MST.aoPlantConfig>
+    <MST.aoPlantConfigComment>Atmosphere Overhaul's plant wind tolerance: the wind-load engine reads this one factor for trees, crops and wild plants alike. The button says Add when the plant has no extension yet.</MST.aoPlantConfigComment>
+    <MST.aoPlantConfigEdit>Edit</MST.aoPlantConfigEdit>
+    <MST.aoPlantConfigAdd>Add</MST.aoPlantConfigAdd>
+    <MST.aoPlantSection>Plant wind</MST.aoPlantSection>
+    <MST.aoPlantNote>The tolerance multiplies the break speed AO derives from the plant's current hit points, squared: 2 = four times the wind pressure. Damaged plants break more easily at the same speed. The extension's other fields (pressure, leak, heat exchange) only affect buildings, not plants.</MST.aoPlantNote>
+    <MST.plantWindTolerance>Wind tolerance</MST.plantWindTolerance>
+    <MST.plantWindToleranceComment>Break speed x this factor. 1 = standard; 2 = four times the wind pressure needed; 0.5 = breaks at half the speed. Editing this field adds the extension automatically; clearing it removes it again (only ones this mod added).</MST.plantWindToleranceComment>
 </LanguageData>

@@ -1,3 +1,6 @@
+using RimWorld;
+using Verse;
+
 namespace BalanceTweak;
 
 /// <summary>
@@ -72,6 +75,14 @@ public class AtmosphereConfigWindow : ConfigWindow
         ConfigSection.Of(null, d => d is RaceData,
                 ConfigRow.Float(nameof(RaceData.blastToleranceFactor), 0f, 10f))
             .Note("MST.aoRaceNote"),
+
+        // ── 植物（Food 页签）：树 / 作物 / 野生植物 ──
+        // AO 的风载引擎对三种植物统一读 BuildingAtmosphereExtension.windToleranceFactor，
+        // 扩展其余字段只对建筑生效，所以这里只有一格。判据必须是"确实是植物"：
+        // Food 页签的行既有植物也有成品食物，后者打开窗口不该看到空节。
+        ConfigSection.Of("MST.aoPlantSection", IsPlantHost,
+                ConfigRow.Float(nameof(FoodData.plantWindTolerance), 0.01f, 100f))
+            .Note("MST.aoPlantNote"),
 
         // ══════ 以下是建筑页（P3）：按"这个 Def 实际挂了哪些 Comp"分节 ══════
         // 判据一律是 AoBuilding 里的静态方法组 —— 它们只碰 object / Def，不碰 AO 的类型。
@@ -194,7 +205,15 @@ public class AtmosphereConfigWindow : ConfigWindow
         if (data is ApparelData) return "MST.aoApparelConfig";
         if (data is HediffData) return "MST.aoHearingConfig";
         if (data is RaceData) return "MST.aoRaceConfig";
+        if (data is FoodData) return "MST.aoPlantConfig";
         if (data is BuildingData) return "MST.aoBuildingConfig";
         return "MST.aoConfig";
     }
+
+    /// <summary>
+    /// 植物节的宿主判据：FoodData 且 def 确实带 <c>plant</c>。Food 页签的成品食物
+    /// （肉、餐、药）也走 FoodData，但没有 plant —— 它们打开窗口时不应出现植物节。
+    /// </summary>
+    private static bool IsPlantHost(TweakData data)
+        => data is FoodData { def: ThingDef { plant: not null } };
 }

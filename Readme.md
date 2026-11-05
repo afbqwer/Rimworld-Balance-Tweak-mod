@@ -492,7 +492,7 @@ public class AtmosphereConfigWindow : ConfigWindow
 - **窗口高度不用传死值**：内容高度在绘制前算好再开滚动区（旧实现传死 `viewHeight`，字段一多就滚不到底）。`preferredHeight` 只影响窗口初始高度。
 - **IMGUI 全局状态**：改 `Text.Font` / `Text.Anchor` / `Text.WordWrap` 一律"保存 → 改 → 还原"（见 §4.7）。覆写 `DrawBody` 时自己也要守这条。
 
-> 现有 12 个触发列全部走 `ColumnStyle.Config`（其中 `BuildingData.aoBuildingConfig` 不设 `Hidden`：它承担"给普通建筑现挂大气扩展"的入口职责，代价是建筑页每行都有按钮）：Fortified 的 6 个（`APSConfigWindow` 26 行 / `SweepConfigWindow` 54 行 / `ShieldConfigWindow` 94 行 / `RelayConfigWindow` 93 行（六节，服务种族 / 建筑 / 服装三个宿主）+ `TurretConfigWindow` / `MechWeaponFilterWindow` 两个手写窗口）+ AO 的 6 个（`AtmosphereConfigWindow` 一个类服务六个宿主：地形 / 伤害 / 服饰 / 健康 / 种族 / 建筑，共十四节）。
+> 现有 13 个触发列全部走 `ColumnStyle.Config`（其中 `BuildingData.aoBuildingConfig` 不设 `Hidden`：它承担"给普通建筑现挂大气扩展"的入口职责，代价是建筑页每行都有按钮；`FoodData.aoPlantConfig` 只在植物行显示，用 `Available` 门控）：Fortified 的 6 个（`APSConfigWindow` 26 行 / `SweepConfigWindow` 54 行 / `ShieldConfigWindow` 94 行 / `RelayConfigWindow` 93 行（六节，服务种族 / 建筑 / 服装三个宿主）+ `TurretConfigWindow` / `MechWeaponFilterWindow` 两个手写窗口）+ AO 的 6 个（`AtmosphereConfigWindow` 一个类服务六个宿主：地形 / 伤害 / 服饰 / 健康 / 种族 / 建筑，共十四节）。
 >
 > AO 那 6 个是这条基础设施的**第一个「以后会不断复用」的用例**：建筑页原本要 57 列（9 个 Comp + 1 个扩展），
 > 加上 P2 的 18 格一共 75 格，现在六个页签各只剩 1 列。经验：**字段数 ≥3、且各行的命中率不齐时，

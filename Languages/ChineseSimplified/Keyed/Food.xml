@@ -62,4 +62,12 @@
     <MST.harvestFailableComment>关闭后收获必定成功（不受技能影响）。</MST.harvestFailableComment>
     <MST.dieIfNoSunlightComment>无光照时植物是否死亡（关闭后可在完全黑暗环境生长）。</MST.dieIfNoSunlightComment>
     <MST.minSpacingBetweenSamePlantComment>同种植物之间的最小间距。0表示无限制。</MST.minSpacingBetweenSamePlantComment>
+    <MST.aoPlantConfig>植物抗风</MST.aoPlantConfig>
+    <MST.aoPlantConfigComment>Atmosphere Overhaul 的植物抗风：风载引擎对树、作物与野生植物统一读这一个倍率。没有扩展的植物按钮显示「添加」。</MST.aoPlantConfigComment>
+    <MST.aoPlantConfigEdit>编辑</MST.aoPlantConfigEdit>
+    <MST.aoPlantConfigAdd>添加</MST.aoPlantConfigAdd>
+    <MST.aoPlantSection>植物抗风</MST.aoPlantSection>
+    <MST.aoPlantNote>抗风倍率乘在 AO 按植物当前 HP 推导的折断风速上（平方项）：2 = 能扛住四倍的风压。植物受伤后 HP 下降，同一风速下更容易断。AO 的扩展里其余字段（耐压、漏气、换热等）只对建筑生效，对植物没有作用。</MST.aoPlantNote>
+    <MST.plantWindTolerance>抗风倍率</MST.plantWindTolerance>
+    <MST.plantWindToleranceComment>折断风速 × 此倍率。1 = 标准；2 = 需要四倍风压才断；0.5 = 一半风速就断。改这一格会自动挂上扩展，全部清空则撤下（只动本 Mod 挂的）。</MST.plantWindToleranceComment>
 </LanguageData>
