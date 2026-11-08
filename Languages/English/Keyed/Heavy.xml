@@ -109,4 +109,35 @@
     <MST.usableWeaponsView>View</MST.usableWeaponsView>
     <MST.usableWeaponsPreview>Weapons matching the current settings (first 12): {0}</MST.usableWeaponsPreview>
     <MST.usableWeaponsEmpty>No usable weapons with the current settings.</MST.usableWeaponsEmpty>
+
+    <MST.autoWorkConfig>Auto bench</MST.autoWorkConfig>
+    <MST.autoWorkConfigComment>Open the Fortified automated workbench settings (buildings with ModExtension_AutoWorkTable only).</MST.autoWorkConfigComment>
+    <MST.autoWorkConfigEdit>Edit</MST.autoWorkConfigEdit>
+    <MST.autoWorkConfigIntro>These fields write back to ModExtension_AutoWorkTable on the building def. Every value is read live, so existing and new benches use the new settings immediately; visual effecters are not edited here.</MST.autoWorkConfigIntro>
+    <MST.autoWorkConfigNote>A pawn first waits for the operating time to start the bill, then the bench works unattended for up to one stage. Each finished stage needs another pawn visit, and products are only made when the whole bill's work is done.</MST.autoWorkConfigNote>
+    <MST.autoWorkTimingSection>Timing</MST.autoWorkTimingSection>
+    <MST.autoWorkTime>Operating time (ticks)</MST.autoWorkTime>
+    <MST.autoWorkTimeComment>Ticks a pawn waits at the bench to start the bill and to advance each next stage. 60 ticks = 1 second; DMS default 300.</MST.autoWorkTimeComment>
+    <MST.autoWorkAmountPerStage>Work per stage (ticks)</MST.autoWorkAmountPerStage>
+    <MST.autoWorkAmountPerStageComment>Maximum work done unattended in one stage. Smaller values bring a pawn back more often; larger values run longer per visit. DMS uses 5000-40000, extension default 60000.</MST.autoWorkAmountPerStageComment>
+    <MST.autoWorkStageInfo>Stage duration</MST.autoWorkStageInfo>
+    <MST.autoWorkStageInfoFormat>about {0} s unattended at 1x efficiency; the bill total is still shortened by WorkTableWorkSpeedFactor.</MST.autoWorkStageInfoFormat>
+    <MST.autoWorkSkillSection>Nominal skills</MST.autoWorkSkillSection>
+    <MST.autoWorkSkillNote>The machine's "worker skill": decides whether it can run recipes with skill requirements, and sets product quality. Quality generation clamps the value to 0-20; anything above that only affects requirement checks.</MST.autoWorkSkillNote>
+    <MST.autoWorkSkills>Skills</MST.autoWorkSkills>
+    <MST.autoWorkSkillsComment>Each entry is a skill and a level. Empty means every skill counts as level 0, so only recipes without skill requirements can run.</MST.autoWorkSkillsComment>
+    <MST.autoWorkFeedSection>Feed and output</MST.autoWorkFeedSection>
+    <MST.autoWorkFeedNote>Pulling relies on facility links between the bench and hoppers; the eject mode only matters when auto-eject is on.</MST.autoWorkFeedNote>
+    <MST.autoWorkPullFromLinkedStorage>Pull from linked storage</MST.autoWorkPullFromLinkedStorage>
+    <MST.autoWorkPullFromLinkedStorageComment>Draw ingredients automatically from linked hoppers. When off, pawns must haul ingredients into the machine; DMS's CE ammunition printer is off by default.</MST.autoWorkPullFromLinkedStorageComment>
+    <MST.autoWorkPullCheckIntervalTicks>Pull check interval (ticks)</MST.autoWorkPullCheckIntervalTicks>
+    <MST.autoWorkPullCheckIntervalTicksComment>How often hoppers and bills are checked. Default 120; values below 1 are clamped to 1.</MST.autoWorkPullCheckIntervalTicksComment>
+    <MST.autoWorkAutoEjectProducts>Auto-eject products</MST.autoWorkAutoEjectProducts>
+    <MST.autoWorkAutoEjectProductsComment>Place finished products at the interaction cell automatically. When off, pawns must collect them; only DMS's auto mill enables this by default.</MST.autoWorkAutoEjectProductsComment>
+    <MST.autoWorkEjectPlaceMode>Eject placement</MST.autoWorkEjectPlaceMode>
+    <MST.autoWorkEjectPlaceModeComment>Direct = place directly; Near = place nearby; Radius = random nearby. Default Near.</MST.autoWorkEjectPlaceModeComment>
+    <MST.autoWorkWarnWorkTime>Operating time is below 0; it is treated as 0 at runtime.</MST.autoWorkWarnWorkTime>
+    <MST.autoWorkErrStageAmount>Work per stage must be above 0; otherwise every tick advances a stage and the bench keeps calling pawns.</MST.autoWorkErrStageAmount>
+    <MST.autoWorkWarnPullInterval>The pull check interval is below 1; it is treated as 1 tick at runtime.</MST.autoWorkWarnPullInterval>
+    <MST.autoWorkWarnSkillRange>Skill level is outside 0-20: quality generation clamps it, and only requirement checks see the excess.</MST.autoWorkWarnSkillRange>
 </LanguageData>

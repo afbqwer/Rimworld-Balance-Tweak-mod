@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using RimWorld;
+using UnityEngine;
 using Verse;
 using static BalanceTweak.StatColumnConfig;
 using static BalanceTweak.DataUtility;
@@ -145,10 +146,51 @@ class BuildingData : TweakData<BuildingData>
     [TweakField(NotAColumn = true, Style = ColumnStyle.StatModList, MayRequire = TweakDatabase.FFF)]
     public List<StatModifier>? facilityStatOffsets = null;
 
+    // ── Fortified 自动工作台（ModExtension_AutoWorkTable，见 AutoWorkConfigWindow）──
+    // DMS 的反应室 / 烧结炉 / 机械打印机 / 自动磨床 / CE 弹药打印机都挂这个扩展。
+    // 表格里只留一个只读触发列；字段全部 NotAColumn，由窗口统一编辑。
+
+    [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Config,
+        Editor = typeof(AutoWorkConfigWindow), MayRequire = TweakDatabase.FFF,
+        Hidden = nameof(HiddenIfNoAutoWorkTable))]
+    public TweakID? autoWorkConfig = null;
+
+    /// <summary>工人启动 / 推进每一阶段时在台前等待的 tick 数。默认 300（5 秒）。</summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? autoWorkTime = null;
+
+    /// <summary>无人值守时单段最多推进的工作量；越小工人来得越勤。默认 60000。</summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? autoWorkAmountPerStage = null;
+
+    /// <summary>
+    /// 机器的"名义技能"。决定能否自动执行有技能要求的配方，也决定产出品质（读值时夹在 0–20）。
+    /// 复用 <see cref="SkillGain"/> 列表编辑器。
+    /// </summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.SkillGainList, MayRequire = TweakDatabase.FFF)]
+    public List<SkillGain>? autoWorkSkills = null;
+
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? autoWorkPullFromLinkedStorage = null;
+
+    /// <summary>抽料检查间隔（tick）。默认 120；小于 1 时运行时会被夹到 1。</summary>
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Int, MayRequire = TweakDatabase.FFF)]
+    public int? autoWorkPullCheckIntervalTicks = null;
+
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Bool, MayRequire = TweakDatabase.FFF)]
+    public bool? autoWorkAutoEjectProducts = null;
+
+    [TweakField(NotAColumn = true, Style = ColumnStyle.Enum, EnumType = typeof(ThingPlaceMode),
+        MayRequire = TweakDatabase.FFF)]
+    public ThingPlaceMode? autoWorkEjectPlaceMode = null;
+
     /// <summary>中继 Comp 的引用（SetDef 时解析一次；闭包里只捕获 object）。</summary>
     private object? subRelayProps = null;
     private object? overseerProps = null;
     private object? overseerFacilityProps = null;
+
+    /// <summary>自动工作台扩展的引用（SetDef 时解析一次；闭包里只捕获 object）。</summary>
+    private object? autoWorkExtension = null;
 
     // --- 新增通用 ThingDef 字段（无 Available 限制）---
     //[TweakField(Style = ColumnStyle.Enum, EnumType = typeof(Traversability))]
@@ -651,6 +693,7 @@ class BuildingData : TweakData<BuildingData>
             }
 
             LoadRelay(d);
+            LoadAutoWork(d);
             LoadAoBuilding(d);
             relayHasSubRelay ??= subRelayProps != null;
             relayHasOverseer ??= overseerProps != null;
@@ -761,6 +804,7 @@ class BuildingData : TweakData<BuildingData>
         ApplyBuildingProp(def);
         ApplyDefStats(def);
         ApplyRelay(def);
+        ApplyAutoWork();
         ApplyAoBuilding();
         // 炮塔的射击节奏（冷却 / 预热）写在建筑上，挂载的那把枪只是据它算 DPS。
         // 改完必须主动刷那一行，否则武器页签的 DPS / 强度停在旧值 —— 与弹丸改动后
@@ -1102,6 +1146,24 @@ class BuildingData : TweakData<BuildingData>
     }
 
     /// <summary>
+    /// 从 <c>ModExtension_AutoWorkTable</c> 回填窗口字段。只在 SetDef 里调一次：
+    /// 扩展不会被本 Mod 增删，字段也全部是普通标量 / 列表，不存在"Apply 里刚补上扩展"的同步问题。
+    /// </summary>
+    private void LoadAutoWork(ThingDef d)
+    {
+        autoWorkExtension = FortifiedAutoWork.FindExtension(d);
+        if (autoWorkExtension == null) return;
+
+        autoWorkTime ??= FortifiedAutoWork.WorkTime(autoWorkExtension);
+        autoWorkAmountPerStage ??= FortifiedAutoWork.AmountPerStage(autoWorkExtension);
+        autoWorkSkills ??= FortifiedAutoWork.Skills(autoWorkExtension);
+        autoWorkPullFromLinkedStorage ??= FortifiedAutoWork.PullFromLinkedStorage(autoWorkExtension);
+        autoWorkPullCheckIntervalTicks ??= FortifiedAutoWork.PullCheckIntervalTicks(autoWorkExtension);
+        autoWorkAutoEjectProducts ??= FortifiedAutoWork.AutoEjectProducts(autoWorkExtension);
+        autoWorkEjectPlaceMode ??= FortifiedAutoWork.EjectPlaceMode(autoWorkExtension);
+    }
+
+    /// <summary>
     /// 从三种中继 Comp 回填窗口字段。<paramref name="syncUnmodified"/> = true 时未修改字段跟随
     /// Comp 当前值（外部改动 / 重新解析后界面保持一致）；列表始终带 <c>!IsFieldModified</c> 守卫。
     /// </summary>
@@ -1200,6 +1262,34 @@ class BuildingData : TweakData<BuildingData>
         }
 
         if (RelayTouched) FortifiedRelay.RequestRefresh(def);
+    }
+
+    /// <summary>
+    /// 把自动工作台的窗口字段写回 <c>ModExtension_AutoWorkTable</c>。
+    /// <para>
+    /// 没有扩展就什么都不做（这一格本来也不显示）。所有字段都是普通值，扩展对象挂在 Def 上，
+    /// 已生成的建筑每次现读，所以改完立即生效，没有缓存要刷。
+    /// </para>
+    /// </summary>
+    private void ApplyAutoWork()
+    {
+        if (!DataUtility.MayRequire(TweakDatabase.FFF)) return;
+        if (autoWorkExtension == null) return;
+
+        var ext = autoWorkExtension; // 闭包只捕获 object，不出现 Fortified 类型
+        ApplyV<int>(nameof(autoWorkTime), v => FortifiedAutoWork.Set(ext, "workTime", Mathf.Max(0, v)));
+        ApplyV<int>(nameof(autoWorkAmountPerStage),
+            v => FortifiedAutoWork.Set(ext, "workAmountPerStage", Mathf.Max(1, v)));
+        ApplyL<SkillGain>(nameof(autoWorkSkills),
+            v => FortifiedAutoWork.Set(ext, "skills", FortifiedAutoWork.ToSkillMap(v)));
+        ApplyV<bool>(nameof(autoWorkPullFromLinkedStorage),
+            v => FortifiedAutoWork.Set(ext, "pullFromLinkedStorage", v));
+        ApplyV<int>(nameof(autoWorkPullCheckIntervalTicks),
+            v => FortifiedAutoWork.Set(ext, "pullCheckIntervalTicks", Mathf.Max(1, v)));
+        ApplyV<bool>(nameof(autoWorkAutoEjectProducts),
+            v => FortifiedAutoWork.Set(ext, "autoEjectProducts", v));
+        ApplyV<ThingPlaceMode>(nameof(autoWorkEjectPlaceMode),
+            v => FortifiedAutoWork.Set(ext, "ejectPlaceMode", v));
     }
 
     /// <summary>
@@ -1380,6 +1470,9 @@ class BuildingData : TweakData<BuildingData>
         Frame,
         Prop,
     }
+    /// <summary>只有挂了 Fortified 自动工作台扩展的建筑才显示触发列。</summary>
+    public static bool HiddenIfNoAutoWorkTable(TweakData data) => !FortifiedAutoWork.Has(data.def);
+
     public static bool AvailableIfPower(TweakData data) => data.propType switch
     {
         (int)BuildingType.PowerBuilding => true,

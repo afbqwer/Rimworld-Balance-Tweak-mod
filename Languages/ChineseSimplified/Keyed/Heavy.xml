@@ -109,4 +109,35 @@
     <MST.usableWeaponsView>查看</MST.usableWeaponsView>
     <MST.usableWeaponsPreview>匹配当前设置的武器（前 12 项）：{0}</MST.usableWeaponsPreview>
     <MST.usableWeaponsEmpty>当前设置下没有可用武器。</MST.usableWeaponsEmpty>
+
+    <MST.autoWorkConfig>自动工作台</MST.autoWorkConfig>
+    <MST.autoWorkConfigComment>打开 Fortified 自动工作台配置窗口（仅挂了 ModExtension_AutoWorkTable 的建筑）。</MST.autoWorkConfigComment>
+    <MST.autoWorkConfigEdit>编辑</MST.autoWorkConfigEdit>
+    <MST.autoWorkConfigIntro>这些字段写回建筑 Def 上的 ModExtension_AutoWorkTable。所有值都在运行时现读，已生成与新建的工作台都会立即使用新配置；外观特效不在此编辑。</MST.autoWorkConfigIntro>
+    <MST.autoWorkConfigNote>自动工作台会先由工人等待「每次操作耗时」启动账单，然后无人值守推进单段工作量；每段结束后需要工人再来一次，全部工作量完成才产出。</MST.autoWorkConfigNote>
+    <MST.autoWorkTimingSection>运行节奏</MST.autoWorkTimingSection>
+    <MST.autoWorkTime>每次操作耗时 (tick)</MST.autoWorkTime>
+    <MST.autoWorkTimeComment>工人启动账单、以及每段结束后推进下一段时在台前等待的 tick 数。60 tick = 1 秒；DMS 默认 300。</MST.autoWorkTimeComment>
+    <MST.autoWorkAmountPerStage>单段工作量 (tick)</MST.autoWorkAmountPerStage>
+    <MST.autoWorkAmountPerStageComment>无人值守时单段最多消耗的工作量。越小工人来得越勤，越大越接近全自动但单次占用更长。DMS 取值 5000–40000，扩展默认 60000。</MST.autoWorkAmountPerStageComment>
+    <MST.autoWorkStageInfo>单段无人值守</MST.autoWorkStageInfo>
+    <MST.autoWorkStageInfoFormat>约 {0} 秒（效率 1×）；账单总量还会被 WorkTableWorkSpeedFactor 缩短。</MST.autoWorkStageInfoFormat>
+    <MST.autoWorkSkillSection>名义技能</MST.autoWorkSkillSection>
+    <MST.autoWorkSkillNote>机器的「工人技能」：决定能否自动执行有技能要求的配方，也决定产出品质。品质生成会把数值夹在 0–20，超出部分只影响技能要求判定。</MST.autoWorkSkillNote>
+    <MST.autoWorkSkills>技能</MST.autoWorkSkills>
+    <MST.autoWorkSkillsComment>每项为技能 + 等级。留空表示所有技能按 0 级处理，只能跑没有技能要求的配方。</MST.autoWorkSkillsComment>
+    <MST.autoWorkFeedSection>供料与产出</MST.autoWorkFeedSection>
+    <MST.autoWorkFeedNote>抽料依赖工作台与料斗的设施连接；成品落地方式只在自动弹出开启时生效。</MST.autoWorkFeedNote>
+    <MST.autoWorkPullFromLinkedStorage>从链接存储抽料</MST.autoWorkPullFromLinkedStorage>
+    <MST.autoWorkPullFromLinkedStorageComment>自动从连接的料斗抽取原料。关闭后需要工人把原料搬进机器；DMS 的 CE 弹药打印机默认关闭。</MST.autoWorkPullFromLinkedStorageComment>
+    <MST.autoWorkPullCheckIntervalTicks>抽料检查间隔 (tick)</MST.autoWorkPullCheckIntervalTicks>
+    <MST.autoWorkPullCheckIntervalTicksComment>多久检查一次料斗与账单。默认 120；小于 1 会被夹到 1。</MST.autoWorkPullCheckIntervalTicksComment>
+    <MST.autoWorkAutoEjectProducts>自动弹出成品</MST.autoWorkAutoEjectProducts>
+    <MST.autoWorkAutoEjectProductsComment>账单完成后自动把产品放到交互格。关闭时需要工人来收取；DMS 只有自动磨床默认开启。</MST.autoWorkAutoEjectProductsComment>
+    <MST.autoWorkEjectPlaceMode>成品落地方式</MST.autoWorkEjectPlaceMode>
+    <MST.autoWorkEjectPlaceModeComment>Direct = 直接放置；Near = 就近放下；Radius = 附近随机。默认 Near。</MST.autoWorkEjectPlaceModeComment>
+    <MST.autoWorkWarnWorkTime>操作耗时小于 0，运行时会按 0 处理。</MST.autoWorkWarnWorkTime>
+    <MST.autoWorkErrStageAmount>单段工作量必须大于 0，否则会退化成每个 tick 换一段、机器不停叫工人。</MST.autoWorkErrStageAmount>
+    <MST.autoWorkWarnPullInterval>抽料检查间隔小于 1，运行时会按 1 tick 处理。</MST.autoWorkWarnPullInterval>
+    <MST.autoWorkWarnSkillRange>技能等级超出 0–20：品质生成会夹到该范围，超出部分只影响技能要求判定。</MST.autoWorkWarnSkillRange>
 </LanguageData>
