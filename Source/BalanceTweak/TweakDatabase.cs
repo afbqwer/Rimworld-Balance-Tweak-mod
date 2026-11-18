@@ -50,7 +50,8 @@ public static partial class TweakDatabase
     /// <para>
     /// <b>顺序不变量：父行在其子行之前。</b>子项的实例只能由父实例产出（<c>SetParentTweak</c> 要父实例），
     /// 所以按这个顺序消费时，走到子行它一定已经在 <see cref="originalData"/> 里。顺序由 <see cref="BuildRowManifest"/>
-    /// 的生成方式保证，不是靠排序 —— 但它是隐式的，<see cref="BalanceTweakGUI"/> 收尾处的自检会核对行数。
+    /// 的生成方式保证；即便如此也<b>不依赖</b>它 —— 子行未建时 <see cref="GetOriginal"/> 会顺着
+    /// <see cref="subOwner"/> 先补父行（顺序写错最多白跑一次补建，不会丢行）。
     /// </para>
     /// </summary>
     private static List<TweakID> rowIds = [];
@@ -63,20 +64,41 @@ public static partial class TweakDatabase
     private static readonly Dictionary<Type, TweakData?> subItemProbes = [];
 
     /// <summary>
-    /// 造过实例、但没能落地的子行 id（父项结构变了 / id 与清单不符）。
+    /// <b>已确认建不出来的行</b>：父项 SetDef 抛异常、子项挂父项失败、id 与清单不符、id 撞车。
     /// <para>
-    /// 存在的唯一目的是让自检能区分两种"行没进表"：<b>预期的失败</b>（这里登记过）与
-    /// <b>建行顺序或枚举出了问题</b>（没登记）。混在一起看，顺序坏了也会被当成"这条 Def 有问题"而放过。
+    /// 存在的唯一目的是让自检能区分两种"行没进表"：<b>这里登记过的预期失败</b> 与
+    /// <b>没人登记、纯粹是清单/顺序出了问题</b>。不分开看的话，"顺序坏了"会被当成"这条 Def 有问题"而放过。
     /// </para>
     /// </summary>
-    private static readonly HashSet<TweakID> skippedSubIds = [];
-    public static bool WasSubItemSkipped(TweakID id) => skippedSubIds.Contains(id);
+    private static readonly HashSet<TweakID> failedRowIds = [];
+    public static bool WasRowBuildFailure(TweakID id) => failedRowIds.Contains(id);
 
-    /// <summary>获取原始数据（未建的行会在此刻补建）。</summary>
+    /// <summary>
+    /// 子行 id → 父行 id。<see cref="GetOriginal"/> 靠它在子行未建时先把父行补出来 ——
+    /// 把"父行必须排在子行前面"从隐式约定变成机制保证：顺序写错了最多白跑一次补建，不会丢行。
+    /// </summary>
+    private static readonly Dictionary<TweakID, TweakID> subOwner = [];
+
+    /// <summary>id 与清单不符的告警按页签去重：系统性跑偏时每行一条会刷屏。</summary>
+    private static readonly HashSet<SettingType> warnedIdMismatch = [];
+    /// <summary>清单里 id 撞车的告警按页签去重（与上面分开：两者是不同的问题，不能互相吞掉首条）。</summary>
+    private static readonly HashSet<SettingType> warnedManifestDup = [];
+
+    /// <summary>
+    /// 获取原始数据（未建的行会在此刻补建）。
+    /// <para>
+    /// 子行不单独建（<c>SetParentTweak</c> 要父实例），所以没命中时先补父行、再由它顺带建出本行 ——
+    /// 不能只靠"调用方按清单顺序消费"。见 <see cref="subOwner"/>。
+    /// </para>
+    /// </summary>
     public static TweakData? GetOriginal(TweakID id)
     {
         if (originalData.TryGetValue(id, out var data)) return data;
-        return deferredRows == null ? null : MaterializeDeferred(id);
+        if (deferredRows == null) return null;
+        if (MaterializeDeferred(id) is { } built) return built;
+        if (!subOwner.TryGetValue(id, out var ownerId)) return null;
+        GetOriginal(ownerId);                                   // 父行建好会顺带造出本行
+        return originalData.TryGetValue(id, out var sub) ? sub : null;
     }
 
     /// <summary>尝试获取原始数据（未建的行会在此刻补建）。</summary>
@@ -113,6 +135,7 @@ public static partial class TweakDatabase
         catch (Exception e)
         {
             Log.Error($"[BalanceTweak] 补建延迟快照失败，id={id}: {e}");
+            failedRowIds.Add(id);
             return null;
         }
     }
@@ -136,19 +159,42 @@ public static partial class TweakDatabase
             catch (Exception e)
             {
                 Log.Error($"[BalanceTweak] 创建子项失败，父项={parent.id} 子类型={r.Type}: {e}");
-                skippedSubIds.Add(expected);
+                failedRowIds.Add(expected);
                 continue;
             }
-            if (!sub.SetParentTweak(parent, r.Type, tweaked)) { skippedSubIds.Add(expected); continue; }   // 父项结构变了，这一行本就不该有值
+
+            // 挂父项也要包起来：它内部按 index 取 tool / stage（越界、空元素、强转失败都可能抛）。
+            // 漏在这里抛出去，整个父项的剩余子行都不会再建，而且没人登记 —— 自检会把它们当成"顺序坏了"。
+            bool attached;
+            try { attached = sub.SetParentTweak(parent, r.Type, tweaked); }
+            catch (Exception e)
+            {
+                Log.Error($"[BalanceTweak] 子项挂父项失败，父项={parent.id} 子类型={r.Type} id={expected}: {e}");
+                failedRowIds.Add(expected);
+                continue;
+            }
+            if (!attached) { failedRowIds.Add(expected); continue; }   // 父项结构变了，这一行本就不该有值
+
             if (!EqualityComparer<TweakID>.Default.Equals(sub.id, expected))
             {
                 // 清单与 SetParentTweak 算出的 id 不一致 —— 只可能是 IdSuffix 与 id 规则跑偏了。
-                // 不报错的话这一行会永远显示不出来，且没有任何线索。
-                Log.Warning($"[BalanceTweak] 子项 id 与行清单不一致：清单 {expected}，实建 {sub.id}（父项 {parent.id}）");
-                skippedSubIds.Add(expected);
+                // 不报错的话这一行会永远显示不出来，且没有任何线索。按页签去重，避免系统性跑偏时刷屏。
+                if (warnedIdMismatch.Add(r.Type))
+                    Log.Error($"[BalanceTweak] 子项 id 与行清单不一致（本页签只报第一条）：清单 {expected}，"
+                              + $"实建 {sub.id}（父项 {parent.id}）。检查该类 IdSuffix 与 SetParentTweak 里的 id 规则是否还同源。");
+                failedRowIds.Add(expected);
                 continue;
             }
-            originalData.TryAdd(expected, sub);
+            if (!originalData.TryAdd(expected, sub))
+            {
+                // 同一个 id 被两个父项产出（典型：ThingDef 与 HediffDef 同名，各自都有 tools）。
+                // 先到先得，后到的那个父项在这一行上永远指向别人的实例 —— 必须留痕。
+                if (warnedIdMismatch.Add(r.Type))
+                    Log.Error($"[BalanceTweak] 子行 id 撞车（本页签只报第一条）：{expected} 已由别的父项占用，"
+                              + $"当前父项 {parent.id} 的这条子行被丢弃。");
+                failedRowIds.Add(expected);
+                continue;
+            }
             if (counter != null) counter[r.Type] = counter.GetValueOrDefault(r.Type) + 1;
         }
     }
@@ -158,16 +204,39 @@ public static partial class TweakDatabase
     /// </summary>
     private static void BuildRowManifest(List<(Def def, TweakRule rule, SettingType type)> rows)
     {
-        rowIds = new List<TweakID>(rows.Count + rows.Count / 4);
+        rowIds = new List<TweakID>(rows.Count + rows.Count / 2);
         for (int i = 0; i < rows.Count; i++)
         {
             var (def, rule, type) = rows[i];
             if (def == null || rule == null) continue;
-            rowIds.Add(new TweakID(def.defName, type));
+            var parentId = new TweakID(def.defName, type);
+            rowIds.Add(parentId);
             if (!typeof(ISubItemHost).IsAssignableFrom(rule.DataType)) continue;
             if (ProbeOf(rule) is not ISubItemHost host) continue;
-            foreach (var r in host.SubItemRefs(def))
-                rowIds.Add(new TweakID(def.defName + "_" + r.IdSuffix, r.Type));
+
+            // 宿主实现是"读 def 的纯函数"，但仍然是别人写的代码：它一抛，整个 Init 就会失败，
+            // 结果是本局所有修改都不 Apply。宁可少这一页的子行，也不能让初始化整体挂掉。
+            IEnumerable<SubItemRef> refs;
+            try { refs = host.SubItemRefs(def) ?? []; }
+            catch (Exception e)
+            {
+                Log.Error($"[BalanceTweak] 枚举子行失败，def={def.defName}（{rule.DataType.Name}）: {e}");
+                continue;
+            }
+            foreach (var r in refs)
+            {
+                var subId = new TweakID(def.defName + "_" + r.IdSuffix, r.Type);
+                // 撞车检测放在这里：清单是"行"的唯一来源，重复 id 会让两行塌成一行，
+                // 而 UI 会把两处链接指向同一个对象 —— 只在建立时能发现。
+                if (!subOwner.TryAdd(subId, parentId))
+                {
+                    if (warnedManifestDup.Add(r.Type))
+                        Log.Error($"[BalanceTweak] 行清单里子行 id 撞车（本页签只报第一条）：{subId} "
+                                  + $"同时属于 {subOwner[subId]} 与 {parentId}，后者这一行不会出现。");
+                    continue;
+                }
+                rowIds.Add(subId);
+            }
         }
     }
 
@@ -483,9 +552,15 @@ public static partial class TweakDatabase
         // 上一轮（热重载 / 重复初始化）的延迟状态不能带进来：allRows 已换新，旧的 deferred 键会指向失效的 Def。
         allRows = [];
         rowIds = [];
+        // 重复初始化时旧的 Def 引用不能留着：快照是按上一轮 Def 建的，混着用会把值写到已经没人认的 Def 上。
+        // （当前进程里 Init 只跑一次，这条是为注释里声称支持的重载场景兜底。）
+        originalData.Clear();
         deferredRows = null;
         deferredBuilt = 0;
-        skippedSubIds.Clear();
+        failedRowIds.Clear();
+        subOwner.Clear();
+        warnedIdMismatch.Clear();
+        warnedManifestDup.Clear();
 
         // 阶段计时统一走这里：读表 → 累加已归属耗时 → 记一行 → 重新计时。
         // 之前各阶段散落的 sw.Restart()/sw.Elapsed 容易出现"忘记读"或"忘记重启"，让阶段之和与总计对不上。

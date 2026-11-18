@@ -118,9 +118,14 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
     /// 不该让旧存档的修改失配；而阶段/招式没有这种标识，只能靠序号。
     /// </summary>
     internal static string IdSuffix(Def parentDef, int index)
-        => parentDef is TraitDef t && t.degreeDatas != null && index >= 0 && index < t.degreeDatas.Count
-            ? t.degreeDatas[index].degree.ToString()
-            : index.ToString();
+    {
+        if (parentDef is TraitDef t && t.degreeDatas != null && index >= 0 && index < t.degreeDatas.Count
+            && t.degreeDatas[index] is { } dd)
+            return dd.degree.ToString();
+        // 兜底：两个调用方都已过滤"越界 / null 元素"，走到这里说明前提被破坏了。
+        // 按序号总比抛异常好，而且清单与 SetParentTweak 会同样落到这个分支 —— id 仍然一致。
+        return index.ToString();
+    }
 
     /// <summary>造一条特性程度行的清单项。</summary>
     internal static SubItemRef MakeSubItemRef(Def parentDef, int index)

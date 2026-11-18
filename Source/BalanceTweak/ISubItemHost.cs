@@ -38,10 +38,10 @@ public readonly struct SubItemRef
 /// <summary>
 /// 子项宿主：父 Data 自己声明"我下面有哪些子行"（武器招式、想法阶段、健康阶段、特性程度……）。
 /// <para>
-/// <b>只读 def，不造实例、不挂父项。</b>它必须是纯函数：调用方会拿一个从未 SetDef 过的空实例当探针
-/// 反复问（<see cref="TweakDatabase"/> 每个宿主类型只留一个探针），所以实现里不许碰 <c>def</c> /
-/// <c>index</c> / <c>parentTweakId</c> 之外的实例状态。这条约束一旦破了，就会退回到"枚举与构造各算一遍"，
-/// 那正是行清单要消灭的东西。
+/// <b>只读传入的 <c>parentDef</c>，不造实例、不挂父项。</b>它必须是纯函数：调用方会拿一个
+/// 从未 SetDef 过的空实例当探针反复问（<see cref="TweakDatabase"/> 每个宿主类型只留一个），
+/// 所以实现里<b>不许读任何实例状态</b> —— 探针的 <c>def</c> / <c>index</c> / <c>parentTweakId</c> 全是空值，
+/// 读了就得到错的行清单。这条约束一旦破了，就会退回到"枚举与构造各算一遍"，那正是清单要消灭的东西。
 /// </para>
 /// <para>取代 TweakDatabase.Init() 里原先 5 处硬编码的子项创建块。</para>
 /// </summary>

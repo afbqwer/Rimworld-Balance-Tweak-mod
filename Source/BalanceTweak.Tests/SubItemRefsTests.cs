@@ -84,28 +84,62 @@ public class SubItemRefsTests
     }
 
     /// <summary>
-    /// 清单里的后缀必须与各类自己的 id 规则同源。
+    /// 清单后缀 → 实建 id 的完整链路：<c>Create()</c> + <c>SetParentTweak</c> 之后，
+    /// 实例的 <c>id</c> 必须逐字等于「父 defName_清单后缀」。
+    ///
     /// <para>
-    /// 完整链路（清单 id == <c>SetParentTweak</c> 实算的 id）没法在单测里跑：那要 <c>SetDef</c>，
-    /// 而它会碰 <c>ModLister</c> / 静态字段元数据，需要真实游戏环境。所以这里钉住"两边都取自
-    /// <c>IdSuffix</c>"这个前提，剩下的由代码结构保证（<c>SetParentTweak</c> 里只调 <c>IdSuffix</c>）。
+    /// 这是本次重构唯一无法靠 review 保证的一环：两边各算一次 id，跑偏时不会有异常，
+    /// 只会"某些子行永远显示不出来"。四类都测（招式 / 想法阶段 / 健康阶段 / 特性程度），
+    /// 因为它们的后缀规则不同 —— 前三个是序号，特性程度是 degree。
+    /// </para>
+    /// <para>
+    /// 父项用手搓 Def + 对象初始化器，不走 <c>SetDef</c>：那条路会初始化静态字段元数据
+    /// （`MayRequire` → `ModLister`），需要真实游戏环境。同 <c>MirrorColumnTests</c> 的做法。
     /// </para>
     /// </summary>
     [Fact]
-    public void 清单后缀与各自id规则同源()
+    public void 实建id与清单后缀逐字一致()
     {
-        var gun = new ThingDef { defName = "BT_TestSync", tools = new List<Tool> { new(), new() } };
-        var toolRefs = new WeaponData().SubItemRefs(gun).ToList();
-        for (int i = 0; i < toolRefs.Count; i++)
-            Assert.Equal(ToolData.IdSuffix(gun, i), toolRefs[i].IdSuffix);
+        // ① 招式
+        var gun = new ThingDef { defName = "BT_TestToolId", tools = new List<Tool> { new(), new() } };
+        var weapon = new WeaponData { def = gun, id = new TweakID(gun.defName, SettingType.Weapon) };
+        AssertAllIdsMatch(weapon);
 
+        // ② 想法阶段：中间夹 null，序号不连续时最容易和清单错开
+        var thought = new ThoughtDef
+        {
+            defName = "BT_TestThoughtId",
+            stages = new List<ThoughtStage> { new(), null!, new() },
+        };
+        AssertAllIdsMatch(new ThoughtData { def = thought, id = new TweakID(thought.defName, SettingType.Thought) });
+
+        // ③ 特性程度：后缀必须是 degree
         var trait = new TraitDef
         {
-            defName = "BT_TestSyncTrait",
-            degreeDatas = new List<TraitDegreeData> { new() { degree = -1 }, new() { degree = 3 } },
+            defName = "BT_TestTraitId",
+            degreeDatas = new List<TraitDegreeData> { new() { degree = 5 }, new() { degree = 9 } },
         };
-        var degreeRefs = new TraitData().SubItemRefs(trait).ToList();
-        for (int i = 0; i < degreeRefs.Count; i++)
-            Assert.Equal(TraitDegreeNodeData.IdSuffix(trait, i), degreeRefs[i].IdSuffix);
+        AssertAllIdsMatch(new TraitData { def = trait, id = new TweakID(trait.defName, SettingType.Trait) });
+    }
+
+    /// <summary>④ 健康阶段（单独一条，因为 HediffData 同时产阶段和 VerbGiver 招式两段）。</summary>
+    [Fact]
+    public void 健康阶段实建id与清单后缀一致()
+    {
+        var hediff = new HediffDef { defName = "BT_TestHediffId", stages = new List<HediffStage> { new() } };
+        AssertAllIdsMatch(new HediffData { def = hediff, id = new TweakID(hediff.defName, SettingType.Hediff) });
+    }
+
+    private static void AssertAllIdsMatch(TweakData parent)
+    {
+        var host = (ISubItemHost)parent;
+        var refs = host.SubItemRefs(parent.def!).ToList();
+        Assert.NotEmpty(refs);
+        foreach (var r in refs)
+        {
+            var sub = r.Create();
+            Assert.True(sub.SetParentTweak(parent, r.Type), $"{r.Type} 应按清单后缀 {r.IdSuffix} 挂上父项");
+            Assert.Equal(new TweakID(parent.def!.defName + "_" + r.IdSuffix, r.Type), sub.id);
+        }
     }
 }

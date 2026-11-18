@@ -366,28 +366,32 @@ public partial class BalanceTweakSettings
         }
 
         /// <summary>
-        /// 行清单自检：表里的行数必须等于清单行数减掉补建失败的那些。
+        /// 行清单自检：**没进表的行必须都登记过失败原因**，父行在表里时它的子行也必须在表里。
         /// <para>
-        /// 这条断言是这个重构的唯一收益证明 —— 行源出问题时不会有异常、不会有报错，
-        /// 只会"某些页签少了几百行"，而玩家通常要过几天才发觉。代价是一次类型数级别的求和。
+        /// 行源出问题不会有异常、不会有报错，只会"某些页签少了几百行"，玩家往往过几天才发觉。
+        /// 这里把"少了"分成两类：<b>登记过失败的</b>（Def 变了 / 父项挂了，属预期）与
+        /// <b>没人认领的</b>（清单漏算、建行顺序坏了），后者才报警。
+        /// </para>
+        /// <para>
+        /// 注意它只在首次建缓存收尾跑一次：`cached` 一旦为 true 就不再重建（除非完全重置），
+        /// 所以它不是持续守护，只是开局那一眼。
         /// </para>
         /// </summary>
         private static void VerifyRowManifest()
         {
-            // ① 清单上的行是否都在表里。逐行查而不是比对总数：总数相等也可能"缺一行、多一行"互相抵消。
-            int missing = 0;
+            // ① 清单上的行是否都在表里，没在的有没有失败登记。
+            int missing = 0, explained = 0;
             var samples = new List<string>();
             foreach (var id in TweakDatabase.RowIds)
             {
                 if (cachedData[id.settingType].ContainsKey(id)) continue;
                 missing++;
+                if (TweakDatabase.WasRowBuildFailure(id)) { explained++; continue; }
                 if (samples.Count < 10) samples.Add(id.ToString());
             }
 
-            // ② 父行在表里、它名下的子行却不在 —— 这一条才是"建行顺序坏了 / 枚举跑偏了"的判据。
-            //    只统计"没登记成失败"的那些：登记过的（父项标签变了等）属预期，会在清理列表里单独报。
+            // ② 父行在表里、它名下的子行却不在 —— 顺序坏了 / 枚举跑偏了才会这样，且不一定有失败登记。
             int orphanSubs = 0;
-            var orphanSamples = new List<string>();
             foreach (var dict in cachedData.Values)
             {
                 foreach (var data in dict.Values)
@@ -397,19 +401,19 @@ public partial class BalanceTweakSettings
                     {
                         var subId = new TweakID(data.def.defName + "_" + r.IdSuffix, r.Type);
                         if (cachedData[subId.settingType].ContainsKey(subId)) continue;
-                        if (TweakDatabase.WasSubItemSkipped(subId)) continue;
+                        if (TweakDatabase.WasRowBuildFailure(subId)) continue;
                         orphanSubs++;
-                        if (orphanSamples.Count < 10) orphanSamples.Add(subId.ToString());
+                        if (samples.Count < 10) samples.Add(subId.ToString());
                     }
                 }
             }
 
-            if (missing == initSkippedRows && orphanSubs == 0) return;
+            if (missing == explained && orphanSubs == 0) return;
 
             Log.Warning($"[BalanceTweak] 行缓存与行清单不一致：清单 {TweakDatabase.RowIds.Count} 行，"
-                        + $"表内缺失 {missing} 行（其中 {initSkippedRows} 行是补建/挂父项失败，属预期），"
+                        + $"表内缺失 {missing} 行（{explained} 行有失败登记，{missing - explained} 行没有），"
                         + $"父行在而子行缺失 {orphanSubs} 行。"
-                        + $"示例：{string.Join("、", samples.Concat(orphanSamples))}");
+                        + $"示例：{string.Join("、", samples)}");
         }
 
         /// <summary>从数据中移除</summary>
