@@ -496,7 +496,19 @@ public static partial class TweakDatabase
         // 全量行源留给 UI。分类阶段只记了"Def + 规则"，实例到这里才按需造 ——
         // 3.4 万个 Data 对象合计 20~30MB，其中九成会被推迟，先造出来等于白发一轮 GC。
         allRows = sortedItems;
-        deferredRows = [];
+        // 预分配：这个字典接下来要装几乎全部行（4 万级），从空表长起来要反复扩容 + 搬 entry，
+        // 累计多分配一倍容量。容量只能给上界（mustBuild 的行随后会从这里摘掉），多算几千项比多次扩容便宜。
+        deferredRows = new Dictionary<TweakID, (Def def, TweakRule rule)>(sortedItems.Count);
+
+        // **先把全量行登记成"待建"，再决定谁现在建。** 建快照期间任何跨行读都能靠 GetOriginal
+        // 立刻把目标行补出来，而不依赖"目标碰巧排在前面"。
+        //
+        // 原先是"只有不建的行才登记"，于是 mustBuild / MustBuildInInit 的行在轮到自己之前完全不可见：
+        // 种族的招式行解析招式类型时，若 ManeuverDef 行还没轮到（两者 LoadingOrd 同为 100，桶内顺序
+        // 由分类顺序决定），拿到 null 并打「能力 Cut 没有对应的招式类型行」—— 日志里那 4 条就是这么来的。
+        // 排序保证不了的事不该靠排序，这里改成登记全量 + 按需补建。
+        foreach (var (def, rule, type) in sortedItems)
+            deferredRows[new TweakID(def.defName, type)] = (def, rule);
 
         // 哪些行必须现在建 —— 判据只有一条：**本轮 Apply 会读或写它的 def**。
         //   · tweakDatas 的行：Apply 会改它们的 def，快照必须抓到改前值；
@@ -511,11 +523,10 @@ public static partial class TweakDatabase
             foreach (var (def, rule, settingType) in sortedItems)
             {
                 var rowId = new TweakID(def.defName, settingType);
-                if (!mustBuild.Contains(rowId) && !MustBuildInInit(settingType))
-                {
-                    deferredRows[rowId] = (def, rule);
-                    continue;
-                }
+                if (!mustBuild.Contains(rowId) && !MustBuildInInit(settingType)) continue;
+                // 可能已被别的行的跨行读取顺手补建出来了（GetOriginal → MaterializeDeferred，
+                // 那里已经 SetDef 过、子项也已登记）。再建一次会让 originalData.Add 撞键。
+                if (originalData.ContainsKey(rowId)) continue;
                 TweakData data = rule.Factory();
                 try
                 {
@@ -525,6 +536,9 @@ public static partial class TweakDatabase
                         data.SetDef(def, settingType, false);
                         originalData.Add(data.id, data);
                         originalAdded++;
+                        // 已建的行不能留在延迟表里：否则窗口打开时会被当成"待补建"再走一遍，
+                        // 而 GetOriginal 已经能从 originalData 命中，那份残留只会让统计数字虚高。
+                        deferredRows.Remove(rowId);
                     }
                     finally
                     {

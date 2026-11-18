@@ -118,6 +118,13 @@ public partial class BalanceTweakSettings
         private static int initFrames;
         /// <summary>已追加进 <see cref="initQueue"/> 的子项数（补建父项时才产生，逐帧追加入队）。</summary>
         private static int subsQueued;
+        /// <summary>建行缓存里"补建快照"（Factory + SetDef）与"克隆"各自耗时，用于判断下一步优化哪里。</summary>
+        private static double initMaterializeMs;
+        private static double initCloneMs;
+        /// <summary>直接复用存档实例（不克隆）的行数。</summary>
+        private static int initReusedRows;
+        /// <summary>实际克隆出来的行数（补建失败的行既不克隆也不复用）。</summary>
+        private static int initClonedRows;
 
         /// <summary>
         /// 每帧留给"后台准备工作"的时间预算（毫秒）。建行缓存与页签派生两段共用这一个数。
@@ -130,8 +137,8 @@ public partial class BalanceTweakSettings
         /// <para>
         /// <b>取值依据是"进度条动画要多少帧"，不再是"别掉 vsync"。</b>这两个窗口都是模态的：
         /// 打开期间输入已被阻断，背景世界没有需要维持帧率的东西；实测这段时间 GC 也不频繁
-        /// （克隆只是纯分配，不触发回收）。所以单帧可以长得多 —— 10fps 的进度条看上去已经足够连续，
-        /// 对应 100ms。
+        /// （克隆只是纯分配，不触发回收）。所以单帧可以长得多 —— 5fps 的进度条（0→20→40→…）
+        /// 仍然读得出"在动"，对应 200ms。原先取 100ms（10fps），帧数多一倍、每帧那笔固定开销也多付一倍。
         /// </para>
         /// <para>
         /// 改这个数是在**总时长与单帧卡顿之间换**，不是在"流畅/卡"之间换：墙钟时间 ≈ 帧数 ×
@@ -139,12 +146,17 @@ public partial class BalanceTweakSettings
         /// 反过来说，预算小到把工作切成几十帧时，多出来的全是每帧那份渲染开销。
         /// </para>
         /// <para>
+        /// <b>这里的收益是有上限的，别指望它救性能</b>：省下的只是"帧数差 × 每帧固定开销"，
+        /// 与真正的耗时（补建 SetDef + 克隆，见 <c>AdvanceInit</c> 末尾那条日志的拆分数）无关。
+        /// 总量 0.4s 时收益是十几毫秒量级；真要缩短打开时间，得让 <c>cachedData</c> 不再全量克隆。
+        /// </para>
+        /// <para>
         /// 两段共用同一个值，因为它们的处境相同（都是模态窗口里的进度条）。
         /// 若实测某台机器上单帧过重（比如派生值里夹着建装备池那种不可切分的工作），退到 50ms 即可，
         /// 别回 6ms —— 那等于把固定开销付几十遍。
         /// </para>
         /// </summary>
-        private const double PrepareBudgetMs = 100.0;
+        private const double PrepareBudgetMs = 200.0;
 
         /// <summary>
         /// 每帧至少推进的行数。没有这个下限，单行成本突然变高时（字典扩容、GC 打断）
@@ -286,6 +298,10 @@ public partial class BalanceTweakSettings
                 initElapsedMs = 0;
                 initFrames = 0;
                 subsQueued = 0;
+                initMaterializeMs = 0;
+                initCloneMs = 0;
+                initReusedRows = 0;
+                initClonedRows = 0;
                 initQueue = new List<TweakID>(TweakDatabase.AllRows.Count + 16384);
                 // 行源是"全量行"，不是"已建快照的行"：后者只含 Apply 需要的那部分，
                 // 其余要在这里分帧 Factory + SetDef 补出来（见 TweakDatabase.deferredRows）。
@@ -317,10 +333,26 @@ public partial class BalanceTweakSettings
                 var id = initQueue[initCursor++];
                 // 延迟的行在这一帧才 Factory + SetDef（分帧摊的正是这一步）；已建的直接取。
                 // 补建失败（Def 已不存在 / SetDef 抛异常）就跳过：这一行本来也显示不出来。
+                //
+                // 补建与克隆分开计时：这两个数决定"下一步该优化什么"——
+                // 补建（SetDef，读 def 填字段）多，说明稀疏快照没省下真正的大头（窗口一开就全量补建）；
+                // 克隆多，说明该做编辑层懒克隆。混成一个总数就只能猜。
+                long rowStamp = PerfProbe.Stamp();
                 if (TweakDatabase.GetOriginal(id) is not { } orig) continue;
-                var live = tweakDatas!.TryGetValue(id);
+                initMaterializeMs += PerfProbe.ElapsedMs(rowStamp);
+
                 // 存档里改过的行直接复用那个实例；没改过的克隆一份，避免编辑时写脏原始快照。
-                cachedData[id.settingType].SetOrAdd(id, live ?? orig.Clone());
+                if (tweakDatas!.TryGetValue(id) is { } live)
+                {
+                    cachedData[id.settingType].SetOrAdd(id, live);
+                    initReusedRows++;
+                    continue;
+                }
+                rowStamp = PerfProbe.Stamp();
+                var cloned = orig.Clone();
+                initCloneMs += PerfProbe.ElapsedMs(rowStamp);
+                initClonedRows++;
+                cachedData[id.settingType].SetOrAdd(id, cloned);
             }
 
             initElapsedMs += PerfProbe.ElapsedMs(stamp);
@@ -336,8 +368,11 @@ public partial class BalanceTweakSettings
 
             // 均摊单行成本一并打出来：下一个人（或换了机器/整合包的我）要调 PrepareBudgetMs 时，
             // 有 µs/行 就能直接算出"一帧预算大约能推多少行"，不用再猜。
+            // 补建 / 克隆分开报：两者数量级差一个数量级（SetDef 读 def 填几十个字段，Clone 只搬字段），
+            // 合成一个总数看不出该动哪边。
             double usPerRow = total > 0 ? initElapsedMs * 1000.0 / total : 0.0;
-            TweakLog.Message($"[BalanceTweak][perf] 首次构建行缓存完成：{total} 行 / {initFrames} 帧，累计 {initElapsedMs:F0}ms（{usPerRow:F1}µs/行）");
+            TweakLog.Message($"[BalanceTweak][perf] 首次构建行缓存完成：{total} 行 / {initFrames} 帧，累计 {initElapsedMs:F0}ms（{usPerRow:F1}µs/行）"
+                             + $"；补建快照 {initMaterializeMs:F0}ms，克隆 {initClonedRows} 行 {initCloneMs:F0}ms，复用存档实例 {initReusedRows} 行");
         }
 
         /// <summary>从数据中移除</summary>

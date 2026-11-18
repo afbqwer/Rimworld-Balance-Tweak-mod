@@ -108,7 +108,7 @@ class ToolData : TweakData<ToolData>
         if (capacity == null) return; // 没有能力 = 没有对应的共享行，属正常情况
         if (ManeuverIdOf(tool) is not TweakID mid)
         {
-            WarnManeuverUnresolved(capacity);
+            WarnManeuverUnresolved(capacity, "索引里没有这个能力");
             return;
         }
         Maneuver = mid;
@@ -120,7 +120,9 @@ class ToolData : TweakData<ToolData>
             : GetLiveData(mid)) as ManeuverData;
         if (md == null)
         {
-            WarnManeuverUnresolved(capacity);
+            // 与"索引里没有"是两件事：索引有这条，但行既没建也补不出来（Def 丢了 / SetDef 抛了）。
+            // 分开写是因为排查方向完全不同 —— 前者查 [TweakFor] 与 BuildLookupIndices，后者查补建日志。
+            WarnManeuverUnresolved(capacity, $"索引有这一项（{mid}），但取不到它的行");
             return;
         }
         // 必须**赋值**（不是 ??=）：镜像的源在共享行，用 ??= 会让共享行之后的改动永远刷不进来。
@@ -136,7 +138,7 @@ class ToolData : TweakData<ToolData>
     private static readonly HashSet<string> _warnedUnresolvedManeuvers = new();
     private static bool _warnedManeuverTableEmpty;
 
-    private static void WarnManeuverUnresolved(ToolCapacityDef capacity)
+    private static void WarnManeuverUnresolved(ToolCapacityDef capacity, string why)
     {
         if (TweakDatabase.maneuverDatas.Count == 0)
         {
@@ -147,8 +149,8 @@ class ToolData : TweakData<ToolData>
             return;
         }
         if (!_warnedUnresolvedManeuvers.Add(capacity.defName)) return;
-        Log.Warning($"[BalanceTweak] 能力 {capacity.defName} 没有对应的招式类型行：相关招式行的伤害类型不会跟随招式类型页，"
-            + "在招式行改伤害类型也不会生效。通常是该 ManeuverDef 缺 requiredCapacity。");
+        Log.Warning($"[BalanceTweak] 能力 {capacity.defName} 没有对应的招式类型行（{why}，索引共 {TweakDatabase.maneuverDatas.Count} 项）："
+            + "相关招式行的伤害类型不会跟随招式类型页，在招式行改伤害类型也不会生效。");
     }
 
     /// <summary>
