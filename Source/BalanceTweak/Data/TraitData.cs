@@ -11,16 +11,14 @@ namespace BalanceTweak;
 [TweakFor(typeof(TraitDef), SettingType.Trait)]
 class TraitData : TweakData<TraitData>, ISubItemHost
 {
-    /// <summary>特性程度子项（原 Init() 里的硬编码块）。</summary>
-    public IEnumerable<TweakData> CreateSubItems(TweakData parent, bool tweaked)
+    /// <summary>特性程度子项。id 用 degree 而不是序号，见 <see cref="TraitDegreeNodeData.IdSuffix"/>。</summary>
+    public IEnumerable<SubItemRef> SubItemRefs(Def parentDef)
     {
-        if (parent.def is not TraitDef d || d.degreeDatas.NullOrEmpty()) yield break;
+        if (parentDef is not TraitDef d || d.degreeDatas.NullOrEmpty()) yield break;
         for (int i = 0; i < d.degreeDatas.Count; i++)
         {
             if (d.degreeDatas[i] == null) continue;
-            var nd = new TraitDegreeNodeData { index = i };
-            nd.SetParentTweak(parent, SettingType.TraitDegree, tweaked);
-            yield return nd;
+            yield return TraitDegreeNodeData.MakeSubItemRef(d, i);
         }
     }
 

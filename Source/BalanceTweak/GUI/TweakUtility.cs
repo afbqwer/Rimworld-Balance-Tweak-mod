@@ -94,10 +94,10 @@ public partial class BalanceTweakSettings
             {
                 dict.Clear();
             }
-            // 先把延迟的行全部补建（此刻窗口已开、def 已是最终值，补出来的正是各行该有的基准），
-            // 再按 AllOriginals 统一重置 —— 子项（招式 / 阶段）不在 AllRows 里，只能从前者拿到。
-            foreach (var row in TweakDatabase.AllRows)
-                TweakDatabase.GetOriginal(new TweakID(row.def.defName, row.type));
+            // 先把清单上的行全部补建（此刻窗口已开、def 已是最终值，补出来的正是各行该有的基准），
+            // 再按 AllOriginals 统一重置。清单与首次建表用的是同一份，两条路径不会出现"表里有、重置不到"。
+            foreach (var id in TweakDatabase.RowIds)
+                TweakDatabase.GetOriginal(id);
 
             foreach ((var key, var data) in TweakDatabase.AllOriginals)
             {
@@ -109,15 +109,13 @@ public partial class BalanceTweakSettings
         }
 
         /// <summary>
-        /// 首次建表还没建完的行（null = 从未开始或已完成）。
-        /// 分行不一次性建，是<see cref="AdvanceInit"/> 的全部目的。
+        /// 建行缓存是否已经开始。分行不一次性建，是<see cref="AdvanceInit"/> 的全部目的。
+        /// <para>行源是 <see cref="TweakDatabase.RowIds"/>（Init 阶段封闭的清单），这里只记推进到第几行。</para>
         /// </summary>
-        private static List<TweakID>? initQueue;
+        private static bool initStarted;
         private static int initCursor;
         private static double initElapsedMs;
         private static int initFrames;
-        /// <summary>已追加进 <see cref="initQueue"/> 的子项数（补建父项时才产生，逐帧追加入队）。</summary>
-        private static int subsQueued;
         /// <summary>建行缓存里"补建快照"（Factory + SetDef）与"克隆"各自耗时，用于判断下一步优化哪里。</summary>
         private static double initMaterializeMs;
         private static double initCloneMs;
@@ -125,6 +123,8 @@ public partial class BalanceTweakSettings
         private static int initReusedRows;
         /// <summary>实际克隆出来的行数（补建失败的行既不克隆也不复用）。</summary>
         private static int initClonedRows;
+        /// <summary>补建失败、因而没有进表的行数（清单有它，但 Def 没了 / SetDef 抛了）。</summary>
+        private static int initSkippedRows;
 
         /// <summary>
         /// 每帧留给"后台准备工作"的时间预算（毫秒）。建行缓存与页签派生两段共用这一个数。
@@ -190,8 +190,10 @@ public partial class BalanceTweakSettings
             {
                 if (!cached)
                 {
-                    if (initQueue == null || initQueue.Count == 0) return 0f;
-                    return 0.9f * initCursor / initQueue.Count;
+                    // 分母是清单长度，恒定 —— 早先它随"补建父项时冒出的子项"增长，进度条会往回退。
+                    int totalRows = TweakDatabase.RowIds.Count;
+                    if (!initStarted || totalRows == 0) return 0f;
+                    return 0.9f * initCursor / totalRows;
                 }
                 if (!deriveDone && deriveQueue != null && deriveQueue.Count > 0)
                     return 0.9f + 0.1f * deriveCursor / deriveQueue.Count;
@@ -292,45 +294,32 @@ public partial class BalanceTweakSettings
         {
             long stamp = PerfProbe.Stamp();
 
-            if (initQueue == null)
+            if (!initStarted)
             {
+                initStarted = true;
                 initCursor = 0;
                 initElapsedMs = 0;
                 initFrames = 0;
-                subsQueued = 0;
                 initMaterializeMs = 0;
                 initCloneMs = 0;
                 initReusedRows = 0;
                 initClonedRows = 0;
-                initQueue = new List<TweakID>(TweakDatabase.AllRows.Count + 16384);
-                // 行源是"全量行"，不是"已建快照的行"：后者只含 Apply 需要的那部分，
-                // 其余要在这里分帧 Factory + SetDef 补出来（见 TweakDatabase.deferredRows）。
-                foreach (var row in TweakDatabase.AllRows)
-                    initQueue.Add(new TweakID(row.def.defName, row.type));
+                initSkippedRows = 0;
             }
 
-            // 子项行（招式 / 阶段 / 程度）不在 AllRows 里，来源是父项实例化时登记的 SubRows。
-            //
-            // 两点都不能省：
-            //   · 追加必须放在循环里反复做 —— 建父项是循环内的事，本帧新建出来的子项要立刻接上；
-            //     只在帧首追加一次，"队列走空"就会早于子项入队。
-            //   · 收尾必须同时看 initCursor 和 subsQueued —— 只看前者会把最后一帧新建的子项整批丢掉。
-            //     武器（LoadingOrd 300）永远落在最后一桶，那一帧的子项正是全部招式行。
-            //
-            // floor 只在帧首算一次（保底 MinRowsPerInitFrame 行）。不能跟着追加重算：
-            // 每次都变成 initCursor + 200，`initCursor < floor` 恒真，时间预算直接失效。
-            int floor = -1;
-            while (true)
-            {
-                for (; subsQueued < TweakDatabase.SubRows.Count; subsQueued++)
-                    initQueue.Add(TweakDatabase.SubRows[subsQueued].id);
-                if (initCursor >= initQueue.Count) break;
-                if (floor < 0) floor = Math.Min(initCursor + MinRowsPerInitFrame, initQueue.Count);
-                // 先保底推 MinRowsPerInitFrame 行（哪怕已超预算），再按时间推进到预算耗尽。
-                // 预算按时间而不是行数：克隆成本随机器、随字典扩容、随 GC 波动，固定行数做不到"固定耗时"。
-                if (initCursor >= floor && PerfProbe.ElapsedMs(stamp) >= PrepareBudgetMs) break;
+            // 行源就是清单本身，不再边建边往队尾追加。清单在 Init 里已经封闭（父行紧跟其子行），
+            // 所以这一帧读到哪一行、还剩几行都是确定的 —— 进度条不会因为"又冒出新行"而回退。
+            var rows = TweakDatabase.RowIds;
 
-                var id = initQueue[initCursor++];
+            // floor 只在帧首算一次（保底 MinRowsPerInitFrame 行）。不能每轮重算：
+            // 那样 `initCursor < floor` 恒真，时间预算直接失效。
+            int floor = Math.Min(initCursor + MinRowsPerInitFrame, rows.Count);
+            // 先保底推 MinRowsPerInitFrame 行（哪怕已超预算），再按时间推进到预算耗尽。
+            // 预算按时间而不是行数：克隆成本随机器、随字典扩容、随 GC 波动，固定行数做不到"固定耗时"。
+            while (initCursor < rows.Count
+                   && (initCursor < floor || PerfProbe.ElapsedMs(stamp) < PrepareBudgetMs))
+            {
+                var id = rows[initCursor++];
                 // 延迟的行在这一帧才 Factory + SetDef（分帧摊的正是这一步）；已建的直接取。
                 // 补建失败（Def 已不存在 / SetDef 抛异常）就跳过：这一行本来也显示不出来。
                 //
@@ -338,8 +327,9 @@ public partial class BalanceTweakSettings
                 // 补建（SetDef，读 def 填字段）多，说明稀疏快照没省下真正的大头（窗口一开就全量补建）；
                 // 克隆多，说明该做编辑层懒克隆。混成一个总数就只能猜。
                 long rowStamp = PerfProbe.Stamp();
-                if (TweakDatabase.GetOriginal(id) is not { } orig) continue;
+                var orig = TweakDatabase.GetOriginal(id);
                 initMaterializeMs += PerfProbe.ElapsedMs(rowStamp);
+                if (orig == null) { initSkippedRows++; continue; }
 
                 // 存档里改过的行直接复用那个实例；没改过的克隆一份，避免编辑时写脏原始快照。
                 if (tweakDatas!.TryGetValue(id) is { } live)
@@ -358,11 +348,8 @@ public partial class BalanceTweakSettings
             initElapsedMs += PerfProbe.ElapsedMs(stamp);
             initFrames++;
 
-            // 队列还有行（这一帧预算用完），或刚产生的子项还没入队 → 下一帧继续。
-            if (initCursor < initQueue.Count || subsQueued < TweakDatabase.SubRows.Count) return;
+            if (initCursor < rows.Count) return;
 
-            int total = initQueue.Count;
-            initQueue = null;
             cached = true;
             filterDirty = true;
 
@@ -370,9 +357,59 @@ public partial class BalanceTweakSettings
             // 有 µs/行 就能直接算出"一帧预算大约能推多少行"，不用再猜。
             // 补建 / 克隆分开报：两者数量级差一个数量级（SetDef 读 def 填几十个字段，Clone 只搬字段），
             // 合成一个总数看不出该动哪边。
+            int total = rows.Count;
             double usPerRow = total > 0 ? initElapsedMs * 1000.0 / total : 0.0;
             TweakLog.Message($"[BalanceTweak][perf] 首次构建行缓存完成：{total} 行 / {initFrames} 帧，累计 {initElapsedMs:F0}ms（{usPerRow:F1}µs/行）"
-                             + $"；补建快照 {initMaterializeMs:F0}ms，克隆 {initClonedRows} 行 {initCloneMs:F0}ms，复用存档实例 {initReusedRows} 行");
+                             + $"；补建快照 {initMaterializeMs:F0}ms，克隆 {initClonedRows} 行 {initCloneMs:F0}ms，复用存档实例 {initReusedRows} 行"
+                             + (initSkippedRows > 0 ? $"，补建失败跳过 {initSkippedRows} 行" : ""));
+            VerifyRowManifest();
+        }
+
+        /// <summary>
+        /// 行清单自检：表里的行数必须等于清单行数减掉补建失败的那些。
+        /// <para>
+        /// 这条断言是这个重构的唯一收益证明 —— 行源出问题时不会有异常、不会有报错，
+        /// 只会"某些页签少了几百行"，而玩家通常要过几天才发觉。代价是一次类型数级别的求和。
+        /// </para>
+        /// </summary>
+        private static void VerifyRowManifest()
+        {
+            // ① 清单上的行是否都在表里。逐行查而不是比对总数：总数相等也可能"缺一行、多一行"互相抵消。
+            int missing = 0;
+            var samples = new List<string>();
+            foreach (var id in TweakDatabase.RowIds)
+            {
+                if (cachedData[id.settingType].ContainsKey(id)) continue;
+                missing++;
+                if (samples.Count < 10) samples.Add(id.ToString());
+            }
+
+            // ② 父行在表里、它名下的子行却不在 —— 这一条才是"建行顺序坏了 / 枚举跑偏了"的判据。
+            //    只统计"没登记成失败"的那些：登记过的（父项标签变了等）属预期，会在清理列表里单独报。
+            int orphanSubs = 0;
+            var orphanSamples = new List<string>();
+            foreach (var dict in cachedData.Values)
+            {
+                foreach (var data in dict.Values)
+                {
+                    if (data is not ISubItemHost host || data.def == null) continue;
+                    foreach (var r in host.SubItemRefs(data.def))
+                    {
+                        var subId = new TweakID(data.def.defName + "_" + r.IdSuffix, r.Type);
+                        if (cachedData[subId.settingType].ContainsKey(subId)) continue;
+                        if (TweakDatabase.WasSubItemSkipped(subId)) continue;
+                        orphanSubs++;
+                        if (orphanSamples.Count < 10) orphanSamples.Add(subId.ToString());
+                    }
+                }
+            }
+
+            if (missing == initSkippedRows && orphanSubs == 0) return;
+
+            Log.Warning($"[BalanceTweak] 行缓存与行清单不一致：清单 {TweakDatabase.RowIds.Count} 行，"
+                        + $"表内缺失 {missing} 行（其中 {initSkippedRows} 行是补建/挂父项失败，属预期），"
+                        + $"父行在而子行缺失 {orphanSubs} 行。"
+                        + $"示例：{string.Join("、", samples.Concat(orphanSamples))}");
         }
 
         /// <summary>从数据中移除</summary>
@@ -768,7 +805,7 @@ public partial class BalanceTweakSettings
 
             if (TweakDatabase.GetOriginal(id) is not { } original)
             {
-                // Def 已不存在：这一行本来就不在 cachedData 里（行源是 AllRows），删了也只是兜底。
+                // Def 已不存在：这一行本来就不在 cachedData 里（行源是 RowIds），删了也只是兜底。
                 foreach (var dict in cachedData.Values)
                     dict.Remove(id);
                 return;

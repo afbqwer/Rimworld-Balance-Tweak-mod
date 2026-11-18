@@ -113,6 +113,19 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
     protected override string ResolveSearchString()
         => $"{def?.defName}{index}{label}";
 
+    /// <summary>
+    /// id 的序号段：<b>按 degree 而不是序号</b>。程度是原版数据里的稳定标识，重排 degreeDatas
+    /// 不该让旧存档的修改失配；而阶段/招式没有这种标识，只能靠序号。
+    /// </summary>
+    internal static string IdSuffix(Def parentDef, int index)
+        => parentDef is TraitDef t && t.degreeDatas != null && index >= 0 && index < t.degreeDatas.Count
+            ? t.degreeDatas[index].degree.ToString()
+            : index.ToString();
+
+    /// <summary>造一条特性程度行的清单项。</summary>
+    internal static SubItemRef MakeSubItemRef(Def parentDef, int index)
+        => new(SettingType.TraitDegree, IdSuffix(parentDef, index), () => new TraitDegreeNodeData { index = index });
+
     public override bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false)
     {
         base.SetParentTweak(data, type, tweaked);
@@ -132,7 +145,7 @@ class TraitDegreeNodeData : TweakData<TraitDegreeNodeData>
             }
             degreeLabel = degreeData.untranslatedLabel;
             subdefLabel ??= degreeData.label;
-            id = new($"{def.defName}_{degreeData.degree}", type);
+            id = new(def.defName + "_" + IdSuffix(def, index.Value), type);
             var li = GetAllData(data.id);
             foreach (var item in li)
             {

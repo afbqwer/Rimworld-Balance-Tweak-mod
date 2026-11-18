@@ -12,30 +12,24 @@ namespace BalanceTweak;
 [TweakFor(typeof(HediffDef), SettingType.Hediff)]
 class HediffData : TweakData<HediffData>, ISubItemHost
 {
-    /// <summary>健康阶段子项 + VerbGiver 招式子项（原 Init() 里的两段硬编码）。</summary>
-    public IEnumerable<TweakData> CreateSubItems(TweakData parent, bool tweaked)
+    /// <summary>健康阶段子项 + VerbGiver 招式子项。两段的空值跳过条件必须与 SetParentTweak 的判断一致。</summary>
+    public IEnumerable<SubItemRef> SubItemRefs(Def parentDef)
     {
-        if (parent.def is not HediffDef d) yield break;
+        if (parentDef is not HediffDef d) yield break;
 
         if (!d.stages.NullOrEmpty())
         {
             for (int i = 0; i < d.stages.Count; i++)
             {
                 if (d.stages[i] == null) continue;
-                var sd = new HediffStageData { index = i };
-                sd.SetParentTweak(parent, SettingType.HediffStage, tweaked);
-                yield return sd;
+                yield return HediffStageData.MakeSubItemRef(d, i);
             }
         }
 
         if (d.CompProps<HediffCompProperties_VerbGiver>() is HediffCompProperties_VerbGiver vg && !vg.tools.NullOrEmpty())
         {
             for (int i = 0; i < vg.tools.Count; i++)
-            {
-                var td = new ToolData { index = i };
-                td.SetParentTweak(parent, SettingType.MeleeTool, tweaked);
-                yield return td;
-            }
+                yield return ToolData.MakeSubItemRef(d, i);
         }
     }
 

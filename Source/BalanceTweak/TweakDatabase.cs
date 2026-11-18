@@ -19,10 +19,10 @@ public static partial class TweakDatabase
     private static Dictionary<TweakID, TweakData> originalData = [];
 
     /// <summary>
-    /// 全量行源（分类结果）。窗口打开时用它建行，也用它把延迟的快照补齐。
+    /// 分类结果：父行 + 它的 Def + 规则（<b>不含子行</b>）。
     /// <para>
-    /// 与 <see cref="originalData"/> 的区别：那个只装"已经 SetDef 过的"行。分类阶段实例就造好了
-    /// （34k 个空对象约 15ms），贵的是 SetDef（读 def 填字段，20µs/行），那部分可以推迟。
+    /// 建快照、建反查索引、找"某一类行"都靠它；<b>行清单请看 <see cref="RowIds"/>。</b>
+    /// 与 <see cref="originalData"/> 的区别：那个只装"已经 SetDef 过的"行。
     /// </para>
     /// </summary>
     private static List<(Def def, TweakRule rule, SettingType type)> allRows = [];
@@ -41,25 +41,36 @@ public static partial class TweakDatabase
     private static int deferredBuilt;
 
     /// <summary>
-    /// <b>所有不在 <see cref="AllRows"/> 里的行</b>：父项实例化时产出的子项（招式 / 想法阶段 /
-    /// 健康阶段 / 特性程度）。UI 只认 <see cref="AllRows"/> 建表，这些行不登记就是整段消失。
+    /// <b>行清单</b>：全库所有行的 id，父行后面紧跟它自己的子行。Init 阶段一次算清，之后不再变化。
     /// <para>
-    /// 登记点只有两个，缺一不可 —— 父项实例化的两条路径各是一处：
-    /// <list type="number">
-    /// <item><see cref="Init"/> 的建快照循环（父项在 <c>mustBuild</c> 里，即它自己带着存档修改）；</item>
-    /// <item><see cref="MaterializeDeferred"/>（父项被推迟，窗口打开时才补建）。</item>
-    /// </list>
-    /// 只登记后者会漏掉前者：改过的武器（武器行本身有修改）其招式整批不会进表 ——
-    /// 而武器是唯一一个「父项排在最后一桶（LoadingOrd 300）又带子项」的类型，
-    /// 表现就是招式页只剩「招式本身被改过」的那几条。
+    /// 这是 UI 与重置的唯一行源。它由 Def 结构决定，<b>与"谁被实例化过"无关</b> ——
+    /// 早先行源是"父项实例化时顺带登记的子项"，于是每次调整实例化时机（推迟、分帧、换 LoadingOrd）
+    /// 都会改写行清单，招式页整段消失过、种族招式解析不到共享行也发生过。
     /// </para>
     /// <para>
-    /// 名字不叫 Deferred：它装的是行集合，不是「被推迟的」行。语义一错，下一个改这里的人
-    /// 就会像上次那样只在一处登记。
+    /// <b>顺序不变量：父行在其子行之前。</b>子项的实例只能由父实例产出（<c>SetParentTweak</c> 要父实例），
+    /// 所以按这个顺序消费时，走到子行它一定已经在 <see cref="originalData"/> 里。顺序由 <see cref="BuildRowManifest"/>
+    /// 的生成方式保证，不是靠排序 —— 但它是隐式的，<see cref="BalanceTweakGUI"/> 收尾处的自检会核对行数。
     /// </para>
     /// </summary>
-    private static readonly List<TweakData> subRows = [];
-    public static IReadOnlyList<TweakData> SubRows => subRows;
+    private static List<TweakID> rowIds = [];
+    public static IReadOnlyList<TweakID> RowIds => rowIds;
+
+    /// <summary>
+    /// 每个宿主类型留一个"探针"实例，专门用来问 <see cref="ISubItemHost.SubItemRefs"/>。
+    /// 探针从不 SetDef、也不进任何数据表 —— 所以 <c>SubItemRefs</c> 必须是纯函数（只读传入的 def）。
+    /// </summary>
+    private static readonly Dictionary<Type, TweakData?> subItemProbes = [];
+
+    /// <summary>
+    /// 造过实例、但没能落地的子行 id（父项结构变了 / id 与清单不符）。
+    /// <para>
+    /// 存在的唯一目的是让自检能区分两种"行没进表"：<b>预期的失败</b>（这里登记过）与
+    /// <b>建行顺序或枚举出了问题</b>（没登记）。混在一起看，顺序坏了也会被当成"这条 Def 有问题"而放过。
+    /// </para>
+    /// </summary>
+    private static readonly HashSet<TweakID> skippedSubIds = [];
+    public static bool WasSubItemSkipped(TweakID id) => skippedSubIds.Contains(id);
 
     /// <summary>获取原始数据（未建的行会在此刻补建）。</summary>
     public static TweakData? GetOriginal(TweakID id)
@@ -79,7 +90,7 @@ public static partial class TweakDatabase
     public static TweakData? CloneOriginal(TweakID id)
         => GetOriginal(id)?.Clone();
 
-    /// <summary>遍历所有原始数据（<b>只含已建的行</b>；要全量请用 <see cref="AllRows"/>）。</summary>
+    /// <summary>遍历所有原始数据（<b>只含已建的行</b>；要全量行清单请用 <see cref="RowIds"/>）。</summary>
     public static Dictionary<TweakID, TweakData> AllOriginals => originalData;
 
     /// <summary>把一行延迟的快照补建出来。失败返回 null（该行随后按"无原值"处理）。</summary>
@@ -94,15 +105,9 @@ public static partial class TweakDatabase
             originalData[id] = data;
             deferredBuilt++;
 
-            // 子项（招式 / 想法阶段 / 健康阶段 / 特性程度）同样要补 ——
-            // 它们是独立的行，UI 与 Apply 都按 id 直接取，缺了就是整段列表空着。
-            if (data is ISubItemHost host)
-            {
-                foreach (var sub in host.CreateSubItems(data, false))
-                {
-                    if (originalData.TryAdd(sub.id, sub)) subRows.Add(sub);
-                }
-            }
+            // 子项（招式 / 想法阶段 / 健康阶段 / 特性程度）随父项一起建 —— 它们不是"行源"，
+            // 行早就写在 RowIds 里了，这里只负责把实例造出来。
+            CreateSubItemsOf(data, false);
             return data;
         }
         catch (Exception e)
@@ -111,6 +116,75 @@ public static partial class TweakDatabase
             return null;
         }
     }
+
+    /// <summary>
+    /// 把 <paramref name="parent"/> 名下的子项实例建出来（只造实例，不碰行清单）。
+    /// <para>
+    /// id 以清单算出来的那个为准：<c>SetParentTweak</c> 在失败路径上（标签对不上 / 序号越界）
+    /// 会提前 return，此时 <c>id</c> 还是 default —— 直接 <c>TryAdd(sub.id)</c> 就会把一个
+    /// <c>:None</c> 的野行塞进 originalData，之后所有失败行都撞同一个键。
+    /// </para>
+    /// </summary>
+    private static void CreateSubItemsOf(TweakData parent, bool tweaked, Dictionary<SettingType, int>? counter = null)
+    {
+        if (parent is not ISubItemHost host || parent.def == null) return;
+        foreach (var r in host.SubItemRefs(parent.def))
+        {
+            var expected = new TweakID(parent.def.defName + "_" + r.IdSuffix, r.Type);
+            TweakData sub;
+            try { sub = r.Create(); }
+            catch (Exception e)
+            {
+                Log.Error($"[BalanceTweak] 创建子项失败，父项={parent.id} 子类型={r.Type}: {e}");
+                skippedSubIds.Add(expected);
+                continue;
+            }
+            if (!sub.SetParentTweak(parent, r.Type, tweaked)) { skippedSubIds.Add(expected); continue; }   // 父项结构变了，这一行本就不该有值
+            if (!EqualityComparer<TweakID>.Default.Equals(sub.id, expected))
+            {
+                // 清单与 SetParentTweak 算出的 id 不一致 —— 只可能是 IdSuffix 与 id 规则跑偏了。
+                // 不报错的话这一行会永远显示不出来，且没有任何线索。
+                Log.Warning($"[BalanceTweak] 子项 id 与行清单不一致：清单 {expected}，实建 {sub.id}（父项 {parent.id}）");
+                skippedSubIds.Add(expected);
+                continue;
+            }
+            originalData.TryAdd(expected, sub);
+            if (counter != null) counter[r.Type] = counter.GetValueOrDefault(r.Type) + 1;
+        }
+    }
+
+    /// <summary>
+    /// 生成行清单：父行 + 紧跟其子行。只读 Def，不造任何 TweakData 实例（宿主用探针问）。
+    /// </summary>
+    private static void BuildRowManifest(List<(Def def, TweakRule rule, SettingType type)> rows)
+    {
+        rowIds = new List<TweakID>(rows.Count + rows.Count / 4);
+        for (int i = 0; i < rows.Count; i++)
+        {
+            var (def, rule, type) = rows[i];
+            if (def == null || rule == null) continue;
+            rowIds.Add(new TweakID(def.defName, type));
+            if (!typeof(ISubItemHost).IsAssignableFrom(rule.DataType)) continue;
+            if (ProbeOf(rule) is not ISubItemHost host) continue;
+            foreach (var r in host.SubItemRefs(def))
+                rowIds.Add(new TweakID(def.defName + "_" + r.IdSuffix, r.Type));
+        }
+    }
+
+    /// <summary>取（并按类型缓存）一个空实例当探针用。失败只可能是 Factory 抛异常，那行本就不会有子项。</summary>
+    private static TweakData? ProbeOf(TweakRule rule)
+    {
+        if (subItemProbes.TryGetValue(rule.DataType, out var probe)) return probe;
+        try { probe = rule.Factory(); }
+        catch (Exception e)
+        {
+            Log.Error($"[BalanceTweak] 子项探针构造失败：{rule.DataType.Name}: {e}");
+            probe = null;
+        }
+        subItemProbes[rule.DataType] = probe;
+        return probe;
+    }
+
     public static Dictionary<string, TweakID> turretBuildingDatas = [];
     public static Dictionary<string, TweakID> projectileDatas = [];
     public static Dictionary<string, TweakID> raceDatas = [];
@@ -408,9 +482,10 @@ public static partial class TweakDatabase
 
         // 上一轮（热重载 / 重复初始化）的延迟状态不能带进来：allRows 已换新，旧的 deferred 键会指向失效的 Def。
         allRows = [];
+        rowIds = [];
         deferredRows = null;
         deferredBuilt = 0;
-        subRows.Clear();
+        skippedSubIds.Clear();
 
         // 阶段计时统一走这里：读表 → 累加已归属耗时 → 记一行 → 重新计时。
         // 之前各阶段散落的 sw.Restart()/sw.Elapsed 容易出现"忘记读"或"忘记重启"，让阶段之和与总计对不上。
@@ -480,7 +555,7 @@ public static partial class TweakDatabase
         int originalAdded = 0;
 
         // 细分耗时改用累加式，而不是"Start/Stop 配对的共享 Stopwatch"：
-        // 后者一旦 SetDef / CreateSubItems 抛异常，Stop() 就会被跳过，把异常日志和后续 item 之间的空档
+        // 后者一旦 SetDef / 建子项抛异常，Stop() 就会被跳过，把异常日志和后续 item 之间的空档
         // 全算进该类型；subItemSw 还是单个共享实例，一旦挂住会跨类型传播污染。
         // itemSw 每个 item 都 Restart()，配 finally 兜底，异常路径下读到的也只是一次 item 的耗时。
         var setDefMs = new Dictionary<SettingType, double>();
@@ -496,6 +571,9 @@ public static partial class TweakDatabase
         // 全量行源留给 UI。分类阶段只记了"Def + 规则"，实例到这里才按需造 ——
         // 3.4 万个 Data 对象合计 20~30MB，其中九成会被推迟，先造出来等于白发一轮 GC。
         allRows = sortedItems;
+        // 行清单在这里封闭：往后不管谁先被实例化、分几帧建，UI 与重置看到的都是同一份行集合。
+        // 它只读 Def（宿主类用探针回答），所以能在谁都没 SetDef 的时候算出来。
+        BuildRowManifest(sortedItems);
         // 预分配：这个字典接下来要装几乎全部行（4 万级），从空表长起来要反复扩容 + 搬 entry，
         // 累计多分配一倍容量。容量只能给上界（mustBuild 的行随后会从这里摘掉），多算几千项比多次扩容便宜。
         deferredRows = new Dictionary<TweakID, (Def def, TweakRule rule)>(sortedItems.Count);
@@ -546,26 +624,16 @@ public static partial class TweakDatabase
                     }
                     setDefCount[settingType] = setDefCount.GetValueOrDefault(settingType) + 1;
 
-                    // 子项（武器招式 / 想法阶段 / 健康阶段 / 特性程度）由宿主类自己实现 ISubItemHost 产出，
-                    // 这里不再为每种类型维护一段硬编码块 —— 新增子项类型只需宿主类加个方法。
-                    //
-                    // 注意必须登记进 subRows：这里建的父项（= 自己带着存档修改的行）不会走 MaterializeDeferred，
-                    // 漏了这一行，它们的子项就永远不会成为表格里的行。
-                    if (data is ISubItemHost host)
+                    // 子项（武器招式 / 想法阶段 / 健康阶段 / 特性程度）由宿主类自己实现 ISubItemHost 产出。
+                    // 行清单已经在 Init 开头定好，这里只造实例 —— 不再"边建边登记行"。
+                    itemSw.Restart();
+                    try
                     {
-                        itemSw.Restart();
-                        try
-                        {
-                            foreach (var sub in host.CreateSubItems(data, false))
-                            {
-                                if (originalData.TryAdd(sub.id, sub)) subRows.Add(sub);
-                                subItemCount[sub.id.settingType] = subItemCount.GetValueOrDefault(sub.id.settingType) + 1;
-                            }
-                        }
-                        finally
-                        {
-                            subItemMs += itemSw.Elapsed.TotalMilliseconds;
-                        }
+                        CreateSubItemsOf(data, false, subItemCount);
+                    }
+                    finally
+                    {
+                        subItemMs += itemSw.Elapsed.TotalMilliseconds;
                     }
                 }
                 catch (Exception e)

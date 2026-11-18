@@ -10,16 +10,12 @@ namespace BalanceTweak;
 [TweakFor(typeof(ThingDef), SettingType.Race, Priority = 700, MatchMethod = nameof(DataUtility.MatchRace))]
 class RaceData : TweakData<RaceData>, ISubItemHost
 {
-    /// <summary>武器招式子项（原 Init() 里 "data is RaceData or WeaponData" 那段硬编码）。</summary>
-    public IEnumerable<TweakData> CreateSubItems(TweakData parent, bool tweaked)
+    /// <summary>种族的天然攻击招式，与武器招式同一套身份规则。</summary>
+    public IEnumerable<SubItemRef> SubItemRefs(Def parentDef)
     {
-        if (parent.def is not ThingDef t || t.tools.NullOrEmpty()) yield break;
+        if (parentDef is not ThingDef t || t.tools.NullOrEmpty()) yield break;
         for (int i = 0; i < t.tools.Count; i++)
-        {
-            var td = new ToolData { index = i };
-            td.SetParentTweak(parent, SettingType.MeleeTool, tweaked);
-            yield return td;
-        }
+            yield return ToolData.MakeSubItemRef(t, i);
     }
 
     [TweakField(DataType = ColumnDataType.Display, Style = ColumnStyle.Link)]

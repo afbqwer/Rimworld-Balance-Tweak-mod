@@ -11,16 +11,14 @@ namespace BalanceTweak;
 [TweakFor(typeof(ThoughtDef), SettingType.Thought)]
 class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 {
-    /// <summary>想法阶段子项（原 Init() 里的硬编码块）。</summary>
-    public IEnumerable<TweakData> CreateSubItems(TweakData parent, bool tweaked)
+    /// <summary>想法阶段子项。空阶段不产行 —— 与 SetParentTweak 里 `stage == null → false` 同一条判据。</summary>
+    public IEnumerable<SubItemRef> SubItemRefs(Def parentDef)
     {
-        if (parent.def is not ThoughtDef d || d.stages.NullOrEmpty()) yield break;
+        if (parentDef is not ThoughtDef d || d.stages.NullOrEmpty()) yield break;
         for (int i = 0; i < d.stages.Count; i++)
         {
             if (d.stages[i] == null) continue;
-            var sd = new ThoughtStageData { index = i };
-            sd.SetParentTweak(parent, SettingType.ThoughtStage, tweaked);
-            yield return sd;
+            yield return ThoughtStageData.MakeSubItemRef(d, i);
         }
     }
 

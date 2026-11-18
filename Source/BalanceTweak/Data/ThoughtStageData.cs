@@ -34,6 +34,13 @@ class ThoughtStageData : TweakData<ThoughtStageData>
     public override int LoadingOrd => 300;
     private ThoughtStage? stage = null;
 
+    /// <summary>id 的序号段：阶段恒按序号（阶段本身没有稳定标识，重排就是换行）。</summary>
+    internal static string IdSuffix(Def parentDef, int index) => index.ToString();
+
+    /// <summary>造一条阶段行的清单项。</summary>
+    internal static SubItemRef MakeSubItemRef(Def parentDef, int index)
+        => new(SettingType.ThoughtStage, IdSuffix(parentDef, index), () => new ThoughtStageData { index = index });
+
     public override bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false)
     {
         base.SetParentTweak(data, type, tweaked);
@@ -49,7 +56,7 @@ class ThoughtStageData : TweakData<ThoughtStageData>
             }
             stageLabel = stage.untranslatedLabel;
             subdefLabel ??= stage.label;
-            id = new($"{def.defName}_{index}", type);
+            id = new(def.defName + "_" + IdSuffix(def, index.Value), type);
             var li = GetAllData(data.id);
             foreach (var item in li)
             {

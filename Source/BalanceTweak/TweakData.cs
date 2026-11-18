@@ -389,7 +389,7 @@ public abstract partial class TweakData : IExposable
         public override string ToString() => $"{defName}:{settingType}";
 
         /// <summary>
-        /// 必须显式实现。<see cref="TweakID"/> 是所有字典的键（originalData 3.4 万项、deferredRows 2.8 万项、
+        /// 必须显式实现。<see cref="TweakID"/> 是所有字典的键（originalData 与 deferredRows 各 4 万级、
         /// tweakDatas、每页签的 cachedData），不写这个就走 <c>ValueType.GetHashCode</c> —— 那会反射遍历字段
         /// （含 string 的引用哈希），比直接算慢一个量级。补建延迟行时一次操作要 hash 三次（查、删、插）。
         /// </summary>

@@ -63,6 +63,19 @@ class ToolData : TweakData<ToolData>
     public override int LoadingOrd => 400;
     private Tool? tool = null;
 
+    /// <summary>
+    /// 本行 id 的后半段。招式恒按序号：同一个 <c>tools</c> 里的第几把就是第几行，与标签无关
+    /// （标签变了只说明这一行"挂错了"，不该换个 id 继续活）。
+    /// </summary>
+    internal static string IdSuffix(Def parentDef, int index) => index.ToString();
+
+    /// <summary>
+    /// 造一条招式行的清单项。<see cref="WeaponData"/> / <see cref="RaceData"/> / <see cref="HediffData"/>
+    /// 三处宿主共用它 —— 招式的身份只由 <c>index</c> 决定，与宿主是武器、种族还是异体无关。
+    /// </summary>
+    internal static SubItemRef MakeSubItemRef(Def parentDef, int index)
+        => new(SettingType.MeleeTool, IdSuffix(parentDef, index), () => new ToolData { index = index });
+
     /// <summary>本招式对应的招式类型行 id（只按 <c>tool.capacities[0]</c> 反查，不建实例）。</summary>
     internal static TweakID? ManeuverIdOf(Tool? tool)
     {
@@ -285,7 +298,7 @@ class ToolData : TweakData<ToolData>
                 return false;
             }
             toolLabel = tool.untranslatedLabel;
-            id = new(def.defName + $"_{index}", type);
+            id = new(def.defName + "_" + IdSuffix(def, index.Value), type);
             damageAmountBase ??= tool.power;
             armorPenetrationBase ??= tool.armorPenetration;
             cooldownTime ??= tool.cooldownTime;
@@ -326,7 +339,7 @@ class ToolData : TweakData<ToolData>
                 return false;
             }
             toolLabel = tool.untranslatedLabel;
-            id = new($"{hd.defName}_{index}", type);
+            id = new(hd.defName + "_" + IdSuffix(hd, index.Value), type);
             damageAmountBase ??= tool.power;
             armorPenetrationBase ??= tool.armorPenetration;
             cooldownTime ??= tool.cooldownTime;

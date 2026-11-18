@@ -188,6 +188,13 @@ class HediffStageData : TweakData<HediffStageData>
     protected override string ResolveSearchString()
         => $"{def?.defName}{index}{label}";
 
+    /// <summary>id 的序号段：阶段恒按序号。</summary>
+    internal static string IdSuffix(Def parentDef, int index) => index.ToString();
+
+    /// <summary>造一条阶段行的清单项。</summary>
+    internal static SubItemRef MakeSubItemRef(Def parentDef, int index)
+        => new(SettingType.HediffStage, IdSuffix(parentDef, index), () => new HediffStageData { index = index });
+
     public override bool SetParentTweak(TweakData data, SettingType type, bool tweaked = false)
     {
         base.SetParentTweak(data, type, tweaked);
@@ -204,7 +211,7 @@ class HediffStageData : TweakData<HediffStageData>
             stageLabel = stage.untranslatedLabel;
             subdefLabel ??= stage.label;
             subdefOverrideLabel ??= stage.overrideLabel;
-            id = new($"{def.defName}_{index}", type);
+            id = new(def.defName + "_" + IdSuffix(def, index.Value), type);
             var li = GetAllData(data.id);
             foreach (var item in li)
             {

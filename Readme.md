@@ -160,24 +160,30 @@ class WeatherData : TweakData<WeatherData> { /* ... */ }
 
 ### 3.6 注册子项（可选）
 
+子项（阶段 / 招式 / 程度）是**独立的一行**，但它的行清单在 Init 阶段就由 Def 结构算好了 —— 所以宿主只需回答"我下面有哪些子行"，**不要**在这里造实例、也不要调 `SetParentTweak`（清单阶段还没有父实例）：
+
 ```csharp
 class ThoughtData : TweakData<ThoughtData>, ISubItemHost
 {
-    public IEnumerable<TweakData> CreateSubItems(TweakData parent, bool tweaked)
+    public IEnumerable<SubItemRef> SubItemRefs(Def parentDef)
     {
-        if (parent.def is not ThoughtDef d || d.stages.NullOrEmpty()) yield break;
+        if (parentDef is not ThoughtDef d || d.stages.NullOrEmpty()) yield break;
         for (int i = 0; i < d.stages.Count; i++)
         {
-            if (d.stages[i] == null) continue;
-            var sd = new ThoughtStageData { index = i };
-            sd.SetParentTweak(parent, SettingType.ThoughtStage, tweaked);
-            yield return sd;
+            if (d.stages[i] == null) continue;                       // 判据要与 SetParentTweak 里那条一致
+            yield return ThoughtStageData.MakeSubItemRef(d, i);      // 后缀规则写在子类里，两边共用
         }
     }
 }
 ```
 
-实现方负责设置 `index`、调用 `SetParentTweak`、跳过空条目；`TweakDatabase` 自动收集，初始化流程不用加分支。
+三条硬要求：
+
+1. **纯函数**：只读传入的 `def`。`TweakDatabase` 每类只留一个从未 `SetDef` 过的探针实例来问它（`ProbeOf`），所以碰 `this.def` / `this.index` 会静默给出错误的行清单。
+2. **`MakeSubItemRef` 是唯一入口**：它把 `Type` + `IdSuffix` + `Create` 打成一个包，`IdSuffix` 同时被 `SetParentTweak` 用来算 id。两边各写一遍 id 规则 = 某些行永远显示不出来，且没有异常。
+3. **"哪些行存在"只看 Def 结构**，不看存档（标签对不上的行仍然存在，只是无值）。
+
+`TweakDatabase` 自动枚举，初始化流程不用加分支；行清单里父行紧跟其后代子行，见 §4.5。
 
 ### 3.7 本地化
 
@@ -312,7 +318,9 @@ public override void Apply()
 - **快照是稀疏的、按需补建的**。分类阶段只记「Def + 规则」，**不造实例**（34k 个 Data 对象 20~30MB，九成会被推迟，先造出来等于白发一轮 GC）；Init 只建"本轮 Apply 会读到或写到"的行（`tweakDatas` ∪ Incident ∪ Recipe ∪ Maneuver ∪ 被武器引用的弹丸），其余留在 `deferredRows`，到窗口打开（`AdvanceInit` 分帧）或首次 `GetOriginal` 时才 `rule.Factory()` + `SetDef`。不变量是**被 Apply 写过的 def 一定有快照**，所以补建时读到的一定还是原值。
   - **`deferredRows` 在建快照之前一次性装下全部行**（建过的随即从里面摘掉）。这样建快照期间的任何跨行读取（武器读弹丸、招式读招式类型）都能靠 `GetOriginal` 立刻把目标补出来 —— **不依赖"目标碰巧排在前面"**。早先只登记"不建的行"，于是 `MustBuildInInit` 的页签在轮到自己之前对别人完全不可见：种族的招式行解析招式类型时拿到 null，日志里出现「能力 Cut 没有对应的招式类型行」。两者 `LoadingOrd` 同为 100，桶内顺序由分类顺序决定，排序本来就保证不了这件事。
   - 排序用的 `LoadingOrd` 缓存在 `TweakRule` 上（注册时读一次），因为排序发生时实例还不存在。
-  - UI 的行源是 `AllRows`（Def + 规则），不是 `AllOriginals`（只含已建的那些）。
+  - **行源只有 `RowIds`（行清单）**，在 Init 阶段由 Def 结构算好：父行 + 紧跟其后代子行。UI、`ApplyFullReset`、自检都读它，`AllOriginals` 只含已建的那些、**不能当行源**。
+    - 顺序不变量：父行在子行之前（子项实例只能由父实例产出）。生成方式保证，`AdvanceInit` 收尾的 `VerifyRowManifest` 会核对表内行数。
+    - 行清单**不看存档**：标签对不上 / 序号越界的行照样在清单里，只是没值 —— 反过来说，行数不会因为存档内容而变。
   - 新增一处"Init 期按全量遍历快照"的逻辑 → 必须把那个页签加进 `MustBuildInInit`，否则它只看到一部分行。
   - 新增一处跨行写 def（像武器改弹丸那样）→ 必须把它加进 `PromoteCrossRowTargets` 逐个补建；目标页行数很少时也可以直接加进 `MustBuildInInit` 整页建全量（先例：招式类型页 `Maneuver`）。漏了的话，目标行补建时读到的是改后值。
 - 建快照期间（`TweakDatabase.buildingOriginals`）跨行读取走原始层；**不要用 `SetDef(tweaked: false)` 反推**（自检探针 `MakeProbe` 也用 false，它要读当前 def）。
