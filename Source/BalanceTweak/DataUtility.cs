@@ -481,8 +481,10 @@ public static class DataUtility
                 var dps = damage / (t.cooldownTime * cdMult);
                 if (stuff != null)
                 {
-                    var c = t.capacities.FirstOrDefault();
-                    if (c != null && TweakDatabase.allMeleeVerb.TryGetValue(c, out v))
+                    // 取招式（共享 verb）的伤害护甲类别：材料对该类别的倍率再乘一道。
+                    // 表随 ManeuverDef 的消费方走（原先在 TweakDatabase.allMeleeVerb，已退役）。
+                    v = ManeuverData.VerbOf(t.capacities?.FirstOrDefault());
+                    if (v != null)
                     {
                         ac = v.meleeDamageDef?.armorCategory;
                         var ms = ac?.multStat;

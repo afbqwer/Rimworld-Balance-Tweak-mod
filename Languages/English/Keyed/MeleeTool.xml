@@ -7,6 +7,7 @@
     <MST.cooldownTime>CD Time</MST.cooldownTime>
     <MST.bodypartLabel>BdyPt</MST.bodypartLabel>
     <MST.damageType>DmgTyp</MST.damageType>
+    <MST.damageTypeComment>This maneuver's damage type. It belongs to the shared row on the Maneuver tab (every maneuver with the same capacity reads one value); this cell is only a mirror. Editing it changes every object using this maneuver, and the edit is recorded on the maneuver type row.</MST.damageTypeComment>
     <MST.EXdamageNum>XAmt</MST.EXdamageNum>
     <MST.EXdamageAmountBase>XDmg</MST.EXdamageAmountBase>
     <MST.EXarmorPenetrationBase>XPen</MST.EXarmorPenetrationBase>

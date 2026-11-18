@@ -242,8 +242,10 @@ internal static class CombatPower
         var type = changed.id.settingType;
 
         // 装备数值变了（价格 / 护甲 / 材料 / 炮塔节奏 / 招式）→ 重建池。这是最贵的一步，只给它们。
+        // 招式类型也算：伤害类型的护甲类别决定材料对该招式的倍率，进而改近战 DPS（见 DataUtility.CalculateExpectedDPS），
+        // 而那份结果按 (defName|材料) 缓存在 meleeValueCache 里。
         bool equipChanged = type is SettingType.Weapon or SettingType.Apparel or SettingType.Stuff
-            or SettingType.MeleeTool or SettingType.Misc or SettingType.Building;
+            or SettingType.MeleeTool or SettingType.Maneuver or SettingType.Misc or SettingType.Building;
 
         bool combat = AffectsCombat(type);
         if (!equipChanged && !combat) return;
@@ -297,6 +299,7 @@ internal static class CombatPower
         SettingType.Stuff => true,        // 材料倍率会改服装护甲与武器招式
         SettingType.Race => true,         // 血量、护甲、体型、招式、炮塔组件
         SettingType.MeleeTool => true,    // 招式数值
+        SettingType.Maneuver => true,     // 招式伤害类型（护甲类别 → 材料倍率 → 近战 DPS）
         SettingType.BodyDef => true,      // 核心部位血量、部位覆盖率
         _ => false,
     };

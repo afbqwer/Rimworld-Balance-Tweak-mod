@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <!-- 页签标题（SettingType.Maneuver）。与招式页的 Maneuver 列共用同一个键：两处指的都是"招式类型"。 -->
+    <MST.Maneuver>招式类型</MST.Maneuver>
+    <MST.ManeuverComment>点击跳到该招式类型的数据行。招式各行（武器 / 种族 / 异体的招式）上的伤害类型是这一行的镜像：在这里或在那里改动，都会作用于所有使用该招式的对象。</MST.ManeuverComment>
+    <MST.MeleeManeuver>近战招式</MST.MeleeManeuver>
+    <MST.meleeDamageDef>伤害类型</MST.meleeDamageDef>
+    <MST.meleeDamageDefComment>此招式类型打出的伤害类型。它是全表共享的：同一能力（如 Cut）的所有武器、种族与异体招式都读这一份，改这里会一起变。要只改某一把武器，请到武器页改它的招式数值。</MST.meleeDamageDefComment>
+    <MST.requiredCapacity>所需能力</MST.requiredCapacity>
+    <MST.requiredCapacityComment>使用此招式类型所要求的身体能力（ToolCapacityDef）。武器 / 种族招式按它找到对应的那一行，编辑器不支持编辑此项。</MST.requiredCapacityComment>
+</LanguageData>

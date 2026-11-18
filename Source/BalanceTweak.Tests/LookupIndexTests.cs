@@ -34,6 +34,8 @@ public class LookupIndexTests
         var turret = new ThingDef { defName = "BT_TestTurret", building = new BuildingProperties { turretGunDef = gun } };
         var race = new ThingDef { defName = "BT_TestRace" };
         var bullet = new ThingDef { defName = "BT_TestBullet" };
+        var capacity = new ToolCapacityDef { defName = "BT_TestCut" };
+        var maneuver = new ManeuverDef { defName = "BT_TestSlash", requiredCapacity = capacity };
 
         // 索引阶段实例还不存在（分类只记 Def + 规则），所以这里只给规则的 DataType。
         static TweakRule Rule<T>() => new() { DataType = typeof(T) };
@@ -43,6 +45,7 @@ public class LookupIndexTests
             (turret, Rule<BuildingData>(), SettingType.Building),
             (race, Rule<RaceData>(), SettingType.Race),
             (bullet, Rule<ProjectileData>(), SettingType.Projectile),
+            (maneuver, Rule<ManeuverData>(), SettingType.Maneuver),
         };
 
         try
@@ -55,10 +58,13 @@ public class LookupIndexTests
                 TweakDatabase.raceDatas[race.defName]);
             Assert.Equal(new TweakData.TweakID(bullet.defName, SettingType.Projectile),
                 TweakDatabase.projectileDatas[bullet.defName]);
+            // 招式索引的键是「能力」而不是 maneuver 名：招式行手里只有 tool.capacities。
+            Assert.Equal(new TweakData.TweakID(maneuver.defName, SettingType.Maneuver),
+                TweakDatabase.maneuverDatas[capacity.defName]);
         }
         finally
         {
-            // 这三个字典是全局静态的：测试里喂进去的假 defName 不能留给别的用例。
+            // 这几个字典是全局静态的：测试里喂进去的假 defName 不能留给别的用例。
             TweakDatabase.BuildLookupIndices(new List<(Def, TweakRule, SettingType)>());
         }
     }

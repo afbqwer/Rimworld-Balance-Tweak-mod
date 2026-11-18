@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <!-- 页签标题（SettingType.Maneuver）。与招式页的 Maneuver 列共用同一个键：两处指的都是"招式类型"。 -->
+    <MST.Maneuver>Maneuver</MST.Maneuver>
+    <MST.ManeuverComment>Click to jump to this maneuver type's row. The damage type on maneuver rows (weapons / races / hediffs) is a mirror of this row: editing it here or there affects every object using this maneuver.</MST.ManeuverComment>
+    <MST.MeleeManeuver>MeleeMan</MST.MeleeManeuver>
+    <MST.meleeDamageDef>MelDmgTyp</MST.meleeDamageDef>
+    <MST.meleeDamageDefComment>The damage type this maneuver deals. It is shared across the whole table: every weapon, race and hediff maneuver with the same capacity (e.g. Cut) reads this one value, so changing it changes all of them. To change a single weapon, edit that weapon's maneuver values on the weapon tab.</MST.meleeDamageDefComment>
+    <MST.requiredCapacity>ReqCap</MST.requiredCapacity>
+    <MST.requiredCapacityComment>The body capacity (ToolCapacityDef) required to use this maneuver type. Weapon / race maneuvers are matched to this row by it. The editor does not support editing this item.</MST.requiredCapacityComment>
+</LanguageData>

@@ -51,6 +51,7 @@ public partial class BalanceTweakSettings
         WeaponTrait = 36,
         HeavyEquipment = 37,
         Quest = 38,
+        Maneuver = 39,
     }
 
     /// <summary>
@@ -71,6 +72,7 @@ public partial class BalanceTweakSettings
         SettingType.Apparel,
         SettingType.Weapon,
         SettingType.MeleeTool,
+        SettingType.Maneuver, // 招式类型：招式行伤害类型的共享源，紧跟招式
         SettingType.Ability,
         SettingType.Stuff,
         SettingType.Building,

@@ -7,6 +7,7 @@
     <MST.cooldownTime>冷却时间</MST.cooldownTime>
     <MST.bodypartLabel>身体部位</MST.bodypartLabel>
     <MST.damageType>伤害类型</MST.damageType>
+    <MST.damageTypeComment>此招式的伤害类型。它属于「招式类型」页的共享行（同一能力的所有招式共用一个值），这一格只是镜像：在这里改会改掉所有使用该招式的对象，编辑后改动会记到招式类型行上。</MST.damageTypeComment>
     <MST.EXdamageNum>额外数量</MST.EXdamageNum>
     <MST.EXdamageAmountBase>额外伤害</MST.EXdamageAmountBase>
     <MST.EXarmorPenetrationBase>额外穿透</MST.EXarmorPenetrationBase>

@@ -64,6 +64,7 @@ public enum RuleKind
     Projectile,
     Race,
     Building,
+    Maneuver,
 }
 
 /// <summary>规则的运行时形态。</summary>
@@ -86,6 +87,7 @@ public sealed class TweakRule
                  : typeof(ProjectileData).IsAssignableFrom(value) ? RuleKind.Projectile
                  : typeof(RaceData).IsAssignableFrom(value) ? RuleKind.Race
                  : typeof(BuildingData).IsAssignableFrom(value) ? RuleKind.Building
+                 : typeof(ManeuverData).IsAssignableFrom(value) ? RuleKind.Maneuver
                  : RuleKind.Other;
         }
     }

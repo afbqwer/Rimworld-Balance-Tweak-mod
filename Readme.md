@@ -302,7 +302,7 @@ public override void Apply()
 
 ### 4.5 镜像列（`IsMirror`）与 Display 列
 
-**镜像列**：值属于另一行（武器行的"伤害 / 穿透"其实是关联弹丸的副本）。标 `IsMirror = true` 并遵守两条：
+**镜像列**：值属于另一行（武器行的"伤害 / 穿透"其实是关联弹丸的副本；招式行的伤害类型是招式类型行的副本）。标 `IsMirror = true` 并遵守两条：
 
 - **编辑即编辑源行**：写时把值推到源行、把修改标记转移到源行，本行不留标记（`WeaponData.PushWeaponEditsToProjectile`），否则本行的重置按钮点了没反应。
 - **`EqualsData` 跳过它**：源行一改，共享它的副本会被派生同步刷新，"我没改、但副本变了"是常态；参与相等判定会让脏行常驻已修改表。
@@ -313,7 +313,7 @@ public override void Apply()
   - 排序用的 `LoadingOrd` 缓存在 `TweakRule` 上（注册时读一次），因为排序发生时实例还不存在。
   - UI 的行源是 `AllRows`（Def + 规则），不是 `AllOriginals`（只含已建的那些）。
   - 新增一处"Init 期按全量遍历快照"的逻辑 → 必须把那个页签加进 `MustBuildInInit`，否则它只看到一部分行。
-  - 新增一处跨行写 def（像武器改弹丸那样）→ 必须把它加进 `PromoteCrossRowTargets`，否则目标行补建时读到的是改后值。
+  - 新增一处跨行写 def（像武器改弹丸那样）→ 必须把它加进 `PromoteCrossRowTargets` 逐个补建；目标页行数很少时也可以直接加进 `MustBuildInInit` 整页建全量（先例：招式类型页 `Maneuver`）。漏了的话，目标行补建时读到的是改后值。
 - 建快照期间（`TweakDatabase.buildingOriginals`）跨行读取走原始层；**不要用 `SetDef(tweaked: false)` 反推**（自检探针 `MakeProbe` 也用 false，它要读当前 def）。
 - `ProjectileData.RefreshSharedWeapons` / `BuildingData.RefreshTurretGun` 跳过快照，只刷活实例。
 - 从快照克隆出的行在 `EnsureDisplayValues` 里补一次镜像同步（`WeaponData.SyncMirrorsFromProjectile`），因此 `Clone()` 必须清 `displayValuesEnsured`（基类 `TweakData.Clone()` 统一清零）。
@@ -344,7 +344,7 @@ public override void Apply()
 | 要定制就**覆写 `Resolve*`** | `propType` / `uiIcon` / `uiIconColor` / `desc` 是**只读**属性，没有 setter —— 没有"顺手赋值把懒加载变回急加载"这条路。现有覆写：`FactionData`（FactionIcon / 派系色）、`MemeData` / `XenotypeData` / `ThoughtData`（Icon）、`AbilityData`（VEF icon + `GetTooltip`）、`RecipeData`（UIIcon / 产物图标 / ProcessDef）、`PawnKindData`（借种族那一行） |
 | `propType` 只有一个来源 | `GetPropType`。原先"基类先算一次、`HeavyEquippableDefData` 再修正一次"的两步写法已删除 —— 首次读取时字段早已回填，机载档位自然判对 |
 | 子项分类继承父级 | `HediffStageData` / `TraitDegreeNodeData` / `ThoughtStageData` 的 `GetPropType` 自己查 `parentTweakId`（父级也是懒的，链式按需），不再在 `SetParentTweak` 里抄一份 |
-| 例外：**跨行索引一律在建表阶段建** | `GetPropType` 只读不写。原先 `raceDatas` / `projectileDatas` / `turretBuildingDatas` 是在各自 `GetPropType` 里顺带写的 —— 靠"初始化期每行都会被求值一次"活着，改懒之后谁先被读谁才写：武器解析弹丸时表是空的（镜像全空、强度除零）、判炮塔时表也是空的（炮塔枪回落成内置武器）。现在统一由 `TweakDatabase.BuildLookupIndices` 在分类之后、建快照之前填好 |
+| 例外：**跨行索引一律在建表阶段建** | `GetPropType` 只读不写。原先 `raceDatas` / `projectileDatas` / `turretBuildingDatas` 是在各自 `GetPropType` 里顺带写的 —— 靠"初始化期每行都会被求值一次"活着，改懒之后谁先被读谁才写：武器解析弹丸时表是空的（镜像全空、强度除零）、判炮塔时表也是空的（炮塔枪回落成内置武器）。现在统一由 `TweakDatabase.BuildLookupIndices` 在分类之后、建快照之前填好。招式类型索引 `maneuverDatas` 走同一处，键是 `ManeuverDef.requiredCapacity.defName`（招式行手里只有 `tool.capacities`，拿不到 maneuver 的 defName） |
 | 索引里的 `TweakID` 必须**现拼**（`new TweakID(def.defName, type)`） | `data.id` 是在随后的 `SetDef` 里才赋值的，`BuildLookupIndices` 跑在那之前，此刻它还是 `default`（defName 为空、settingType 为 `None`）。用它建表会把所有条目塌缩到同一个 `":None"` 键：武器解析不到弹丸（**DPS 全 0**）、炮塔枪拿到空链接（点一下 `KeyNotFoundException`）。`JumpToData` 现在也把空 defName / 无对应行当死链处理，不再抛 |
 | 枪 ↔ 炮塔的链接在 `WeaponData.SetDef`（`LinkTurret`） | 与 `PawnKindData.LinkRace` 同一个理由：它是"枪挂在哪座建筑上"的跨行关系，不是展示值，也不该由"读分类"顺手产生 |
 | `Def.LabelCap` 可能返回 `null` | 原版在 `label` 为空时**不回落** defName，基类 `ResolveLabel` 自己回落 |
@@ -608,6 +608,7 @@ public class AtmosphereConfigWindow : ConfigWindow
 | `Apparel` | `Apparel.xml` | `Misc` | `Core.xml` |
 | `Weapon` | `Weapon.xml` | `Damage` | `Damage.xml` |
 | `MeleeTool` | `MeleeTool.xml` | `BodyPart` | `BodyPart.xml` |
+| `Maneuver`（招式类型） | `Maneuver.xml` | | |
 | `Ability` | `Ability.xml` | `BodyDef` | `BodyDef.xml` |
 | `Stuff` | `Stuff.xml` | `Biome` | `Biome.xml` |
 | `Building` | `Building.xml` | `Trader` | `Trader.xml` |

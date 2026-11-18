@@ -114,6 +114,14 @@ public static partial class TweakDatabase
     public static Dictionary<string, TweakID> turretBuildingDatas = [];
     public static Dictionary<string, TweakID> projectileDatas = [];
     public static Dictionary<string, TweakID> raceDatas = [];
+    /// <summary>
+    /// 招式能力（<see cref="ToolCapacityDef"/>）→ 招式类型行的 id。
+    /// <para>
+    /// 键取 <c>ManeuverDef.requiredCapacity.defName</c> 而<b>不是</b> maneuver 自己的 defName：
+    /// 招式行（<see cref="ToolData"/>）手里只有 <c>tool.capacities</c>，靠它才能反查到共享行。
+    /// </para>
+    /// </summary>
+    public static Dictionary<string, TweakID> maneuverDatas = [];
 
     /// <summary>
     /// 正在建原始快照（<see cref="Init"/> 的 SetDef 循环）。
@@ -146,7 +154,6 @@ public static partial class TweakDatabase
 
     public static List<(TweakData data, DelayedFailCause cause)> failedDelayedItems = new();
 
-    public static Dictionary<ToolCapacityDef, VerbProperties> allMeleeVerb = [];
     public const string CE = "ceteam.combatextended";
     public const string VEF = "oskarpotocki.vanillafactionsexpanded.core";
     public const string VEP = "vanillaexpanded.vpsycastse";
@@ -351,6 +358,7 @@ public static partial class TweakDatabase
         projectileDatas.Clear();
         turretBuildingDatas.Clear();
         raceDatas.Clear();
+        maneuverDatas.Clear();
 
         for (int i = 0; i < items.Count; i++)
         {
@@ -380,6 +388,11 @@ public static partial class TweakDatabase
                     // 排除 Frame / VFE 道具：它们也是 BuildingData 行，但建筑属性是复制来的空壳，
                     // 拿它们当把手会把射速算成默认值（原先写在各行 GetPropType 里，天然被那两处分支挡掉）。
                     turretBuildingDatas.TryAdd(gun.defName, id);
+                    break;
+                case RuleKind.Maneuver when def is ManeuverDef maneuver && maneuver.requiredCapacity != null:
+                    // 键是能力而不是 maneuver 名：招式行手里只有 tool.capacities（见字段注释）。
+                    // 多份 ManeuverDef 声明同一能力时保留第一个 —— 原版 InitAllMeleeDamageDef 的 TryAdd 同义。
+                    maneuverDatas.TryAdd(maneuver.requiredCapacity.defName, id);
                     break;
             }
         }
@@ -414,8 +427,8 @@ public static partial class TweakDatabase
         failedDirectItems.Clear();
         failedDelayedItems.Clear();
 
-        InitAllMeleeDamageDef();
-        Mark("InitAllMeleeDamageDef");
+        InitVctSettings();
+        Mark("InitVctSettings");
 
         var pendingItems = new List<(Def, TweakRule, SettingType)>();
         int thingDefCount = DefDatabase<ThingDef>.DefCount;
@@ -434,7 +447,7 @@ public static partial class TweakDatabase
         // 反查索引必须在这里建：后面每个 SetDef 都可能读它（武器解析弹丸、判炮塔、兵种挂种族），
         // 而索引来源是"有哪些行"，与 SetDef 的顺序、与展示属性有没有被读过都无关。
         BuildLookupIndices(pendingItems);
-        Mark($"建反查索引（弹丸 {projectileDatas.Count} / 炮塔 {turretBuildingDatas.Count} / 种族 {raceDatas.Count}）");
+        Mark($"建反查索引（弹丸 {projectileDatas.Count} / 炮塔 {turretBuildingDatas.Count} / 种族 {raceDatas.Count} / 招式类型 {maneuverDatas.Count}）");
         //Log.Message($"[BalanceTweak] ThingDef 覆盖：总数 {thingProcessed}，规则分类 {thingProcessed - classify.Fallback - classify.Uncovered}，兜底 Misc {classify.Fallback}，放弃 {classify.Uncovered}（无编辑价值，不建实例）");
         //Log.Message($"[BalanceTweak] 兜底 Misc 按 ThingCategory：{string.Join(", ", classify.FallbackByCategory.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value}"))}");
         //if (classify.FallbackSamples.Count > 0)
@@ -614,6 +627,12 @@ public static partial class TweakDatabase
         // 不再有"迁移"步骤：Cleared 只由编辑器显式写入（MarkFieldCleared），旧档里"已改且空"的字段
         // 一律按 Unset 处理，无需任何转换；旧档（无 modifiedFieldNames 节点）的加载期适配由
         // TweakData.Serialization 的 backcompat 启发式完成，与初始化流程无关。
+
+        // 唯一的例外：招式行的伤害类型从"自己的字段"变成了共享招式类型行的镜像（见 ManeuverData）。
+        // 必须在下面的 Apply 之前搬完 —— Apply 不再写 verb、EqualsData 也不再比较这一格，
+        // 老存档里"只在招式行改过伤害类型"的条目否则会静默失效。
+        MigrateToolDamageTypes();
+        Mark("招式类型迁移（工具行 damageType → 招式类型行）");
 
         var lazy = new List<TweakData>();
         int appliedModified = 0;
@@ -833,9 +852,13 @@ public static partial class TweakDatabase
     /// <b>新增一处按全量遍历的 Init 逻辑时，记得把对应页签加进来</b> —— 否则它只会看到一半的行，
     /// 而且不会报错，表现是"某些项的概率 / 显示值悄悄没算"。
     /// </para>
+    /// <para>
+    /// Maneuver 是另一条判据：它的 def 会被 <b>别的行</b>（招式行推送伤害类型）写，
+    /// 而"被 Apply 写过的 def 一定有快照"是这个类的不变量。这一页只有十几行，直接建全量最省心。
+    /// </para>
     /// </summary>
     private static bool MustBuildInInit(SettingType type)
-        => type is SettingType.Incident or SettingType.Recipe;
+        => type is SettingType.Incident or SettingType.Recipe or SettingType.Maneuver;
 
     /// <summary>
     /// 把"会被其它行写 def"的目标提前建快照。目前只有一处：武器的 Apply 会把伤害 / 穿透推进
@@ -859,6 +882,96 @@ public static partial class TweakDatabase
             }
         }
         return deferredBuilt - before;
+    }
+
+    /// <summary>
+    /// 旧档一次性迁移：把招式行（<see cref="ToolData"/>）上的 <c>damageType</c> 搬到招式类型行
+    /// （<see cref="ManeuverData.meleeDamageDef"/>）。
+    /// <para>
+    /// 为什么必须搬：这一格以前是被当成"招式自己的字段"写进共享的 <c>ManeuverDef.verb.meleeDamageDef</c>
+    /// 的。改成镜像之后 <c>Apply</c> 不再直接写 verb、<c>EqualsData</c> 也不再比较它 ——
+    /// 老存档里"只在招式行改过伤害类型"的条目会变成一条永远不落盘的死数据，界面上还看不出异常。
+    /// </para>
+    /// <para>
+    /// <b>幂等</b>：搬完会把这一格从工具行的已修改集合里摘掉，第二次加载时它不再是
+    /// <see cref="FieldState.Set"/>，自然不会再搬。判据只用三态（<c>StateOfField</c>），
+    /// 不用"值非空"反推。
+    /// </para>
+    /// </summary>
+    internal static void MigrateToolDamageTypes()
+    {
+        if (tweakDatas.Count == 0) return;
+
+        int migrated = 0;
+        int conflicts = 0;
+        int unresolved = 0;
+
+        // 迁移要按父项 def 找回 Tool，可能需要补建被推迟的父项快照。必须锁原始层：
+        // 此刻 Apply 还没开始，补建父项时若按"当前生效层"读别的行（武器读弹丸镜像），
+        // 原值基准就会被写成现值（见 WeaponData.SetDef 的 GenMirrors）。
+        bool prevBuilding = buildingOriginals;
+        buildingOriginals = true;
+        try
+        {
+            MigrateToolDamageTypesCore(ref migrated, ref conflicts, ref unresolved);
+        }
+        finally
+        {
+            buildingOriginals = prevBuilding;
+        }
+
+        if (migrated + conflicts + unresolved == 0) return;
+        TweakLog.Message($"[BalanceTweak] 招式类型迁移：{migrated} 条招式行的伤害类型已转移到招式类型页"
+            + (conflicts > 0 ? $"（{conflicts} 条与招式类型行已有的值冲突，按工具行为准）" : "")
+            + (unresolved > 0 ? $"（{unresolved} 条找不到对应招式类型行，已跳过）" : ""));
+    }
+
+    private static void MigrateToolDamageTypesCore(ref int migrated, ref int conflicts, ref int unresolved)
+    {
+        // 先取快照：迁移会往 tweakDatas 里 SetOrAdd 新的招式类型行，边遍历边写不安全。
+        foreach (var pair in tweakDatas.ToList())
+        {
+            if (pair.Value is not ToolData tool) continue;
+            if (tool.StateOfField(nameof(ToolData.damageType)) != FieldState.Set) continue;
+            if (tool.damageType == null) continue;
+
+            // Maneuver 为 null（找不到对应招式行）时整行跳过：宁可留着原值等下次，也不要让这条数据失败。
+            var mid = ToolData.ManeuverIdOf(tool.FindTool());
+            if (mid == null)
+            {
+                unresolved++;
+                continue;
+            }
+            if (GetEditableData(mid.Value) is not ManeuverData md)
+            {
+                unresolved++;
+                continue;
+            }
+
+            // 两处都改过同一个共享项的冲突：工具行的值优先（用户是在具体武器上动的），但必须留痕。
+            if (md.StateOfField(nameof(ManeuverData.meleeDamageDef)) == FieldState.Set
+                && md.meleeDamageDef != tool.damageType)
+            {
+                Log.Warning($"[BalanceTweak] 招式类型迁移冲突：工具行 {tool.id} 的伤害类型 "
+                    + $"{tool.damageType.defName} 覆盖了招式类型行 {mid.Value} 已有的 "
+                    + $"{md.meleeDamageDef?.defName ?? "（空）"}。旧存档里两处都改过同一共享项，按工具行为准。");
+                conflicts++;
+            }
+
+            // 走现有的"标记为已修改"路径：直接改 _modifiedFieldNames 会绕过 tweaked 与存档登记。
+            md.meleeDamageDef = tool.damageType;
+            md.MarkFieldModified(nameof(ManeuverData.meleeDamageDef));
+            md.MarkIndirectlyModified();
+
+            // 改动归属已转移，工具行不再持有这一格（同时保证幂等）。
+            tool.RemoveFieldModified(nameof(ToolData.damageType));
+            if (tool.CountFieldModified() == 0)
+            {
+                tool.tweaked = false;
+                tweakDatas.Remove(tool.id);
+            }
+            migrated++;
+        }
     }
 
     private static int PrepareDeferredDisplayValues()
@@ -899,23 +1012,26 @@ public static partial class TweakDatabase
         return TryGetOriginal(id, out var data) ? data as WeaponData : null;
     }
 
-    private static void InitAllMeleeDamageDef()
+    /// <summary>
+    /// 读 VCT（原版战斗调整）的两个换算开关。
+    /// <para>
+    /// 这里原先还顺带填 <c>allMeleeVerb</c>（能力 → 共享 verb）。那张表已经退役：
+    /// 伤害类型现在由招式类型行（<see cref="ManeuverData"/>）持有，DPS 计算取护甲类别改走
+    /// <see cref="ManeuverData.VerbOf"/>（懒建、只读原版 Def）。
+    /// </para>
+    /// </summary>
+    private static void InitVctSettings()
     {
         // 没有 MayRequire 常量（这个 Mod 没有登记 packageId），退回"程序集短名"判定：
         // 不在就静默跳过，在却拿不到类型则由 Diagnostics 记一条失配 —— 否则 VCT 更新改名后
         // APNerf 永远读到 false，DPS 换算静默换了一套口径。
-        var t = DataUtility.OptionalType("VanillaCombatTweaks.VCTModSettings", null, nameof(InitAllMeleeDamageDef));
+        var t = DataUtility.OptionalType("VanillaCombatTweaks.VCTModSettings", null, nameof(InitVctSettings));
         if (t != null)
         {
             var apn = AccessTools.Field(t, "APNerf");
             if (apn?.GetValue(null) is bool apDown) VCTAPDown = apDown;
             var arn = AccessTools.Field(t, "ArmorUnlimitNerf");
             if (arn?.GetValue(null) is bool amDown) VCTAMDown = amDown;
-        }
-        foreach (var m in DefDatabase<ManeuverDef>.AllDefsListForReading)
-        {
-            if (m.requiredCapacity != null && m.verb != null)
-                allMeleeVerb.TryAdd(m.requiredCapacity, m.verb);
         }
     }
 }
