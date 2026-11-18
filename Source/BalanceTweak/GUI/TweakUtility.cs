@@ -293,17 +293,27 @@ public partial class BalanceTweakSettings
                     initQueue.Add(new TweakID(row.def.defName, row.type));
             }
 
-            // 补建父项时会顺带产生子项行（招式 / 阶段 / 程度），它们不在 AllRows 里 ——
-            // 每帧把新产生的追加到队尾。子项只可能由已处理的父项产生，所以队尾追加不会打乱游标。
-            for (; subsQueued < TweakDatabase.DeferredSubs.Count; subsQueued++)
-                initQueue.Add(TweakDatabase.DeferredSubs[subsQueued].id);
-
-            // 先保底推 MinRowsPerInitFrame 行（哪怕已超预算），再按时间推进到预算耗尽。
-            // 预算按时间而不是行数：克隆成本随机器、随字典扩容、随 GC 波动，固定行数做不到"固定耗时"。
-            int floor = Math.Min(initCursor + MinRowsPerInitFrame, initQueue.Count);
-            while (initCursor < initQueue.Count
-                   && (initCursor < floor || PerfProbe.ElapsedMs(stamp) < PrepareBudgetMs))
+            // 子项行（招式 / 阶段 / 程度）不在 AllRows 里，来源是父项实例化时登记的 SubRows。
+            //
+            // 两点都不能省：
+            //   · 追加必须放在循环里反复做 —— 建父项是循环内的事，本帧新建出来的子项要立刻接上；
+            //     只在帧首追加一次，"队列走空"就会早于子项入队。
+            //   · 收尾必须同时看 initCursor 和 subsQueued —— 只看前者会把最后一帧新建的子项整批丢掉。
+            //     武器（LoadingOrd 300）永远落在最后一桶，那一帧的子项正是全部招式行。
+            //
+            // floor 只在帧首算一次（保底 MinRowsPerInitFrame 行）。不能跟着追加重算：
+            // 每次都变成 initCursor + 200，`initCursor < floor` 恒真，时间预算直接失效。
+            int floor = -1;
+            while (true)
             {
+                for (; subsQueued < TweakDatabase.SubRows.Count; subsQueued++)
+                    initQueue.Add(TweakDatabase.SubRows[subsQueued].id);
+                if (initCursor >= initQueue.Count) break;
+                if (floor < 0) floor = Math.Min(initCursor + MinRowsPerInitFrame, initQueue.Count);
+                // 先保底推 MinRowsPerInitFrame 行（哪怕已超预算），再按时间推进到预算耗尽。
+                // 预算按时间而不是行数：克隆成本随机器、随字典扩容、随 GC 波动，固定行数做不到"固定耗时"。
+                if (initCursor >= floor && PerfProbe.ElapsedMs(stamp) >= PrepareBudgetMs) break;
+
                 var id = initQueue[initCursor++];
                 // 延迟的行在这一帧才 Factory + SetDef（分帧摊的正是这一步）；已建的直接取。
                 // 补建失败（Def 已不存在 / SetDef 抛异常）就跳过：这一行本来也显示不出来。
@@ -316,7 +326,8 @@ public partial class BalanceTweakSettings
             initElapsedMs += PerfProbe.ElapsedMs(stamp);
             initFrames++;
 
-            if (initCursor < initQueue.Count) return;
+            // 队列还有行（这一帧预算用完），或刚产生的子项还没入队 → 下一帧继续。
+            if (initCursor < initQueue.Count || subsQueued < TweakDatabase.SubRows.Count) return;
 
             int total = initQueue.Count;
             initQueue = null;

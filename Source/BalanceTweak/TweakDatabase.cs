@@ -41,12 +41,25 @@ public static partial class TweakDatabase
     private static int deferredBuilt;
 
     /// <summary>
-    /// 补建时顺带产生的子项行（招式 / 想法阶段 / 健康阶段 / 特性程度）。
-    /// 它们只存在于父项 SetDef 之后，而 UI 的行源是 <see cref="AllRows"/>（父项）——
-    /// 所以要把这些追加进去，否则这几千行在表格里整段消失。
+    /// <b>所有不在 <see cref="AllRows"/> 里的行</b>：父项实例化时产出的子项（招式 / 想法阶段 /
+    /// 健康阶段 / 特性程度）。UI 只认 <see cref="AllRows"/> 建表，这些行不登记就是整段消失。
+    /// <para>
+    /// 登记点只有两个，缺一不可 —— 父项实例化的两条路径各是一处：
+    /// <list type="number">
+    /// <item><see cref="Init"/> 的建快照循环（父项在 <c>mustBuild</c> 里，即它自己带着存档修改）；</item>
+    /// <item><see cref="MaterializeDeferred"/>（父项被推迟，窗口打开时才补建）。</item>
+    /// </list>
+    /// 只登记后者会漏掉前者：改过的武器（武器行本身有修改）其招式整批不会进表 ——
+    /// 而武器是唯一一个「父项排在最后一桶（LoadingOrd 300）又带子项」的类型，
+    /// 表现就是招式页只剩「招式本身被改过」的那几条。
+    /// </para>
+    /// <para>
+    /// 名字不叫 Deferred：它装的是行集合，不是「被推迟的」行。语义一错，下一个改这里的人
+    /// 就会像上次那样只在一处登记。
+    /// </para>
     /// </summary>
-    private static readonly List<TweakData> deferredSubs = [];
-    public static IReadOnlyList<TweakData> DeferredSubs => deferredSubs;
+    private static readonly List<TweakData> subRows = [];
+    public static IReadOnlyList<TweakData> SubRows => subRows;
 
     /// <summary>获取原始数据（未建的行会在此刻补建）。</summary>
     public static TweakData? GetOriginal(TweakID id)
@@ -87,7 +100,7 @@ public static partial class TweakDatabase
             {
                 foreach (var sub in host.CreateSubItems(data, false))
                 {
-                    if (originalData.TryAdd(sub.id, sub)) deferredSubs.Add(sub);
+                    if (originalData.TryAdd(sub.id, sub)) subRows.Add(sub);
                 }
             }
             return data;
@@ -384,7 +397,7 @@ public static partial class TweakDatabase
         allRows = [];
         deferredRows = null;
         deferredBuilt = 0;
-        deferredSubs.Clear();
+        subRows.Clear();
 
         // 阶段计时统一走这里：读表 → 累加已归属耗时 → 记一行 → 重新计时。
         // 之前各阶段散落的 sw.Restart()/sw.Elapsed 容易出现"忘记读"或"忘记重启"，让阶段之和与总计对不上。
@@ -508,6 +521,9 @@ public static partial class TweakDatabase
 
                     // 子项（武器招式 / 想法阶段 / 健康阶段 / 特性程度）由宿主类自己实现 ISubItemHost 产出，
                     // 这里不再为每种类型维护一段硬编码块 —— 新增子项类型只需宿主类加个方法。
+                    //
+                    // 注意必须登记进 subRows：这里建的父项（= 自己带着存档修改的行）不会走 MaterializeDeferred，
+                    // 漏了这一行，它们的子项就永远不会成为表格里的行。
                     if (data is ISubItemHost host)
                     {
                         itemSw.Restart();
@@ -515,7 +531,7 @@ public static partial class TweakDatabase
                         {
                             foreach (var sub in host.CreateSubItems(data, false))
                             {
-                                originalData.TryAdd(sub.id, sub);
+                                if (originalData.TryAdd(sub.id, sub)) subRows.Add(sub);
                                 subItemCount[sub.id.settingType] = subItemCount.GetValueOrDefault(sub.id.settingType) + 1;
                             }
                         }
